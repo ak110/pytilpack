@@ -6,6 +6,11 @@ import typing
 
 import sqlalchemy
 
+try:
+    from typing import Self
+except ImportError:
+    Self = typing.TypeVar("Self")  # type: ignore
+
 logger = logging.getLogger(__name__)
 
 
@@ -29,9 +34,7 @@ class IDMixin:
     """models.Class.query.get()がdeprecatedになるため"""
 
     @classmethod
-    def get_by_id(
-        cls: type[typing.Self], id_: int, for_update: bool = False
-    ) -> typing.Self | None:
+    def get_by_id(cls: type[Self], id_: int, for_update: bool = False) -> Self | None:
         """IDを元にインスタンスを取得。"""
         q = cls.query.filter(cls.id == id_)  # type: ignore
         if for_update:
