@@ -4,6 +4,7 @@ import logging
 import time
 
 import sqlalchemy
+import sqlalchemy.orm
 
 try:
     from typing import Self  # type: ignore[attr-defined]
