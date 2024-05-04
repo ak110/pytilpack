@@ -1,0 +1,14 @@
+[MESSAGES CONTROL]
+disable=
+    broad-exception-caught,
+    fixme,
+    import-outside-toplevel,
+    logging-fstring-interpolation,
+    logging-not-lazy,
+    missing-function-docstring,
+    too-few-public-methods,
+    too-many-locals,
+    too-many-return-statements,
+
+[FORMAT]
+max-line-length=128
