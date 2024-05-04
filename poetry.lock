@@ -1112,4 +1112,4 @@ tqdm = ["tqdm"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<4.0"
-content-hash = "9b23023f468b51411d7f83cb21b1f798ebaa6fe28c6a3e61aa3f52c5053782c9"
+content-hash = "cbd404936febdfd19168ded7bb8dc6b7e74df1143b7ac2d497d5855e70e47797"

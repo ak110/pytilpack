@@ -2,14 +2,13 @@
 
 import logging
 import time
-import typing
 
 import sqlalchemy
 
 try:
     from typing import Self
 except ImportError:
-    Self = typing.TypeVar("Self")  # type: ignore
+    from typing_extensions import Self
 
 logger = logging.getLogger(__name__)
 
