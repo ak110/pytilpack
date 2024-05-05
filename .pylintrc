@@ -3,11 +3,15 @@ disable=
     broad-exception-caught,
     fixme,
     import-outside-toplevel,
+    invalid-name,
     logging-fstring-interpolation,
     logging-not-lazy,
     missing-function-docstring,
+    no-else-return,
     too-few-public-methods,
+    too-many-branches,
     too-many-locals,
+    too-many-nested-blocks,
     too-many-return-statements,
 
 [FORMAT]

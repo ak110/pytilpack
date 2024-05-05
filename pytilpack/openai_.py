@@ -1,9 +1,13 @@
 """OpenAI Python Library用のユーティリティ集。"""
 
+import logging
+
 import openai
 import openai.types.chat
 
 import pytilpack.python_
+
+logger = logging.getLogger(__name__)
 
 
 def gather_chunks(
