@@ -11,3 +11,23 @@ Pythonの各種ライブラリのユーティリティ集。
 ```bash
 pip install pytilpack
 ```
+
+## 使い方
+
+```python
+import pytilpack.xxx_
+```
+
+xxxのところは各種モジュール名。`openai`とか`pathlib`とか。
+それぞれのモジュールに関連するユーティリティ関数などが入っている。
+
+## モジュール一覧
+
+- [pytilpack.csv_](pytilpack/csv_.py)
+- [pytilpack.flask_](pytilpack/flask_.py)
+- [pytilpack.openai_](pytilpack/openai_.py)
+- [pytilpack.pathlib_](pytilpack/pathlib_.py)
+- [pytilpack.python_](pytilpack/python_.py)
+- [pytilpack.sqlalchemy_](pytilpack/sqlalchemy_.py)
+- [pytilpack.tiktoken_](pytilpack/tiktoken_.py)
+- [pytilpack.tqdm_](pytilpack/tqdm_.py)
