@@ -18,7 +18,9 @@ def gather_chunks(
         created=chunks[0].created,
         model=chunks[0].model,
         object="chat.completion",
-        system_fingerprint=chunks[0].system_fingerprint,
+        system_fingerprint=pytilpack.python_.coalesce(
+            c.system_fingerprint for c in chunks
+        ),
     )
 
 
