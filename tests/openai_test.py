@@ -95,7 +95,7 @@ def test_gather_chunks_stream(data_dir: pathlib.Path):
 
     with pytilpack.flask_.run(app):
         response = openai.OpenAI(
-            base_url="http://localhost:5000/v1"
+            api_key="sk-dummy", base_url="http://localhost:5000/v1"
         ).chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": "1+1=?"}],
@@ -137,7 +137,7 @@ def test_gather_chunks_function1(data_dir: pathlib.Path):
 
     with pytilpack.flask_.run(app):
         response = openai.OpenAI(
-            base_url="http://localhost:5000/v1"
+            api_key="sk-dummy", base_url="http://localhost:5000/v1"
         ).chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": "1+1=?"}],
@@ -189,7 +189,7 @@ def test_gather_chunks_function2(data_dir: pathlib.Path):
 
     with pytilpack.flask_.run(app):
         response = openai.OpenAI(
-            base_url="http://localhost:5000/v1"
+            api_key="sk-dummy", base_url="http://localhost:5000/v1"
         ).chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": "1+1=?"}],
