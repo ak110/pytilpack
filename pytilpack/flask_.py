@@ -1,12 +1,16 @@
 """Flask関連のユーティリティ。"""
 
 import base64
+import contextlib
 import logging
 import pathlib
 import secrets
+import threading
 import urllib.parse
 
 import flask
+import httpx
+import werkzeug.serving
 
 logger = logging.getLogger(__name__)
 
@@ -59,3 +63,37 @@ def get_safe_url(target: str, host_url: str, default_url: str) -> str:
         logger.warning(f"Invalid next url: {target}")
         return default_url
     return target
+
+
+@contextlib.contextmanager
+def run(app: flask.Flask, host: str = "localhost", port: int = 5000):
+    """Flaskアプリを実行するコンテキストマネージャ。テストコードなど用。"""
+
+    if not any(
+        m.endpoint == "_pytilpack_flask_dummy" for m in app.url_map.iter_rules()
+    ):
+
+        @app.route("/_pytilpack_flask_dummy")
+        def _pytilpack_flask_dummy():
+            return "OK"
+
+    server = werkzeug.serving.make_server(host, port, app, threaded=True)
+    ctx = app.app_context()
+    ctx.push()
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        # サーバーが起動するまで待機
+        while True:
+            try:
+                httpx.get(
+                    f"http://{host}:{port}/_pytilpack_flask_dummy"
+                ).raise_for_status()
+                break
+            except Exception:
+                pass
+        # 制御を戻す
+        yield
+    finally:
+        server.shutdown()
+        thread.join()

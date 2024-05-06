@@ -1,6 +1,7 @@
 """OpenAI Python Library用のユーティリティ集。"""
 
 import logging
+import typing
 
 import openai
 import openai.types.chat
@@ -11,9 +12,10 @@ logger = logging.getLogger(__name__)
 
 
 def gather_chunks(
-    chunks: list[openai.types.chat.ChatCompletionChunk],
+    chunks: typing.Iterable[openai.types.chat.ChatCompletionChunk],
 ) -> openai.types.chat.ChatCompletion:
     """ストリーミングのチャンクを結合する。"""
+    chunks = list(chunks)
     max_choices = max(len(chunk.choices) for chunk in chunks)
     choices = [_make_choice(chunks, i) for i in range(max_choices)]
     return openai.types.chat.ChatCompletion(

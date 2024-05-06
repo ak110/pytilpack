@@ -17,9 +17,12 @@ repos:
       - id: check-yaml
       - id: detect-private-key
       - id: end-of-file-fixer
+        exclude: ^tests/data/
       - id: mixed-line-ending
+        exclude: ^tests/data/
       - id: name-tests-test
       - id: trailing-whitespace
+        exclude: ^tests/data/
 
   - repo: local
     hooks:
