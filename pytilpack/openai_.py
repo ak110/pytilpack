@@ -16,64 +16,77 @@ def gather_chunks(
 ) -> openai.types.chat.ChatCompletion:
     """ストリーミングのチャンクを結合する。"""
     chunks = list(chunks)
+    if len(chunks) == 0:
+        return openai.types.chat.ChatCompletion(
+            id="", choices=[], created=0, model="", object="chat.completion"
+        )
     max_choices = max(len(chunk.choices) for chunk in chunks)
     choices = [_make_choice(chunks, i) for i in range(max_choices)]
-    return openai.types.chat.ChatCompletion(
+    response = openai.types.chat.ChatCompletion(
         id=chunks[0].id,
         choices=choices,
         created=chunks[0].created,
         model=chunks[0].model,
         object="chat.completion",
-        system_fingerprint=pytilpack.python_.coalesce(
-            c.system_fingerprint for c in chunks
-        ),
     )
+    if (
+        system_fingerprint := pytilpack.python_.coalesce(
+            c.system_fingerprint for c in chunks
+        )
+    ) is not None:
+        response.system_fingerprint = system_fingerprint
+    return response
 
 
 def _make_choice(
     chunks: list[openai.types.chat.ChatCompletionChunk], i: int
 ) -> openai.types.chat.chat_completion.Choice:
     """ストリーミングのチャンクからChoiceを作成する。"""
-    logprobs = pytilpack.python_.coalesce(
-        c.choices[i].logprobs for c in chunks if len(c.choices) >= i
-    )
-    return openai.types.chat.chat_completion.Choice(
+    message = openai.types.chat.ChatCompletionMessage(role="assistant")
+    if (
+        len(
+            content := pytilpack.python_.remove_none(
+                c.choices[i].delta.content for c in chunks if len(c.choices) >= i
+            )
+        )
+        > 0
+    ):
+        message.content = "".join(content)
+    if (
+        len(
+            function_calls := pytilpack.python_.remove_none(
+                c.choices[i].delta.function_call for c in chunks if len(c.choices) >= i
+            )
+        )
+        > 0
+    ):
+        message.function_call = _make_function_call(function_calls)
+    if (
+        len(
+            tool_calls_list := pytilpack.python_.remove_none(
+                c.choices[i].delta.tool_calls for c in chunks if len(c.choices) >= i
+            )
+        )
+        > 0
+    ):
+        message.tool_calls = _make_tool_calls(tool_calls_list)
+
+    choice = openai.types.chat.chat_completion.Choice(
         finish_reason=pytilpack.python_.coalesce(
             (c.choices[i].finish_reason for c in chunks if len(c.choices) >= i), "stop"
         ),
         index=i,
-        logprobs=(
-            None
-            if logprobs is None
-            else openai.types.chat.chat_completion.ChoiceLogprobs(
-                content=logprobs.content
-            )
-        ),
-        message=openai.types.chat.ChatCompletionMessage(
-            content="".join(
-                pytilpack.python_.remove_none(
-                    c.choices[i].delta.content for c in chunks if len(c.choices) >= i
-                )
-            ),
-            # role=pytilpack.python_.coalesce(
-            #     (c.choices[i].delta.role for c in chunks if len(c.choices) >= i),
-            #     "assistant",
-            # ),
-            role="assistant",
-            function_call=_make_function_call(
-                pytilpack.python_.remove_none(
-                    c.choices[i].delta.function_call
-                    for c in chunks
-                    if len(c.choices) >= i
-                )
-            ),
-            tool_calls=_make_tool_calls(
-                pytilpack.python_.remove_none(
-                    c.choices[i].delta.tool_calls for c in chunks if len(c.choices) >= i
-                )
-            ),
-        ),
+        message=message,
     )
+    if (
+        logprobs := pytilpack.python_.coalesce(
+            c.choices[i].logprobs for c in chunks if len(c.choices) >= i
+        )
+    ) is not None:
+        choice.logprobs = openai.types.chat.chat_completion.ChoiceLogprobs(
+            content=logprobs.content
+        )
+    return choice
 
 
 def _make_function_call(

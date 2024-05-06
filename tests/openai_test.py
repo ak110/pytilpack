@@ -111,14 +111,12 @@ def test_gather_chunks_stream(data_dir: pathlib.Path):
                     message=openai.types.chat.ChatCompletionMessage(
                         content="1+1=2", role="assistant"
                     ),
-                    logprobs=None,
                 )
             ],
             created=1714970340,
             model="gpt-3.5-turbo-0125",
             object="chat.completion",
             system_fingerprint="fp_a450710239",
-            usage=None,
         )
         assert actual.model_dump() == expected.model_dump()
 
@@ -153,20 +151,17 @@ def test_gather_chunks_function1(data_dir: pathlib.Path):
                     finish_reason="tool_calls",
                     index=0,
                     message=openai.types.chat.ChatCompletionMessage(
-                        content="",
                         role="assistant",
                         tool_calls=[
-                            {
-                                "function": {
-                                    "arguments": '{"expression":"1+1"}',
-                                    "name": "calculator",
-                                },
-                                "id": "call_flA5AHMfQwJYLsdQFXSk81YA",
-                                "type": "function",
-                            }
+                            openai.types.chat.ChatCompletionMessageToolCall(
+                                id="call_flA5AHMfQwJYLsdQFXSk81YA",
+                                function=openai.types.chat.chat_completion_message_tool_call.Function(
+                                    arguments='{"expression":"1+1"}', name="calculator"
+                                ),
+                                type="function",
+                            )
                         ],
                     ),
-                    logprobs=None,
                 )
             ],
             created=1714971281,
@@ -210,13 +205,11 @@ def test_gather_chunks_function2(data_dir: pathlib.Path):
                     message=openai.types.chat.ChatCompletionMessage(
                         content="The result of 1 + 1 is 789.", role="assistant"
                     ),
-                    logprobs=None,
                 )
             ],
             created=1714971254,
             model="gpt-3.5-turbo-0125",
             object="chat.completion",
             system_fingerprint="fp_3b956da36b",
-            usage=None,
         )
         assert actual.model_dump() == expected.model_dump()
