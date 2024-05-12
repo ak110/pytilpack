@@ -19,6 +19,7 @@ style = "pep440"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
+html5lib = {version = "*", optional = true}
 flask = {version = ">=2.2", optional = true}
 httpx = {version = "*", optional = true}
 openai = {version = ">=1.25", optional = true}
@@ -33,6 +34,7 @@ pyfltr = "*"
 
 [tool.poetry.extras]
 all = [
+    "html5lib",
     "flask",
     "httpx",
     "openai",
@@ -41,6 +43,7 @@ all = [
     "tiktoken",
     "tqdm",
 ]
+html5lib = ["html5lib"]
 flask = ["flask"]
 openai = ["openai"]
 sqlalchemy = ["sqlalchemy"]
