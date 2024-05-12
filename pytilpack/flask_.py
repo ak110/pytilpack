@@ -101,7 +101,7 @@ def run(app: flask.Flask, host: str = "localhost", port: int = 5000):
         thread.join()
 
 
-def assert_http(response, status_code: int = 200) -> bytes:
+def assert_bytes(response, status_code: int = 200) -> bytes:
     """flaskのテストコード用。
 
     Args:
