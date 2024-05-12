@@ -1509,9 +1509,9 @@ MarkupSafe = ">=2.1.1"
 watchdog = ["watchdog (>=2.3)"]
 
 [extras]
-all = ["flask", "html5lib", "httpx", "openai", "pillow", "sqlalchemy", "tiktoken", "tqdm"]
+all = ["flask", "html5lib", "httpx", "openai", "pillow", "pytest", "sqlalchemy", "tiktoken", "tqdm"]
 flask = ["flask"]
-html5lib = ["html5lib"]
+flask-dev = ["flask", "html5lib", "pytest"]
 openai = ["openai"]
 sqlalchemy = ["sqlalchemy"]
 tiktoken = ["httpx", "openai", "pillow", "tiktoken"]
@@ -1520,4 +1520,4 @@ tqdm = ["tqdm"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<4.0"
-content-hash = "8005ee6c4e921a4fbd2ed577ec2bed6e5a78098a7cb259144e82934cfe2f9b2b"
+content-hash = "c05455e71c56b1213d2241df7de9f35862d73085d471e357398f93cff54fe3b0"

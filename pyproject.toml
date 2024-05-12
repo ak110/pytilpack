@@ -19,14 +19,15 @@ style = "pep440"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
+flask = {version = ">=2.0", optional = true}
 html5lib = {version = "*", optional = true}
-flask = {version = ">=2.2", optional = true}
 httpx = {version = "*", optional = true}
 openai = {version = ">=1.25", optional = true}
 pillow = {version = "*", optional = true}
+pytest = {version = "*", optional = true}
 sqlalchemy = {version = ">=2.0", optional = true}
 tiktoken = {version = ">=0.6", optional = true}
-tqdm = {version = ">=4.66", optional = true}
+tqdm = {version = ">=4.0", optional = true}
 typing-extensions = ">=4.0"
 
 [tool.poetry.group.dev.dependencies]
@@ -34,17 +35,18 @@ pyfltr = "*"
 
 [tool.poetry.extras]
 all = [
-    "html5lib",
     "flask",
+    "html5lib",
     "httpx",
     "openai",
     "pillow",
+    "pytest",
     "sqlalchemy",
     "tiktoken",
     "tqdm",
 ]
-html5lib = ["html5lib"]
 flask = ["flask"]
+flask-dev = ["flask", "html5lib", "pytest"]
 openai = ["openai"]
 sqlalchemy = ["sqlalchemy"]
 tiktoken = ["tiktoken", "openai", "httpx", "pillow"]

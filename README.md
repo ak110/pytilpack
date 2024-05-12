@@ -10,6 +10,13 @@ Pythonの各種ライブラリのユーティリティ集。
 
 ```bash
 pip install pytilpack
+# pip install pytilpack[all]
+# pip install pytilpack[flask]
+# pip install pytilpack[flask-dev]  # pytest用
+# pip install pytilpack[openai]
+# pip install pytilpack[sqlalchemy]
+# pip install pytilpack[tiktoken]
+# pip install pytilpack[tqdm]
 ```
 
 ## 使い方
