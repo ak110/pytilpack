@@ -370,6 +370,21 @@ async = ["asgiref (>=3.2)"]
 dotenv = ["python-dotenv"]
 
 [[package]]
+name = "flask-login"
+version = "0.6.3"
+description = "User authentication and session management for Flask."
+optional = true
+python-versions = ">=3.7"
+files = [
+    {file = "Flask-Login-0.6.3.tar.gz", hash = "sha256:5e23d14a607ef12806c699590b89d0f0e0d67baeec599d75947bf9c147330333"},
+    {file = "Flask_Login-0.6.3-py3-none-any.whl", hash = "sha256:849b25b82a436bf830a054e74214074af59097171562ab10bfa999e6b78aae5d"},
+]
+
+[package.dependencies]
+Flask = ">=1.0.4"
+Werkzeug = ">=1.0.1"
+
+[[package]]
 name = "greenlet"
 version = "3.0.3"
 description = "Lightweight in-process concurrent programming"
@@ -1509,9 +1524,10 @@ MarkupSafe = ">=2.1.1"
 watchdog = ["watchdog (>=2.3)"]
 
 [extras]
-all = ["flask", "html5lib", "httpx", "openai", "pillow", "pytest", "sqlalchemy", "tiktoken", "tqdm"]
+all = ["flask", "flask-login", "html5lib", "httpx", "openai", "pillow", "pytest", "sqlalchemy", "tiktoken", "tqdm"]
 flask = ["flask"]
 flask-dev = ["flask", "html5lib", "pytest"]
+flask-login = ["flask", "flask-login"]
 openai = ["openai"]
 sqlalchemy = ["sqlalchemy"]
 tiktoken = ["httpx", "openai", "pillow", "tiktoken"]
@@ -1520,4 +1536,4 @@ tqdm = ["tqdm"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<4.0"
-content-hash = "c05455e71c56b1213d2241df7de9f35862d73085d471e357398f93cff54fe3b0"
+content-hash = "09d2a9218bd95b07d1702d078fd71d70d36071053a413f95c61246b021ca6c33"

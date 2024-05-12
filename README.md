@@ -13,6 +13,7 @@ pip install pytilpack
 # pip install pytilpack[all]
 # pip install pytilpack[flask]
 # pip install pytilpack[flask-dev]  # pytest用
+# pip install pytilpack[flask-login]
 # pip install pytilpack[openai]
 # pip install pytilpack[sqlalchemy]
 # pip install pytilpack[tiktoken]
@@ -28,10 +29,11 @@ import pytilpack.xxx_
 xxxのところは各種モジュール名。`openai`とか`pathlib`とか。
 それぞれのモジュールに関連するユーティリティ関数などが入っている。
 
-## モジュール一覧
+### モジュール一覧
 
 - [pytilpack.csv_](pytilpack/csv_.py)
 - [pytilpack.flask_](pytilpack/flask_.py)
+- [pytilpack.flask_login_](pytilpack/flask_.py)
 - [pytilpack.openai_](pytilpack/openai_.py)
 - [pytilpack.pathlib_](pytilpack/pathlib_.py)
 - [pytilpack.python_](pytilpack/python_.py)
