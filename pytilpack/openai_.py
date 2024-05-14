@@ -22,11 +22,11 @@ def gather_chunks(
         )
     max_choices = max(len(chunk.choices) for chunk in chunks)
     choices = [_make_choice(chunks, i) for i in range(max_choices)]
-    response = openai.types.chat.ChatCompletion(
-        id=chunks[0].id,
+    response = openai.types.chat.ChatCompletion.model_construct(
+        id=pytilpack.python_.coalesce((c.id for c in chunks), ""),
         choices=choices,
-        created=chunks[0].created,
-        model=chunks[0].model,
+        created=pytilpack.python_.coalesce((c.created for c in chunks), 0),
+        model=pytilpack.python_.coalesce((c.model for c in chunks), ""),
         object="chat.completion",
     )
     if (
@@ -42,7 +42,7 @@ def _make_choice(
     chunks: list[openai.types.chat.ChatCompletionChunk], i: int
 ) -> openai.types.chat.chat_completion.Choice:
     """ストリーミングのチャンクからChoiceを作成する。"""
-    message = openai.types.chat.ChatCompletionMessage(role="assistant")
+    message = openai.types.chat.ChatCompletionMessage.model_construct(role="assistant")
     if (
         len(
             content := pytilpack.python_.remove_none(
@@ -71,7 +71,7 @@ def _make_choice(
     ):
         message.tool_calls = _make_tool_calls(tool_calls_list)
 
-    choice = openai.types.chat.chat_completion.Choice(
+    choice = openai.types.chat.chat_completion.Choice.model_construct(
         finish_reason=pytilpack.python_.coalesce(
             (c.choices[i].finish_reason for c in chunks if len(c.choices) >= i), "stop"
         ),
@@ -83,8 +83,10 @@ def _make_choice(
             c.choices[i].logprobs for c in chunks if len(c.choices) >= i
         )
     ) is not None:
-        choice.logprobs = openai.types.chat.chat_completion.ChoiceLogprobs(
-            content=logprobs.content
+        choice.logprobs = (
+            openai.types.chat.chat_completion.ChoiceLogprobs.model_construct(
+                content=logprobs.content
+            )
         )
     return choice
 
@@ -95,7 +97,7 @@ def _make_function_call(
     """ChoiceDeltaFunctionCallを作成する。"""
     if len(deltas) == 0:
         return None
-    return openai.types.chat.chat_completion_message.FunctionCall(
+    return openai.types.chat.chat_completion_message.FunctionCall.model_construct(
         arguments="".join(d.arguments for d in deltas if d.arguments is not None),
         name="".join(d.name for d in deltas if d.name is not None),
     )
@@ -128,9 +130,9 @@ def _make_tool_call(
     functions = pytilpack.python_.remove_none(
         deltas[i].function for deltas in deltas_list
     )
-    return openai.types.chat.chat_completion_message.ChatCompletionMessageToolCall(
+    return openai.types.chat.chat_completion_message.ChatCompletionMessageToolCall.model_construct(
         id=pytilpack.python_.coalesce((deltas[i].id for deltas in deltas_list), ""),
-        function=openai.types.chat.chat_completion_message_tool_call.Function(
+        function=openai.types.chat.chat_completion_message_tool_call.Function.model_construct(
             arguments="".join(
                 pytilpack.python_.remove_none(f.arguments for f in functions)
             ),
