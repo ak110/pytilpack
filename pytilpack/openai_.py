@@ -6,7 +6,7 @@ import typing
 import openai
 import openai.types.chat
 
-import pytilpack.python_
+from pytilpack.python_ import coalesce, remove_none
 
 logger = logging.getLogger(__name__)
 
@@ -23,16 +23,14 @@ def gather_chunks(
     max_choices = max(len(chunk.choices) for chunk in chunks)
     choices = [_make_choice(chunks, i) for i in range(max_choices)]
     response = openai.types.chat.ChatCompletion.model_construct(
-        id=pytilpack.python_.coalesce((c.id for c in chunks), ""),
+        id=coalesce((c.id for c in chunks), ""),
         choices=choices,
-        created=pytilpack.python_.coalesce((c.created for c in chunks), 0),
-        model=pytilpack.python_.coalesce((c.model for c in chunks), ""),
+        created=coalesce((c.created for c in chunks), 0),
+        model=coalesce((c.model for c in chunks), ""),
         object="chat.completion",
     )
     if (
-        system_fingerprint := pytilpack.python_.coalesce(
-            c.system_fingerprint for c in chunks
-        )
+        system_fingerprint := coalesce(c.system_fingerprint for c in chunks)
     ) is not None:
         response.system_fingerprint = system_fingerprint
     return response
@@ -45,7 +43,7 @@ def _make_choice(
     message = openai.types.chat.ChatCompletionMessage.model_construct(role="assistant")
     if (
         len(
-            content := pytilpack.python_.remove_none(
+            content := remove_none(
                 c.choices[i].delta.content for c in chunks if len(c.choices) >= i
             )
         )
@@ -54,7 +52,7 @@ def _make_choice(
         message.content = "".join(content)
     if (
         len(
-            function_calls := pytilpack.python_.remove_none(
+            function_calls := remove_none(
                 c.choices[i].delta.function_call for c in chunks if len(c.choices) >= i
             )
         )
@@ -63,7 +61,7 @@ def _make_choice(
         message.function_call = _make_function_call(function_calls)
     if (
         len(
-            tool_calls_list := pytilpack.python_.remove_none(
+            tool_calls_list := remove_none(
                 c.choices[i].delta.tool_calls for c in chunks if len(c.choices) >= i
             )
         )
@@ -72,14 +70,14 @@ def _make_choice(
         message.tool_calls = _make_tool_calls(tool_calls_list)
 
     choice = openai.types.chat.chat_completion.Choice.model_construct(
-        finish_reason=pytilpack.python_.coalesce(
+        finish_reason=coalesce(
             (c.choices[i].finish_reason for c in chunks if len(c.choices) >= i), "stop"
         ),
         index=i,
         message=message,
     )
     if (
-        logprobs := pytilpack.python_.coalesce(
+        logprobs := coalesce(
             c.choices[i].logprobs for c in chunks if len(c.choices) >= i
         )
     ) is not None:
@@ -127,18 +125,12 @@ def _make_tool_call(
 ) -> openai.types.chat.chat_completion_message.ChatCompletionMessageToolCall:
     """ChoiceDeltaToolCallを作成する。"""
     deltas_list = [deltas for deltas in deltas_list if len(deltas) >= i]
-    functions = pytilpack.python_.remove_none(
-        deltas[i].function for deltas in deltas_list
-    )
+    functions = remove_none(deltas[i].function for deltas in deltas_list)
     return openai.types.chat.chat_completion_message.ChatCompletionMessageToolCall.model_construct(
-        id=pytilpack.python_.coalesce((deltas[i].id for deltas in deltas_list), ""),
+        id=coalesce((deltas[i].id for deltas in deltas_list), ""),
         function=openai.types.chat.chat_completion_message_tool_call.Function.model_construct(
-            arguments="".join(
-                pytilpack.python_.remove_none(f.arguments for f in functions)
-            ),
-            name="".join(pytilpack.python_.remove_none(f.name for f in functions)),
+            arguments="".join(remove_none(f.arguments for f in functions)),
+            name="".join(remove_none(f.name for f in functions)),
         ),
-        type=pytilpack.python_.coalesce(
-            (deltas[i].type for deltas in deltas_list), "function"
-        ),
+        type=coalesce((deltas[i].type for deltas in deltas_list), "function"),
     )

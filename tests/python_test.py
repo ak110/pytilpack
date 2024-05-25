@@ -1,7 +1,5 @@
 """テストコード。"""
 
-import pytest
-
 import pytilpack.python_
 
 
@@ -19,41 +17,23 @@ def test_remove_none():
     assert pytilpack.python_.remove_none([1, None, 2]) == [1, 2]
 
 
-def test_is_null_or_empty():
-    assert pytilpack.python_.is_null_or_empty(None)
-    assert pytilpack.python_.is_null_or_empty("")
-    assert pytilpack.python_.is_null_or_empty([])
-    assert not pytilpack.python_.is_null_or_empty(" ")
-    assert not pytilpack.python_.is_null_or_empty([0])
-    assert not pytilpack.python_.is_null_or_empty(0)
+def test_empty():
+    from pytilpack.python_ import empty
+
+    assert empty(None)
+    assert empty("")
+    assert empty([])
+    assert not empty(" ")
+    assert not empty([0])
+    assert not empty(0)
 
 
-def test_default_if_null_or_empty():
-    assert pytilpack.python_.default_if_null_or_empty(None, 123) == 123
-    assert pytilpack.python_.default_if_null_or_empty("", "123") == "123"
-    assert pytilpack.python_.default_if_null_or_empty([], [123]) == [123]
-    assert pytilpack.python_.default_if_null_or_empty(" ", "123") == " "
-    assert pytilpack.python_.default_if_null_or_empty([0], [123]) == [0]
-    assert pytilpack.python_.default_if_null_or_empty(0, 123) == 0
+def test_default():
+    from pytilpack.python_ import default
 
-
-def test_retry_1():
-    @pytilpack.python_.retry(2, initial_delay=0, exponential_base=0)
-    def f():
-        f.call_count += 1
-
-    f.call_count = 0
-    f()
-    assert f.call_count == 1
-
-
-def test_retry_2():
-    @pytilpack.python_.retry(2, initial_delay=0, exponential_base=0)
-    def f():
-        f.call_count += 1
-        raise RuntimeError("test")
-
-    f.call_count = 0
-    with pytest.raises(RuntimeError):
-        f()
-    assert f.call_count == 3
+    assert default(None, 123) == 123
+    assert default("", "123") == "123"
+    assert default([], [123]) == [123]
+    assert default(" ", "123") == " "
+    assert default([0], [123]) == [0]
+    assert default(0, 123) == 0
