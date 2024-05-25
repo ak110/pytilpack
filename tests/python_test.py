@@ -15,3 +15,21 @@ def test_remove_none():
     assert pytilpack.python_.remove_none([]) == []
     assert pytilpack.python_.remove_none([None]) == []
     assert pytilpack.python_.remove_none([1, None, 2]) == [1, 2]
+
+
+def test_is_null_or_empty():
+    assert pytilpack.python_.is_null_or_empty(None)
+    assert pytilpack.python_.is_null_or_empty("")
+    assert pytilpack.python_.is_null_or_empty([])
+    assert not pytilpack.python_.is_null_or_empty(" ")
+    assert not pytilpack.python_.is_null_or_empty([0])
+    assert not pytilpack.python_.is_null_or_empty(0)
+
+
+def test_default_if_null_or_empty():
+    assert pytilpack.python_.default_if_null_or_empty(None, 123) == 123
+    assert pytilpack.python_.default_if_null_or_empty("", "123") == "123"
+    assert pytilpack.python_.default_if_null_or_empty([], [123]) == [123]
+    assert pytilpack.python_.default_if_null_or_empty(" ", "123") == " "
+    assert pytilpack.python_.default_if_null_or_empty([0], [123]) == [0]
+    assert pytilpack.python_.default_if_null_or_empty(0, 123) == 0
