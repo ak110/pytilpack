@@ -1,6 +1,7 @@
 """テストコード。"""
 
 import logging
+import sys
 
 import pytilpack.tqdm_
 
@@ -27,3 +28,11 @@ def test_tqdm_stream_handler(capsys):
         )
     finally:
         logger.removeHandler(pytilpack.tqdm_.TqdmStreamHandler())
+
+
+def test_capture(capsys):
+    """captureのテスト。"""
+    with pytilpack.tqdm_.capture():
+        print("stderr", file=sys.stderr)
+        print("stdout")
+    assert capsys.readouterr() == ("stdout\n", "stderr\n")
