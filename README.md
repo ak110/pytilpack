@@ -18,6 +18,7 @@ pip install pytilpack
 # pip install pytilpack[sqlalchemy]
 # pip install pytilpack[tiktoken]
 # pip install pytilpack[tqdm]
+# pip install pytilpack[yaml]
 ```
 
 ## 使い方
@@ -43,3 +44,4 @@ xxxのところは各種モジュール名。`openai`とか`pathlib`とか。
 - [pytilpack.sqlalchemy_](pytilpack/sqlalchemy_.py)
 - [pytilpack.tiktoken_](pytilpack/tiktoken_.py)
 - [pytilpack.tqdm_](pytilpack/tqdm_.py)
+- [pytilpack.yaml_](pytilpack/yaml_.py)
