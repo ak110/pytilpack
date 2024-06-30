@@ -71,9 +71,13 @@ def wait_for_connection(url: str, timeout: float = 10.0) -> None:
             time.sleep(1)
 
 
-def safe_close(session: sqlalchemy.orm.Session):
+def safe_close(
+    session: sqlalchemy.orm.Session | sqlalchemy.orm.scoped_session,
+    log_level: int | None = logging.DEBUG,
+):
     """例外を出さずにセッションをクローズ。"""
     try:
         session.close()
     except Exception:
-        pass
+        if log_level is not None:
+            logger.log(log_level, "セッションクローズ失敗", exc_info=True)
