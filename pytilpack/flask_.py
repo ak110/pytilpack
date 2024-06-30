@@ -55,7 +55,7 @@ def get_next_url() -> str:
     return next_
 
 
-def get_safe_url(target: str, host_url: str, default_url: str) -> str:
+def get_safe_url(target: str | None, host_url: str, default_url: str) -> str:
     """ログイン時のリダイレクトとして安全なURLを返す。"""
     if target is None or target == "":
         return default_url
