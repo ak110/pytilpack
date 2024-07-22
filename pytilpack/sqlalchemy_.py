@@ -5,6 +5,7 @@ import time
 
 import sqlalchemy
 import sqlalchemy.orm
+import sqlalchemy.sql.elements
 
 try:
     from typing import Self  # type: ignore[attr-defined]
@@ -81,3 +82,54 @@ def safe_close(
     except Exception:
         if log_level is not None:
             logger.log(log_level, "セッションクローズ失敗", exc_info=True)
+
+
+def describe(metadata: sqlalchemy.MetaData) -> str:
+    """DBのテーブル構造を文字列化する。"""
+    return "\n".join([describe_table(table) for table in metadata.sorted_tables])
+
+
+def describe_table(table: sqlalchemy.schema.Table) -> str:
+    """テーブル構造を文字列化する。"""
+    import tabulate
+
+    headers = ["Field", "Type", "Null", "Key", "Default", "Extra"]
+    rows = []
+    for column in table.columns:
+        key = ""
+        if column.primary_key:
+            key = "PRI"
+        elif column.unique:
+            key = "UNI"
+        elif column.index:
+            key = "MUL"
+
+        extra = ""
+        if column.autoincrement and column.primary_key:
+            extra = "auto_increment"
+
+        default = ""
+        if column.default is None:
+            default = "NULL"
+        elif isinstance(column.default, sqlalchemy.sql.elements.CompilerElement):
+            default = str(
+                column.default.compile(compile_kwargs={"literal_binds": True})
+            )
+        elif hasattr(column.default, "arg"):
+            default = str(column.default.arg)
+        else:
+            default = str(column.default)
+
+        rows.append(
+            [
+                column.name,
+                str(column.type),
+                "YES" if column.nullable else "NO",
+                key,
+                default,
+                extra,
+            ]
+        )
+    table_description = tabulate.tabulate(rows, headers=headers, tablefmt="grid")
+
+    return f"Table: {table.name}\n{table_description}\n"
