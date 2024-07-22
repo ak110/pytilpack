@@ -100,4 +100,4 @@ show_error_codes = true
 
 [tool.pytest.ini_options]
 # https://docs.pytest.org/en/latest/reference/reference.html#ini-options-ref
-addopts = "--showlocals -p no:cacheprovider"
+addopts = "--showlocals -p no:cacheprovider -vv"

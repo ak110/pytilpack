@@ -118,17 +118,20 @@ def describe_table(
         if column.autoincrement and column.primary_key:
             extra = "auto_increment"
 
-        default = ""
-        if column.default is None:
+        default_value = (
+            column.default.arg
+            if column.default is not None and hasattr(column.default, "arg")
+            else column.default
+        )
+        default: str
+        if default_value is None:
             default = "NULL"
-        elif isinstance(column.default, sqlalchemy.sql.elements.CompilerElement):
-            default = str(
-                column.default.compile(compile_kwargs={"literal_binds": True})
-            )
-        elif hasattr(column.default, "arg"):
-            default = str(column.default.arg)
+        elif callable(default_value):
+            default = "(function)"
+        elif isinstance(default_value, sqlalchemy.sql.elements.CompilerElement):
+            default = str(default_value.compile(compile_kwargs={"literal_binds": True}))
         else:
-            default = str(column.default)
+            default = str(default_value)
 
         rows.append(
             [
