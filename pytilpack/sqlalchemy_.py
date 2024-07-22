@@ -2,6 +2,7 @@
 
 import logging
 import time
+import typing
 
 import sqlalchemy
 import sqlalchemy.orm
@@ -11,6 +12,9 @@ try:
     from typing import Self  # type: ignore[attr-defined]
 except ImportError:
     from typing_extensions import Self
+
+if typing.TYPE_CHECKING:
+    import tabulate
 
 logger = logging.getLogger(__name__)
 
@@ -84,12 +88,18 @@ def safe_close(
             logger.log(log_level, "セッションクローズ失敗", exc_info=True)
 
 
-def describe(metadata: sqlalchemy.MetaData) -> str:
+def describe(
+    metadata: sqlalchemy.MetaData, tablefmt: "str | tabulate.TableFormat" = "grid"
+) -> str:
     """DBのテーブル構造を文字列化する。"""
-    return "\n".join([describe_table(table) for table in metadata.sorted_tables])
+    return "\n".join(
+        [describe_table(table, tablefmt=tablefmt) for table in metadata.sorted_tables]
+    )
 
 
-def describe_table(table: sqlalchemy.schema.Table) -> str:
+def describe_table(
+    table: sqlalchemy.schema.Table, tablefmt: "str | tabulate.TableFormat" = "grid"
+) -> str:
     """テーブル構造を文字列化する。"""
     import tabulate
 
@@ -130,6 +140,6 @@ def describe_table(table: sqlalchemy.schema.Table) -> str:
                 extra,
             ]
         )
-    table_description = tabulate.tabulate(rows, headers=headers, tablefmt="grid")
+    table_description = tabulate.tabulate(rows, headers=headers, tablefmt=tablefmt)
 
     return f"Table: {table.name}\n{table_description}\n"
