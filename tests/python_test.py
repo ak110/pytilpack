@@ -37,3 +37,11 @@ def test_default():
     assert default(" ", "123") == " "
     assert default([0], [123]) == [0]
     assert default(0, 123) == 0
+
+
+def test_doc_summary():
+    from pytilpack.python_ import doc_summary
+
+    assert doc_summary(None) == ""
+    assert doc_summary(0) == ""
+    assert doc_summary(doc_summary) == "docstringの先頭1行分を取得する。"

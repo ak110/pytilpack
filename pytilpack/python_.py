@@ -52,3 +52,20 @@ def default(x: typing.Any, default_value: T) -> T:
 
     """
     return default_value if empty(x) else x
+
+
+def doc_summary(obj: typing.Any) -> str:
+    """docstringの先頭1行分を取得する。
+
+    Args:
+        obj: ドキュメント文字列を取得する対象。
+
+    Returns:
+        docstringの先頭1行分の文字列。取得できなかった場合は""。
+
+    """
+    return (
+        obj.__doc__.strip().split("\n", 1)[0]
+        if hasattr(obj, "__doc__") and not empty(obj.__doc__)
+        else ""
+    )
