@@ -204,8 +204,8 @@ class ProxyFix(werkzeug.middleware.proxy_fix.ProxyFix):
         flaskapp: flask.Flask,
         x_for: int = 1,
         x_proto: int = 1,
-        x_host: int = 1,
-        x_port: int = 1,
+        x_host: int = 0,
+        x_port: int = 0,
         x_prefix: int = 1,
     ):
         super().__init__(
