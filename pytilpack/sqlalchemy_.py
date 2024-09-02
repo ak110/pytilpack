@@ -47,7 +47,7 @@ class IDMixin:
         return q.one_or_none()
 
 
-def wait_for_connection(url: str, timeout: float = 10.0) -> None:
+def wait_for_connection(url: str, timeout: float = 60.0) -> None:
     """DBに接続可能になるまで待機する。"""
     failed = False
     start_time = time.time()
