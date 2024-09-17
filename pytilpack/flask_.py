@@ -122,7 +122,7 @@ def assert_bytes(response, status_code: int = 200) -> bytes:
         # エラーをraise
         assert (
             response.status_code == status_code
-        ), f"ステータスコードエラー: {response.status_code} != {status_code}\n\n{response_body}"
+        ), f"ステータスコードエラー: {response.status_code} != {status_code}\n\n{response_body!r}"
 
     return response_body
 

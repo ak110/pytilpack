@@ -1,5 +1,6 @@
 """FastAPI関連のユーティリティ。"""
 
+import io
 import logging
 import typing
 
@@ -28,7 +29,7 @@ def assert_bytes(response: httpx.Response, status_code: int = 200) -> bytes:
         # エラーをraise
         assert (
             response.status_code == status_code
-        ), f"ステータスコードエラー: {response.status_code} != {status_code}\n\n{response_body}"
+        ), f"ステータスコードエラー: {response.status_code} != {status_code}\n\n{response_body!r}"
 
     return response_body
 
@@ -56,7 +57,7 @@ def assert_html(response: httpx.Response, status_code: int = 200) -> str:
     # HTMLのチェック
     parser = html5lib.HTMLParser(strict=True)
     try:
-        _ = parser.parse(response.data)
+        _ = parser.parse(io.BytesIO(response.content))
     except html5lib.html5parser.ParseError as e:
         raise AssertionError(f"HTMLエラー: {e}\n\n{response_body}") from e
 
@@ -93,4 +94,4 @@ def assert_json(
             response.status_code == status_code
         ), f"ステータスコードエラー: {response.status_code} != {status_code}\n\n{response_body}"
 
-    return response.json
+    return response.json()
