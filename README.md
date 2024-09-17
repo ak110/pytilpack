@@ -33,6 +33,7 @@ xxxのところは各種モジュール名。`openai`とか`pathlib`とか。
 ### モジュール一覧
 
 - [pytilpack.csv_](pytilpack/csv_.py)
+- [pytilpack.fastapi_](pytilpack/fastapi_.py)
 - [pytilpack.flask_](pytilpack/flask_.py)
 - [pytilpack.flask_login_](pytilpack/flask_.py)
 - [pytilpack.functools_](pytilpack/functools_.py)
