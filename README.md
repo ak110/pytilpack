@@ -11,8 +11,8 @@ Pythonの各種ライブラリのユーティリティ集。
 ```bash
 pip install pytilpack
 # pip install pytilpack[all]
+# pip install pytilpack[fastapi]
 # pip install pytilpack[flask]
-# pip install pytilpack[flask-dev]  # pytest用
 # pip install pytilpack[flask-login]
 # pip install pytilpack[openai]
 # pip install pytilpack[sqlalchemy]
