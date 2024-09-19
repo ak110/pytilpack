@@ -23,6 +23,8 @@ pip install pytilpack
 
 ## 使い方
 
+### 各種ライブラリ用のユーティリティ
+
 ```python
 import pytilpack.xxx_
 ```
@@ -30,7 +32,17 @@ import pytilpack.xxx_
 xxxのところは各種モジュール名。`openai`とか`pathlib`とか。
 それぞれのモジュールに関連するユーティリティ関数などが入っている。
 
+### その他のユーティリティ
+
+```python
+import pytilpack.xxx
+```
+
+特定のライブラリに依存しないユーティリティ関数などが入っている。
+
 ### モジュール一覧
+
+### 各種ライブラリ用のユーティリティ
 
 - [pytilpack.csv_](pytilpack/csv_.py)
 - [pytilpack.fastapi_](pytilpack/fastapi_.py)
@@ -46,3 +58,7 @@ xxxのところは各種モジュール名。`openai`とか`pathlib`とか。
 - [pytilpack.tiktoken_](pytilpack/tiktoken_.py)
 - [pytilpack.tqdm_](pytilpack/tqdm_.py)
 - [pytilpack.yaml_](pytilpack/yaml_.py)
+
+### その他のユーティリティ
+
+- [pytilpack.data_url](pytilpack/data_url.py)  # データURL関連
