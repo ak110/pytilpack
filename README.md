@@ -45,6 +45,7 @@ import pytilpack.xxx
 ### 各種ライブラリ用のユーティリティ
 
 - [pytilpack.csv_](pytilpack/csv_.py)
+- [pytilpack.dataclasses_](pytilpack/dataclasses_.py)
 - [pytilpack.fastapi_](pytilpack/fastapi_.py)
 - [pytilpack.flask_](pytilpack/flask_.py)
 - [pytilpack.flask_login_](pytilpack/flask_.py)

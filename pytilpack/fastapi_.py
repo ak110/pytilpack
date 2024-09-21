@@ -25,11 +25,14 @@ def assert_bytes(response: httpx.Response, status_code: int = 200) -> bytes:
     """
     response_body = response.content
 
+    # ステータスコードチェック
     if response.status_code != status_code:
-        # エラーをraise
-        assert (
-            response.status_code == status_code
-        ), f"ステータスコードエラー: {response.status_code} != {status_code}\n\n{response_body!r}"
+        logger.info(
+            f"ステータスコードエラー: {response.status_code} != {status_code}\n\n{response_body!r}"
+        )
+        raise AssertionError(
+            f"ステータスコードエラー: {response.status_code} != {status_code})"
+        )
 
     return response_body
 
@@ -55,17 +58,21 @@ def assert_html(response: httpx.Response, status_code: int = 200) -> str:
     response_body = response.text
 
     # HTMLのチェック
-    parser = html5lib.HTMLParser(strict=True)
+    parser = html5lib.HTMLParser(strict=True, debug=True)
     try:
         _ = parser.parse(io.BytesIO(response.content))
     except html5lib.html5parser.ParseError as e:
-        raise AssertionError(f"HTMLエラー: {e}\n\n{response_body}") from e
+        logger.info(f"HTMLエラー: {e}\n\n{response_body}")
+        raise AssertionError(f"HTMLエラー: {e}") from e
 
+    # ステータスコードチェック
     if response.status_code != status_code:
-        # エラーをraise
-        assert (
-            response.status_code == status_code
-        ), f"ステータスコードエラー: {response.status_code} != {status_code}\n\n{response_body}"
+        logger.info(
+            f"ステータスコードエラー: {response.status_code} != {status_code}\n\n{response_body}"
+        )
+        raise AssertionError(
+            f"ステータスコードエラー: {response.status_code} != {status_code})"
+        )
 
     return response_body
 
@@ -88,10 +95,13 @@ def assert_json(
     """
     response_body = response.text
 
+    # ステータスコードチェック
     if response.status_code != status_code:
-        # エラーをraise
-        assert (
-            response.status_code == status_code
-        ), f"ステータスコードエラー: {response.status_code} != {status_code}\n\n{response_body}"
+        logger.info(
+            f"ステータスコードエラー: {response.status_code} != {status_code}\n\n{response_body}"
+        )
+        raise AssertionError(
+            f"ステータスコードエラー: {response.status_code} != {status_code})"
+        )
 
     return response.json()
