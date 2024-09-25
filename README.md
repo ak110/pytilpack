@@ -44,6 +44,7 @@ import pytilpack.xxx
 
 ### 各種ライブラリ用のユーティリティ
 
+- [pytilpack.asyncio_](pytilpack/asyncio_.py)
 - [pytilpack.csv_](pytilpack/csv_.py)
 - [pytilpack.dataclasses_](pytilpack/dataclasses_.py)
 - [pytilpack.fastapi_](pytilpack/fastapi_.py)
