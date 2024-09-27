@@ -176,6 +176,7 @@ def num_tokens_from_tools(encoding, tools) -> int:
     """
     num_tokens = 0
     for function in tools:
+        function = function.get("function", function)
         try:
             function_tokens = len(encoding.encode(function["name"]))
             function_tokens += len(encoding.encode(function["description"]))
