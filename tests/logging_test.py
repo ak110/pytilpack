@@ -1,26 +1,24 @@
 """テストコード。"""
 
 import logging
-import pathlib
 
 import pytilpack.logging_
 
 
-def test_logging(tmpdir, capsys):
+def test_logging(tmp_path, capsys):
     logger = logging.getLogger(__name__)
     try:
         logger.setLevel(logging.DEBUG)
         logger.addHandler(pytilpack.logging_.stream_handler())
-        logger.addHandler(pytilpack.logging_.file_handler(tmpdir / "test.log"))
+        logger.addHandler(pytilpack.logging_.file_handler(tmp_path / "test.log"))
 
         logger.debug("debug")
         logger.info("info")
         logger.warning("warning")
 
-        assert (
-            pathlib.Path(tmpdir / "test.log").read_text(encoding="utf-8")
-            == "[DEBUG] debug\n[INFO ] info\n[WARNING] warning\n"
-        )
+        assert (tmp_path / "test.log").read_text(
+            encoding="utf-8"
+        ) == "[DEBUG] debug\n[INFO ] info\n[WARNING] warning\n"
         assert capsys.readouterr().err == "[INFO ] info\n[WARNING] warning\n"
     finally:
         for handler in logger.handlers[:]:

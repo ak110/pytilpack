@@ -3,12 +3,12 @@
 import pytilpack.json_
 
 
-def test_load_not_exist(tmpdir):
-    assert pytilpack.json_.load(tmpdir / "not_exist.json") == {}
+def test_load_not_exist(tmp_path):
+    assert pytilpack.json_.load(tmp_path / "not_exist.json") == {}
 
 
-def test_load_save(tmpdir):
-    path = str(tmpdir / "a.json")
+def test_load_save(tmp_path):
+    path = tmp_path / "a.json"
     data = {"a": "💯", "c": 1}
 
     pytilpack.json_.save(path, data)
