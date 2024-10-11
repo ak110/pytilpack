@@ -130,7 +130,9 @@ def assert_bytes(response, status_code: int = 200) -> bytes:
     return response_body
 
 
-def assert_html(response, status_code: int = 200) -> str:
+def assert_html(
+    response, status_code: int = 200, tmp_path: pathlib.Path | None = None
+) -> str:
     """flaskのテストコード用。
 
     html5libが必要なので注意。
@@ -148,23 +150,25 @@ def assert_html(response, status_code: int = 200) -> str:
     """
     import html5lib
 
+    import pytilpack.pytest_
+
     response_body = response.get_data().decode("utf-8")
+
+    tmp_file_path = pytilpack.pytest_.tmp_file_path(tmp_path, suffix=".html")
+    tmp_file_path.write_text(response_body, encoding="utf-8")
+    print(f"HTML: {tmp_file_path}")
 
     # HTMLのチェック
     parser = html5lib.HTMLParser(strict=True, debug=True)
     try:
         _ = parser.parse(response.data)
     except html5lib.html5parser.ParseError as e:
-        logger.info(f"HTMLエラー: {e}\n\n{response_body}")
-        raise AssertionError(f"HTMLエラー: {e}") from e
+        raise AssertionError(f"HTMLエラー: {e} (HTML: {tmp_file_path} )") from e
 
     # ステータスコードチェック
     if response.status_code != status_code:
-        logger.info(
-            f"ステータスコードエラー: {response.status_code} != {status_code}\n\n{response_body}"
-        )
         raise AssertionError(
-            f"ステータスコードエラー: {response.status_code} != {status_code})"
+            f"ステータスコードエラー: {response.status_code} != {status_code} (HTML: {tmp_file_path} )"
         )
 
     return response_body
