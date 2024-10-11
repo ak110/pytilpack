@@ -73,7 +73,7 @@ def doc_summary(obj: typing.Any) -> str:
     )
 
 
-def class_field_comments(cls) -> dict[str, str | None]:
+def class_field_comments(cls: typing.Any) -> dict[str, str | None]:
     """クラスからクラスフィールド毎のコメントを取得する。"""
     source = inspect.getsource(cls)
     lines = source.splitlines()

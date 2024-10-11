@@ -6,7 +6,10 @@ import typing
 
 import sqlalchemy
 import sqlalchemy.orm
+import sqlalchemy.orm.decl_api
 import sqlalchemy.sql.elements
+
+import pytilpack.python_
 
 try:
     from typing import Self  # type: ignore[attr-defined]
@@ -88,22 +91,42 @@ def safe_close(
             logger.log(log_level, "セッションクローズ失敗", exc_info=True)
 
 
-def describe(
-    metadata: sqlalchemy.MetaData, tablefmt: "str | tabulate.TableFormat" = "grid"
-) -> str:
+def describe(Base: typing.Any, tablefmt: "str | tabulate.TableFormat" = "grid") -> str:
     """DBのテーブル構造を文字列化する。"""
     return "\n".join(
-        [describe_table(table, tablefmt=tablefmt) for table in metadata.sorted_tables]
+        [
+            describe_table(table, get_class_by_table(Base, table), tablefmt=tablefmt)
+            for table in Base.metadata.sorted_tables
+        ]
     )
 
 
+def get_class_by_table(Base: typing.Any, table: sqlalchemy.schema.Table):
+    """テーブルからクラスを取得する。"""
+    # https://stackoverflow.com/questions/72325242/type-object-base-has-no-attribute-decl-class-registry
+    for (
+        cls
+    ) in Base.registry._class_registry.values():  # pylint: disable=protected-access
+        if hasattr(cls, "__table__") and cls.__table__ == table:
+            return cls
+    return None
+
+
 def describe_table(
-    table: sqlalchemy.schema.Table, tablefmt: "str | tabulate.TableFormat" = "grid"
+    table: sqlalchemy.schema.Table,
+    orm_class: typing.Any,
+    tablefmt: "str | tabulate.TableFormat" = "grid",
 ) -> str:
     """テーブル構造を文字列化する。"""
     import tabulate
 
-    headers = ["Field", "Type", "Null", "Key", "Default", "Extra"]
+    try:
+        class_field_comments = pytilpack.python_.class_field_comments(orm_class)
+    except Exception as e:
+        logger.warning(f"クラスフィールドコメント取得失敗: {e}")
+        class_field_comments = {}
+
+    headers = ["Field", "Type", "Null", "Key", "Default", "Extra", "Comment"]
     rows = []
     for column in table.columns:
         key = ""
@@ -133,6 +156,17 @@ def describe_table(
         else:
             default = str(default_value)
 
+        # コメントは以下の優先順位で拾う。
+        # doc(DBに反映されないもの) > comment(DBに反映されるもの)
+        #  > class_field_comments(ソースコード上のコメント)
+        comment: str = ""
+        if column.doc:
+            comment = column.doc
+        elif column.comment:
+            comment = column.comment
+        elif column.name in class_field_comments:
+            comment = class_field_comments[column.name] or ""
+
         rows.append(
             [
                 column.name,
@@ -141,6 +175,7 @@ def describe_table(
                 key,
                 default,
                 extra,
+                comment,
             ]
         )
     table_description = tabulate.tabulate(rows, headers=headers, tablefmt=tablefmt)

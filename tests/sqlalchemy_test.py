@@ -29,8 +29,13 @@ class Test2(Base):
     __table_args__ = (sqlalchemy.UniqueConstraint("value1", "value2", name="uc1"),)
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
-    name = sqlalchemy.Column(sqlalchemy.String(250), nullable=False, unique=True)
-    pass_hash = sqlalchemy.Column(sqlalchemy.String(100), default=None)
+    name = sqlalchemy.Column(
+        sqlalchemy.String(250), nullable=False, unique=True, doc="名前"
+    )
+    pass_hash = sqlalchemy.Column(
+        sqlalchemy.String(100), default=None, comment="パスハッシュ"
+    )
+    # 有効フラグ
     enabled = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False, default=True)
     is_admin = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False, default=False)
     value1 = sqlalchemy.Column(sqlalchemy.Integer, nullable=True, default=0)
@@ -70,39 +75,43 @@ def test_id_mixin(session: sqlalchemy.orm.Session) -> None:
 
 def test_describe() -> None:
     """describe()のテスト。"""
+    desc = pytilpack.sqlalchemy_.describe(Base)
+    print(f"{'=' * 64}")
+    print(desc)
+    print(f"{'=' * 64}")
     assert (
-        pytilpack.sqlalchemy_.describe(Base.metadata)
+        desc
         == """\
 Table: test
-+---------+---------+--------+-------+-----------+----------------+
-| Field   | Type    | Null   | Key   | Default   | Extra          |
-+=========+=========+========+=======+===========+================+
-| id      | INTEGER | NO     | PRI   | NULL      | auto_increment |
-+---------+---------+--------+-------+-----------+----------------+
++---------+---------+--------+-------+-----------+----------------+-----------+
+| Field   | Type    | Null   | Key   | Default   | Extra          | Comment   |
++=========+=========+========+=======+===========+================+===========+
+| id      | INTEGER | NO     | PRI   | NULL      | auto_increment |           |
++---------+---------+--------+-------+-----------+----------------+-----------+
 
 Table: test2
-+-----------+--------------+--------+-------+------------+----------------+
-| Field     | Type         | Null   | Key   | Default    | Extra          |
-+===========+==============+========+=======+============+================+
-| id        | INTEGER      | NO     | PRI   | NULL       | auto_increment |
-+-----------+--------------+--------+-------+------------+----------------+
-| name      | VARCHAR(250) | NO     | UNI   | NULL       |                |
-+-----------+--------------+--------+-------+------------+----------------+
-| pass_hash | VARCHAR(100) | YES    |       | NULL       |                |
-+-----------+--------------+--------+-------+------------+----------------+
-| enabled   | BOOLEAN      | NO     |       | True       |                |
-+-----------+--------------+--------+-------+------------+----------------+
-| is_admin  | BOOLEAN      | NO     |       | False      |                |
-+-----------+--------------+--------+-------+------------+----------------+
-| value1    | INTEGER      | YES    |       | 0          |                |
-+-----------+--------------+--------+-------+------------+----------------+
-| value2    | INTEGER      | NO     |       | 512        |                |
-+-----------+--------------+--------+-------+------------+----------------+
-| value3    | FLOAT        | NO     |       | 1.0        |                |
-+-----------+--------------+--------+-------+------------+----------------+
-| value4    | DATETIME     | NO     |       | NULL       |                |
-+-----------+--------------+--------+-------+------------+----------------+
-| value5    | TEXT         | NO     |       | (function) |                |
-+-----------+--------------+--------+-------+------------+----------------+
++-----------+--------------+--------+-------+------------+----------------+-----------+
+| Field     | Type         | Null   | Key   | Default    | Extra          | Comment   |
++===========+==============+========+=======+============+================+===========+
+| id        | INTEGER      | NO     | PRI   | NULL       | auto_increment |           |
++-----------+--------------+--------+-------+------------+----------------+-----------+
+| name      | VARCHAR(250) | NO     | UNI   | NULL       |                | 名前        |
++-----------+--------------+--------+-------+------------+----------------+-----------+
+| pass_hash | VARCHAR(100) | YES    |       | NULL       |                | パスハッシュ    |
++-----------+--------------+--------+-------+------------+----------------+-----------+
+| enabled   | BOOLEAN      | NO     |       | True       |                | 有効フラグ     |
++-----------+--------------+--------+-------+------------+----------------+-----------+
+| is_admin  | BOOLEAN      | NO     |       | False      |                |           |
++-----------+--------------+--------+-------+------------+----------------+-----------+
+| value1    | INTEGER      | YES    |       | 0          |                |           |
++-----------+--------------+--------+-------+------------+----------------+-----------+
+| value2    | INTEGER      | NO     |       | 512        |                |           |
++-----------+--------------+--------+-------+------------+----------------+-----------+
+| value3    | FLOAT        | NO     |       | 1.0        |                |           |
++-----------+--------------+--------+-------+------------+----------------+-----------+
+| value4    | DATETIME     | NO     |       | NULL       |                |           |
++-----------+--------------+--------+-------+------------+----------------+-----------+
+| value5    | TEXT         | NO     |       | (function) |                |           |
++-----------+--------------+--------+-------+------------+----------------+-----------+
 """
     )
