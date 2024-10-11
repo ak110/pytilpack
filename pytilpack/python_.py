@@ -1,5 +1,7 @@
 """Pythonのユーティリティ集。"""
 
+import inspect
+import re
 import typing
 
 T = typing.TypeVar("T")
@@ -69,3 +71,37 @@ def doc_summary(obj: typing.Any) -> str:
         if hasattr(obj, "__doc__") and not empty(obj.__doc__)
         else ""
     )
+
+
+def class_field_comments(cls) -> dict[str, str | None]:
+    """クラスからクラスフィールド毎のコメントを取得する。"""
+    source = inspect.getsource(cls)
+    lines = source.splitlines()
+    comments: dict[str, str | None] = {}
+    prev_comment: str | None = None
+    pattern = re.compile(r"^\s*(\w+)\s*(?:[:=])")
+
+    for line in lines:
+        line = line.rstrip()
+
+        comment_part: str | None
+        if "#" in line:
+            comment_index = line.index("#")
+            code_part = line[:comment_index].strip()
+            comment_part = line[comment_index + 1 :].strip()
+        else:
+            code_part = line.strip()
+            comment_part = None
+
+        if comment_part:
+            prev_comment = comment_part
+
+        match = pattern.match(code_part)
+        if match:
+            var_name = match.group(1)
+            if prev_comment:
+                comments[var_name] = prev_comment
+                prev_comment = None
+            else:
+                comments[var_name] = None
+    return comments

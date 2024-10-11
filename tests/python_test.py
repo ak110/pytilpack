@@ -45,3 +45,23 @@ def test_doc_summary():
     assert doc_summary(None) == ""
     assert doc_summary(0) == "int([x]) -> integer"
     assert doc_summary(doc_summary) == "docstringの先頭1行分を取得する。"
+
+
+def test_class_field_comments():
+    class A:
+        """テスト用クラス。"""
+
+        a = 1
+        # bbb
+        b = 2
+        # ccc
+        c: str
+        # ddd
+        d: str = "d"
+
+    assert pytilpack.python_.class_field_comments(A) == {
+        "a": None,
+        "b": "bbb",
+        "c": "ccc",
+        "d": "ddd",
+    }
