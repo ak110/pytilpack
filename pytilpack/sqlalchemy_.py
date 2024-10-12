@@ -1,12 +1,13 @@
 """SQLAlchemy用のユーティリティ集。"""
 
+import datetime
+import json
 import logging
 import time
 import typing
 
 import sqlalchemy
 import sqlalchemy.orm
-import sqlalchemy.orm.decl_api
 import sqlalchemy.sql.elements
 
 import pytilpack.python_
@@ -48,6 +49,47 @@ class IDMixin:
         if for_update:
             q = q.with_for_update()
         return q.one_or_none()
+
+
+class Mixin(IDMixin):
+    """テーブルクラスに色々便利機能を生やすMixin。"""
+
+    def to_dict(
+        self, excludes: list[str] | None = None, exclude_none: bool = False
+    ) -> dict[str, typing.Any]:
+        """インスタンスを辞書化する。"""
+        if excludes is None:
+            excludes = []
+        return {
+            column.name: getattr(self, column.name)
+            for column in self.__table__.columns
+            if column.name not in excludes
+            and (not exclude_none or getattr(self, column.name) is not None)
+        }
+
+    def to_json(
+        self, excludes: list[str] | None = None, exclude_none: bool = False, **kwargs
+    ) -> str:
+        """インスタンスをJSON文字列化する。"""
+        data = self.to_dict(excludes=excludes, exclude_none=exclude_none)
+        data = {key: self._convert_for_json(value) for key, value in data.items()}
+        return json.dumps(data, ensure_ascii=False, **kwargs)
+
+    def _convert_for_json(self, value: typing.Any) -> typing.Any:
+        """JSON変換用の値変換。
+
+        JavaScriptで対応できるようにISO8601形式に変換する。
+        YYYY-MM-DDTHH:mm:ss.sssZ
+        <https://tc39.es/ecma262/#sec-date-time-string-format>
+
+        """
+        if isinstance(value, datetime.datetime):
+            return value.isoformat(timespec="milliseconds")
+        if isinstance(value, datetime.date):
+            return value.isoformat()
+        if isinstance(value, datetime.time):
+            return value.isoformat(timespec="milliseconds")
+        return value
 
 
 def wait_for_connection(url: str, timeout: float = 60.0) -> None:

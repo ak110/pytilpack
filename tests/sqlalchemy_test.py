@@ -1,5 +1,7 @@
 """テストコード。"""
 
+import datetime
+
 import pytest
 import sqlalchemy
 
@@ -12,7 +14,7 @@ class Base(sqlalchemy.orm.DeclarativeBase):
     __test__ = False
 
 
-class Test1(Base, pytilpack.sqlalchemy_.IDMixin):
+class Test1(Base, pytilpack.sqlalchemy_.Mixin):
     """テストクラス。"""
 
     __test__ = False
@@ -21,7 +23,7 @@ class Test1(Base, pytilpack.sqlalchemy_.IDMixin):
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
 
 
-class Test2(Base):
+class Test2(Base, pytilpack.sqlalchemy_.Mixin):
     """テストクラス。"""
 
     __test__ = False
@@ -59,9 +61,7 @@ def _session(engine: sqlalchemy.engine.Engine):
     yield sqlalchemy.orm.Session(engine)
 
 
-def test_id_mixin(session: sqlalchemy.orm.Session) -> None:
-    """register_ping()のテスト。"""
-
+def test_get_by_id(session: sqlalchemy.orm.Session) -> None:
     Test1.query = session.query(Test1)  # 仮
 
     Base.metadata.create_all(session.bind)  # type: ignore
@@ -71,6 +71,25 @@ def test_id_mixin(session: sqlalchemy.orm.Session) -> None:
     assert Test1.get_by_id(1).id == 1  # type: ignore
     assert Test1.get_by_id(2) is None
     assert Test1.get_by_id(1, for_update=True).id == 1  # type: ignore
+
+
+def test_to_dict() -> None:
+    test2 = Test2(name="test2", enabled=True, value4=datetime.datetime(2021, 1, 1))
+    assert test2.to_dict(excludes=["pass_hash"]) == {
+        "id": None,
+        "name": "test2",
+        "enabled": True,
+        "is_admin": None,
+        "value1": None,
+        "value2": None,
+        "value3": None,
+        "value4": datetime.datetime(2021, 1, 1),
+        "value5": None,
+    }
+    assert (
+        test2.to_json(exclude_none=True)
+        == '{"name": "test2", "enabled": true, "value4": "2021-01-01T00:00:00.000"}'
+    )
 
 
 def test_describe() -> None:
