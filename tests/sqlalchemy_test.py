@@ -86,10 +86,6 @@ def test_to_dict() -> None:
         "value4": datetime.datetime(2021, 1, 1),
         "value5": None,
     }
-    assert (
-        test2.to_json(exclude_none=True)
-        == '{"name": "test2", "enabled": true, "value4": "2021-01-01T00:00:00.000"}'
-    )
 
 
 def test_describe() -> None:

@@ -1,8 +1,33 @@
 """JSON関連。"""
 
+import base64
+import datetime
 import json
 import pathlib
 import typing
+
+
+def converter(
+    o: typing.Any, _default: typing.Callable[[typing.Any], typing.Any] | None = None
+):
+    """JSONエンコード時の変換処理。
+
+    日付はJavaScriptで対応できるようにISO8601形式に変換する。
+    YYYY-MM-DDTHH:mm:ss.sssZ
+    <https://tc39.es/ecma262/#sec-date-time-string-format>
+
+    bytesはBASE64エンコードする。
+
+    """
+    if isinstance(o, datetime.datetime):
+        return o.isoformat(timespec="milliseconds")
+    if isinstance(o, datetime.date):
+        return o.isoformat()
+    if isinstance(o, datetime.time):
+        return o.isoformat(timespec="milliseconds")
+    if isinstance(o, bytes):
+        return base64.b64encode(o).decode("ascii")
+    return o if _default is None else _default(o)
 
 
 def load(path: str | pathlib.Path) -> dict[str, typing.Any]:

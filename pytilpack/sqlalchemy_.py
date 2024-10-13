@@ -1,7 +1,5 @@
 """SQLAlchemy用のユーティリティ集。"""
 
-import datetime
-import json
 import logging
 import time
 import typing
@@ -62,34 +60,10 @@ class Mixin(IDMixin):
             excludes = []
         return {
             column.name: getattr(self, column.name)
-            for column in self.__table__.columns
+            for column in self.__table__.columns  # type: ignore[attr-defined]
             if column.name not in excludes
             and (not exclude_none or getattr(self, column.name) is not None)
         }
-
-    def to_json(
-        self, excludes: list[str] | None = None, exclude_none: bool = False, **kwargs
-    ) -> str:
-        """インスタンスをJSON文字列化する。"""
-        data = self.to_dict(excludes=excludes, exclude_none=exclude_none)
-        data = {key: self._convert_for_json(value) for key, value in data.items()}
-        return json.dumps(data, ensure_ascii=False, **kwargs)
-
-    def _convert_for_json(self, value: typing.Any) -> typing.Any:
-        """JSON変換用の値変換。
-
-        JavaScriptで対応できるようにISO8601形式に変換する。
-        YYYY-MM-DDTHH:mm:ss.sssZ
-        <https://tc39.es/ecma262/#sec-date-time-string-format>
-
-        """
-        if isinstance(value, datetime.datetime):
-            return value.isoformat(timespec="milliseconds")
-        if isinstance(value, datetime.date):
-            return value.isoformat()
-        if isinstance(value, datetime.time):
-            return value.isoformat(timespec="milliseconds")
-        return value
 
 
 def wait_for_connection(url: str, timeout: float = 60.0) -> None:
