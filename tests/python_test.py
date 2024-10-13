@@ -51,16 +51,16 @@ def test_class_field_comments():
     class A:
         """テスト用クラス。"""
 
-        a = 1
+        a = 1  # aaa(無視されてほしいコメント)
         # bbb
-        b = 2
+        b = 2  # bbb(無視されてほしいコメント)
         # ccc
         c: str
         # ddd
+        # (無視されてほしいコメント)
         d: str = "d"
 
     assert pytilpack.python_.class_field_comments(A) == {
-        "a": None,
         "b": "bbb",
         "c": "ccc",
         "d": "ddd",

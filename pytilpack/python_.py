@@ -77,31 +77,37 @@ def class_field_comments(cls: typing.Any) -> dict[str, str | None]:
     """クラスからクラスフィールド毎のコメントを取得する。"""
     source = inspect.getsource(cls)
     lines = source.splitlines()
-    comments: dict[str, str | None] = {}
+    field_comments: dict[str, str | None] = {}
     prev_comment: str | None = None
-    pattern = re.compile(r"^\s*(\w+)\s*(?:[:=])")
+
+    comment_pattern = re.compile(r"^\s*#\s*(.*)$")
+    field_pattern = re.compile(r"^\s*(\w+)\s*(?:[:=])")
 
     for line in lines:
         line = line.rstrip()
 
-        comment_part: str | None
-        if "#" in line:
-            comment_index = line.index("#")
-            code_part = line[:comment_index].strip()
-            comment_part = line[comment_index + 1 :].strip()
-        else:
-            code_part = line.strip()
-            comment_part = None
+        # コメント行の場合
+        match = comment_pattern.match(line)
+        if match:
+            if prev_comment is None:
+                prev_comment = match.group(1)
+            else:
+                # 複数行コメントの場合は先頭1行のみ使用する
+                pass
+            continue
 
-        if comment_part:
-            prev_comment = comment_part
-
-        match = pattern.match(code_part)
+        # クラスフィールド行の場合
+        match = field_pattern.match(line)
         if match:
             var_name = match.group(1)
-            if prev_comment:
-                comments[var_name] = prev_comment
+            if (
+                var_name not in field_comments  # 上書きしない(先勝ち)
+                and prev_comment is not None
+            ):
+                field_comments[var_name] = prev_comment
                 prev_comment = None
-            else:
-                comments[var_name] = None
-    return comments
+        else:
+            # コメントでもコードでもない行が出てきたらコメントをリセット
+            prev_comment = None
+
+    return field_comments

@@ -102,5 +102,5 @@ show_error_codes = true
 
 [tool.pytest.ini_options]
 # https://docs.pytest.org/en/latest/reference/reference.html#ini-options-ref
-addopts = "--showlocals -p no:cacheprovider --durations=5"
+addopts = "--showlocals -p no:cacheprovider --durations=5 -vv"
 xfail_strict = true

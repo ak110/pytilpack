@@ -39,7 +39,9 @@ class Test2(Base, pytilpack.sqlalchemy_.Mixin):
     )
     # 有効フラグ
     enabled = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False, default=True)
-    is_admin = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False, default=False)
+    is_admin = sqlalchemy.Column(  # このコメントは無視されてほしい
+        sqlalchemy.Boolean, nullable=False, default=False
+    )
     value1 = sqlalchemy.Column(sqlalchemy.Integer, nullable=True, default=0)
     value2 = sqlalchemy.Column(sqlalchemy.Integer, nullable=False, default=512)
     value3 = sqlalchemy.Column(sqlalchemy.Float, nullable=False, default=1.0)
