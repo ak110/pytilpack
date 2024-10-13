@@ -143,7 +143,7 @@ def describe(Base: typing.Any, tablefmt: "str | tabulate.TableFormat" = "grid") 
     return "\n".join(
         [
             describe_table(table, get_class_by_table(Base, table), tablefmt=tablefmt)
-            for table in Base.metadata.sorted_tables
+            for table in Base.metadata.tables.values()
         ]
     )
 
