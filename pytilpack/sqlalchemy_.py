@@ -42,7 +42,16 @@ class IDMixin:
 
     @classmethod
     def get_by_id(cls: type[Self], id_: int, for_update: bool = False) -> Self | None:
-        """IDを元にインスタンスを取得。"""
+        """IDを元にインスタンスを取得。
+
+        Args:
+            id_: ID。
+            for_update: 更新ロックを取得するか否か。
+
+        Returns:
+            インスタンス。
+
+        """
         q = cls.query.filter(cls.id == id_)  # type: ignore
         if for_update:
             q = q.with_for_update()
@@ -53,16 +62,38 @@ class Mixin(IDMixin):
     """テーブルクラスに色々便利機能を生やすMixin。"""
 
     def to_dict(
-        self, excludes: list[str] | None = None, exclude_none: bool = False
+        self,
+        includes: list[str] | None = None,
+        excludes: list[str] | None = None,
+        exclude_none: bool = False,
     ) -> dict[str, typing.Any]:
-        """インスタンスを辞書化する。"""
-        if excludes is None:
-            excludes = []
+        """インスタンスを辞書化する。
+
+        Args:
+            includes: 辞書化するフィールド名のリスト。excludesと同時指定不可。
+            excludes: 辞書化しないフィールド名のリスト。includesと同時指定不可。
+            exclude_none: Noneのフィールドを除外するかどうか。
+
+        Returns:
+            辞書。
+
+        """
+        assert (includes is None) or (excludes is None)
+        all_columns = [column.name for column in self.__table__.columns]  # type: ignore[attr-defined]
+        if includes is None:
+            includes = all_columns
+            if excludes is None:
+                pass
+            else:
+                assert (set(all_columns) & set(excludes)) == set(excludes)
+                includes = list(filter(lambda x: x not in excludes, includes))
+        else:
+            assert excludes is None
+            assert (set(all_columns) & set(includes)) == set(includes)
         return {
-            column.name: getattr(self, column.name)
-            for column in self.__table__.columns  # type: ignore[attr-defined]
-            if column.name not in excludes
-            and (not exclude_none or getattr(self, column.name) is not None)
+            column_name: getattr(self, column_name)
+            for column_name in includes
+            if not exclude_none or getattr(self, column_name) is not None
         }
 
 
