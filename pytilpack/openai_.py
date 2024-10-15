@@ -183,12 +183,11 @@ def _equals_all_get(
 ) -> T | None:
     """すべての要素が等しいかどうかを確認しつつ最後の要素を返す。"""
     values = list(values)
-    if len(values) == 0:
+    unique_values = set(values)
+    if len(unique_values) == 0:
         return default_value
-    if any(values[0] != x for x in values[1:]):
-        _warn(
-            strict, f"{name}に複数の値が含まれています。最後の値を使用します。{values=}"
-        )
+    if len(unique_values) > 1:
+        _warn(strict, f"{name}に複数の値が含まれています。{unique_values=}")
     return values[-1]
 
 
