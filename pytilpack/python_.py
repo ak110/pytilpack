@@ -1,4 +1,8 @@
-"""Pythonのユーティリティ集。"""
+"""Pythonのユーティリティ集。
+
+本格的にはpydashとか使った方がいいかも…？
+
+"""
 
 import inspect
 import re
@@ -30,6 +34,26 @@ def coalesce(
 def remove_none(iterable: typing.Iterable[T | None]) -> list[T]:
     """Noneを除去する。"""
     return [item for item in iterable if item is not None]
+
+
+def find(
+    collection: typing.Iterable[T], predicate: typing.Callable[[T], bool]
+) -> T | None:
+    """条件を満たす最初の要素を取得する。"""
+    for item in collection:
+        if predicate(item):
+            return item
+    return None
+
+
+def find_index(
+    collection: typing.Iterable[T], predicate: typing.Callable[[T], bool]
+) -> int:
+    """条件を満たす最初の要素のインデックスを取得する。"""
+    for i, item in enumerate(collection):
+        if predicate(item):
+            return i
+    return -1
 
 
 def empty(x: typing.Any) -> bool:

@@ -58,7 +58,7 @@ def test_gather_chunks():
             object="chat.completion.chunk",
         ),
     ]
-    actual = pytilpack.openai_.gather_chunks(chunks)
+    actual = pytilpack.openai_.gather_chunks(chunks, strict=True)
     expected = openai.types.chat.ChatCompletion(
         id="id",
         choices=[
@@ -101,7 +101,7 @@ def test_gather_chunks_stream(data_dir: pathlib.Path):
             messages=[{"role": "user", "content": "1+1=?"}],
             stream=True,
         )
-        actual = pytilpack.openai_.gather_chunks(response)
+        actual = pytilpack.openai_.gather_chunks(response, strict=True)
         expected = openai.types.chat.ChatCompletion(
             id="chatcmpl-9LkPsGgzcOKvsoNpPxy722wmnc8Ij",
             choices=[
@@ -143,7 +143,7 @@ def test_gather_chunks_function1(data_dir: pathlib.Path):
             messages=[{"role": "user", "content": "1+1=?"}],
             stream=True,
         )
-        actual = pytilpack.openai_.gather_chunks(response)
+        actual = pytilpack.openai_.gather_chunks(response, strict=True)
         expected = openai.types.chat.ChatCompletion(
             id="chatcmpl-9Lkf3AWNcFV03tyCd5LaAXb2xgZ65",
             choices=[
@@ -195,7 +195,7 @@ def test_gather_chunks_function2(data_dir: pathlib.Path):
             messages=[{"role": "user", "content": "1+1=?"}],
             stream=True,
         )
-        actual = pytilpack.openai_.gather_chunks(response)
+        actual = pytilpack.openai_.gather_chunks(response, strict=True)
         expected = openai.types.chat.ChatCompletion(
             id="chatcmpl-9LkecCMw4qvicGMfOU00PBHbVbpNL",
             choices=[
