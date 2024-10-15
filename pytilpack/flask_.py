@@ -150,28 +150,36 @@ def assert_html(
     """
     import html5lib
 
-    import pytilpack.pytest_
-
     response_body = response.get_data().decode("utf-8")
-
-    tmp_file_path = pytilpack.pytest_.tmp_file_path(tmp_path, suffix=".html")
-    tmp_file_path.write_text(response_body, encoding="utf-8")
-    print(f"HTML: {tmp_file_path}")
 
     # HTMLのチェック
     parser = html5lib.HTMLParser(strict=True, debug=True)
     try:
         _ = parser.parse(response.data)
     except html5lib.html5parser.ParseError as e:
+        tmp_file_path = _create_temp_file(tmp_path, response_body)
         raise AssertionError(f"HTMLエラー: {e} (HTML: {tmp_file_path} )") from e
 
     # ステータスコードチェック
     if response.status_code != status_code:
+        tmp_file_path = _create_temp_file(tmp_path, response_body)
         raise AssertionError(
             f"ステータスコードエラー: {response.status_code} != {status_code} (HTML: {tmp_file_path} )"
         )
 
     return response_body
+
+
+def _create_temp_file(
+    tmp_path: pathlib.Path | None, response_body: str
+) -> pathlib.Path:
+    """一時ファイルを作成してパスを返す。"""
+    import pytilpack.pytest_
+
+    tmp_file_path = pytilpack.pytest_.tmp_file_path(tmp_path, suffix=".html")
+    tmp_file_path.write_text(response_body, encoding="utf-8")
+    print(f"HTML: {tmp_file_path}")  # printもしておく
+    return tmp_file_path
 
 
 def assert_json(response, status_code: int = 200) -> dict[str, typing.Any]:

@@ -6,7 +6,7 @@ import typing
 import openai
 import openai.types.chat
 
-from pytilpack.python_ import find, remove_none
+from pytilpack.python_ import coalesce, find, remove_none
 
 T = typing.TypeVar("T")
 
@@ -27,9 +27,7 @@ def gather_chunks(
     response = openai.types.chat.ChatCompletion.model_construct(
         id=_equals_all_get(strict, "id", remove_none(c.id for c in chunks), ""),
         choices=choices,
-        created=_equals_all_get(
-            strict, "created", remove_none(c.created for c in chunks), 0
-        ),
+        created=coalesce((c.created for c in chunks), 0),
         model=_equals_all_get(
             strict, "model", remove_none(c.model for c in chunks), ""
         ),
