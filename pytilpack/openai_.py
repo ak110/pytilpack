@@ -6,7 +6,7 @@ import typing
 import openai
 import openai.types.chat
 
-from pytilpack.python_ import coalesce, find, remove_none
+from pytilpack.python_ import coalesce, remove_none
 
 T = typing.TypeVar("T")
 
@@ -61,8 +61,16 @@ def _make_choice(
     chunks: list[openai.types.chat.ChatCompletionChunk], index: int, strict: bool
 ) -> openai.types.chat.chat_completion.Choice:
     """ストリーミングのチャンクからi番目のChoiceを作成する。"""
-    choice_list = remove_none(
-        [find(c.choices, lambda choice: choice.index == index) for c in chunks]
+    choice_list = sum(
+        (
+            [
+                choice
+                for choice in chunk.choices
+                if choice is not None and choice.index == index
+            ]
+            for chunk in chunks
+        ),
+        [],
     )
 
     message = openai.types.chat.ChatCompletionMessage.model_construct()
@@ -124,7 +132,7 @@ def _make_function_call(
 
 
 def _make_tool_calls(
-    deltas_list: list[
+    tool_calls_list: list[
         list[openai.types.chat.chat_completion_chunk.ChoiceDeltaToolCall]
     ],
     strict: bool,
@@ -132,45 +140,53 @@ def _make_tool_calls(
     list[openai.types.chat.chat_completion_message.ChatCompletionMessageToolCall] | None
 ):
     """list[ChoiceDeltaToolCall]を作成する。"""
-    if len(deltas_list) == 0:
+    if len(tool_calls_list) == 0:
         return None
     min_tool_call = min(
         (min(d.index for d in deltas) if len(deltas) > 0 else 0)
-        for deltas in deltas_list
+        for deltas in tool_calls_list
     )
     max_tool_call = max(
         (max(d.index for d in deltas) if len(deltas) > 0 else 0)
-        for deltas in deltas_list
+        for deltas in tool_calls_list
     )
     return [
-        _make_tool_call(deltas_list, i, strict)
+        _make_tool_call(tool_calls_list, i, strict)
         for i in range(min_tool_call, max_tool_call + 1)
     ]
 
 
 def _make_tool_call(
-    deltas_list: list[
+    tool_calls_list: list[
         list[openai.types.chat.chat_completion_chunk.ChoiceDeltaToolCall]
     ],
     index: int,
     strict: bool,
 ) -> openai.types.chat.chat_completion_message.ChatCompletionMessageToolCall:
     """ChoiceDeltaToolCallを作成する。"""
-    delta_list = remove_none(
-        find(deltas, lambda delta: delta.index == index) for deltas in deltas_list
+    tool_call_list = sum(
+        (
+            [
+                tool_call
+                for tool_call in tool_calls
+                if tool_call is not None and tool_call.index == index
+            ]
+            for tool_calls in tool_calls_list
+        ),
+        [],
     )
 
     tool_call = (
         openai.types.chat.chat_completion_message.ChatCompletionMessageToolCall.model_construct()
     )
 
-    if len(ids := remove_none(delta.id for delta in delta_list)) > 0:
+    if len(ids := remove_none(delta.id for delta in tool_call_list)) > 0:
         tool_call.id = _equals_all_get(strict, f"delta.tool_calls[{index}].id", ids, "")
 
-    if len(types := remove_none(delta.type for delta in delta_list)) > 0:
+    if len(types := remove_none(delta.type for delta in tool_call_list)) > 0:
         tool_call.type = _equals_all_get(strict, f"delta.tool_calls[{index}].type", types)  # type: ignore[assignment]
 
-    if len(functions := remove_none(delta.function for delta in delta_list)) > 0:
+    if len(functions := remove_none(delta.function for delta in tool_call_list)) > 0:
         tool_call.function = (
             openai.types.chat.chat_completion_message_tool_call.Function(
                 arguments="".join(remove_none(f.arguments for f in functions)),

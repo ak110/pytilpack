@@ -79,6 +79,76 @@ def test_gather_chunks():
     assert actual.model_dump() == expected.model_dump()
 
 
+def test_gather_chunks_claude_tools():
+    """gather_chunksのテスト。Claude+LiteLLM?で出てきた謎パターン風のテスト。"""
+    chunks = [
+        openai.types.chat.ChatCompletionChunk(
+            id="id",
+            choices=[
+                openai.types.chat.chat_completion_chunk.Choice(
+                    index=0,
+                    delta=openai.types.chat.chat_completion_chunk.ChoiceDelta(
+                        role="assistant",
+                        content="aaa",
+                        tool_calls=[
+                            openai.types.chat.chat_completion_chunk.ChoiceDeltaToolCall(
+                                index=1,  # 何故か1から始まる
+                                id="id123",
+                                function=openai.types.chat.chat_completion_chunk.ChoiceDeltaToolCallFunction(
+                                    name="funcname", arguments=None
+                                ),
+                            ),
+                            openai.types.chat.chat_completion_chunk.ChoiceDeltaToolCall(
+                                index=1,  # 何故か同じチャンク内で分けて送られてくる
+                                function=openai.types.chat.chat_completion_chunk.ChoiceDeltaToolCallFunction(
+                                    name=None, arguments='{"expression":"1+1"}'
+                                ),
+                            ),
+                            openai.types.chat.chat_completion_chunk.ChoiceDeltaToolCall(
+                                index=1, type="function"
+                            ),
+                        ],
+                    ),
+                    finish_reason="tool_calls",
+                )
+            ],
+            created=123,
+            model="anthropic.claude-3-5-sonnet-20240620-v1:0",
+            object="chat.completion.chunk",
+            system_fingerprint="fingerprint",
+        )
+    ]
+    actual = pytilpack.openai_.gather_chunks(chunks, strict=True)
+    expected = openai.types.chat.ChatCompletion(
+        id="id",
+        choices=[
+            openai.types.chat.chat_completion.Choice(
+                index=0,
+                message=openai.types.chat.ChatCompletionMessage(
+                    content="aaa",
+                    role="assistant",
+                    tool_calls=[
+                        openai.types.chat.ChatCompletionMessageToolCall(
+                            id="id123",
+                            function=openai.types.chat.chat_completion_message_tool_call.Function(
+                                arguments='{"expression":"1+1"}', name="funcname"
+                            ),
+                            type="function",
+                        )
+                    ],
+                ),
+                finish_reason="tool_calls",
+            )
+        ],
+        created=123,
+        model="anthropic.claude-3-5-sonnet-20240620-v1:0",
+        object="chat.completion",
+        system_fingerprint="fingerprint",
+        usage=None,
+    )
+    assert actual.model_dump() == expected.model_dump()
+
+
 def test_gather_chunks_stream(data_dir: pathlib.Path):
     app = flask.Flask(__name__)
 
