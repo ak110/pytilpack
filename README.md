@@ -42,7 +42,7 @@ import pytilpack.xxx
 
 ### モジュール一覧
 
-### 各種ライブラリ用のユーティリティ
+### 各種ライブラリ用のユーティリティのモジュール一覧
 
 - [pytilpack.asyncio_](pytilpack/asyncio_.py)
 - [pytilpack.csv_](pytilpack/csv_.py)
@@ -57,10 +57,11 @@ import pytilpack.xxx
 - [pytilpack.pathlib_](pytilpack/pathlib_.py)
 - [pytilpack.python_](pytilpack/python_.py)
 - [pytilpack.sqlalchemy_](pytilpack/sqlalchemy_.py)
+- [pytilpack.threading_](pytilpack/threading_.py)
 - [pytilpack.tiktoken_](pytilpack/tiktoken_.py)
 - [pytilpack.tqdm_](pytilpack/tqdm_.py)
 - [pytilpack.yaml_](pytilpack/yaml_.py)
 
-### その他のユーティリティ
+### その他のユーティリティのモジュール一覧
 
 - [pytilpack.data_url](pytilpack/data_url.py)  # データURL関連
