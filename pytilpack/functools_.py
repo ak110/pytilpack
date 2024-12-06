@@ -19,6 +19,7 @@ def retry(
     max_jitter: float = 0.5,
     includes: typing.Iterable[type[Exception]] | None = None,
     excludes: typing.Iterable[type[Exception]] | None = None,
+    loglevel: int = logging.INFO,
 ) -> typing.Callable:
     """リトライを行うデコレーター。
 
@@ -59,7 +60,8 @@ def retry(
                     retry_count += 1
                     if retry_count > max_retries:
                         raise e
-                    logger.debug(
+                    logger.log(
+                        loglevel,
                         "%s: %s (retry %d/%d)",
                         func.__name__,
                         e,
