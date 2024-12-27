@@ -1,5 +1,7 @@
 """テストコード。"""
 
+import pytest
+
 import pytilpack.python_
 
 
@@ -67,6 +69,19 @@ def test_class_field_comments():
     }
 
 
+def test_get():
+    from pytilpack.python_ import get
+
+    data_dict = {"a": [{"b": 1}]}
+
+    assert get(data_dict, "a") == [{"b": 1}]
+    assert get(data_dict, ["a", 0]) == {"b": 1}
+    assert get(data_dict, ["a", 0, "b"]) == 1
+    assert get(data_dict, ["a", 0, "c"], 2) == 2
+    assert get(data_dict, ["a", 1], 2) == 2
+    assert get(data_dict, ["c", 0], 2) == 2
+
+
 def test_get_float():
     from pytilpack.python_ import get_float
 
@@ -78,15 +93,11 @@ def test_get_float():
     assert get_float(data_list, 0) == 1.1
     assert get_float(data_list, 2, 2.2) == 2.2
 
-    try:
+    with pytest.raises(ValueError):
         get_float(data_dict, "b")
-    except ValueError as e:
-        assert str(e) == ".b is not float: 'string'"
 
-    try:
+    with pytest.raises(ValueError):
         get_float(data_list, 1)
-    except ValueError as e:
-        assert str(e) == "[1] is not float: 'string'"
 
 
 def test_get_bool():
@@ -100,15 +111,11 @@ def test_get_bool():
     assert get_bool(data_list, 0) is True
     assert get_bool(data_list, 2, False) is False
 
-    try:
+    with pytest.raises(ValueError):
         get_bool(data_dict, "b")
-    except ValueError as e:
-        assert str(e) == ".b is not bool: 'string'"
 
-    try:
+    with pytest.raises(ValueError):
         get_bool(data_list, 1)
-    except ValueError as e:
-        assert str(e) == "[1] is not bool: 'string'"
 
 
 def test_get_int():
@@ -122,15 +129,11 @@ def test_get_int():
     assert get_int(data_list, 0) == 1
     assert get_int(data_list, 2, 2) == 2
 
-    try:
+    with pytest.raises(ValueError):
         get_int(data_dict, "b")
-    except ValueError as e:
-        assert str(e) == ".b is not int: 'string'"
 
-    try:
+    with pytest.raises(ValueError):
         get_int(data_list, 1)
-    except ValueError as e:
-        assert str(e) == "[1] is not int: 'string'"
 
 
 def test_get_str():
@@ -144,15 +147,11 @@ def test_get_str():
     assert get_str(data_list, 0) == "string"
     assert get_str(data_list, 2, "default") == "default"
 
-    try:
+    with pytest.raises(ValueError):
         get_str(data_dict, "b")
-    except ValueError as e:
-        assert str(e) == ".b is not str: 1"
 
-    try:
+    with pytest.raises(ValueError):
         get_str(data_list, 1)
-    except ValueError as e:
-        assert str(e) == "[1] is not str: 1"
 
 
 def test_get_list():
@@ -166,15 +165,11 @@ def test_get_list():
     assert get_list(data_list, 0) == [1, 2, 3]
     assert get_list(data_list, 2, [4, 5, 6]) == [4, 5, 6]
 
-    try:
+    with pytest.raises(ValueError):
         get_list(data_dict, "b")
-    except ValueError as e:
-        assert str(e) == ".b is not list: 'string'"
 
-    try:
+    with pytest.raises(ValueError):
         get_list(data_list, 1)
-    except ValueError as e:
-        assert str(e) == "[1] is not list: 'string'"
 
 
 def test_get_dict():
@@ -188,12 +183,8 @@ def test_get_dict():
     assert get_dict(data_list, 0) == {"key": "value"}
     assert get_dict(data_list, 2, {"default": "value"}) == {"default": "value"}
 
-    try:
+    with pytest.raises(ValueError):
         get_dict(data_dict, "b")
-    except ValueError as e:
-        assert str(e) == ".b is not dict: 'string'"
 
-    try:
+    with pytest.raises(ValueError):
         get_dict(data_list, 1)
-    except ValueError as e:
-        assert str(e) == "[1] is not dict: 'string'"
