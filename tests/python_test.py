@@ -65,3 +65,135 @@ def test_class_field_comments():
         "c": "ccc",
         "d": "ddd",
     }
+
+
+def test_get_float():
+    from pytilpack.python_ import get_float
+
+    data_dict = {"a": 1.1, "b": "string", "c": None}
+    data_list = [1.1, "string", None]
+
+    assert get_float(data_dict, "a") == 1.1
+    assert get_float(data_dict, "c", 2.2) == 2.2
+    assert get_float(data_list, 0) == 1.1
+    assert get_float(data_list, 2, 2.2) == 2.2
+
+    try:
+        get_float(data_dict, "b")
+    except ValueError as e:
+        assert str(e) == ".b is not float: 'string'"
+
+    try:
+        get_float(data_list, 1)
+    except ValueError as e:
+        assert str(e) == "[1] is not float: 'string'"
+
+
+def test_get_bool():
+    from pytilpack.python_ import get_bool
+
+    data_dict = {"a": True, "b": "string", "c": None}
+    data_list = [True, "string", None]
+
+    assert get_bool(data_dict, "a") is True
+    assert get_bool(data_dict, "c", False) is False
+    assert get_bool(data_list, 0) is True
+    assert get_bool(data_list, 2, False) is False
+
+    try:
+        get_bool(data_dict, "b")
+    except ValueError as e:
+        assert str(e) == ".b is not bool: 'string'"
+
+    try:
+        get_bool(data_list, 1)
+    except ValueError as e:
+        assert str(e) == "[1] is not bool: 'string'"
+
+
+def test_get_int():
+    from pytilpack.python_ import get_int
+
+    data_dict = {"a": 1, "b": "string", "c": None}
+    data_list = [1, "string", None]
+
+    assert get_int(data_dict, "a") == 1
+    assert get_int(data_dict, "c", 2) == 2
+    assert get_int(data_list, 0) == 1
+    assert get_int(data_list, 2, 2) == 2
+
+    try:
+        get_int(data_dict, "b")
+    except ValueError as e:
+        assert str(e) == ".b is not int: 'string'"
+
+    try:
+        get_int(data_list, 1)
+    except ValueError as e:
+        assert str(e) == "[1] is not int: 'string'"
+
+
+def test_get_str():
+    from pytilpack.python_ import get_str
+
+    data_dict = {"a": "string", "b": 1, "c": None}
+    data_list = ["string", 1, None]
+
+    assert get_str(data_dict, "a") == "string"
+    assert get_str(data_dict, "c", "default") == "default"
+    assert get_str(data_list, 0) == "string"
+    assert get_str(data_list, 2, "default") == "default"
+
+    try:
+        get_str(data_dict, "b")
+    except ValueError as e:
+        assert str(e) == ".b is not str: 1"
+
+    try:
+        get_str(data_list, 1)
+    except ValueError as e:
+        assert str(e) == "[1] is not str: 1"
+
+
+def test_get_list():
+    from pytilpack.python_ import get_list
+
+    data_dict = {"a": [1, 2, 3], "b": "string", "c": None}
+    data_list = [[1, 2, 3], "string", None]
+
+    assert get_list(data_dict, "a") == [1, 2, 3]
+    assert get_list(data_dict, "c", [4, 5, 6]) == [4, 5, 6]
+    assert get_list(data_list, 0) == [1, 2, 3]
+    assert get_list(data_list, 2, [4, 5, 6]) == [4, 5, 6]
+
+    try:
+        get_list(data_dict, "b")
+    except ValueError as e:
+        assert str(e) == ".b is not list: 'string'"
+
+    try:
+        get_list(data_list, 1)
+    except ValueError as e:
+        assert str(e) == "[1] is not list: 'string'"
+
+
+def test_get_dict():
+    from pytilpack.python_ import get_dict
+
+    data_dict = {"a": {"key": "value"}, "b": "string", "c": None}
+    data_list = [{"key": "value"}, "string", None]
+
+    assert get_dict(data_dict, "a") == {"key": "value"}
+    assert get_dict(data_dict, "c", {"default": "value"}) == {"default": "value"}
+    assert get_dict(data_list, 0) == {"key": "value"}
+    assert get_dict(data_list, 2, {"default": "value"}) == {"default": "value"}
+
+    try:
+        get_dict(data_dict, "b")
+    except ValueError as e:
+        assert str(e) == ".b is not dict: 'string'"
+
+    try:
+        get_dict(data_list, 1)
+    except ValueError as e:
+        assert str(e) == "[1] is not dict: 'string'"

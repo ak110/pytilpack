@@ -135,3 +135,115 @@ def class_field_comments(cls: typing.Any) -> dict[str, str | None]:
             prev_comment = None
 
     return field_comments
+
+
+def get_bool(
+    data: list | dict, key: str | int | list[str | int], default_value: bool = False
+) -> bool:
+    """辞書またはリストからbool値を取得する。"""
+    value = get(data, key, default_value)
+    if isinstance(value, bool):
+        return value
+    raise ValueError(f"{_stringify_key(key)} is not bool: {value!r}")
+
+
+def get_int(
+    data: list | dict, key: str | int | list[str | int], default_value: int = 0
+) -> int:
+    """辞書またはリストからint値を取得する。"""
+    value = get(data, key, default_value)
+    if isinstance(value, int):
+        return value
+    raise ValueError(f"{_stringify_key(key)} is not int: {value!r}")
+
+
+def get_float(
+    data: list | dict, key: str | int | list[str | int], default_value: float = 0.0
+) -> float:
+    """辞書またはリストからfloat値を取得する。"""
+    value = get(data, key, default_value)
+    if isinstance(value, float):
+        return value
+    raise ValueError(f"{_stringify_key(key)} is not float: {value!r}")
+
+
+def get_str(
+    data: list | dict, key: str | int | list[str | int], default_value: str = ""
+) -> str:
+    """辞書またはリストからstr値を取得する。"""
+    value = get(data, key, default_value)
+    if isinstance(value, str):
+        return value
+    raise ValueError(f"{_stringify_key(key)} is not str: {value!r}")
+
+
+def get_list(
+    data: list | dict,
+    key: str | int | list[str | int],
+    default_value: list | None = None,
+) -> list:
+    """辞書またはリストからlist値を取得する。"""
+    value = get(data, key, [] if default_value is None else default_value)
+    if isinstance(value, list):
+        return value
+    raise ValueError(f"{_stringify_key(key)} is not list: {value!r}")
+
+
+def get_dict(
+    data: list | dict,
+    key: str | int | list[str | int],
+    default_value: dict | None = None,
+) -> dict:
+    """辞書またはリストからdict値を取得する。"""
+    value = get(data, key, {} if default_value is None else default_value)
+    if isinstance(value, dict):
+        return value
+    raise ValueError(f"{_stringify_key(key)} is not dict: {value!r}")
+
+
+def get(
+    data: list | dict, key: str | int | list[str | int], default_value: T | None = None
+) -> typing.Any | None:
+    """辞書またはリストから値を取得する。
+
+    Args:
+        data: 取得元の辞書またはリスト。
+        key: 取得する値のキー。
+        default_value: 取得できなかった場合のデフォルト値。
+
+    Returns:
+        取得した値。取得できなかった場合はdefault_value。
+
+    """
+    if isinstance(key, list):
+        for k in key:
+            if isinstance(data, dict):
+                data = data.get(k)  # type: ignore[assignment]
+            elif isinstance(data, list):
+                data = data[k] if isinstance(k, int) and 0 <= k < len(data) else None  # type: ignore[assignment]
+            else:
+                return default_value
+            if data is None:
+                return default_value
+    else:
+        if isinstance(data, dict):
+            data = data.get(key)  # type: ignore[assignment]
+        elif isinstance(data, list):
+            data = data[key] if isinstance(key, int) and 0 <= key < len(data) else None  # type: ignore[assignment]
+        else:
+            return default_value
+
+    # {"key": None}のような場合はNoneではなくdefault_valueを返すことにする。ここは場合によりけりだが…。
+    if data is None:
+        return default_value
+
+    return data
+
+
+def _stringify_key(key: str | int | list[str | int]) -> str:
+    """キーを文字列化。"""
+    if isinstance(key, list):
+        return "".join(_stringify_key(k) for k in key)
+    if isinstance(key, int):
+        return f"[{key}]"
+    return f".{key}"

@@ -11,6 +11,6 @@ test:
 	poetry run pyfltr --exit-zero-even-if-formatted
 
 format:
-	poetry run pyfltr --exit-zero-even-if-unformatted --commands=fast
+	poetry run pyfltr --exit-zero-even-if-formatted --commands=fast
 
 .PHONY: help update test format
