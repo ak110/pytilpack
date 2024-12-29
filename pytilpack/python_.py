@@ -138,42 +138,62 @@ def class_field_comments(cls: typing.Any) -> dict[str, str | None]:
 
 
 def get_bool(
-    data: list | dict, key: str | int | list[str | int], default_value: bool = False
+    data: list | dict,
+    key: str | int | list[str | int],
+    default_value: bool = False,
+    errors: typing.Literal["raise", "ignore"] = "raise",
 ) -> bool:
     """辞書またはリストからbool値を取得する。"""
     value = get(data, key, default_value)
     if isinstance(value, bool):
         return value
+    if errors == "ignore":
+        return default_value
     raise ValueError(f"{_stringify_key(key)} is not bool: {value!r}")
 
 
 def get_int(
-    data: list | dict, key: str | int | list[str | int], default_value: int = 0
+    data: list | dict,
+    key: str | int | list[str | int],
+    default_value: int = 0,
+    errors: typing.Literal["raise", "ignore"] = "raise",
 ) -> int:
     """辞書またはリストからint値を取得する。"""
     value = get(data, key, default_value)
     if isinstance(value, int):
         return value
+    if errors == "ignore":
+        return default_value
     raise ValueError(f"{_stringify_key(key)} is not int: {value!r}")
 
 
 def get_float(
-    data: list | dict, key: str | int | list[str | int], default_value: float = 0.0
+    data: list | dict,
+    key: str | int | list[str | int],
+    default_value: float = 0.0,
+    errors: typing.Literal["raise", "ignore"] = "raise",
 ) -> float:
     """辞書またはリストからfloat値を取得する。"""
     value = get(data, key, default_value)
     if isinstance(value, float):
         return value
+    if errors == "ignore":
+        return default_value
     raise ValueError(f"{_stringify_key(key)} is not float: {value!r}")
 
 
 def get_str(
-    data: list | dict, key: str | int | list[str | int], default_value: str = ""
+    data: list | dict,
+    key: str | int | list[str | int],
+    default_value: str = "",
+    errors: typing.Literal["raise", "ignore"] = "raise",
 ) -> str:
     """辞書またはリストからstr値を取得する。"""
     value = get(data, key, default_value)
     if isinstance(value, str):
         return value
+    if errors == "ignore":
+        return default_value
     raise ValueError(f"{_stringify_key(key)} is not str: {value!r}")
 
 
@@ -181,11 +201,16 @@ def get_list(
     data: list | dict,
     key: str | int | list[str | int],
     default_value: list | None = None,
+    errors: typing.Literal["raise", "ignore"] = "raise",
 ) -> list:
     """辞書またはリストからlist値を取得する。"""
-    value = get(data, key, [] if default_value is None else default_value)
+    if default_value is None:
+        default_value = []
+    value = get(data, key, default_value)
     if isinstance(value, list):
         return value
+    if errors == "ignore":
+        return default_value
     raise ValueError(f"{_stringify_key(key)} is not list: {value!r}")
 
 
@@ -193,11 +218,16 @@ def get_dict(
     data: list | dict,
     key: str | int | list[str | int],
     default_value: dict | None = None,
+    errors: typing.Literal["raise", "ignore"] = "raise",
 ) -> dict:
     """辞書またはリストからdict値を取得する。"""
-    value = get(data, key, {} if default_value is None else default_value)
+    if default_value is None:
+        default_value = {}
+    value = get(data, key, default_value)
     if isinstance(value, dict):
         return value
+    if errors == "ignore":
+        return default_value
     raise ValueError(f"{_stringify_key(key)} is not dict: {value!r}")
 
 

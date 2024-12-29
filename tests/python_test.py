@@ -86,105 +86,81 @@ def test_get_float():
     from pytilpack.python_ import get_float
 
     data_dict = {"a": 1.1, "b": "string", "c": None}
-    data_list = [1.1, "string", None]
 
     assert get_float(data_dict, "a") == 1.1
     assert get_float(data_dict, "c", 2.2) == 2.2
-    assert get_float(data_list, 0) == 1.1
-    assert get_float(data_list, 2, 2.2) == 2.2
+    assert get_float(data_dict, "d", 2.2) == 2.2
 
     with pytest.raises(ValueError):
         get_float(data_dict, "b")
-
-    with pytest.raises(ValueError):
-        get_float(data_list, 1)
+    assert get_float(data_dict, "b", errors="ignore") == 0.0
 
 
 def test_get_bool():
     from pytilpack.python_ import get_bool
 
     data_dict = {"a": True, "b": "string", "c": None}
-    data_list = [True, "string", None]
 
     assert get_bool(data_dict, "a") is True
     assert get_bool(data_dict, "c", False) is False
-    assert get_bool(data_list, 0) is True
-    assert get_bool(data_list, 2, False) is False
+    assert get_bool(data_dict, "d", False) is False
 
     with pytest.raises(ValueError):
         get_bool(data_dict, "b")
-
-    with pytest.raises(ValueError):
-        get_bool(data_list, 1)
+    assert get_bool(data_dict, "b", errors="ignore") is False
 
 
 def test_get_int():
     from pytilpack.python_ import get_int
 
     data_dict = {"a": 1, "b": "string", "c": None}
-    data_list = [1, "string", None]
 
     assert get_int(data_dict, "a") == 1
     assert get_int(data_dict, "c", 2) == 2
-    assert get_int(data_list, 0) == 1
-    assert get_int(data_list, 2, 2) == 2
+    assert get_int(data_dict, "d", 2) == 2
 
     with pytest.raises(ValueError):
         get_int(data_dict, "b")
-
-    with pytest.raises(ValueError):
-        get_int(data_list, 1)
+    assert get_int(data_dict, "b", errors="ignore") == 0
 
 
 def test_get_str():
     from pytilpack.python_ import get_str
 
     data_dict = {"a": "string", "b": 1, "c": None}
-    data_list = ["string", 1, None]
 
     assert get_str(data_dict, "a") == "string"
     assert get_str(data_dict, "c", "default") == "default"
-    assert get_str(data_list, 0) == "string"
-    assert get_str(data_list, 2, "default") == "default"
+    assert get_str(data_dict, "d", "default") == "default"
 
     with pytest.raises(ValueError):
         get_str(data_dict, "b")
-
-    with pytest.raises(ValueError):
-        get_str(data_list, 1)
+    assert get_str(data_dict, "b", errors="ignore") == ""
 
 
 def test_get_list():
     from pytilpack.python_ import get_list
 
     data_dict = {"a": [1, 2, 3], "b": "string", "c": None}
-    data_list = [[1, 2, 3], "string", None]
 
     assert get_list(data_dict, "a") == [1, 2, 3]
     assert get_list(data_dict, "c", [4, 5, 6]) == [4, 5, 6]
-    assert get_list(data_list, 0) == [1, 2, 3]
-    assert get_list(data_list, 2, [4, 5, 6]) == [4, 5, 6]
+    assert get_list(data_dict, "d", [4, 5, 6]) == [4, 5, 6]
 
     with pytest.raises(ValueError):
         get_list(data_dict, "b")
-
-    with pytest.raises(ValueError):
-        get_list(data_list, 1)
+    assert get_list(data_dict, "b", errors="ignore") == []
 
 
 def test_get_dict():
     from pytilpack.python_ import get_dict
 
     data_dict = {"a": {"key": "value"}, "b": "string", "c": None}
-    data_list = [{"key": "value"}, "string", None]
 
     assert get_dict(data_dict, "a") == {"key": "value"}
     assert get_dict(data_dict, "c", {"default": "value"}) == {"default": "value"}
-    assert get_dict(data_list, 0) == {"key": "value"}
-    assert get_dict(data_list, 2, {"default": "value"}) == {"default": "value"}
+    assert get_dict(data_dict, "d", {"default": "value"})
 
     with pytest.raises(ValueError):
         get_dict(data_dict, "b")
-
-    with pytest.raises(ValueError):
-        get_dict(data_list, 1)
+    assert get_dict(data_dict, "b", errors="ignore") == {}
