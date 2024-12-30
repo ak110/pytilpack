@@ -141,10 +141,10 @@ def get_bool(
     data: list | dict,
     key: str | int | list[str | int],
     default_value: bool = False,
-    errors: typing.Literal["raise", "ignore"] = "raise",
+    errors: typing.Literal["strict", "ignore"] = "strict",
 ) -> bool:
     """辞書またはリストからbool値を取得する。"""
-    value = get(data, key, default_value)
+    value = get(data, key, default_value, errors)
     if isinstance(value, bool):
         return value
     if errors == "ignore":
@@ -156,10 +156,10 @@ def get_int(
     data: list | dict,
     key: str | int | list[str | int],
     default_value: int = 0,
-    errors: typing.Literal["raise", "ignore"] = "raise",
+    errors: typing.Literal["strict", "ignore"] = "strict",
 ) -> int:
     """辞書またはリストからint値を取得する。"""
-    value = get(data, key, default_value)
+    value = get(data, key, default_value, errors)
     if isinstance(value, int):
         return value
     if errors == "ignore":
@@ -171,10 +171,10 @@ def get_float(
     data: list | dict,
     key: str | int | list[str | int],
     default_value: float = 0.0,
-    errors: typing.Literal["raise", "ignore"] = "raise",
+    errors: typing.Literal["strict", "ignore"] = "strict",
 ) -> float:
     """辞書またはリストからfloat値を取得する。"""
-    value = get(data, key, default_value)
+    value = get(data, key, default_value, errors)
     if isinstance(value, float):
         return value
     if errors == "ignore":
@@ -186,10 +186,10 @@ def get_str(
     data: list | dict,
     key: str | int | list[str | int],
     default_value: str = "",
-    errors: typing.Literal["raise", "ignore"] = "raise",
+    errors: typing.Literal["strict", "ignore"] = "strict",
 ) -> str:
     """辞書またはリストからstr値を取得する。"""
-    value = get(data, key, default_value)
+    value = get(data, key, default_value, errors)
     if isinstance(value, str):
         return value
     if errors == "ignore":
@@ -201,12 +201,12 @@ def get_list(
     data: list | dict,
     key: str | int | list[str | int],
     default_value: list | None = None,
-    errors: typing.Literal["raise", "ignore"] = "raise",
+    errors: typing.Literal["strict", "ignore"] = "strict",
 ) -> list:
     """辞書またはリストからlist値を取得する。"""
     if default_value is None:
         default_value = []
-    value = get(data, key, default_value)
+    value = get(data, key, default_value, errors)
     if isinstance(value, list):
         return value
     if errors == "ignore":
@@ -218,12 +218,12 @@ def get_dict(
     data: list | dict,
     key: str | int | list[str | int],
     default_value: dict | None = None,
-    errors: typing.Literal["raise", "ignore"] = "raise",
+    errors: typing.Literal["strict", "ignore"] = "strict",
 ) -> dict:
     """辞書またはリストからdict値を取得する。"""
     if default_value is None:
         default_value = {}
-    value = get(data, key, default_value)
+    value = get(data, key, default_value, errors)
     if isinstance(value, dict):
         return value
     if errors == "ignore":
@@ -232,7 +232,11 @@ def get_dict(
 
 
 def get(
-    data: list | dict, key: str | int | list[str | int], default_value: T | None = None
+    data: list | dict,
+    key: str | int | list[str | int],
+    default_value: T | None = None,
+    errors: typing.Literal["strict", "ignore"] = "strict",
+    default_if_none: bool = True,
 ) -> typing.Any | None:
     """辞書またはリストから値を取得する。
 
@@ -240,31 +244,43 @@ def get(
         data: 取得元の辞書またはリスト。
         key: 取得する値のキー。
         default_value: 取得できなかった場合のデフォルト値。
+        errors: エラー時の挙動。"strict"で例外を発生させる。"ignore"でデフォルト値を返す。
+        default_if_none: 値がNoneの場合にデフォルト値を返すか否か。
 
     Returns:
         取得した値。取得できなかった場合はdefault_value。
 
+    Raises:
+        ValueError: errors="strict"の場合、キー/インデックスが見つからない場合やNoneの場合に発生。
+
     """
-    if isinstance(key, list):
-        for k in key:
-            if isinstance(data, dict):
-                data = data.get(k)  # type: ignore[assignment]
-            elif isinstance(data, list):
-                data = data[k] if isinstance(k, int) and 0 <= k < len(data) else None  # type: ignore[assignment]
-            else:
-                return default_value
-            if data is None:
-                return default_value
-    else:
+    if not isinstance(key, list):
+        key = [key]
+    for k in key:
         if isinstance(data, dict):
-            data = data.get(key)  # type: ignore[assignment]
+            if k in data:
+                data = data[k]  # type: ignore[assignment]
+            else:
+                return default_value  # key not found
         elif isinstance(data, list):
-            data = data[key] if isinstance(key, int) and 0 <= key < len(data) else None  # type: ignore[assignment]
+            if isinstance(k, int):
+                if 0 <= k < len(data):
+                    data = data[k]  # type: ignore[assignment]
+                else:
+                    return default_value  # key not found
+            else:
+                # key error
+                if errors == "strict":
+                    raise ValueError(f"{_stringify_key(key)} not found")
+                return default_value
         else:
+            # data error
+            if errors == "strict":
+                raise ValueError(f"{_stringify_key(key)} not found")
             return default_value
 
-    # {"key": None}のような場合はNoneではなくdefault_valueを返すことにする。ここは場合によりけりだが…。
-    if data is None:
+    # 値がNoneの場合
+    if data is None and default_if_none:
         return default_value
 
     return data

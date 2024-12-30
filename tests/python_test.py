@@ -72,95 +72,112 @@ def test_class_field_comments():
 def test_get():
     from pytilpack.python_ import get
 
-    data_dict = {"a": [{"b": 1}]}
+    data = {"a": [{"b": 1}], "none": None}
 
-    assert get(data_dict, "a") == [{"b": 1}]
-    assert get(data_dict, ["a", 0]) == {"b": 1}
-    assert get(data_dict, ["a", 0, "b"]) == 1
-    assert get(data_dict, ["a", 0, "c"], 2) == 2
-    assert get(data_dict, ["a", 1], 2) == 2
-    assert get(data_dict, ["c", 0], 2) == 2
+    # 正常系
+    assert get(data, "a") == [{"b": 1}]
+    assert get(data, ["a", 0]) == {"b": 1}
+    assert get(data, ["a", 0, "b"]) == 1
+
+    # デフォルト値
+    assert get(data, ["a", 0, "c"], 2) == 2
+    assert get(data, ["a", 1], 2) == 2
+    assert get(data, ["c", 0], 2) == 2
+
+    # 値がNone
+    assert get(data, "none", 2) == 2
+    assert get(data, "none", 2, default_if_none=False) is None
+
+    # スカラーに対してまだキーがあるならエラー
+    with pytest.raises(ValueError):
+        get(data, ["a", 0, "b", "c"])
+    assert get(data, ["a", 0, "b", "c"], 2, errors="ignore") == 2
+
+    # 配列のインデックスはint型でなければならない
+    with pytest.raises(ValueError):
+        get(data, ["a", "0"])
+    assert get(data, ["a", "0"], 2, errors="ignore") == 2
 
 
 def test_get_float():
     from pytilpack.python_ import get_float
 
-    data_dict = {"a": 1.1, "b": "string", "c": None}
+    data = {"a": 1.1, "b": "string", "c": None}
 
-    assert get_float(data_dict, "a") == 1.1
-    assert get_float(data_dict, "c", 2.2) == 2.2
-    assert get_float(data_dict, "d", 2.2) == 2.2
+    assert get_float(data, "a") == 1.1
+    assert get_float(data, "c", 2.2) == 2.2  # 値がNoneの場合
+    assert get_float(data, "d", 2.2) == 2.2  # キーが存在しない場合
 
     with pytest.raises(ValueError):
-        get_float(data_dict, "b")
-    assert get_float(data_dict, "b", errors="ignore") == 0.0
+        get_float(data, "b")
+    assert get_float(data, "b", errors="ignore") == 0.0
 
 
 def test_get_bool():
     from pytilpack.python_ import get_bool
 
-    data_dict = {"a": True, "b": "string", "c": None}
+    data = {"a": True, "b": "string", "c": None}
 
-    assert get_bool(data_dict, "a") is True
-    assert get_bool(data_dict, "c", False) is False
-    assert get_bool(data_dict, "d", False) is False
+    assert get_bool(data, "a") is True
+    assert get_bool(data, "c", False) is False  # 値がNoneの場合
+    assert get_bool(data, "d", False) is False  # キーが存在しない場合
 
     with pytest.raises(ValueError):
-        get_bool(data_dict, "b")
-    assert get_bool(data_dict, "b", errors="ignore") is False
+        get_bool(data, "b")
+    assert get_bool(data, "b", errors="ignore") is False
 
 
 def test_get_int():
     from pytilpack.python_ import get_int
 
-    data_dict = {"a": 1, "b": "string", "c": None}
+    data = {"a": 1, "b": "string", "c": None}
 
-    assert get_int(data_dict, "a") == 1
-    assert get_int(data_dict, "c", 2) == 2
-    assert get_int(data_dict, "d", 2) == 2
+    assert get_int(data, "a") == 1
+    assert get_int(data, "c", 2) == 2  # 値がNoneの場合
+    assert get_int(data, "d", 2) == 2  # キーが存在しない場合
 
     with pytest.raises(ValueError):
-        get_int(data_dict, "b")
-    assert get_int(data_dict, "b", errors="ignore") == 0
+        get_int(data, "b")
+    assert get_int(data, "b", errors="ignore") == 0
 
 
 def test_get_str():
     from pytilpack.python_ import get_str
 
-    data_dict = {"a": "string", "b": 1, "c": None}
+    data = {"a": "string", "b": 1, "c": None}
 
-    assert get_str(data_dict, "a") == "string"
-    assert get_str(data_dict, "c", "default") == "default"
-    assert get_str(data_dict, "d", "default") == "default"
+    assert get_str(data, "a") == "string"
+    assert get_str(data, "c", "default") == "default"  # 値がNoneの場合
+    assert get_str(data, "d", "default") == "default"  # キーが存在しない場合
 
     with pytest.raises(ValueError):
-        get_str(data_dict, "b")
-    assert get_str(data_dict, "b", errors="ignore") == ""
+        get_str(data, "b")
+    assert get_str(data, "b", errors="ignore") == ""
 
 
 def test_get_list():
     from pytilpack.python_ import get_list
 
-    data_dict = {"a": [1, 2, 3], "b": "string", "c": None}
+    data = {"a": [1, 2, 3], "b": "string", "c": None}
 
-    assert get_list(data_dict, "a") == [1, 2, 3]
-    assert get_list(data_dict, "c", [4, 5, 6]) == [4, 5, 6]
-    assert get_list(data_dict, "d", [4, 5, 6]) == [4, 5, 6]
+    assert get_list(data, "a") == [1, 2, 3]
+    assert get_list(data, "c", [4, 5, 6]) == [4, 5, 6]  # 値がNoneの場合
+    assert get_list(data, "d", [4, 5, 6]) == [4, 5, 6]  # キーが存在しない場合
 
     with pytest.raises(ValueError):
-        get_list(data_dict, "b")
-    assert get_list(data_dict, "b", errors="ignore") == []
+        get_list(data, "b")
+    assert get_list(data, "b", errors="ignore") == []
 
 
 def test_get_dict():
     from pytilpack.python_ import get_dict
 
-    data_dict = {"a": {"key": "value"}, "b": "string", "c": None}
+    data = {"a": {"key": "value"}, "b": "string", "c": None}
 
-    assert get_dict(data_dict, "a") == {"key": "value"}
-    assert get_dict(data_dict, "c", {"default": "value"}) == {"default": "value"}
-    assert get_dict(data_dict, "d", {"default": "value"})
+    assert get_dict(data, "a") == {"key": "value"}
+    assert get_dict(data, "c", {"d": "v"}) == {"d": "v"}  # 値がNoneの場合
+    assert get_dict(data, "d", {"d": "v"}) == {"d": "v"}  # キーが存在しない場合
 
     with pytest.raises(ValueError):
-        get_dict(data_dict, "b")
-    assert get_dict(data_dict, "b", errors="ignore") == {}
+        get_dict(data, "b")
+    assert get_dict(data, "b", errors="ignore") == {}
