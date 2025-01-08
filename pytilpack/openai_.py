@@ -52,7 +52,7 @@ def gather_chunks(
             "system_fingerprint",
             remove_none(c.system_fingerprint for c in chunks),
         ),
-        usage=_equals_all_get(strict, "usage", remove_none(c.usage for c in chunks)),
+        usage=_get_single(strict, "usage", remove_none(c.usage for c in chunks)),
     )
     return response
 
@@ -215,6 +215,16 @@ def _equals_all_get(
     if len(unique_values) > 1:
         _warn(strict, f"{name}に複数の値が含まれています。{unique_values=}")
     return values[-1]
+
+
+def _get_single(strict: bool, name: str, values: typing.Iterable[T]) -> T | None:
+    """リストの要素が1つだけであることを確認して取得する。"""
+    values = list(values)
+    if len(values) == 0:
+        return None
+    if len(values) > 1:
+        _warn(strict, f"{name}に複数の値が含まれています。{values=}")
+    return values[0]
 
 
 def _warn(strict: bool, message: str) -> None:
