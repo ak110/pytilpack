@@ -145,6 +145,17 @@ webencodings = "*"
 css = ["tinycss2 (>=1.1.0,<1.5)"]
 
 [[package]]
+name = "bleach-allowlist"
+version = "1.0.3"
+description = "Curated lists of tags and attributes for sanitizing html"
+optional = true
+python-versions = "*"
+files = [
+    {file = "bleach-allowlist-1.0.3.tar.gz", hash = "sha256:56e22086079a0e6a3100ae99e4dbaf20eb2585486598eb0e994008a11428da9b"},
+    {file = "bleach_allowlist-1.0.3-py2.py3-none-any.whl", hash = "sha256:6427a3ac0baddf549703f1003ea53f411f3d7888524c94c00eb6ef1deb378899"},
+]
+
+[[package]]
 name = "blinker"
 version = "1.9.0"
 description = "Fast, simple object-to-object and broadcast signaling"
@@ -1934,11 +1945,11 @@ MarkupSafe = ">=2.1.1"
 watchdog = ["watchdog (>=2.3)"]
 
 [extras]
-all = ["bleach", "fastapi", "flask", "flask-login", "html5lib", "httpx", "markdown", "openai", "pillow", "pytest", "pyyaml", "sqlalchemy", "tabulate", "tiktoken", "tqdm"]
+all = ["bleach", "bleach-allowlist", "fastapi", "flask", "flask-login", "html5lib", "httpx", "markdown", "openai", "pillow", "pytest", "pyyaml", "sqlalchemy", "tabulate", "tiktoken", "tqdm"]
 fastapi = ["fastapi", "html5lib", "httpx"]
 flask = ["flask", "html5lib", "pytest"]
 flask-login = ["flask", "flask-login"]
-markdown = ["bleach", "markdown"]
+markdown = ["bleach", "bleach-allowlist", "markdown"]
 openai = ["openai"]
 pyyaml = ["pyyaml"]
 sqlalchemy = ["sqlalchemy", "tabulate"]
@@ -1948,4 +1959,4 @@ tqdm = ["tqdm"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<4.0"
-content-hash = "86c446d3f9289ed50f3ed0a81f9fa3aaac82aee6b9427757f4cf17f169d58f16"
+content-hash = "6fd387ca8b67cadf9c5a3f2ed8af33f5d128c9cd54fe55a4ce88957ed80a01c9"

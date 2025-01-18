@@ -20,6 +20,7 @@ style = "pep440"
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
 bleach = {version = ">=6.2", optional = true}
+bleach-allowlist = {version = ">=1.0", optional = true}
 fastapi = {version = ">=0.111", optional = true}
 flask = {version = ">=3.0", optional = true}
 flask-login = {version = ">=0.6", optional = true}
@@ -52,6 +53,7 @@ all = [
     "httpx",
     "markdown",
     "bleach",
+    "bleach-allowlist",
     "openai",
     "pillow",
     "pytest",
@@ -64,7 +66,7 @@ all = [
 fastapi = ["fastapi", "httpx", "html5lib"]
 flask = ["flask", "html5lib", "pytest"]
 flask-login = ["flask", "flask-login"]
-markdown = ["markdown", "bleach"]
+markdown = ["markdown", "bleach", "bleach-allowlist"]
 openai = ["openai"]
 pyyaml = ["pyyaml"]
 sqlalchemy = ["sqlalchemy", "tabulate"]
