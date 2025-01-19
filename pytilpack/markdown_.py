@@ -21,21 +21,17 @@ def markdownfy(
         extensions = ["markdown.extensions.extra", "markdown.extensions.toc"]
     if extension_configs is None:
         extension_configs = {"toc": {"title": "目次", "permalink": True}}
-    return _sanitize_html(
-        markdown.markdown(
-            text,
-            extensions=extensions,
-            extension_configs=extension_configs,
-            tab_length=tab_length,
-            **kwargs,
-        )
+
+    html = markdown.markdown(
+        text,
+        extensions=extensions,
+        extension_configs=extension_configs,
+        tab_length=tab_length,
+        **kwargs,
     )
 
-
-def _sanitize_html(text: str) -> str:
-    """HTMLタグのサニタイズ。"""
-    return bleach.clean(
-        text,
+    html = bleach.clean(
+        html,
         tags=set(bleach_allowlist.generally_xss_safe) - {"detals"} | {"details"},
         attributes={
             "*": ["id", "title"],
@@ -48,3 +44,5 @@ def _sanitize_html(text: str) -> str:
         },
         protocols=bleach.ALLOWED_PROTOCOLS,
     )
+
+    return html
