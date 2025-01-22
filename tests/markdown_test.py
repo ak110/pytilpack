@@ -36,6 +36,12 @@ def test_markdownfy_with_html_tag():
     result = pytilpack.markdown_.markdownfy(html)
     assert html in result
 
+    # HTMLに無いタグはエスケープ
+    html = "<think>最近流行りのreasoning</think>結果"
+    result = pytilpack.markdown_.markdownfy(html)
+    assert "<think>" not in result
+    assert "&lt;think&gt;" in result
+
 
 def test_markdownfy_with_malicious_content():
     """悪意のある入力に対するテスト。"""
