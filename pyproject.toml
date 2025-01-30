@@ -20,6 +20,7 @@ style = "pep440"
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
 bleach = {version = ">=6.2", optional = true}
+beautifulsoup4 = {version = ">=4.12", optional = true}
 fastapi = {version = ">=0.111", optional = true}
 flask = {version = ">=3.0", optional = true}
 flask-login = {version = ">=0.6", optional = true}
@@ -45,6 +46,8 @@ types-tabulate = "*"
 
 [tool.poetry.extras]
 all = [
+    "bleach",
+    "beautifulsoup4",
     "fastapi",
     "flask",
     "flask-login",
@@ -64,6 +67,7 @@ all = [
 fastapi = ["fastapi", "httpx", "html5lib"]
 flask = ["flask", "html5lib", "pytest"]
 flask-login = ["flask", "flask-login"]
+htmlrag = ["beautifulsoup4"]
 markdown = ["markdown", "bleach"]
 openai = ["openai"]
 pyyaml = ["pyyaml"]

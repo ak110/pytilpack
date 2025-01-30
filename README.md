@@ -14,11 +14,13 @@ pip install pytilpack
 # pip install pytilpack[fastapi]
 # pip install pytilpack[flask]
 # pip install pytilpack[flask-login]
+# pip install pytilpack[htmlrag]
+# pip install pytilpack[markdown]
 # pip install pytilpack[openai]
+# pip install pytilpack[pyyaml]
 # pip install pytilpack[sqlalchemy]
 # pip install pytilpack[tiktoken]
 # pip install pytilpack[tqdm]
-# pip install pytilpack[yaml]
 ```
 
 ## 使い方
@@ -65,3 +67,4 @@ import pytilpack.xxx
 ### その他のユーティリティのモジュール一覧
 
 - [pytilpack.data_url](pytilpack/data_url.py)  # データURL関連
+- [pytilpack.htmlrag](pytilpack/htmlrag.py)  # HtmlRAG関連
