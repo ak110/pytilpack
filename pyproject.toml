@@ -34,6 +34,7 @@ pyyaml = {version = ">=6.0", optional = true}
 sqlalchemy = {version = ">=2.0", optional = true}
 tabulate = {version = ">=0.9", extras=["widechars"], optional = true}
 tiktoken = {version = ">=0.6", optional = true}
+tinycss2 = {version = ">=1.4", optional = true}
 tqdm = {version = ">=4.0", optional = true}
 typing-extensions = ">=4.0"
 
@@ -62,13 +63,14 @@ all = [
     "sqlalchemy",
     "tabulate",
     "tiktoken",
+    "tinycss2",
     "tqdm",
 ]
 fastapi = ["fastapi", "httpx", "html5lib"]
 flask = ["flask", "html5lib", "pytest"]
 flask-login = ["flask", "flask-login"]
 htmlrag = ["beautifulsoup4"]
-markdown = ["markdown", "bleach"]
+markdown = ["markdown", "bleach", "tinycss2"]
 openai = ["openai"]
 pyyaml = ["pyyaml"]
 sqlalchemy = ["sqlalchemy", "tabulate"]

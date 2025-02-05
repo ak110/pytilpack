@@ -66,12 +66,13 @@ def _simplify_html(
         for title in soup.find_all("title"):
             title.decompose()
     #  remove all attributes
-    for tag in soup.find_all(True):
-        # 独自拡張: hrefを残すオプションを追加
-        if keep_href and tag.name == "a":
-            tag.attrs = {"href": tag.get("href")}  # href属性だけ残す
-        else:
-            tag.attrs = {}
+    for tag in soup.find_all(recursive=True):
+        if isinstance(tag, bs4.Tag):
+            # 独自拡張: hrefを残すオプションを追加
+            if keep_href and tag.name == "a":
+                tag.attrs = {"href": str(tag.get("href"))}  # href属性だけ残す
+            else:
+                tag.attrs = {}
     #  remove empty tags recursively
     while True:
         removed = False
@@ -98,18 +99,19 @@ def _simplify_html(
 
     # remove all tags with no text
     for tag in soup.find_all():
-        children = [child for child in tag.contents if not isinstance(child, str)]
-        if len(children) == 1:
-            tag_text = tag.get_text()
-            child_text = "".join(
-                [
-                    child.get_text()
-                    for child in tag.contents
-                    if not isinstance(child, str)
-                ]
-            )
-            if concat_text(child_text) == concat_text(tag_text):
-                tag.replace_with_children()
+        if isinstance(tag, bs4.Tag):
+            children = [child for child in tag.contents if not isinstance(child, str)]
+            if len(children) == 1:
+                tag_text = tag.get_text()
+                child_text = "".join(
+                    [
+                        child.get_text()
+                        for child in tag.contents
+                        if not isinstance(child, str)
+                    ]
+                )
+                if concat_text(child_text) == concat_text(tag_text):
+                    tag.replace_with_children()
     #  if html is not wrapped in a html tag, wrap it
 
     res = str(soup)

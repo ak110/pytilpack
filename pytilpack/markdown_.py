@@ -3,6 +3,7 @@
 import typing
 
 import bleach
+import bleach.css_sanitizer
 import markdown
 
 ALLOWED_TAGS = {
@@ -170,6 +171,7 @@ def markdownfy(
         tags=ALLOWED_TAGS,
         attributes=ALLOWED_ATTRIBUTES,
         protocols=ALLOWED_PROTOCOLS,
+        css_sanitizer=bleach.css_sanitizer.CSSSanitizer(),
     )
 
     return html

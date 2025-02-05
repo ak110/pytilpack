@@ -22,6 +22,19 @@ def test_markdownfy_basic():
     result = pytilpack.markdown_.markdownfy(text)
     assert "<code>" in result
 
+    # テーブル(左寄せ,右寄せ,中央寄せ)
+    text = """| Left | Right | Center |
+|:----|----:|:----:|
+| 1 | 2 | 3 |"""
+    result = pytilpack.markdown_.markdownfy(text)
+    assert "<table>" in result
+    assert '<th style="text-align: left;">' in result
+    assert '<th style="text-align: right;">' in result
+    assert '<th style="text-align: center;">' in result
+    assert '<td style="text-align: left;">' in result
+    assert '<td style="text-align: right;">' in result
+    assert '<td style="text-align: center;">' in result
+
 
 def test_markdownfy_with_html_tag():
     """HTMLサニタイズのテスト。"""
