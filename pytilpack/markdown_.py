@@ -150,6 +150,12 @@ def markdownfy(
         typing.Mapping[str, typing.Mapping[str, typing.Any]] | None
     ) = None,
     tab_length: int | None = 2,
+    allow_tags: typing.Iterable[str] | None = None,
+    allow_attributes: typing.Mapping[str, typing.Iterable[str]] | None = None,
+    allow_protocols: typing.Iterable[str] | None = None,
+    strip: bool = False,
+    strip_comments: bool = True,
+    css_sanitizer: bleach.css_sanitizer.CSSSanitizer | None = None,
     **kwargs,
 ) -> str:
     """Markdown変換。"""
@@ -157,6 +163,14 @@ def markdownfy(
         extensions = ["markdown.extensions.extra", "markdown.extensions.toc"]
     if extension_configs is None:
         extension_configs = {"toc": {"title": "目次", "permalink": True}}
+    if allow_tags is None:
+        allow_tags = ALLOWED_TAGS
+    if allow_attributes is None:
+        allow_attributes = ALLOWED_ATTRIBUTES
+    if allow_protocols is None:
+        allow_protocols = ALLOWED_PROTOCOLS
+    if css_sanitizer is None:
+        css_sanitizer = bleach.css_sanitizer.CSSSanitizer()
 
     html = markdown.markdown(
         text,
@@ -168,10 +182,12 @@ def markdownfy(
 
     html = bleach.clean(
         html,
-        tags=ALLOWED_TAGS,
-        attributes=ALLOWED_ATTRIBUTES,
-        protocols=ALLOWED_PROTOCOLS,
-        css_sanitizer=bleach.css_sanitizer.CSSSanitizer(),
+        tags=allow_tags,
+        attributes={k: list(v) for k, v in allow_attributes.items()},
+        protocols=allow_protocols,
+        strip=strip,
+        strip_comments=strip_comments,
+        css_sanitizer=css_sanitizer,
     )
 
     return html
