@@ -150,6 +150,7 @@ def markdownfy(
         typing.Mapping[str, typing.Mapping[str, typing.Any]] | None
     ) = None,
     tab_length: int | None = 2,
+    sanitize: bool = True,
     allow_tags: typing.Iterable[str] | None = None,
     allow_attributes: typing.Mapping[str, typing.Iterable[str]] | None = None,
     allow_protocols: typing.Iterable[str] | None = None,
@@ -163,15 +164,6 @@ def markdownfy(
         extensions = ["markdown.extensions.extra", "markdown.extensions.toc"]
     if extension_configs is None:
         extension_configs = {"toc": {"title": "目次", "permalink": True}}
-    if allow_tags is None:
-        allow_tags = ALLOWED_TAGS
-    if allow_attributes is None:
-        allow_attributes = ALLOWED_ATTRIBUTES
-    if allow_protocols is None:
-        allow_protocols = ALLOWED_PROTOCOLS
-    if css_sanitizer is None:
-        css_sanitizer = bleach.css_sanitizer.CSSSanitizer()
-
     html = markdown.markdown(
         text,
         extensions=extensions,
@@ -180,14 +172,23 @@ def markdownfy(
         **kwargs,
     )
 
-    html = bleach.clean(
-        html,
-        tags=allow_tags,
-        attributes={k: list(v) for k, v in allow_attributes.items()},
-        protocols=allow_protocols,
-        strip=strip,
-        strip_comments=strip_comments,
-        css_sanitizer=css_sanitizer,
-    )
+    if sanitize:
+        if allow_tags is None:
+            allow_tags = ALLOWED_TAGS
+        if allow_attributes is None:
+            allow_attributes = ALLOWED_ATTRIBUTES
+        if allow_protocols is None:
+            allow_protocols = ALLOWED_PROTOCOLS
+        if css_sanitizer is None:
+            css_sanitizer = bleach.css_sanitizer.CSSSanitizer()
+        html = bleach.clean(
+            html,
+            tags=allow_tags,
+            attributes={k: list(v) for k, v in allow_attributes.items()},
+            protocols=allow_protocols,
+            strip=strip,
+            strip_comments=strip_comments,
+            css_sanitizer=css_sanitizer,
+        )
 
     return html
