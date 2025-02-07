@@ -1,6 +1,9 @@
 """ファイル関連のユーティリティ集。"""
 
+import logging
 import pathlib
+
+logger = logging.getLogger(__name__)
 
 
 def delete_file(path: str | pathlib.Path) -> None:
@@ -11,11 +14,27 @@ def delete_file(path: str | pathlib.Path) -> None:
 
 
 def get_size(path: str | pathlib.Path) -> int:
-    """ファイル・ディレクトリのサイズを返す。"""
+    """ファイル・ディレクトリのサイズを返す。エラー発生時は対象は0扱いとする。"""
     path = pathlib.Path(path)
-    if path.is_dir():
-        return sum(p.stat().st_size for p in path.glob("**/*") if p.is_file())
-    elif path.is_file():
-        return path.stat().st_size
-    else:
+    try:
+        if path.is_file():
+            try:
+                return path.stat().st_size
+            except Exception:
+                logger.warning(f"ファイルサイズ取得失敗: {path}", exc_info=True)
+                return 0
+        elif path.is_dir():
+            total_size: int = 0
+            try:
+                for child in path.iterdir():
+                    # 再帰的に子要素のサイズを加算する
+                    total_size += get_size(child)
+                return total_size
+            except Exception:
+                logger.warning(f"ディレクトリサイズ取得失敗: {path}", exc_info=True)
+                return 0
+        else:
+            return 0
+    except Exception:
+        logger.warning(f"ファイル・ディレクトリサイズ取得失敗: {path}", exc_info=True)
         return 0
