@@ -2,12 +2,14 @@
 
 import base64
 import contextlib
+import json
 import logging
 import pathlib
 import secrets
 import threading
 import typing
 import urllib.parse
+import xml.etree.ElementTree
 
 import flask
 import httpx
@@ -178,7 +180,7 @@ def _create_temp_file(
 
     tmp_file_path = pytilpack.pytest_.tmp_file_path(tmp_path, suffix=".html")
     tmp_file_path.write_text(response_body, encoding="utf-8")
-    print(f"HTML: {tmp_file_path}")  # printもしておく
+    logger.info(f"HTML: {tmp_file_path}")
     return tmp_file_path
 
 
@@ -207,7 +209,63 @@ def assert_json(response, status_code: int = 200) -> dict[str, typing.Any]:
             f"ステータスコードエラー: {response.status_code} != {status_code})"
         )
 
-    return response.json
+    # Content-Typeチェック
+    if response.content_type != "application/json":
+        logger.info(
+            f"Content-Typeエラー: {response.content_type} != application/json\n\n{response_body}"
+        )
+        raise AssertionError(
+            f"Content-Typeエラー: {response.content_type} != application/json"
+        )
+
+    # JSONのチェック
+    try:
+        data = json.loads(response_body)
+    except Exception as e:
+        logger.info(f"JSONエラー: {e}\n\n{response_body}")
+        raise AssertionError(f"JSONエラー: {e}") from e
+
+    return data
+
+
+def assert_xml(response, status_code: int = 200) -> str:
+    """flaskのテストコード用。
+
+    Args:
+        response: レスポンス
+        status_code: 期待するステータスコード
+
+    Raises:
+        AssertionError: ステータスコードが異なる場合
+
+    Returns:
+        レスポンスのxml
+
+    """
+    response_body = response.get_data().decode("utf-8")
+
+    # ステータスコードチェック
+    if response.status_code != status_code:
+        logger.info(
+            f"ステータスコードエラー: {response.status_code} != {status_code}\n\n{response_body}"
+        )
+        raise AssertionError(
+            f"ステータスコードエラー: {response.status_code} != {status_code})"
+        )
+
+    # Content-Typeチェック
+    if response.content_type not in ("application/xml", "text/xml"):
+        logger.info(f"Content-Typeエラー: {response.content_type}\n\n{response_body}")
+        raise AssertionError(f"Content-Typeエラー: {response.content_type}")
+
+    # XMLのチェック
+    try:
+        _ = xml.etree.ElementTree.fromstring(response_body)
+    except Exception as e:
+        logger.info(f"XMLエラー: {e}\n\n{response_body}")
+        raise AssertionError(f"XMLエラー: {e}") from e
+
+    return response_body
 
 
 class ProxyFix(werkzeug.middleware.proxy_fix.ProxyFix):

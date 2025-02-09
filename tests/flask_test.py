@@ -35,6 +35,10 @@ def _app():
             {"Content-Type": "text/html"},
         )
 
+    @app.route("/xml")
+    def xml():
+        return "<root><hello>world</hello></root>", 200, {"Content-Type": "text/xml"}
+
     @app.route("/json")
     def json():
         return flask.jsonify({"hello": "world"})
@@ -56,10 +60,25 @@ def test_assert_html(client):
     with pytest.raises(AssertionError):
         pytilpack.flask_.assert_html(response)
 
-    response = client.get("/json")
-    assert pytilpack.flask_.assert_json(response) == {"hello": "world"}
-
     response = client.get("/403")
     pytilpack.flask_.assert_html(response, 403)
     with pytest.raises(AssertionError):
         pytilpack.flask_.assert_html(response)
+
+
+def test_assert_json(client):
+    response = client.get("/json")
+    pytilpack.flask_.assert_json(response)
+
+    response = client.get("/html")
+    with pytest.raises(AssertionError):
+        pytilpack.flask_.assert_json(response)
+
+
+def test_assert_xml(client):
+    response = client.get("/xml")
+    pytilpack.flask_.assert_xml(response)
+
+    response = client.get("/html")
+    with pytest.raises(AssertionError):
+        pytilpack.flask_.assert_xml(response)

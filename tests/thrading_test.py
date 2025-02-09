@@ -11,3 +11,7 @@ def test_parallel():
 
 def test_parallel_for():
     assert pytilpack.threading_.parallel_for(lambda x: x + 1, 3) == [1, 2, 3]
+
+
+def test_parallel_foreach():
+    assert pytilpack.threading_.parallel_foreach(lambda x: x + 1, range(3)) == [1, 2, 3]

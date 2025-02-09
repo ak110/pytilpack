@@ -4,6 +4,7 @@ import concurrent.futures
 import typing
 
 T = typing.TypeVar("T")
+U = typing.TypeVar("U")
 
 
 def parallel(
@@ -48,3 +49,19 @@ def parallel_for(func: typing.Callable[[int], T], n: int) -> list[T]:
 
     """
     return parallel([lambda i=i: func(i) for i in range(n)])  # type: ignore[misc]
+
+
+def parallel_foreach(
+    func: typing.Callable[[U], T], items: typing.Iterable[U]
+) -> list[T]:
+    """複数の関数を並列実行する。
+
+    Args:
+        func: 実行する関数。
+        items: 引数のリスト。
+
+    Returns:
+        各関数の戻り値のリスト。
+
+    """
+    return parallel([lambda item=item: func(item) for item in items])  # type: ignore[misc]
