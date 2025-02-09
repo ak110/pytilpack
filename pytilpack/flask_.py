@@ -154,6 +154,13 @@ def assert_html(
 
     response_body = response.get_data().decode("utf-8")
 
+    # ステータスコードチェック
+    if response.status_code != status_code:
+        tmp_file_path = _create_temp_file(tmp_path, response_body)
+        raise AssertionError(
+            f"ステータスコードエラー: {response.status_code} != {status_code} (HTML: {tmp_file_path} )"
+        )
+
     # HTMLのチェック
     parser = html5lib.HTMLParser(strict=True, debug=True)
     try:
@@ -161,13 +168,6 @@ def assert_html(
     except html5lib.html5parser.ParseError as e:
         tmp_file_path = _create_temp_file(tmp_path, response_body)
         raise AssertionError(f"HTMLエラー: {e} (HTML: {tmp_file_path} )") from e
-
-    # ステータスコードチェック
-    if response.status_code != status_code:
-        tmp_file_path = _create_temp_file(tmp_path, response_body)
-        raise AssertionError(
-            f"ステータスコードエラー: {response.status_code} != {status_code} (HTML: {tmp_file_path} )"
-        )
 
     return response_body
 
