@@ -85,7 +85,7 @@ def _make_choice(
         len(function_calls := remove_none(c.delta.function_call for c in choice_list))
         > 0
     ):
-        message.function_call = _make_function_call(function_calls)
+        message.function_call = _make_function_call(function_calls, strict)
 
     if len(tool_calls_list := remove_none(c.delta.tool_calls for c in choice_list)) > 0:
         message.tool_calls = _make_tool_calls(tool_calls_list, strict)
@@ -114,13 +114,16 @@ def _make_choice(
 
 def _make_function_call(
     deltas: list[openai.types.chat.chat_completion_chunk.ChoiceDeltaFunctionCall],
+    strict: bool,
 ) -> openai.types.chat.chat_completion_message.FunctionCall | None:
     """ChoiceDeltaFunctionCallを作成する。"""
     if len(deltas) == 0:
         return None
     return openai.types.chat.chat_completion_message.FunctionCall.model_construct(
         arguments="".join(remove_none(d.arguments for d in deltas)),
-        name="".join(remove_none(d.name for d in deltas)),
+        name=_equals_all_get(
+            strict, "function.name", remove_none(d.name for d in deltas)
+        ),
     )
 
 
@@ -183,7 +186,12 @@ def _make_tool_call(
         tool_call.function = (
             openai.types.chat.chat_completion_message_tool_call.Function(
                 arguments="".join(remove_none(f.arguments for f in functions)),
-                name="".join(remove_none(f.name for f in functions)),
+                name=_equals_all_get(
+                    strict,
+                    f"delta.tool_calls[{index}].function.name",
+                    remove_none(f.name for f in functions),
+                    "",
+                ),
             )
         )
 

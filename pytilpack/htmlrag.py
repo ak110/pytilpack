@@ -14,7 +14,7 @@ import bs4
 
 
 def clean_html(
-    html: str,
+    html: str | bytes,
     aggressive: bool = False,
     keep_title: bool | None = None,
     keep_href: bool | None = None,

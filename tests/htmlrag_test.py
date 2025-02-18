@@ -74,3 +74,9 @@ def test_htmlrag_clean_aggressive():
 <p>Some other text</p>
 <a href="./a.txt">link to a.txt</a>"""
     )
+
+
+def test_htmlrag_clean_bytes():
+    html = """<html><meta charset="Shift_JIS">バイナリデータ</html>""".encode("cp932")
+    simplified_html = pytilpack.htmlrag.clean_html(html, aggressive=True)
+    assert simplified_html == "バイナリデータ"
