@@ -58,10 +58,10 @@ def _simplify_html(
 ) -> str:
     for script in soup(["script", "style"]):
         script.decompose()
-    # 独自拡張: navタグ、titleタグを削除
+    # 独自拡張: メインコンテンツじゃなさそうなタグとtitleタグを削除
     if aggressive:
-        for nav in soup.find_all("nav"):
-            nav.decompose()
+        for el in soup.find_all(["nav", "header", "footer", "aside", "dialog"]):
+            el.decompose()
     if not keep_title:
         for title in soup.find_all("title"):
             title.decompose()

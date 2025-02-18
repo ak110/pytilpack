@@ -89,7 +89,7 @@ def test_assert_json(client):
 
 def test_assert_xml(client):
     response = client.get("/xml")
-    pytilpack.flask_.assert_xml(response)
+    pytilpack.flask_.assert_xml(response, content_type="text/xml")
 
     response = client.get("/xml-invalid")
     with pytest.raises(AssertionError):

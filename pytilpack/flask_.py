@@ -104,12 +104,17 @@ def run(app: flask.Flask, host: str = "localhost", port: int = 5000):
         thread.join()
 
 
-def assert_bytes(response, status_code: int = 200) -> bytes:
+def assert_bytes(
+    response,
+    status_code: int = 200,
+    content_type: str | typing.Iterable[str] | None = None,
+) -> bytes:
     """flaskのテストコード用。
 
     Args:
         response: レスポンス
         status_code: 期待するステータスコード
+        content_type: 期待するContent-Type
 
     Raises:
         AssertionError: ステータスコードが異なる場合
@@ -120,20 +125,24 @@ def assert_bytes(response, status_code: int = 200) -> bytes:
     """
     response_body = response.get_data()
 
-    # ステータスコードチェック
-    if response.status_code != status_code:
-        logger.info(
-            f"ステータスコードエラー: {response.status_code} != {status_code}\n\n{response_body!r}"
-        )
-        raise AssertionError(
-            f"ステータスコードエラー: {response.status_code} != {status_code})"
-        )
+    try:
+        # ステータスコードチェック
+        check_status_code(response.status_code, status_code)
+
+        # Content-Typeチェック
+        check_content_type(response.content_type, content_type)
+    except AssertionError as e:
+        logger.info(f"{e}\n\n{response_body!r}")
+        raise e
 
     return response_body
 
 
 def assert_html(
-    response, status_code: int = 200, tmp_path: pathlib.Path | None = None
+    response,
+    status_code: int = 200,
+    content_type: str | typing.Iterable[str] | None = "__default__",
+    tmp_path: pathlib.Path | None = None,
 ) -> str:
     """flaskのテストコード用。
 
@@ -142,6 +151,8 @@ def assert_html(
     Args:
         response: レスポンス
         status_code: 期待するステータスコード
+        content_type: 期待するContent-Type
+        tmp_path: 一時ファイルを保存するディレクトリ
 
     Raises:
         AssertionError: ステータスコードが異なる場合
@@ -154,22 +165,131 @@ def assert_html(
 
     response_body = response.get_data().decode("utf-8")
 
-    # ステータスコードチェック
-    if response.status_code != status_code:
-        tmp_file_path = _create_temp_file(tmp_path, response_body)
-        raise AssertionError(
-            f"ステータスコードエラー: {response.status_code} != {status_code} (HTML: {tmp_file_path} )"
-        )
-
-    # HTMLのチェック
-    parser = html5lib.HTMLParser(strict=True, debug=True)
     try:
-        _ = parser.parse(response.data)
-    except html5lib.html5parser.ParseError as e:
+        # ステータスコードチェック
+        check_status_code(response.status_code, status_code)
+
+        # Content-Typeチェック
+        if content_type == "__default__":
+            content_type = ["text/html", "application/xhtml+xml"]
+        check_content_type(response.content_type, content_type)
+
+        # HTMLのチェック
+        parser = html5lib.HTMLParser(strict=True, debug=True)
+        try:
+            _ = parser.parse(response.data)
+        except html5lib.html5parser.ParseError as e:
+            raise AssertionError(f"HTMLエラー: {e}") from e
+    except AssertionError as e:
         tmp_file_path = _create_temp_file(tmp_path, response_body)
-        raise AssertionError(f"HTMLエラー: {e} (HTML: {tmp_file_path} )") from e
+        raise AssertionError(f"{e} (HTML: {tmp_file_path} )") from e
 
     return response_body
+
+
+def assert_json(
+    response,
+    status_code: int = 200,
+    content_type: str | typing.Iterable[str] | None = "application/json",
+) -> dict[str, typing.Any]:
+    """flaskのテストコード用。
+
+    Args:
+        response: レスポンス
+        status_code: 期待するステータスコード
+        content_type: 期待するContent-Type
+
+    Raises:
+        AssertionError: ステータスコードが異なる場合
+
+    Returns:
+        レスポンスのjson
+
+    """
+    response_body = response.get_data().decode("utf-8")
+
+    try:
+        # ステータスコードチェック
+        check_status_code(response.status_code, status_code)
+
+        # Content-Typeチェック
+        check_content_type(response.content_type, content_type)
+
+        # JSONのチェック
+        try:
+            data = json.loads(response_body)
+        except Exception as e:
+            raise AssertionError(f"JSONエラー: {e}") from e
+    except AssertionError as e:
+        logger.info(f"{e}\n\n{response_body!r}")
+        raise e
+
+    return data
+
+
+def assert_xml(
+    response,
+    status_code: int = 200,
+    content_type: str | typing.Iterable[str] | None = "__default__",
+) -> str:
+    """flaskのテストコード用。
+
+    Args:
+        response: レスポンス
+        status_code: 期待するステータスコード
+        content_type: 期待するContent-Type
+
+    Raises:
+        AssertionError: ステータスコードが異なる場合
+
+    Returns:
+        レスポンスのxml
+
+    """
+    response_body = response.get_data().decode("utf-8")
+
+    try:
+        # ステータスコードチェック
+        check_status_code(response.status_code, status_code)
+
+        # Content-Typeチェック
+        if content_type == "__default__":
+            content_type = ["text/xml", "application/xml"]
+        check_content_type(response.content_type, content_type)
+
+        # XMLのチェック
+        try:
+            _ = xml.etree.ElementTree.fromstring(response_body)
+        except Exception as e:
+            raise AssertionError(f"XMLエラー: {e}") from e
+    except AssertionError as e:
+        logger.info(f"{e}\n\n{response_body!r}")
+        raise e
+
+    return response_body
+
+
+def check_status_code(status_code: int, valid_status_code: int) -> None:
+    """ステータスコードのチェック。"""
+    if status_code != valid_status_code:
+        raise AssertionError(
+            f"ステータスコードエラー: {status_code} != {valid_status_code}"
+        )
+
+
+def check_content_type(
+    content_type: str, valid_content_types: str | typing.Iterable[str] | None
+) -> None:
+    """Content-Typeのチェック。"""
+    if valid_content_types is None:
+        return None
+    if isinstance(valid_content_types, str):
+        valid_content_types = [valid_content_types]
+    if not any(content_type.startswith(c) for c in valid_content_types):
+        raise AssertionError(
+            f"Content-Typeエラー: {content_type} != {valid_content_types}"
+        )
+    return None
 
 
 def _create_temp_file(
@@ -182,90 +302,6 @@ def _create_temp_file(
     tmp_file_path.write_text(response_body, encoding="utf-8")
     logger.info(f"HTML: {tmp_file_path}")
     return tmp_file_path
-
-
-def assert_json(response, status_code: int = 200) -> dict[str, typing.Any]:
-    """flaskのテストコード用。
-
-    Args:
-        response: レスポンス
-        status_code: 期待するステータスコード
-
-    Raises:
-        AssertionError: ステータスコードが異なる場合
-
-    Returns:
-        レスポンスのjson
-
-    """
-    response_body = response.get_data().decode("utf-8")
-
-    # ステータスコードチェック
-    if response.status_code != status_code:
-        logger.info(
-            f"ステータスコードエラー: {response.status_code} != {status_code}\n\n{response_body}"
-        )
-        raise AssertionError(
-            f"ステータスコードエラー: {response.status_code} != {status_code})"
-        )
-
-    # Content-Typeチェック
-    if response.content_type != "application/json":
-        logger.info(
-            f"Content-Typeエラー: {response.content_type} != application/json\n\n{response_body}"
-        )
-        raise AssertionError(
-            f"Content-Typeエラー: {response.content_type} != application/json"
-        )
-
-    # JSONのチェック
-    try:
-        data = json.loads(response_body)
-    except Exception as e:
-        logger.info(f"JSONエラー: {e}\n\n{response_body}")
-        raise AssertionError(f"JSONエラー: {e}") from e
-
-    return data
-
-
-def assert_xml(response, status_code: int = 200) -> str:
-    """flaskのテストコード用。
-
-    Args:
-        response: レスポンス
-        status_code: 期待するステータスコード
-
-    Raises:
-        AssertionError: ステータスコードが異なる場合
-
-    Returns:
-        レスポンスのxml
-
-    """
-    response_body = response.get_data().decode("utf-8")
-
-    # ステータスコードチェック
-    if response.status_code != status_code:
-        logger.info(
-            f"ステータスコードエラー: {response.status_code} != {status_code}\n\n{response_body}"
-        )
-        raise AssertionError(
-            f"ステータスコードエラー: {response.status_code} != {status_code})"
-        )
-
-    # Content-Typeチェック
-    if response.content_type not in ("application/xml", "text/xml"):
-        logger.info(f"Content-Typeエラー: {response.content_type}\n\n{response_body}")
-        raise AssertionError(f"Content-Typeエラー: {response.content_type}")
-
-    # XMLのチェック
-    try:
-        _ = xml.etree.ElementTree.fromstring(response_body)
-    except Exception as e:
-        logger.info(f"XMLエラー: {e}\n\n{response_body}")
-        raise AssertionError(f"XMLエラー: {e}") from e
-
-    return response_body
 
 
 class ProxyFix(werkzeug.middleware.proxy_fix.ProxyFix):

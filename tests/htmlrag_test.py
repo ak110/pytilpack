@@ -60,6 +60,7 @@ def test_htmlrag_clean_aggressive():
 <div>
 <p>Some other text</p>
 <p><a href="./a.txt">link to a.txt</a></p>
+<aside>関連記事！</aside>
 </div>
 </div>
 </body>
