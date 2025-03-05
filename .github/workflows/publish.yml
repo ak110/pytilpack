@@ -16,9 +16,6 @@ jobs:
           python-version: "3.12"
           enable-cache: true
 
-      - name: Install dependencies
-        run: uv sync --all-extras --dev
-
       - name: Build and publish
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
