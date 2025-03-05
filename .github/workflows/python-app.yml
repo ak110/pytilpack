@@ -22,3 +22,6 @@ jobs:
 
       - name: Test with pyfltr
         run: uv run pyfltr
+
+      - name: Prune uv cache for CI
+        run: uv cache prune --ci
