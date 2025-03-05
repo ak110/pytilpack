@@ -68,3 +68,7 @@ import pytilpack.xxx
 
 - [pytilpack.data_url](pytilpack/data_url.py)  # データURL関連
 - [pytilpack.htmlrag](pytilpack/htmlrag.py)  # HtmlRAG関連
+
+## 開発手順
+
+- [DEVELOPMENT.md](DEVELOPMENT.md) を参照

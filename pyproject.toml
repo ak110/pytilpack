@@ -1,108 +1,89 @@
-[tool.poetry]
+[project]
 name = "pytilpack"
-version = "0.0.0"  # using poetry-dynamic-versioning
+dynamic = ["version"]
 description = "Python Utility Pack"
-license = "MIT"
-authors = ["aki. <mark@aur.ll.to>"]
+license = {text = "MIT"}
+authors = [
+    {name = "aki.", email = "mark@aur.ll.to"}
+]
 readme = "README.md"
-homepage = "https://github.com/ak110/pytilpack"
+requires-python = ">=3.10,<4.0"
 classifiers = [
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
 ]
+dependencies = [
+    "typing-extensions>=4.0",
+]
 
-[tool.poetry-dynamic-versioning]
-enable = true
-style = "pep440"
-
-[tool.poetry.dependencies]
-python = ">=3.10,<4.0"
-bleach = {version = ">=6.2", optional = true}
-beautifulsoup4 = {version = ">=4.12", optional = true}
-fastapi = {version = ">=0.111", optional = true}
-flask = {version = ">=3.0", optional = true}
-flask-login = {version = ">=0.6", optional = true}
-html5lib = {version = "*", optional = true}
-httpx = {version = "*", optional = true}
-markdown = {version = ">=3.6", optional = true}
-openai = {version = ">=1.25", optional = true}
-pillow = {version = "*", optional = true}
-pytest = {version = "*", optional = true}
-pyyaml = {version = ">=6.0", optional = true}
-sqlalchemy = {version = ">=2.0", optional = true}
-tabulate = {version = ">=0.9", extras=["widechars"], optional = true}
-tiktoken = {version = ">=0.6", optional = true}
-tinycss2 = {version = ">=1.4", optional = true}
-tqdm = {version = ">=4.0", optional = true}
-typing-extensions = ">=4.0"
-
-[tool.poetry.group.dev.dependencies]
-pyfltr = "*"
-types-bleach = "*"
-types-markdown = "*"
-types-pyyaml = "*"
-types-tabulate = "*"
-
-[tool.poetry.extras]
+[project.optional-dependencies]
+bleach = ["bleach>=6.2"]
+beautifulsoup4 = ["beautifulsoup4>=4.12"]
+fastapi = ["fastapi>=0.111", "httpx", "html5lib"]
+flask = ["flask>=3.0", "html5lib", "pytest"]
+flask-login = ["flask-login>=0.6", "flask"]
+htmlrag = ["beautifulsoup4"]
+markdown = ["markdown>=3.6", "bleach", "tinycss2"]
+openai = ["openai>=1.25"]
+pytest = ["pytest"]
+pyyaml = ["pyyaml>=6.0"]
+sqlalchemy = ["sqlalchemy>=2.0", "tabulate[widechars]>=0.9"]
+tiktoken = ["tiktoken>=0.6", "openai", "httpx", "pillow"]
+tqdm = ["tqdm>=4.0"]
 all = [
-    "bleach",
-    "beautifulsoup4",
-    "fastapi",
-    "flask",
-    "flask-login",
+    "bleach>=6.2",
+    "beautifulsoup4>=4.12",
+    "fastapi>=0.111",
+    "flask>=3.0",
+    "flask-login>=0.6",
     "html5lib",
     "httpx",
-    "markdown",
-    "bleach",
-    "openai",
+    "markdown>=3.6",
+    "openai>=1.25",
     "pillow",
     "pytest",
-    "pyyaml",
-    "sqlalchemy",
-    "tabulate",
-    "tiktoken",
-    "tinycss2",
-    "tqdm",
+    "pyyaml>=6.0",
+    "sqlalchemy>=2.0",
+    "tabulate[widechars]>=0.9",
+    "tiktoken>=0.6",
+    "tinycss2>=1.4",
+    "tqdm>=4.0",
 ]
-fastapi = ["fastapi", "httpx", "html5lib"]
-flask = ["flask", "html5lib", "pytest"]
-flask-login = ["flask", "flask-login"]
-htmlrag = ["beautifulsoup4"]
-markdown = ["markdown", "bleach", "tinycss2"]
-openai = ["openai"]
-pyyaml = ["pyyaml"]
-sqlalchemy = ["sqlalchemy", "tabulate"]
-tiktoken = ["tiktoken", "openai", "httpx", "pillow"]
-tqdm = ["tqdm"]
+
+[dependency-groups]
+dev = [
+    "types-bleach>=6.2.0.20241123",
+    "types-tabulate>=0.9.0.20241207",
+]
+
+[tool.uv]
+default-groups = ["dev"]
 
 [build-system]
-requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
-build-backend = "poetry_dynamic_versioning.backend"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
 
 [tool.pyfltr]
 pyupgrade-args = ["--py310-plus"]
 pylint-args = ["--jobs=4"]
 
 [tool.isort]
-# https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#isort
-# https://pycqa.github.io/isort/docs/configuration/options.html
 profile = "black"
 
 [tool.black]
-# https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html
 target-version = ['py310']
 skip-magic-trailing-comma = true
 
 [tool.flake8]
-# https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#flake8
-# https://flake8.pycqa.org/en/latest/user/configuration.html
 max-line-length = 128
 extend-ignore = "E203,"
 
 [tool.mypy]
-# https://mypy.readthedocs.io/en/stable/config_file.html
 allow_redefinition = true
 check_untyped_defs = true
 ignore_missing_imports = true
@@ -114,6 +95,5 @@ warn_unused_configs = true
 show_error_codes = true
 
 [tool.pytest.ini_options]
-# https://docs.pytest.org/en/latest/reference/reference.html#ini-options-ref
 addopts = "--showlocals -p no:cacheprovider --durations=5 -vv"
 xfail_strict = true

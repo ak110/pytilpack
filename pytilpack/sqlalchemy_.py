@@ -198,7 +198,7 @@ def describe_table(
             default = "NULL"
         elif callable(default_value):
             default = "(function)"
-        elif isinstance(default_value, sqlalchemy.sql.elements.CompilerElement):
+        elif isinstance(default_value, sqlalchemy.sql.elements.CompilerElement):  # type: ignore[attr-defined]
             default = str(default_value.compile(compile_kwargs={"literal_binds": True}))
         else:
             default = str(default_value)

@@ -4,11 +4,12 @@ import datetime
 
 import pytest
 import sqlalchemy
+import sqlalchemy.orm
 
 import pytilpack.sqlalchemy_
 
 
-class Base(sqlalchemy.orm.DeclarativeBase):
+class Base(sqlalchemy.orm.DeclarativeBase):  # type: ignore[name-defined]
     """ベースクラス。"""
 
     __test__ = False
