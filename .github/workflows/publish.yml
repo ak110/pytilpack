@@ -20,6 +20,7 @@ jobs:
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         run: |
+          uv build
           uv publish
 
       - name: Prune uv cache for CI
