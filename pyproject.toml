@@ -27,7 +27,7 @@ flask-login = ["flask-login>=0.6", "flask"]
 htmlrag = ["beautifulsoup4"]
 markdown = ["markdown>=3.6", "bleach", "tinycss2"]
 openai = ["openai>=1.25"]
-pytest = ["pytest"]
+pytest = ["pytest", "pytest-asyncio"]
 pyyaml = ["pyyaml>=6.0"]
 sqlalchemy = ["sqlalchemy>=2.0", "tabulate[widechars]>=0.9"]
 tiktoken = ["tiktoken>=0.6", "openai", "httpx", "pillow"]
@@ -44,6 +44,7 @@ all = [
     "openai>=1.25",
     "pillow",
     "pytest",
+    "pytest-asyncio",
     "pyyaml>=6.0",
     "sqlalchemy>=2.0",
     "tabulate[widechars]>=0.9",
@@ -55,6 +56,7 @@ all = [
 [dependency-groups]
 dev = [
     "pyfltr>=1.6.0",
+    "pytest-asyncio>=0.21.0",
     "types-bleach>=6.2.0.20241123",
     "types-markdown>=3.7.0.20241204",
     "types-pyyaml>=6.0.12.20241230",
