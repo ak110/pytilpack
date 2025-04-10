@@ -37,14 +37,25 @@ class WorkerThread:
 
     def __init__(self) -> None:
         self.loop = asyncio.new_event_loop()
-        self.thread = threading.Thread(target=self._start_loop, daemon=True)
+        self.thread = threading.Thread(target=self._worker_thread, daemon=True)
         self.thread.start()
         self.running_tasks: int = 0
         self.lock = threading.Lock()
 
-    def _start_loop(self) -> None:
+    def _worker_thread(self) -> None:
         asyncio.set_event_loop(self.loop)
-        self.loop.run_forever()
+        try:
+            self.loop.run_forever()
+        finally:
+            # ループ終了前に未完了タスクをキャンセル
+            tasks = [t for t in asyncio.all_tasks(self.loop) if not t.done()]
+            for task in tasks:
+                task.cancel()
+            if tasks:
+                self.loop.run_until_complete(
+                    asyncio.gather(*tasks, return_exceptions=True)
+                )
+            self.loop.close()
 
     def submit(self, coro: typing.Coroutine) -> None:
         """ワーカーのイベントループ上でコルーチンを実行する。"""
@@ -62,6 +73,11 @@ class WorkerThread:
             with self.lock:
                 self.running_tasks -= 1
 
+    def shutdown(self) -> None:
+        """未完了タスクをキャンセルして終了する。"""
+        self.loop.call_soon_threadsafe(self.loop.stop)
+        self.thread.join()
+
 
 class JobRunner(metaclass=abc.ABCMeta):
     """
@@ -73,7 +89,7 @@ class JobRunner(metaclass=abc.ABCMeta):
 
     """
 
-    def __init__(self, poll_interval: float = 1.0, num_workers: int = 4) -> None:
+    def __init__(self, poll_interval: float = 0.1, num_workers: int = 4) -> None:
         self.poll_interval = poll_interval
         self.running = True
         self.workers = [WorkerThread() for _ in range(num_workers)]
@@ -82,24 +98,22 @@ class JobRunner(metaclass=abc.ABCMeta):
         """poll()でジョブを取得し、適切なワーカーに dispatch します。"""
         while self.running:
             try:
-                job = await asyncio.wait_for(self.poll(), timeout=self.poll_interval)
+                job = await self.poll()
                 if job:
-                    worker = self._select_worker()
+                    worker = min(self.workers, key=lambda w: w.running_tasks)
                     worker.submit(job.run())
+                else:
+                    await asyncio.sleep(self.poll_interval)
             except asyncio.TimeoutError:
                 continue
             except Exception:
                 logger.warning("JobRunnerエラー", exc_info=True)
 
-    def _select_worker(self) -> WorkerThread:
-        """各ワーカーの実行中ジョブ数が最も少ないワーカーを選択する。"""
-        return min(self.workers, key=lambda w: w.running_tasks)
-
     def shutdown(self) -> None:
         """停止処理。各ワーカーのイベントループも停止します。"""
         self.running = False
         for worker in self.workers:
-            worker.loop.call_soon_threadsafe(worker.loop.stop)
+            worker.shutdown()
 
     @abc.abstractmethod
     async def poll(self) -> Job | None:

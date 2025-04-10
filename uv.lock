@@ -905,7 +905,7 @@ wheels = [
 
 [[package]]
 name = "pyfltr"
-version = "1.7.3"
+version = "1.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "autoflake" },
@@ -921,9 +921,9 @@ dependencies = [
     { name = "pyupgrade" },
     { name = "tomli" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9a/ad/4dd61cad0edfaf2230810974270e339717d1b033dc4458df2b72e5a2498b/pyfltr-1.7.3.tar.gz", hash = "sha256:0188367bce907be13455a3482f3a8aad7402276bfbd4b5f9849484dc8f6eba90", size = 22921 }
+sdist = { url = "https://files.pythonhosted.org/packages/80/75/8e4f0e626cf5f2a908749e1cd9ce9b6fb73ee011bb956fb81830b6898b73/pyfltr-1.8.0.tar.gz", hash = "sha256:9f34b6acf47f3786aec82c7714931815999716c2cf08f75af2b41bceb89b8b38", size = 21162 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ab/aa/d23d6670f6bd601026d1a35b849ad77d9964b10c14b9684acb717b744ced/pyfltr-1.7.3-py3-none-any.whl", hash = "sha256:4d7da9fdb0dc57671db2ccbea29d96677854e101388701509a8f4251ea5837d4", size = 8721 },
+    { url = "https://files.pythonhosted.org/packages/62/86/1717e67f0f19580ef9e4b121cd805e9f1ea27409bc6327af8b7f2337b5d1/pyfltr-1.8.0-py3-none-any.whl", hash = "sha256:dd10efc1699495a2e37630fea8e9a3e6e39a09121b329923ad5c4689ddb8ba00", size = 8717 },
 ]
 
 [[package]]

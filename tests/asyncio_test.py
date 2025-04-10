@@ -116,7 +116,7 @@ async def test_job_runner_shutdown() -> None:
     """シャットダウン機能のテスト。"""
     runner = TestJobRunner()
 
-    async def add_job_after_shutdown() -> CountingJob:
+    async def shutdown_after_and_add_job() -> CountingJob:
         runner.shutdown()
         # シャットダウン後に少し待ってからジョブを追加
         time.sleep(0.5)
@@ -125,5 +125,5 @@ async def test_job_runner_shutdown() -> None:
         return job
 
     # シャットダウン後に追加されたジョブは実行されないことを確認
-    _, job = await asyncio.gather(runner.run(), add_job_after_shutdown())
+    _, job = await asyncio.gather(runner.run(), shutdown_after_and_add_job())
     assert job.count == 0  # ジョブは実行されていない
