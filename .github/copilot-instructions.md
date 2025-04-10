@@ -39,3 +39,7 @@ def test_yyy(tmp_path: pathlib.Path, x: str, expected: str) -> None:
     assert actual == expected
 
 ```
+
+## リリース手順
+
+- DEVELOPMENT.mdを参照
