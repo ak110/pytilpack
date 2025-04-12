@@ -85,19 +85,35 @@ class JobRunner(metaclass=abc.ABCMeta):
 
     Args:
         poll_interval: ジョブ取得のポーリング間隔（秒）
-        num_workers: ワーカー数（各ワーカーは独自のイベントループを持つ）
+        num_workers: ワーカースレッド数（各ワーカーは独自のイベントループを持つ）
+        max_jobs_per_worker: 1 ワーカースレッドあたりの最大同時実行ジョブ数
 
     """
 
-    def __init__(self, poll_interval: float = 0.1, num_workers: int = 4) -> None:
+    def __init__(
+        self,
+        poll_interval: float = 1.0,
+        num_workers: int = 4,
+        max_jobs_per_worker: int = 8,
+    ) -> None:
         self.poll_interval = poll_interval
-        self.running = True
+        self.max_jobs_per_worker = max_jobs_per_worker
         self.workers = [WorkerThread() for _ in range(num_workers)]
+        self.running = True
 
     async def run(self) -> None:
         """poll()でジョブを取得し、適切なワーカーに dispatch します。"""
         while self.running:
             try:
+                # 全てのワーカーが最大ジョブ数に達している場合は poll を控える
+                if all(
+                    worker.running_tasks >= self.max_jobs_per_worker
+                    for worker in self.workers
+                ):
+                    await asyncio.sleep(self.poll_interval)
+                    continue
+
+                # ジョブを取得して空いてるワーカースレッドに dispatch
                 job = await self.poll()
                 if job:
                     worker = min(self.workers, key=lambda w: w.running_tasks)

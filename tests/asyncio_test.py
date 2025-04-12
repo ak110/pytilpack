@@ -45,8 +45,9 @@ class ErrorJob(pytilpack.asyncio_.Job):
 class TestJobRunner(pytilpack.asyncio_.JobRunner):
     """テスト用のJobRunner。"""
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, poll_interval: float = 0.1, **kwargs) -> None:
+        # テスト高速化のためpoll_intervalは短くする
+        super().__init__(poll_interval=poll_interval, **kwargs)
         self.queue = queue.Queue[pytilpack.asyncio_.Job]()
 
     async def poll(self) -> pytilpack.asyncio_.Job | None:
