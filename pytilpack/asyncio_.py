@@ -50,18 +50,21 @@ class JobRunner(metaclass=abc.ABCMeta):
         while self.running:
             # セマフォを取得して実行可能なジョブがあるか確認
             await self.semaphore.acquire()
-            job: Job | None = None
-            try:
-                job = await self.poll()
-            except Exception:
-                logger.warning("ジョブ取得エラー", exc_info=True)
+            job = await self._poll()
             if job is None:
                 # ジョブがなければセマフォを解放して一定時間待機
                 self.semaphore.release()
                 await asyncio.sleep(self.poll_interval)
-                continue
-            # ジョブがあれば実行
-            asyncio.create_task(self._run_job(job))
+            else:
+                # ジョブがあれば実行
+                asyncio.create_task(self._run_job(job))
+
+    async def _poll(self) -> Job | None:
+        try:
+            return await self.poll()
+        except Exception:
+            logger.warning("ジョブ取得エラー", exc_info=True)
+            return None
 
     async def _run_job(self, job: Job) -> None:
         try:
