@@ -32,18 +32,20 @@ class Job(metaclass=abc.ABCMeta):
 
 class JobRunner(metaclass=abc.ABCMeta):
     """
-    非同期ジョブを最大 max_parallel_jobs 並列で実行するクラス。
+    非同期ジョブを最大 max_job_concurrency 並列で実行するクラス。
 
     Args:
+        max_job_concurrency: ジョブの最大同時実行数
         poll_interval: ジョブ取得のポーリング間隔（秒）
-        max_parallel_jobs: 同時実行ジョブの最大数
     """
 
-    def __init__(self, poll_interval: float = 1.0, max_parallel_jobs: int = 8) -> None:
+    def __init__(
+        self, max_job_concurrency: int = 8, poll_interval: float = 1.0
+    ) -> None:
         self.poll_interval = poll_interval
-        self.max_parallel_jobs = max_parallel_jobs
+        self.max_job_concurrency = max_job_concurrency
         self.running = True
-        self.semaphore = asyncio.Semaphore(max_parallel_jobs)
+        self.semaphore = asyncio.Semaphore(max_job_concurrency)
 
     async def run(self) -> None:
         """poll()でジョブを取得し、並列実行上限内でジョブを実行する。"""
