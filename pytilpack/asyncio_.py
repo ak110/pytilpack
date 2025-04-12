@@ -2,9 +2,7 @@
 
 import abc
 import asyncio
-import concurrent.futures
 import logging
-import threading
 import typing
 
 logger = logging.getLogger(__name__)
@@ -32,104 +30,50 @@ class Job(metaclass=abc.ABCMeta):
         pass
 
 
-class WorkerThread:
-    """独自のイベントループを持つスレッド。複数の非同期タスクを同時に実行できる。"""
-
-    def __init__(self) -> None:
-        self.loop = asyncio.new_event_loop()
-        self.thread = threading.Thread(target=self._worker_thread, daemon=True)
-        self.thread.start()
-        self.running_tasks: int = 0
-        self.lock = threading.Lock()
-
-    def _worker_thread(self) -> None:
-        asyncio.set_event_loop(self.loop)
-        try:
-            self.loop.run_forever()
-        finally:
-            # ループ終了前に未完了タスクをキャンセル
-            tasks = [t for t in asyncio.all_tasks(self.loop) if not t.done()]
-            for task in tasks:
-                task.cancel()
-            if tasks:
-                self.loop.run_until_complete(
-                    asyncio.gather(*tasks, return_exceptions=True)
-                )
-            self.loop.close()
-
-    def submit(self, coro: typing.Coroutine) -> None:
-        """ワーカーのイベントループ上でコルーチンを実行する。"""
-        with self.lock:
-            self.running_tasks += 1
-        future = asyncio.run_coroutine_threadsafe(coro, self.loop)
-        future.add_done_callback(self._handle_result)
-
-    def _handle_result(self, future: concurrent.futures.Future) -> None:
-        try:
-            future.result()
-        except Exception:
-            logger.warning("ジョブ実行中のエラー", exc_info=True)
-        finally:
-            with self.lock:
-                self.running_tasks -= 1
-
-    def shutdown(self) -> None:
-        """未完了タスクをキャンセルして終了する。"""
-        self.loop.call_soon_threadsafe(self.loop.stop)
-        self.thread.join()
-
-
 class JobRunner(metaclass=abc.ABCMeta):
     """
-    非同期ジョブを複数のワーカースレッドで分散して実行するクラス。
+    非同期ジョブを最大 max_parallel_jobs 並列で実行するクラス。
 
     Args:
         poll_interval: ジョブ取得のポーリング間隔（秒）
-        num_workers: ワーカースレッド数（各ワーカーは独自のイベントループを持つ）
-        max_jobs_per_worker: 1 ワーカースレッドあたりの最大同時実行ジョブ数
-
+        max_parallel_jobs: 同時実行ジョブの最大数
     """
 
-    def __init__(
-        self,
-        poll_interval: float = 1.0,
-        num_workers: int = 4,
-        max_jobs_per_worker: int = 8,
-    ) -> None:
+    def __init__(self, poll_interval: float = 1.0, max_parallel_jobs: int = 8) -> None:
         self.poll_interval = poll_interval
-        self.max_jobs_per_worker = max_jobs_per_worker
-        self.workers = [WorkerThread() for _ in range(num_workers)]
+        self.max_parallel_jobs = max_parallel_jobs
         self.running = True
+        self.semaphore = asyncio.Semaphore(max_parallel_jobs)
 
     async def run(self) -> None:
-        """poll()でジョブを取得し、適切なワーカーに dispatch します。"""
+        """poll()でジョブを取得し、並列実行上限内でジョブを実行する。"""
         while self.running:
+            # セマフォを取得して実行可能なジョブがあるか確認
+            await self.semaphore.acquire()
+            job: Job | None = None
             try:
-                # 全てのワーカーが最大ジョブ数に達している場合は poll を控える
-                if all(
-                    worker.running_tasks >= self.max_jobs_per_worker
-                    for worker in self.workers
-                ):
-                    await asyncio.sleep(self.poll_interval)
-                    continue
-
-                # ジョブを取得して空いてるワーカースレッドに dispatch
                 job = await self.poll()
-                if job:
-                    worker = min(self.workers, key=lambda w: w.running_tasks)
-                    worker.submit(job.run())
-                else:
-                    await asyncio.sleep(self.poll_interval)
-            except asyncio.TimeoutError:
-                continue
             except Exception:
-                logger.warning("JobRunnerエラー", exc_info=True)
+                logger.warning("ジョブ取得エラー", exc_info=True)
+            if job is None:
+                # ジョブがなければセマフォを解放して一定時間待機
+                self.semaphore.release()
+                await asyncio.sleep(self.poll_interval)
+                continue
+            # ジョブがあれば実行
+            asyncio.create_task(self._run_job(job))
+
+    async def _run_job(self, job: Job) -> None:
+        try:
+            await job.run()
+        except Exception:
+            logger.warning("ジョブ実行エラー", exc_info=True)
+        finally:
+            self.semaphore.release()
 
     def shutdown(self) -> None:
-        """停止処理。各ワーカーのイベントループも停止します。"""
+        """停止処理。"""
         self.running = False
-        for worker in self.workers:
-            worker.shutdown()
 
     @abc.abstractmethod
     async def poll(self) -> Job | None:
