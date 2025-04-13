@@ -80,7 +80,7 @@ async def test_job_runner() -> None:
 
     # JobRunnerを実行（1秒後にシャットダウン）
     async def shutdown_after() -> None:
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(1.0)
         runner.shutdown()
 
     await asyncio.gather(runner.run(), shutdown_after())
