@@ -36,12 +36,18 @@ class CountingJob(pytilpack.asyncio_.Job):
         await asyncio.sleep(self.sleep_time)
         self.count += 1
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.__dict__})"
+
 
 class ErrorJob(pytilpack.asyncio_.Job):
     """エラーを発生させるジョブ。"""
 
     async def run(self) -> None:
         raise ValueError("Test error")
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.__dict__})"
 
 
 class TestJobRunner(pytilpack.asyncio_.JobRunner):
@@ -57,6 +63,9 @@ class TestJobRunner(pytilpack.asyncio_.JobRunner):
             return self.queue.get_nowait()
         except queue.Empty:
             return None
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.__dict__})"
 
 
 def add_jobs_thread(
