@@ -80,7 +80,7 @@ async def test_job_runner() -> None:
 
     # JobRunnerを実行（1秒後にシャットダウン）
     async def shutdown_after() -> None:
-        await asyncio.sleep(1.0)
+        await asyncio.sleep(0.5)
         runner.shutdown()
 
     await asyncio.gather(runner.run(), shutdown_after())
@@ -88,36 +88,12 @@ async def test_job_runner() -> None:
 
     thread.join()
     # 各ジョブの実行回数を確認
-    for job in jobs:
-        assert job.count == 1
+    assert all(job.status == "finished" and job.count == 1 for job in jobs)
 
 
 @pytest.mark.asyncio
-async def test_job_runner_error() -> None:
-    """エラーハンドリングのテスト。"""
-    runner = TestJobRunner()
-
-    # 正常なジョブとエラーを発生させるジョブを混ぜて追加
-    jobs = [CountingJob(), ErrorJob(), CountingJob()]
-    thread = threading.Thread(target=add_jobs_thread, args=(runner.queue, jobs))
-    thread.start()
-
-    # JobRunnerを実行（1秒後にシャットダウン）
-    async def shutdown_after() -> None:
-        await asyncio.sleep(1.0)
-        runner.shutdown()
-
-    await asyncio.gather(runner.run(), shutdown_after())
-    thread.join()
-
-    # エラーが発生しても他のジョブは実行されることを確認
-    assert isinstance(jobs[0], CountingJob) and jobs[0].count == 1
-    assert isinstance(jobs[2], CountingJob) and jobs[2].count == 1
-
-
-@pytest.mark.asyncio
-async def test_job_runner_shutdown() -> None:
-    """シャットダウン機能のテスト。"""
+async def test_job_runner_errors() -> None:
+    """異常系のテスト。"""
     runner = TestJobRunner()
 
     # 時間がかからないジョブとエラーになるジョブと時間のかかるジョブ
