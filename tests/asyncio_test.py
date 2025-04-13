@@ -50,7 +50,7 @@ class ErrorJob(pytilpack.asyncio_.Job):
         return f"{self.__class__.__name__}({self.__dict__})"
 
 
-class TestJobRunner(pytilpack.asyncio_.JobRunner):
+class JobRunner(pytilpack.asyncio_.JobRunner):
     """テスト用のJobRunner。"""
 
     def __init__(self, poll_interval: float = 0.1, **kwargs) -> None:
@@ -80,7 +80,7 @@ def add_jobs_thread(
 @pytest.mark.asyncio
 async def test_job_runner() -> None:
     """基本機能のテスト。"""
-    runner = TestJobRunner()
+    runner = JobRunner()
 
     # 別スレッドでジョブを追加
     jobs = [CountingJob() for _ in range(3)]
@@ -103,7 +103,7 @@ async def test_job_runner() -> None:
 @pytest.mark.asyncio
 async def test_job_runner_errors() -> None:
     """異常系のテスト。"""
-    runner = TestJobRunner()
+    runner = JobRunner()
 
     # 時間がかからないジョブとエラーになるジョブと時間のかかるジョブ
     jobs = (
@@ -115,13 +115,13 @@ async def test_job_runner_errors() -> None:
     thread = threading.Thread(target=add_jobs_thread, args=(runner.queue, jobs))
     thread.start()
 
-    # JobRunnerを実行（0.5秒後にシャットダウン）
+    # JobRunnerを実行（0.75秒後にシャットダウン）
     async def shutdown_after_and_add_job() -> CountingJob:
         # 早めにshutdownを実施
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.75)
         runner.shutdown()
         # シャットダウン後に少し待ってからジョブを追加
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.25)
         post_job = CountingJob()
         runner.queue.put(post_job)
         return post_job
@@ -129,12 +129,9 @@ async def test_job_runner_errors() -> None:
     _, post_job = await asyncio.gather(runner.run(), shutdown_after_and_add_job())
     thread.join()
 
-    # 時間がかからないジョブは実行されていることを確認
+    # 各ジョブの実行結果を確認
     assert jobs[0].status == "finished" and jobs[0].count == 1
-    assert jobs[2].status == "finished" and jobs[2].count == 1
-    # エラーになるジョブはエラーが発生していることを確認
     assert jobs[1].status == "errored"
-    # 時間がかかるジョブは途中でshutdownされて実行されていないことを確認
+    assert jobs[2].status == "finished" and jobs[2].count == 1
     assert jobs[3].status == "canceled" and jobs[3].count == 0
-    # シャットダウン後に追加されたジョブは実行されないことを確認
-    assert post_job.count == 0
+    assert post_job.status == "waiting" and post_job.count == 0
