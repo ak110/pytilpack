@@ -15,13 +15,16 @@ class Base(sqlalchemy.orm.DeclarativeBase):  # type: ignore[name-defined]
     __test__ = False
 
 
-class Test1(Base, pytilpack.sqlalchemy_.Mixin):
+class Test1(Base, pytilpack.sqlalchemy_.Mixin, pytilpack.sqlalchemy_.UniqueIDMixin):
     """テストクラス。"""
 
     __test__ = False
     __tablename__ = "test"
 
-    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    id: sqlalchemy.orm.Mapped[int] = sqlalchemy.orm.mapped_column(primary_key=True)
+    unique_id: sqlalchemy.orm.Mapped[str | None] = sqlalchemy.orm.mapped_column(
+        sqlalchemy.String(43), unique=True, nullable=True, doc="ユニークID"
+    )
 
 
 class Test2(Base, pytilpack.sqlalchemy_.Mixin):
@@ -76,6 +79,23 @@ def test_get_by_id(session: sqlalchemy.orm.Session) -> None:
     assert Test1.get_by_id(1, for_update=True).id == 1  # type: ignore
 
 
+def test_get_by_unique_id(session: sqlalchemy.orm.Session) -> None:
+    Test1.query = session.query(Test1)  # 仮
+
+    Base.metadata.create_all(session.bind)  # type: ignore
+    test1 = Test1(id=2, unique_id=Test1.generate_unique_id())
+    assert test1.unique_id is not None and len(test1.unique_id) == 43
+    unique_id = test1.unique_id
+    session.add(test1)
+    session.commit()
+
+    assert Test1.get_by_unique_id(unique_id).id == 2  # type: ignore
+    assert Test1.get_by_unique_id(unique_id, allow_id=True).id == 2  # type: ignore
+    assert Test1.get_by_unique_id(2) is None
+    assert Test1.get_by_unique_id(2, allow_id=True).id == 2  # type: ignore
+    assert Test1.get_by_unique_id("2", allow_id=True) is None
+
+
 def test_to_dict() -> None:
     test2 = Test2(name="test2", enabled=True, value4=datetime.datetime(2021, 1, 1))
     assert test2.to_dict(excludes=["pass_hash"]) == {
@@ -104,11 +124,13 @@ def test_describe() -> None:
         desc
         == """\
 Table: test
-+---------+---------+--------+-------+-----------+----------------+-----------+
-| Field   | Type    | Null   | Key   | Default   | Extra          | Comment   |
-+=========+=========+========+=======+===========+================+===========+
-| id      | INTEGER | NO     | PRI   | NULL      | auto_increment |           |
-+---------+---------+--------+-------+-----------+----------------+-----------+
++-----------+-------------+--------+-------+-----------+----------------+------------+
+| Field     | Type        | Null   | Key   | Default   | Extra          | Comment    |
++===========+=============+========+=======+===========+================+============+
+| id        | INTEGER     | NO     | PRI   | NULL      | auto_increment |            |
++-----------+-------------+--------+-------+-----------+----------------+------------+
+| unique_id | VARCHAR(43) | YES    | UNI   | NULL      |                | ユニークID |
++-----------+-------------+--------+-------+-----------+----------------+------------+
 
 Table: test2
 +-----------+--------------+--------+-------+------------+----------------+--------------+

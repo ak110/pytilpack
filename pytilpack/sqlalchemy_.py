@@ -1,6 +1,7 @@
 """SQLAlchemy用のユーティリティ集。"""
 
 import logging
+import secrets
 import time
 import typing
 
@@ -37,8 +38,8 @@ def register_ping():
             cursor.close()
 
 
-class IDMixin:
-    """models.Class.query.get()がdeprecatedになるため"""
+class Mixin:
+    """テーブルクラスに色々便利機能を生やすMixin。"""
 
     @classmethod
     def get_by_id(cls: type[Self], id_: int, for_update: bool = False) -> Self | None:
@@ -56,10 +57,6 @@ class IDMixin:
         if for_update:
             q = q.with_for_update()
         return q.one_or_none()
-
-
-class Mixin(IDMixin):
-    """テーブルクラスに色々便利機能を生やすMixin。"""
 
     def to_dict(
         self,
@@ -95,6 +92,41 @@ class Mixin(IDMixin):
             for column_name in includes
             if not exclude_none or getattr(self, column_name) is not None
         }
+
+
+class UniqueIDMixin:
+    """self.unique_idを持つテーブルクラスに便利メソッドを生やすmixin。"""
+
+    @classmethod
+    def generate_unique_id(cls) -> str:
+        """ユニークIDを生成する。"""
+        return secrets.token_urlsafe(32)
+
+    @classmethod
+    def get_by_unique_id(
+        cls: type[Self],
+        unique_id: str | int,
+        allow_id: bool = False,
+        for_update: bool = False,
+    ) -> Self | None:
+        """ユニークIDを元にインスタンスを取得。
+
+        Args:
+            unique_id: ユニークID。
+            allow_id: ユニークIDだけでなくID(int)も許可するかどうか。
+            for_update: 更新ロックを取得するか否か。
+
+        Returns:
+            インスタンス。
+
+        """
+        if allow_id and isinstance(unique_id, int):
+            q = cls.query.filter(cls.id == unique_id)  # type: ignore
+        else:
+            q = cls.query.filter(cls.unique_id == unique_id)  # type: ignore
+        if for_update:
+            q = q.with_for_update()
+        return q.one_or_none()
 
 
 def wait_for_connection(url: str, timeout: float = 60.0) -> None:
