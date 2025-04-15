@@ -101,6 +101,35 @@ async def test_job_runner() -> None:
 
 
 @pytest.mark.asyncio
+async def test_job_runner_cancel() -> None:
+    """キャンセルのテスト。"""
+    runner = JobRunner()
+
+    # 時間がかからないジョブとエラーになるジョブと時間のかかるジョブ
+    jobs = (
+        CountingJob(),  # 期待: count == 1
+        CountingJob(sleep_time=3.0),  # shutdownにより処理されず count == 0
+    )
+    thread = threading.Thread(target=add_jobs_thread, args=(runner.queue, jobs))
+    thread.start()
+
+    # JobRunnerを実行（0.5秒後にシャットダウン）
+    async def shutdown_after() -> None:
+        await asyncio.sleep(0.5)
+        runner.shutdown()
+
+    start_time = time.perf_counter()
+    await asyncio.gather(runner.run(), shutdown_after())
+    thread.join()
+    elapsed_time = time.perf_counter() - start_time
+    assert 0.5 <= elapsed_time < 1.0
+
+    # 各ジョブの実行結果を確認
+    assert jobs[0].status == "finished" and jobs[0].count == 1
+    assert jobs[1].status == "canceled" and jobs[1].count == 0
+
+
+@pytest.mark.asyncio
 async def test_job_runner_errors() -> None:
     """異常系のテスト。"""
     runner = JobRunner()
