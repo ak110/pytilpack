@@ -1,11 +1,13 @@
 """SQLAlchemy用のユーティリティ集。"""
 
+import asyncio
 import logging
 import secrets
 import time
 import typing
 
 import sqlalchemy
+import sqlalchemy.ext.asyncio
 import sqlalchemy.orm
 import sqlalchemy.sql.elements
 
@@ -139,15 +141,13 @@ def wait_for_connection(url: str, timeout: float = 60.0) -> None:
             try:
                 with engine.connect() as connection:
                     result = connection.execute(sqlalchemy.text("SELECT 1"))
-                try:
-                    # 接続成功
-                    if failed:
-                        logger.info("DB接続成功")
-                    break
-                finally:
                     result.close()
             finally:
                 engine.dispose()
+            # 接続成功
+            if failed:  # 過去に接続失敗していた場合だけログを出す
+                logger.info("DB接続成功")
+            break
         except Exception:
             # 接続失敗
             if not failed:
@@ -158,6 +158,32 @@ def wait_for_connection(url: str, timeout: float = 60.0) -> None:
             time.sleep(1)
 
 
+async def await_for_connection(url: str, timeout: float = 60.0) -> None:
+    """DBに接続可能になるまで待機する。"""
+    failed = False
+    start_time = time.time()
+    while True:
+        try:
+            engine = sqlalchemy.ext.asyncio.create_async_engine(url)
+            try:
+                async with engine.connect() as connection:
+                    await connection.execute(sqlalchemy.text("SELECT 1"))
+            finally:
+                await engine.dispose()
+            # 接続成功
+            if failed:  # 過去に接続失敗していた場合だけログを出す
+                logger.info("DB接続成功")
+            break
+        except Exception:
+            # 接続失敗
+            if not failed:
+                failed = True
+                logger.info(f"DB接続待機中 . . . (URL: {url})")
+            if time.time() - start_time >= timeout:
+                raise
+            await asyncio.sleep(1)
+
+
 def safe_close(
     session: sqlalchemy.orm.Session | sqlalchemy.orm.scoped_session,
     log_level: int | None = logging.DEBUG,
@@ -165,6 +191,17 @@ def safe_close(
     """例外を出さずにセッションをクローズ。"""
     try:
         session.close()
+    except Exception:
+        if log_level is not None:
+            logger.log(log_level, "セッションクローズ失敗", exc_info=True)
+
+
+async def asafe_close(
+    session: sqlalchemy.ext.asyncio.AsyncSession, log_level: int | None = logging.DEBUG
+):
+    """例外を出さずにセッションをクローズ。"""
+    try:
+        await session.close()
     except Exception:
         if log_level is not None:
             logger.log(log_level, "セッションクローズ失敗", exc_info=True)

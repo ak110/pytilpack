@@ -1,114 +1,24 @@
-"""Flask関連のユーティリティ。"""
+"""Quart関連のユーティリティ。"""
 
-import base64
-import contextlib
+import copy
 import json
 import logging
 import pathlib
-import secrets
-import threading
 import typing
-import urllib.parse
 import xml.etree.ElementTree
 
-import flask
-import httpx
-import werkzeug.middleware.proxy_fix
-import werkzeug.serving
+import hypercorn.typing
+import quart
 
 logger = logging.getLogger(__name__)
 
 
-def generate_secret_key(cache_path: str | pathlib.Path) -> bytes:
-    """シークレットキーの作成/取得。
-
-    既にcache_pathに保存済みならそれを返し、でなくば作成する。
-
-    """
-    cache_path = pathlib.Path(cache_path)
-    cache_path.parent.mkdir(parents=True, exist_ok=True)
-    with cache_path.open("a+b") as secret:
-        secret.seek(0)
-        secret_key = secret.read()
-        if not secret_key:
-            secret_key = secrets.token_bytes()
-            secret.write(secret_key)
-            secret.flush()
-        return secret_key
-
-
-def data_url(data: bytes, mime_type: str) -> str:
-    """小さい画像などのバイナリデータをURLに埋め込んだものを作って返す。
-
-    Args:
-        data: 埋め込むデータ
-        mime_type: 例：'image/png'
-
-    """
-    b64 = base64.b64encode(data).decode("ascii")
-    return f"data:{mime_type};base64,{b64}"
-
-
-def get_next_url() -> str:
-    """flask_loginのnextパラメータ用のURLを返す。"""
-    path = flask.request.script_root + flask.request.path
-    query_string = flask.request.query_string.decode("utf-8")
-    next_ = f"{path}?{query_string}" if query_string else path
-    return next_
-
-
-def get_safe_url(target: str | None, host_url: str, default_url: str) -> str:
-    """ログイン時のリダイレクトとして安全なURLを返す。"""
-    if target is None or target == "":
-        return default_url
-    ref_url = urllib.parse.urlparse(host_url)
-    test_url = urllib.parse.urlparse(urllib.parse.urljoin(host_url, target))
-    if test_url.scheme not in ("http", "https") or ref_url.netloc != test_url.netloc:
-        logger.warning(f"Invalid next url: {target}")
-        return default_url
-    return target
-
-
-@contextlib.contextmanager
-def run(app: flask.Flask, host: str = "localhost", port: int = 5000):
-    """Flaskアプリを実行するコンテキストマネージャ。テストコードなど用。"""
-
-    if not any(
-        m.endpoint == "_pytilpack_flask_dummy" for m in app.url_map.iter_rules()
-    ):
-
-        @app.route("/_pytilpack_flask_dummy")
-        def _pytilpack_flask_dummy():
-            return "OK"
-
-    server = werkzeug.serving.make_server(host, port, app, threaded=True)
-    ctx = app.app_context()
-    ctx.push()
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    try:
-        # サーバーが起動するまで待機
-        while True:
-            try:
-                httpx.get(
-                    f"http://{host}:{port}/_pytilpack_flask_dummy"
-                ).raise_for_status()
-                break
-            except Exception:
-                pass
-        # 制御を戻す
-        yield
-    finally:
-        server.shutdown()
-        thread.join()
-
-
-def assert_bytes(
+async def assert_bytes(
     response,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = None,
 ) -> bytes:
-    """flaskのテストコード用。
+    """quartのテストコード用。
 
     Args:
         response: レスポンス
@@ -122,7 +32,7 @@ def assert_bytes(
         レスポンスボディ
 
     """
-    response_body = response.get_data()
+    response_body = await response.get_data()
 
     try:
         # ステータスコードチェック
@@ -137,13 +47,13 @@ def assert_bytes(
     return response_body
 
 
-def assert_html(
+async def assert_html(
     response,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "__default__",
     tmp_path: pathlib.Path | None = None,
 ) -> str:
-    """flaskのテストコード用。
+    """quartのテストコード用。
 
     html5libが必要なので注意。
 
@@ -162,7 +72,7 @@ def assert_html(
     """
     import html5lib
 
-    response_body = response.get_data().decode("utf-8")
+    response_body = (await response.get_data()).decode("utf-8")
 
     try:
         # ステータスコードチェック
@@ -176,7 +86,7 @@ def assert_html(
         # HTMLのチェック
         parser = html5lib.HTMLParser(strict=True, debug=True)
         try:
-            _ = parser.parse(response.get_data())
+            _ = parser.parse(await response.get_data())
         except html5lib.html5parser.ParseError as e:
             raise AssertionError(f"HTMLエラー: {e}") from e
     except AssertionError as e:
@@ -186,12 +96,12 @@ def assert_html(
     return response_body
 
 
-def assert_json(
+async def assert_json(
     response,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "application/json",
 ) -> dict[str, typing.Any]:
-    """flaskのテストコード用。
+    """quartのテストコード用。
 
     Args:
         response: レスポンス
@@ -205,7 +115,7 @@ def assert_json(
         レスポンスのjson
 
     """
-    response_body = response.get_data().decode("utf-8")
+    response_body = (await response.get_data()).decode("utf-8")
 
     try:
         # ステータスコードチェック
@@ -226,12 +136,12 @@ def assert_json(
     return data
 
 
-def assert_xml(
+async def assert_xml(
     response,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "__default__",
 ) -> str:
-    """flaskのテストコード用。
+    """quartのテストコード用。
 
     Args:
         response: レスポンス
@@ -245,7 +155,7 @@ def assert_xml(
         レスポンスのxml
 
     """
-    response_body = response.get_data().decode("utf-8")
+    response_body = (await response.get_data()).decode("utf-8")
 
     try:
         # ステータスコードチェック
@@ -303,7 +213,7 @@ def _create_temp_file(
     return tmp_file_path
 
 
-class ProxyFix(werkzeug.middleware.proxy_fix.ProxyFix):
+class ProxyFix:
     """リバースプロキシ対応。
 
     nginx.conf設定例::
@@ -312,34 +222,123 @@ class ProxyFix(werkzeug.middleware.proxy_fix.ProxyFix):
         proxy_set_header X-Forwarded-Port $server_port;
         proxy_set_header X-Forwarded-Prefix $http_x_forwarded_prefix;
 
+    参考: hypercorn.middleware.ProxyFixMiddleware
+
     """
 
     def __init__(
         self,
-        flaskapp: flask.Flask,
+        quartapp: quart.Quart,
         x_for: int = 1,
         x_proto: int = 1,
         x_host: int = 0,
         x_port: int = 0,
         x_prefix: int = 1,
     ):
-        super().__init__(
-            flaskapp.wsgi_app,
-            x_for=x_for,
-            x_proto=x_proto,
-            x_host=x_host,
-            x_port=x_port,
-            x_prefix=x_prefix,
-        )
-        self.flaskapp = flaskapp
+        self.quartapp = quartapp
+        self.asgi_app = quartapp.asgi_app
+        self.x_for = x_for
+        self.x_proto = x_proto
+        self.x_host = x_host
+        self.x_port = x_port
+        self.x_prefix = x_prefix
 
-    def __call__(self, environ, start_response):
-        if self.x_prefix != 0:
-            prefix = environ.get("HTTP_X_FORWARDED_PREFIX", "/")
-            if prefix != "/":
-                self.flaskapp.config["APPLICATION_ROOT"] = prefix
-                self.flaskapp.config["SESSION_COOKIE_PATH"] = prefix
-                self.flaskapp.config["REMEMBER_COOKIE_PATH"] = prefix
-                environ["SCRIPT_NAME"] = prefix
-                environ["PATH_INFO"] = environ["PATH_INFO"][len(prefix) :]
-        return super().__call__(environ, start_response)
+    async def __call__(
+        self,
+        scope: hypercorn.typing.Scope,
+        receive: hypercorn.typing.ASGIReceiveCallable,
+        send: hypercorn.typing.ASGISendCallable,
+    ) -> None:
+        if scope["type"] in ("http", "websocket"):
+            scope = typing.cast(hypercorn.typing.HTTPScope, copy.deepcopy(scope))
+            headers = list(scope["headers"])
+
+            # X-Forwarded-For → client
+            forwarded_for = self._get_trusted_value(
+                b"x-forwarded-for", headers, self.x_for
+            )
+            if forwarded_for and scope.get("client"):
+                forwarded_for = forwarded_for.split(",")[-1].strip()
+                _, orig_port = scope.get("client") or (None, None)
+                scope["client"] = (forwarded_for, orig_port or 0)
+
+            # X-Forwarded-Proto → scheme
+            forwarded_proto = self._get_trusted_value(
+                b"x-forwarded-proto", headers, self.x_proto
+            )
+            if forwarded_proto:
+                scope["scheme"] = forwarded_proto
+
+            # X-Forwarded-Host → server & Host header
+            forwarded_host = self._get_trusted_value(
+                b"x-forwarded-host", headers, self.x_host
+            )
+            if forwarded_host:
+                host_val = forwarded_host
+                host, port = host_val, None
+                if ":" in host_val and not host_val.startswith("["):
+                    h, p = host_val.rsplit(":", 1)
+                    if p.isdigit():
+                        host, port = h, int(p)
+                # update server tuple
+                orig_server = scope.get("server") or (None, None)
+                orig_port = orig_server[1]
+                scope["server"] = (host, port or orig_port or 0)
+                # rebuild Host header
+                headers = [(hn, hv) for hn, hv in headers if hn.lower() != b"host"]
+                host_hdr = host if port is None else f"{host}:{port}"
+                headers.append((b"host", host_hdr.encode("latin1")))
+
+            # X-Forwarded-Port → server port & Host header
+            forwarded_port = self._get_trusted_value(
+                b"x-forwarded-port", headers, self.x_port
+            )
+            if forwarded_port and forwarded_port.isdigit():
+                port_int = int(forwarded_port)
+                orig_server = scope.get("server") or (None, None)
+                orig_host = str(orig_server[0])
+                scope["server"] = (orig_host, port_int)
+                headers = [(hn, hv) for hn, hv in headers if hn.lower() != b"host"]
+                headers.append((b"host", f"{orig_host}:{port_int}".encode("latin1")))
+
+            # X-Forwarded-Prefix → root_path + config
+            forwarded_prefix = self._get_trusted_value(
+                b"x-forwarded-prefix", headers, self.x_prefix
+            )
+            if forwarded_prefix:
+                prefix = forwarded_prefix.rstrip("/")
+                scope["root_path"] = scope["root_path"].removeprefix(prefix)
+                # config adjustments
+                self.quartapp.config["APPLICATION_ROOT"] = prefix
+                for key in ("SESSION_COOKIE_PATH", "REMEMBER_COOKIE_PATH"):
+                    orig = self.quartapp.config.get(key)
+                    if orig:
+                        self.quartapp.config[key] = prefix + orig
+
+            scope["headers"] = headers
+
+        await self.asgi_app(scope, receive, send)
+
+    def _get_trusted_value(
+        self,
+        name: bytes,
+        headers: typing.Iterable[tuple[bytes, bytes]],
+        trusted_hops: int,
+    ) -> str | None:
+        if trusted_hops == 0:
+            return None
+
+        values = []
+        for header_name, header_value in headers:
+            if header_name.lower() == name:
+                values.extend(
+                    [
+                        value.decode("latin1").strip()
+                        for value in header_value.split(b",")
+                    ]
+                )
+
+        if len(values) >= trusted_hops:
+            return values[-trusted_hops]
+
+        return None

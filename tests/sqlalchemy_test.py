@@ -4,6 +4,7 @@ import datetime
 
 import pytest
 import sqlalchemy
+import sqlalchemy.ext.asyncio
 import sqlalchemy.orm
 
 import pytilpack.sqlalchemy_
@@ -158,3 +159,60 @@ Table: test2
 +-----------+--------------+--------+-------+------------+----------------+--------------+
 """
     )
+
+
+def test_wait_for_connection() -> None:
+    """wait_for_connectionのテスト。"""
+    # 正常系
+    pytilpack.sqlalchemy_.wait_for_connection("sqlite:///:memory:", timeout=1.0)
+
+    # 異常系: タイムアウト
+    with pytest.raises(sqlalchemy.exc.OperationalError):
+        pytilpack.sqlalchemy_.wait_for_connection(
+            "sqlite:////nonexistent/path/db.sqlite3", timeout=1.0
+        )
+
+
+@pytest.mark.asyncio
+async def test_await_for_connection() -> None:
+    """await_for_connectionのテスト。"""
+    # 正常系
+    await pytilpack.sqlalchemy_.await_for_connection(
+        "sqlite+aiosqlite:///:memory:", timeout=1.0
+    )
+
+    # 異常系: タイムアウト
+    with pytest.raises(sqlalchemy.exc.OperationalError):
+        await pytilpack.sqlalchemy_.await_for_connection(
+            "sqlite+aiosqlite:////nonexistent/path/db.sqlite3", timeout=1.0
+        )
+
+
+def test_safe_close() -> None:
+    """safe_closeのテスト。"""
+    engine = sqlalchemy.create_engine("sqlite:///:memory:")
+    session = sqlalchemy.orm.Session(engine)
+    pytilpack.sqlalchemy_.safe_close(session)  # 正常ケース
+
+    # エラーケース（既にクローズ済み）
+    session.close()
+    pytilpack.sqlalchemy_.safe_close(session)  # エラーが発生しないこと
+    pytilpack.sqlalchemy_.safe_close(session, log_level=None)  # ログを出さないケース
+
+
+@pytest.mark.asyncio
+async def test_asafe_close() -> None:
+    """asafe_closeのテスト。"""
+    engine = sqlalchemy.ext.asyncio.create_async_engine("sqlite+aiosqlite:///:memory:")
+    session = sqlalchemy.ext.asyncio.AsyncSession(engine)
+    await pytilpack.sqlalchemy_.asafe_close(session)  # 正常ケース
+
+    # エラーケース（既にクローズ済み）
+    await session.close()
+    await pytilpack.sqlalchemy_.asafe_close(session)  # エラーが発生しないこと
+    await pytilpack.sqlalchemy_.asafe_close(
+        session, log_level=None
+    )  # ログを出さないケース
+    await pytilpack.sqlalchemy_.asafe_close(
+        session, log_level=None
+    )  # ログを出さないケース

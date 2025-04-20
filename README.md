@@ -58,6 +58,7 @@ import pytilpack.xxx
 - [pytilpack.openai_](pytilpack/openai_.py)
 - [pytilpack.pathlib_](pytilpack/pathlib_.py)
 - [pytilpack.python_](pytilpack/python_.py)
+- [pytilpack.quart_](pytilpack/quart_.py)
 - [pytilpack.sqlalchemy_](pytilpack/sqlalchemy_.py)
 - [pytilpack.threading_](pytilpack/threading_.py)
 - [pytilpack.tiktoken_](pytilpack/tiktoken_.py)
