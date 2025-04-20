@@ -5,10 +5,9 @@ import contextlib
 import json
 import logging
 import pathlib
-import secrets
 import threading
 import typing
-import urllib.parse
+import warnings
 import xml.etree.ElementTree
 
 import flask
@@ -16,25 +15,21 @@ import httpx
 import werkzeug.middleware.proxy_fix
 import werkzeug.serving
 
+import pytilpack.pytest_
+import pytilpack.secrets_
+import pytilpack.web
+
 logger = logging.getLogger(__name__)
 
 
 def generate_secret_key(cache_path: str | pathlib.Path) -> bytes:
-    """シークレットキーの作成/取得。
-
-    既にcache_pathに保存済みならそれを返し、でなくば作成する。
-
-    """
-    cache_path = pathlib.Path(cache_path)
-    cache_path.parent.mkdir(parents=True, exist_ok=True)
-    with cache_path.open("a+b") as secret:
-        secret.seek(0)
-        secret_key = secret.read()
-        if not secret_key:
-            secret_key = secrets.token_bytes()
-            secret.write(secret_key)
-            secret.flush()
-        return secret_key
+    """deprecated."""
+    warnings.warn(
+        "pytilpack.flask_.generate_secret_key is deprecated. Use pytilpack.secrets_.generate_secret_key instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return pytilpack.secrets_.generate_secret_key(cache_path)
 
 
 def data_url(data: bytes, mime_type: str) -> str:
@@ -58,15 +53,14 @@ def get_next_url() -> str:
 
 
 def get_safe_url(target: str | None, host_url: str, default_url: str) -> str:
-    """ログイン時のリダイレクトとして安全なURLを返す。"""
-    if target is None or target == "":
-        return default_url
-    ref_url = urllib.parse.urlparse(host_url)
-    test_url = urllib.parse.urlparse(urllib.parse.urljoin(host_url, target))
-    if test_url.scheme not in ("http", "https") or ref_url.netloc != test_url.netloc:
-        logger.warning(f"Invalid next url: {target}")
-        return default_url
-    return target
+    """deprecated."""
+    warnings.warn(
+        "pytilpack.flask_.get_safe_url is deprecated. Use pytilpack.web.get_safe_url instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return pytilpack.web.get_safe_url(target, host_url, default_url)
 
 
 @contextlib.contextmanager
@@ -295,8 +289,6 @@ def _create_temp_file(
     tmp_path: pathlib.Path | None, response_body: str
 ) -> pathlib.Path:
     """一時ファイルを作成してパスを返す。"""
-    import pytilpack.pytest_
-
     tmp_file_path = pytilpack.pytest_.tmp_file_path(tmp_path, suffix=".html")
     tmp_file_path.write_text(response_body, encoding="utf-8")
     logger.info(f"HTML: {tmp_file_path}")
