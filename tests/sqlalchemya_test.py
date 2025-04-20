@@ -10,16 +10,11 @@ import sqlalchemy.orm
 
 import pytilpack.sqlalchemy_
 
-
-class Base(sqlalchemy.orm.DeclarativeBase):  # type: ignore[name-defined]
-    """ベースクラス。"""
-
-    __test__ = False
+Base = pytilpack.sqlalchemy_.AsyncBase
+"""ベースクラス。"""
 
 
-class Test1(
-    Base, pytilpack.sqlalchemy_.AsyncBase, pytilpack.sqlalchemy_.AsyncUniqueIDMixin
-):
+class Test1(Base, pytilpack.sqlalchemy_.AsyncUniqueIDMixin):
     """テストクラス。"""
 
     __test__ = False
@@ -31,7 +26,7 @@ class Test1(
     )
 
 
-class Test2(Base, pytilpack.sqlalchemy_.AsyncBase):
+class Test2(Base):
     """テストクラス。"""
 
     __test__ = False
@@ -60,25 +55,24 @@ class Test2(Base, pytilpack.sqlalchemy_.AsyncBase):
 @pytest.fixture(name="engine", scope="module", autouse=True)
 async def _engine():
     """DB接続。"""
-    pytilpack.sqlalchemy_.AsyncBase.init("sqlite+aiosqlite:///:memory:")
-    yield pytilpack.sqlalchemy_.AsyncBase.engine
+    Base.init("sqlite+aiosqlite:///:memory:")
+    yield Base.engine
 
 
 @pytest.fixture(name="session", scope="module")
 async def _session(engine: sqlalchemy.ext.asyncio.AsyncEngine):
     """セッション。"""
     del engine  # noqa
-    token = pytilpack.sqlalchemy_.AsyncBase.start_session()
-    async with pytilpack.sqlalchemy_.AsyncBase.session() as session:
+    token = Base.start_session()
+    async with Base.session() as session:
         yield session
-    pytilpack.sqlalchemy_.AsyncBase.close_session(token)
+    Base.close_session(token)
 
 
 @pytest.mark.asyncio
 async def test_get_by_id(session: sqlalchemy.ext.asyncio.AsyncSession) -> None:
     """get_by_idのテスト。"""
-    assert pytilpack.sqlalchemy_.AsyncBase.engine is not None
-    async with pytilpack.sqlalchemy_.AsyncBase.engine.begin() as conn:
+    async with Base.connect() as conn:
         await conn.run_sync(Base.metadata.create_all)
     session.add(Test1(id=1))
     await session.commit()
@@ -91,8 +85,7 @@ async def test_get_by_id(session: sqlalchemy.ext.asyncio.AsyncSession) -> None:
 @pytest.mark.asyncio
 async def test_get_by_unique_id(session: sqlalchemy.ext.asyncio.AsyncSession) -> None:
     """get_by_unique_idのテスト。"""
-    assert pytilpack.sqlalchemy_.AsyncBase.engine is not None
-    async with pytilpack.sqlalchemy_.AsyncBase.engine.begin() as conn:
+    async with Base.connect() as conn:
         await conn.run_sync(Base.metadata.create_all)
     test1 = Test1(id=2, unique_id=Test1.generate_unique_id())
     assert test1.unique_id is not None and len(test1.unique_id) == 43

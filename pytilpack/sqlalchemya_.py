@@ -15,7 +15,16 @@ logger = logging.getLogger(__name__)
 
 
 class AsyncBase(sqlalchemy.orm.DeclarativeBase, sqlalchemy.ext.asyncio.AsyncAttrs):
-    """モデルのベースクラス。SQLAlchemy 2.0スタイル・async前提"""
+    """モデルのベースクラス。SQLAlchemy 2.0スタイル・async前提。
+
+    使用例::
+        Base = pytilpack.sqlalchemya_.AsyncBase
+
+        class User(Base):
+            __tablename__ = "users"
+            ...
+
+    """
 
     engine: sqlalchemy.ext.asyncio.AsyncEngine | None = None
     """DB接続。"""
@@ -43,6 +52,18 @@ class AsyncBase(sqlalchemy.orm.DeclarativeBase, sqlalchemy.ext.asyncio.AsyncAttr
         cls.sessionmaker = sqlalchemy.ext.asyncio.async_sessionmaker(
             cls.engine, autoflush=autoflush, expire_on_commit=expire_on_commit
         )
+
+    @classmethod
+    def connect(cls) -> sqlalchemy.ext.asyncio.AsyncConnection:
+        """DBに接続する。
+
+        使用例::
+            async with Base.connect() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+
+        """
+        assert cls.engine is not None
+        return cls.engine.connect()
 
     @classmethod
     def start_session(cls) -> contextvars.Token[sqlalchemy.ext.asyncio.AsyncSession]:
