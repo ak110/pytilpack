@@ -13,11 +13,6 @@ import sqlalchemy.sql.elements
 
 import pytilpack.python_
 
-try:
-    from typing import Self  # type: ignore[attr-defined]
-except ImportError:
-    from typing_extensions import Self
-
 if typing.TYPE_CHECKING:
     import tabulate
 
@@ -44,7 +39,9 @@ class Mixin:
     """テーブルクラスに色々便利機能を生やすMixin。"""
 
     @classmethod
-    def get_by_id(cls: type[Self], id_: int, for_update: bool = False) -> Self | None:
+    def get_by_id(
+        cls: type[typing.Self], id_: int, for_update: bool = False
+    ) -> typing.Self | None:
         """IDを元にインスタンスを取得。
 
         Args:
@@ -106,11 +103,11 @@ class UniqueIDMixin:
 
     @classmethod
     def get_by_unique_id(
-        cls: type[Self],
+        cls: type[typing.Self],
         unique_id: str | int,
         allow_id: bool = False,
         for_update: bool = False,
-    ) -> Self | None:
+    ) -> typing.Self | None:
         """ユニークIDを元にインスタンスを取得。
 
         Args:

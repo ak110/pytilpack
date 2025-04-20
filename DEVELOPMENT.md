@@ -16,7 +16,7 @@
 1. 変更がコミット・プッシュ済みであることを確認:
    `git status`
 2. 直近のアクションが成功していることを確認:
-   `gh run list --branch=master --limit=1`
+   `gh run list --branch=master --limit=3`
 3. 現在のバージョンの確認:
    `git fetch --tags && git tag --sort=version:refname | tail -n1`
 4. GitHubでリリースを作成:
