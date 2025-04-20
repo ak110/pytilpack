@@ -90,6 +90,8 @@ def doc_summary(obj: typing.Any) -> str:
         docstringの先頭1行分の文字列。取得できなかった場合は""。
 
     """
+    if obj is None:
+        return ""
     return (
         obj.__doc__.strip().split("\n", 1)[0]
         if hasattr(obj, "__doc__") and not empty(obj.__doc__)
