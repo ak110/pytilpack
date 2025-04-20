@@ -63,10 +63,10 @@ async def _engine():
 async def _session(engine: sqlalchemy.ext.asyncio.AsyncEngine):
     """セッション。"""
     del engine  # noqa
-    token = Base.start_session()
+    token = await Base.start_session()
     async with Base.session() as session:
         yield session
-    Base.close_session(token)
+    await Base.close_session(token)
 
 
 @pytest.mark.asyncio

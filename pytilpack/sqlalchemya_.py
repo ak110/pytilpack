@@ -66,16 +66,19 @@ class AsyncBase(sqlalchemy.orm.DeclarativeBase, sqlalchemy.ext.asyncio.AsyncAttr
         return cls.engine.connect()
 
     @classmethod
-    def start_session(cls) -> contextvars.Token[sqlalchemy.ext.asyncio.AsyncSession]:
+    async def start_session(
+        cls,
+    ) -> contextvars.Token[sqlalchemy.ext.asyncio.AsyncSession]:
         """セッションを開始する。"""
         assert cls.sessionmaker is not None
         return cls.session_var.set(cls.sessionmaker())  # pylint: disable=not-callable
 
     @classmethod
-    def close_session(
+    async def close_session(
         cls, token: contextvars.Token[sqlalchemy.ext.asyncio.AsyncSession]
     ) -> None:
         """セッションを終了する。"""
+        await asafe_close(cls.session())
         cls.session_var.reset(token)
 
     @classmethod
@@ -85,7 +88,8 @@ class AsyncBase(sqlalchemy.orm.DeclarativeBase, sqlalchemy.ext.asyncio.AsyncAttr
             return cls.session_var.get()
         except LookupError as e:
             raise RuntimeError(
-                f"セッションが開始されていません。{cls.__class__.__qualname__}.start_session()を呼び出してください。"
+                "セッションが開始されていません。"
+                f"{cls.__class__.__qualname__}.start_session()を呼び出してください。"
             ) from e
 
     @classmethod
