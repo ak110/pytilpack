@@ -13,7 +13,11 @@
 
 事前に`gh`コマンドをインストールし、`gh auth login`でログインしておく。
 
-1. 現在のバージョンの確認:
+1. 変更がコミット・プッシュ済みであることを確認:
+   `git status`
+2. 直近のアクションが成功していることを確認:
+   `gh run list --branch=master --limit=1`
+3. 現在のバージョンの確認:
    `git fetch --tags && git tag --sort=version:refname | tail -n1`
-2. GitHubでリリースを作成する。
+4. GitHubでリリースを作成:
    `gh release create --target=master --generate-notes v1.x.x`

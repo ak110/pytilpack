@@ -106,4 +106,4 @@ show_error_codes = true
 addopts = "--showlocals -p no:cacheprovider --durations=5 -vv"
 xfail_strict = true
 asyncio_mode = "auto"
-asyncio_default_fixture_loop_scope = "function"
+asyncio_default_fixture_loop_scope = "module"

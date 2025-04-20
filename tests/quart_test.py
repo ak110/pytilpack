@@ -7,7 +7,7 @@ import quart
 import pytilpack.quart_
 
 
-@pytest_asyncio.fixture(name="app")
+@pytest_asyncio.fixture(name="app", scope="module")
 async def _app():
     app = quart.Quart(__name__)
 
@@ -47,7 +47,7 @@ async def _app():
         yield app
 
 
-@pytest_asyncio.fixture(name="client")
+@pytest_asyncio.fixture(name="client", scope="function")
 async def _client(app: quart.Quart):
     async with app.test_client() as client:
         yield client
