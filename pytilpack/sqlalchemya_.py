@@ -1,6 +1,7 @@
 """SQLAlchemy用のユーティリティ集。(async版)"""
 
 import asyncio
+import contextlib
 import contextvars
 import logging
 import secrets
@@ -9,16 +10,16 @@ import typing
 
 import sqlalchemy
 import sqlalchemy.ext.asyncio
-import sqlalchemy.orm
 
 logger = logging.getLogger(__name__)
 
 
-class AsyncBase(sqlalchemy.orm.DeclarativeBase, sqlalchemy.ext.asyncio.AsyncAttrs):
+class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
     """モデルのベースクラス。SQLAlchemy 2.0スタイル・async前提。
 
     使用例::
-        Base = pytilpack.sqlalchemya_.AsyncBase
+        class Base(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy_.AsyncMixin):
+            pass
 
         class User(Base):
             __tablename__ = "users"
@@ -64,6 +65,23 @@ class AsyncBase(sqlalchemy.orm.DeclarativeBase, sqlalchemy.ext.asyncio.AsyncAttr
         """
         assert cls.engine is not None
         return cls.engine.connect()
+
+    @classmethod
+    @contextlib.asynccontextmanager
+    async def session_scope(cls):
+        """セッションを開始するコンテキストマネージャ。
+
+        使用例::
+            async with Base.session_scope() as session:
+                ...
+
+        """
+        assert cls.sessionmaker is not None
+        token = await cls.start_session()
+        try:
+            yield cls.session()
+        finally:
+            await cls.close_session(token)
 
     @classmethod
     async def start_session(
@@ -193,7 +211,7 @@ class AsyncUniqueIDMixin:
             インスタンス。
 
         """
-        assert issubclass(cls, AsyncBase)
+        assert issubclass(cls, AsyncMixin)
         async with cls.session() as session:
             if allow_id and isinstance(unique_id, int):
                 q = cls.select().where(cls.id == unique_id)  # type: ignore

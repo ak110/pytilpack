@@ -10,8 +10,9 @@ import sqlalchemy.orm
 
 import pytilpack.sqlalchemy_
 
-Base = pytilpack.sqlalchemy_.AsyncBase
-"""ベースクラス。"""
+
+class Base(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy_.AsyncMixin):
+    """ベースクラス。"""
 
 
 class Test1(Base, pytilpack.sqlalchemy_.AsyncUniqueIDMixin):
@@ -63,10 +64,8 @@ async def _engine():
 async def _session(engine: sqlalchemy.ext.asyncio.AsyncEngine):
     """セッション。"""
     del engine  # noqa
-    token = await Base.start_session()
-    async with Base.session() as session:
+    async with Base.session_scope() as session:
         yield session
-    await Base.close_session(token)
 
 
 @pytest.mark.asyncio

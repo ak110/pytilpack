@@ -266,7 +266,7 @@ def describe_table(
 
 
 # エイリアス
-AsyncBase = pytilpack.sqlalchemya_.AsyncBase
+AsyncMixin = pytilpack.sqlalchemya_.AsyncMixin
 AsyncUniqueIDMixin = pytilpack.sqlalchemya_.AsyncUniqueIDMixin
 asafe_close = pytilpack.sqlalchemya_.asafe_close
 await_for_connection = pytilpack.sqlalchemya_.await_for_connection
