@@ -142,12 +142,11 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
             インスタンス。
 
         """
-        async with cls.session() as session:
-            q = cls.select().where(cls.id == id_)  # type: ignore  # pylint: disable=no-member
-            if for_update:
-                q = q.with_for_update()
-            result = await session.execute(q)
-            return result.scalar_one_or_none()
+        q = cls.select().where(cls.id == id_)  # type: ignore  # pylint: disable=no-member
+        if for_update:
+            q = q.with_for_update()
+        result = await cls.session().execute(q)
+        return result.scalar_one_or_none()
 
     def to_dict(
         self,
@@ -212,15 +211,14 @@ class AsyncUniqueIDMixin:
 
         """
         assert issubclass(cls, AsyncMixin)
-        async with cls.session() as session:
-            if allow_id and isinstance(unique_id, int):
-                q = cls.select().where(cls.id == unique_id)  # type: ignore
-            else:
-                q = cls.select().where(cls.unique_id == unique_id)  # type: ignore
-            if for_update:
-                q = q.with_for_update()
-            result = await session.execute(q)
-            return result.scalar_one_or_none()
+        if allow_id and isinstance(unique_id, int):
+            q = cls.select().where(cls.id == unique_id)  # type: ignore
+        else:
+            q = cls.select().where(cls.unique_id == unique_id)  # type: ignore
+        if for_update:
+            q = q.with_for_update()
+        result = await cls.session().execute(q)
+        return result.scalar_one_or_none()
 
 
 async def await_for_connection(url: str, timeout: float = 60.0) -> None:
