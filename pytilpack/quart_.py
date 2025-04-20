@@ -10,6 +10,9 @@ import xml.etree.ElementTree
 import hypercorn.typing
 import quart
 
+import pytilpack.pytest_
+import pytilpack.web
+
 logger = logging.getLogger(__name__)
 
 
@@ -36,10 +39,10 @@ async def assert_bytes(
 
     try:
         # ステータスコードチェック
-        check_status_code(response.status_code, status_code)
+        pytilpack.web.check_status_code(response.status_code, status_code)
 
         # Content-Typeチェック
-        check_content_type(response.content_type, content_type)
+        pytilpack.web.check_content_type(response.content_type, content_type)
     except AssertionError as e:
         logger.info(f"{e}\n\n{response_body!r}")
         raise e
@@ -76,12 +79,12 @@ async def assert_html(
 
     try:
         # ステータスコードチェック
-        check_status_code(response.status_code, status_code)
+        pytilpack.web.check_status_code(response.status_code, status_code)
 
         # Content-Typeチェック
         if content_type == "__default__":
             content_type = ["text/html", "application/xhtml+xml"]
-        check_content_type(response.content_type, content_type)
+        pytilpack.web.check_content_type(response.content_type, content_type)
 
         # HTMLのチェック
         parser = html5lib.HTMLParser(strict=True, debug=True)
@@ -90,7 +93,9 @@ async def assert_html(
         except html5lib.html5parser.ParseError as e:
             raise AssertionError(f"HTMLエラー: {e}") from e
     except AssertionError as e:
-        tmp_file_path = _create_temp_file(tmp_path, response_body)
+        tmp_file_path = pytilpack.pytest_.create_temp_view(
+            tmp_path, response_body, ".html"
+        )
         raise AssertionError(f"{e} (HTML: {tmp_file_path} )") from e
 
     return response_body
@@ -119,10 +124,10 @@ async def assert_json(
 
     try:
         # ステータスコードチェック
-        check_status_code(response.status_code, status_code)
+        pytilpack.web.check_status_code(response.status_code, status_code)
 
         # Content-Typeチェック
-        check_content_type(response.content_type, content_type)
+        pytilpack.web.check_content_type(response.content_type, content_type)
 
         # JSONのチェック
         try:
@@ -159,12 +164,12 @@ async def assert_xml(
 
     try:
         # ステータスコードチェック
-        check_status_code(response.status_code, status_code)
+        pytilpack.web.check_status_code(response.status_code, status_code)
 
         # Content-Typeチェック
         if content_type == "__default__":
             content_type = ["text/xml", "application/xml"]
-        check_content_type(response.content_type, content_type)
+        pytilpack.web.check_content_type(response.content_type, content_type)
 
         # XMLのチェック
         try:
@@ -176,41 +181,6 @@ async def assert_xml(
         raise e
 
     return response_body
-
-
-def check_status_code(status_code: int, valid_status_code: int) -> None:
-    """ステータスコードのチェック。"""
-    if status_code != valid_status_code:
-        raise AssertionError(
-            f"ステータスコードエラー: {status_code} != {valid_status_code}"
-        )
-
-
-def check_content_type(
-    content_type: str, valid_content_types: str | typing.Iterable[str] | None
-) -> None:
-    """Content-Typeのチェック。"""
-    if valid_content_types is None:
-        return None
-    if isinstance(valid_content_types, str):
-        valid_content_types = [valid_content_types]
-    if not any(content_type.startswith(c) for c in valid_content_types):
-        raise AssertionError(
-            f"Content-Typeエラー: {content_type} != {valid_content_types}"
-        )
-    return None
-
-
-def _create_temp_file(
-    tmp_path: pathlib.Path | None, response_body: str
-) -> pathlib.Path:
-    """一時ファイルを作成してパスを返す。"""
-    import pytilpack.pytest_
-
-    tmp_file_path = pytilpack.pytest_.tmp_file_path(tmp_path, suffix=".html")
-    tmp_file_path.write_text(response_body, encoding="utf-8")
-    logger.info(f"HTML: {tmp_file_path}")
-    return tmp_file_path
 
 
 class ProxyFix:
