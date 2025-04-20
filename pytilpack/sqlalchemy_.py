@@ -1,17 +1,16 @@
 """SQLAlchemy用のユーティリティ集。"""
 
-import asyncio
 import logging
 import secrets
 import time
 import typing
 
 import sqlalchemy
-import sqlalchemy.ext.asyncio
 import sqlalchemy.orm
 import sqlalchemy.sql.elements
 
 import pytilpack.python_
+import pytilpack.sqlalchemya_
 
 if typing.TYPE_CHECKING:
     import tabulate
@@ -155,32 +154,6 @@ def wait_for_connection(url: str, timeout: float = 60.0) -> None:
             time.sleep(1)
 
 
-async def await_for_connection(url: str, timeout: float = 60.0) -> None:
-    """DBに接続可能になるまで待機する。"""
-    failed = False
-    start_time = time.time()
-    while True:
-        try:
-            engine = sqlalchemy.ext.asyncio.create_async_engine(url)
-            try:
-                async with engine.connect() as connection:
-                    await connection.execute(sqlalchemy.text("SELECT 1"))
-            finally:
-                await engine.dispose()
-            # 接続成功
-            if failed:  # 過去に接続失敗していた場合だけログを出す
-                logger.info("DB接続成功")
-            break
-        except Exception:
-            # 接続失敗
-            if not failed:
-                failed = True
-                logger.info(f"DB接続待機中 . . . (URL: {url})")
-            if time.time() - start_time >= timeout:
-                raise
-            await asyncio.sleep(1)
-
-
 def safe_close(
     session: sqlalchemy.orm.Session | sqlalchemy.orm.scoped_session,
     log_level: int | None = logging.DEBUG,
@@ -193,18 +166,10 @@ def safe_close(
             logger.log(log_level, "セッションクローズ失敗", exc_info=True)
 
 
-async def asafe_close(
-    session: sqlalchemy.ext.asyncio.AsyncSession, log_level: int | None = logging.DEBUG
-):
-    """例外を出さずにセッションをクローズ。"""
-    try:
-        await session.close()
-    except Exception:
-        if log_level is not None:
-            logger.log(log_level, "セッションクローズ失敗", exc_info=True)
-
-
-def describe(Base: typing.Any, tablefmt: "str | tabulate.TableFormat" = "grid") -> str:
+def describe(
+    Base: type[sqlalchemy.orm.DeclarativeBase],
+    tablefmt: "str | tabulate.TableFormat" = "grid",
+) -> str:
     """DBのテーブル構造を文字列化する。"""
     return "\n".join(
         [
@@ -214,20 +179,24 @@ def describe(Base: typing.Any, tablefmt: "str | tabulate.TableFormat" = "grid") 
     )
 
 
-def get_class_by_table(Base: typing.Any, table: sqlalchemy.schema.Table):
+def get_class_by_table(
+    Base: type[sqlalchemy.orm.DeclarativeBase], table: sqlalchemy.schema.Table
+) -> type[sqlalchemy.orm.DeclarativeBase]:
     """テーブルからクラスを取得する。"""
     # https://stackoverflow.com/questions/72325242/type-object-base-has-no-attribute-decl-class-registry
     for (
         cls
     ) in Base.registry._class_registry.values():  # pylint: disable=protected-access
         if hasattr(cls, "__table__") and cls.__table__ == table:
+            cls = typing.cast(type, cls)
+            assert issubclass(cls, sqlalchemy.orm.DeclarativeBase)
             return cls
-    return None
+    raise ValueError(f"テーブル {table.name} に対応するクラスが見つかりませんでした。")
 
 
 def describe_table(
     table: sqlalchemy.schema.Table,
-    orm_class: typing.Any,
+    orm_class: type[sqlalchemy.orm.DeclarativeBase],
     tablefmt: "str | tabulate.TableFormat" = "grid",
 ) -> str:
     """テーブル構造を文字列化する。"""
@@ -294,3 +263,10 @@ def describe_table(
     table_description = tabulate.tabulate(rows, headers=headers, tablefmt=tablefmt)
 
     return f"Table: {table.name}\n{table_description}\n"
+
+
+# エイリアス
+AsyncBase = pytilpack.sqlalchemya_.AsyncBase
+AsyncUniqueIDMixin = pytilpack.sqlalchemya_.AsyncUniqueIDMixin
+asafe_close = pytilpack.sqlalchemya_.asafe_close
+await_for_connection = pytilpack.sqlalchemya_.await_for_connection

@@ -1000,12 +1000,9 @@ fastapi = [
 ]
 flask = [
     { name = "flask" },
+    { name = "flask-login" },
     { name = "html5lib" },
     { name = "pytest" },
-]
-flask-login = [
-    { name = "flask" },
-    { name = "flask-login" },
 ]
 htmlrag = [
     { name = "beautifulsoup4" },
@@ -1026,7 +1023,10 @@ pyyaml = [
     { name = "pyyaml" },
 ]
 quart = [
+    { name = "html5lib" },
+    { name = "pytest" },
     { name = "quart" },
+    { name = "quart-auth" },
 ]
 sqlalchemy = [
     { name = "sqlalchemy" },
@@ -1065,12 +1065,12 @@ requires-dist = [
     { name = "fastapi", marker = "extra == 'fastapi'", specifier = ">=0.111" },
     { name = "flask", marker = "extra == 'all'", specifier = ">=3.0" },
     { name = "flask", marker = "extra == 'flask'", specifier = ">=3.0" },
-    { name = "flask", marker = "extra == 'flask-login'" },
     { name = "flask-login", marker = "extra == 'all'", specifier = ">=0.6" },
-    { name = "flask-login", marker = "extra == 'flask-login'", specifier = ">=0.6" },
+    { name = "flask-login", marker = "extra == 'flask'", specifier = ">=0.6" },
     { name = "html5lib", marker = "extra == 'all'" },
     { name = "html5lib", marker = "extra == 'fastapi'" },
     { name = "html5lib", marker = "extra == 'flask'" },
+    { name = "html5lib", marker = "extra == 'quart'" },
     { name = "httpx", marker = "extra == 'all'" },
     { name = "httpx", marker = "extra == 'fastapi'" },
     { name = "httpx", marker = "extra == 'tiktoken'" },
@@ -1084,12 +1084,14 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'all'" },
     { name = "pytest", marker = "extra == 'flask'" },
     { name = "pytest", marker = "extra == 'pytest'" },
+    { name = "pytest", marker = "extra == 'quart'" },
     { name = "pytest-asyncio", marker = "extra == 'all'" },
     { name = "pytest-asyncio", marker = "extra == 'pytest'" },
     { name = "pyyaml", marker = "extra == 'all'", specifier = ">=6.0" },
     { name = "pyyaml", marker = "extra == 'pyyaml'", specifier = ">=6.0" },
     { name = "quart", marker = "extra == 'all'", specifier = ">=0.20.0" },
     { name = "quart", marker = "extra == 'quart'", specifier = ">=0.20.0" },
+    { name = "quart-auth", marker = "extra == 'quart'", specifier = ">=0.11.0" },
     { name = "sqlalchemy", marker = "extra == 'all'", specifier = ">=2.0" },
     { name = "sqlalchemy", marker = "extra == 'sqlalchemy'", specifier = ">=2.0" },
     { name = "tabulate", extras = ["widechars"], marker = "extra == 'all'", specifier = ">=0.9" },
@@ -1102,7 +1104,7 @@ requires-dist = [
     { name = "tqdm", marker = "extra == 'tqdm'", specifier = ">=4.0" },
     { name = "typing-extensions", specifier = ">=4.0" },
 ]
-provides-extras = ["all", "beautifulsoup4", "bleach", "fastapi", "flask", "flask-login", "htmlrag", "markdown", "openai", "pytest", "pyyaml", "quart", "sqlalchemy", "tiktoken", "tqdm"]
+provides-extras = ["all", "beautifulsoup4", "bleach", "fastapi", "flask", "htmlrag", "markdown", "openai", "pytest", "pyyaml", "quart", "sqlalchemy", "tiktoken", "tqdm"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1180,6 +1182,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/1d/9d/12e1143a5bd2ccc05c293a6f5ae1df8fd94a8fc1440ecc6c344b2b30ce13/quart-0.20.0.tar.gz", hash = "sha256:08793c206ff832483586f5ae47018c7e40bdd75d886fee3fabbdaa70c2cf505d", size = 63874 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7e/e9/cc28f21f52913adf333f653b9e0a3bf9cb223f5083a26422968ba73edd8d/quart-0.20.0-py3-none-any.whl", hash = "sha256:003c08f551746710acb757de49d9b768986fd431517d0eb127380b656b98b8f1", size = 77960 },
+]
+
+[[package]]
+name = "quart-auth"
+version = "0.11.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "quart" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/45/8d/d965905118fe612e7520f8a1014e4988842d8ed9fd68de4471999f7d968b/quart_auth-0.11.0.tar.gz", hash = "sha256:7703df693d795b3ec43a634efe4118c6adbddd98e7b8195008ca6def6d45cb47", size = 11122 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cf/a3/8ca9235569f39e471a9a319ba1665a27cb9cea8c48c688966460db67d48f/quart_auth-0.11.0-py3-none-any.whl", hash = "sha256:dd342ea39475a9b32b79d83e2b6820ddaa358e77f01dedbba47d50529f2c8c74", size = 9958 },
 ]
 
 [[package]]

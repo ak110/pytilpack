@@ -4,6 +4,7 @@ import datetime
 
 import pytest
 import sqlalchemy
+import sqlalchemy.exc
 import sqlalchemy.ext.asyncio
 import sqlalchemy.orm
 
@@ -16,7 +17,9 @@ class Base(sqlalchemy.orm.DeclarativeBase):  # type: ignore[name-defined]
     __test__ = False
 
 
-class Test1(Base, pytilpack.sqlalchemy_.Mixin, pytilpack.sqlalchemy_.UniqueIDMixin):
+class Test1(
+    Base, pytilpack.sqlalchemy_.AsyncBase, pytilpack.sqlalchemy_.AsyncUniqueIDMixin
+):
     """テストクラス。"""
 
     __test__ = False
@@ -28,7 +31,7 @@ class Test1(Base, pytilpack.sqlalchemy_.Mixin, pytilpack.sqlalchemy_.UniqueIDMix
     )
 
 
-class Test2(Base, pytilpack.sqlalchemy_.Mixin):
+class Test2(Base, pytilpack.sqlalchemy_.AsyncBase):
     """テストクラス。"""
 
     __test__ = False
@@ -55,46 +58,53 @@ class Test2(Base, pytilpack.sqlalchemy_.Mixin):
 
 
 @pytest.fixture(name="engine", scope="module", autouse=True)
-def _engine():
+async def _engine():
     """DB接続。"""
-    engine = sqlalchemy.create_engine("sqlite:///:memory:")
-    pytilpack.sqlalchemy_.register_ping()
-    yield engine
+    pytilpack.sqlalchemy_.AsyncBase.init("sqlite+aiosqlite:///:memory:")
+    yield pytilpack.sqlalchemy_.AsyncBase.engine
 
 
 @pytest.fixture(name="session", scope="module")
-def _session(engine: sqlalchemy.engine.Engine):
+async def _session(engine: sqlalchemy.ext.asyncio.AsyncEngine):
     """セッション。"""
-    yield sqlalchemy.orm.Session(engine)
+    del engine  # noqa
+    token = pytilpack.sqlalchemy_.AsyncBase.start_session()
+    async with pytilpack.sqlalchemy_.AsyncBase.session() as session:
+        yield session
+    pytilpack.sqlalchemy_.AsyncBase.close_session(token)
 
 
-def test_get_by_id(session: sqlalchemy.orm.Session) -> None:
-    Test1.query = session.query(Test1)  # 仮
-
-    Base.metadata.create_all(session.bind)  # type: ignore
+@pytest.mark.asyncio
+async def test_get_by_id(session: sqlalchemy.ext.asyncio.AsyncSession) -> None:
+    """get_by_idのテスト。"""
+    assert pytilpack.sqlalchemy_.AsyncBase.engine is not None
+    async with pytilpack.sqlalchemy_.AsyncBase.engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     session.add(Test1(id=1))
-    session.commit()
+    await session.commit()
 
-    assert Test1.get_by_id(1).id == 1  # type: ignore
-    assert Test1.get_by_id(2) is None
-    assert Test1.get_by_id(1, for_update=True).id == 1  # type: ignore
+    assert (await Test1.get_by_id(1)).id == 1  # type: ignore
+    assert (await Test1.get_by_id(2)) is None
+    assert (await Test1.get_by_id(1, for_update=True)).id == 1  # type: ignore
 
 
-def test_get_by_unique_id(session: sqlalchemy.orm.Session) -> None:
-    Test1.query = session.query(Test1)  # 仮
-
-    Base.metadata.create_all(session.bind)  # type: ignore
+@pytest.mark.asyncio
+async def test_get_by_unique_id(session: sqlalchemy.ext.asyncio.AsyncSession) -> None:
+    """get_by_unique_idのテスト。"""
+    assert pytilpack.sqlalchemy_.AsyncBase.engine is not None
+    async with pytilpack.sqlalchemy_.AsyncBase.engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     test1 = Test1(id=2, unique_id=Test1.generate_unique_id())
     assert test1.unique_id is not None and len(test1.unique_id) == 43
     unique_id = test1.unique_id
     session.add(test1)
-    session.commit()
+    await session.commit()
 
-    assert Test1.get_by_unique_id(unique_id).id == 2  # type: ignore
-    assert Test1.get_by_unique_id(unique_id, allow_id=True).id == 2  # type: ignore
-    assert Test1.get_by_unique_id(2) is None
-    assert Test1.get_by_unique_id(2, allow_id=True).id == 2  # type: ignore
-    assert Test1.get_by_unique_id("2", allow_id=True) is None
+    assert (await Test1.get_by_unique_id(unique_id)).id == 2  # type: ignore
+    assert (await Test1.get_by_unique_id(unique_id, allow_id=True)).id == 2  # type: ignore
+    assert (await Test1.get_by_unique_id(2)) is None
+    assert (await Test1.get_by_unique_id(2, allow_id=True)).id == 2  # type: ignore
+    assert (await Test1.get_by_unique_id("2", allow_id=True)) is None
 
 
 def test_to_dict() -> None:
@@ -162,25 +172,29 @@ Table: test2
     )
 
 
-def test_wait_for_connection() -> None:
-    """wait_for_connectionのテスト。"""
+@pytest.mark.asyncio
+async def test_await_for_connection() -> None:
+    """await_for_connectionのテスト。"""
     # 正常系
-    pytilpack.sqlalchemy_.wait_for_connection("sqlite:///:memory:", timeout=1.0)
+    await pytilpack.sqlalchemy_.await_for_connection(
+        "sqlite+aiosqlite:///:memory:", timeout=1.0
+    )
 
     # 異常系: タイムアウト
     with pytest.raises(sqlalchemy.exc.OperationalError):
-        pytilpack.sqlalchemy_.wait_for_connection(
-            "sqlite:////nonexistent/path/db.sqlite3", timeout=1.0
+        await pytilpack.sqlalchemy_.await_for_connection(
+            "sqlite+aiosqlite:////nonexistent/path/db.sqlite3", timeout=1.0
         )
 
 
-def test_safe_close() -> None:
-    """safe_closeのテスト。"""
-    engine = sqlalchemy.create_engine("sqlite:///:memory:")
-    session = sqlalchemy.orm.Session(engine)
-    pytilpack.sqlalchemy_.safe_close(session)  # 正常ケース
+@pytest.mark.asyncio
+async def test_asafe_close() -> None:
+    """asafe_closeのテスト。"""
+    engine = sqlalchemy.ext.asyncio.create_async_engine("sqlite+aiosqlite:///:memory:")
+    session = sqlalchemy.ext.asyncio.AsyncSession(engine)
+    await pytilpack.sqlalchemy_.asafe_close(session)  # 正常ケース
 
     # エラーケース（既にクローズ済み）
-    session.close()
-    pytilpack.sqlalchemy_.safe_close(session)
-    pytilpack.sqlalchemy_.safe_close(session, log_level=None)
+    await session.close()
+    await pytilpack.sqlalchemy_.asafe_close(session)
+    await pytilpack.sqlalchemy_.asafe_close(session, log_level=None)
