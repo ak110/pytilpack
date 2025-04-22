@@ -53,9 +53,15 @@ class ErrorJob(pytilpack.asyncio_.Job):
 class JobRunner(pytilpack.asyncio_.JobRunner):
     """テスト用のJobRunner。"""
 
-    def __init__(self, poll_interval: float = 0.1, **kwargs) -> None:
-        # テスト高速化のためpoll_intervalは短くする
-        super().__init__(poll_interval=poll_interval, **kwargs)
+    def __init__(
+        self, max_job_concurrency: int = 8, poll_interval: float = 0.1, **kwargs
+    ) -> None:
+        # テスト高速化のためpoll_intervalのデフォルトは短くする
+        super().__init__(
+            max_job_concurrency=max_job_concurrency,
+            poll_interval=poll_interval,
+            **kwargs,
+        )
         self.queue = queue.Queue[pytilpack.asyncio_.Job]()
 
     async def poll(self) -> pytilpack.asyncio_.Job | None:
@@ -164,3 +170,35 @@ async def test_job_runner_errors() -> None:
     assert jobs[2].status == "finished" and jobs[2].count == 1
     assert jobs[3].status == "canceled" and jobs[3].count == 0
     assert post_job.status == "waiting" and post_job.count == 0
+
+
+@pytest.mark.asyncio
+async def test_job_runner_graceful_shutdown() -> None:
+    """graceful_shutdownのテスト。"""
+    runner = JobRunner(max_job_concurrency=2)
+
+    # 実行時間の異なる3つのジョブを用意
+    jobs = [
+        CountingJob(sleep_time=0.5),
+        CountingJob(sleep_time=0.5),
+        CountingJob(sleep_time=0.5),  # 実行待ちになる
+    ]
+    thread = threading.Thread(target=add_jobs_thread, args=(runner.queue, jobs))
+    thread.start()
+
+    # JobRunnerを実行（0.25秒後にgraceful_shutdown - 全てのジョブが開始されるのを待つ）
+    async def graceful_shutdown_after() -> None:
+        await asyncio.sleep(0.25)
+        await runner.graceful_shutdown()
+
+    # 処理実行
+    start_time = time.perf_counter()
+    await asyncio.gather(runner.run(), graceful_shutdown_after())
+    elapsed_time = time.perf_counter() - start_time
+    assert 0.5 <= elapsed_time < 1.0
+    thread.join()
+
+    # 各ジョブの実行結果を確認
+    assert jobs[0].status == "finished" and jobs[0].count == 1
+    assert jobs[1].status == "finished" and jobs[1].count == 1
+    assert jobs[2].status == "waiting" and jobs[2].count == 0

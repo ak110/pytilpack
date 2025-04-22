@@ -71,6 +71,10 @@ class JobRunner(metaclass=abc.ABCMeta):
         while self.running:
             # セマフォを取得して実行可能なジョブがあるか確認
             await self.semaphore.acquire()
+            # 再度self.runningをチェック (graceful_shutdown()対策)
+            if not self.running:
+                self.semaphore.release()
+                break
             job = await self._poll()
             if job is None:
                 # ジョブがなければセマフォを解放して一定時間待機
@@ -114,6 +118,13 @@ class JobRunner(metaclass=abc.ABCMeta):
         # 現在実行中のタスクにキャンセルを通知
         for task in list(self.tasks):
             task.cancel()
+
+    async def graceful_shutdown(self) -> None:
+        """新規ジョブ取得を停止し、実行中のジョブ完了を待ってから戻る"""
+        self.running = False
+        await asyncio.sleep(0)
+        if len(self.tasks) > 0:
+            await asyncio.gather(*list(self.tasks), return_exceptions=True)
 
     @abc.abstractmethod
     async def poll(self) -> Job | None:
