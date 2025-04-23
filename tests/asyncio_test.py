@@ -94,6 +94,7 @@ async def test_job_runner() -> None:
     jobs = [CountingJob() for _ in range(3)]
     thread = threading.Thread(target=add_jobs_thread, args=(runner.queue, jobs))
     thread.start()
+    time.sleep(0.0)
 
     # JobRunnerを実行（1秒後にシャットダウン）
     async def shutdown_after() -> None:
@@ -120,6 +121,7 @@ async def test_job_runner_cancel() -> None:
     )
     thread = threading.Thread(target=add_jobs_thread, args=(runner.queue, jobs))
     thread.start()
+    time.sleep(0.0)
 
     # JobRunnerを実行（0.5秒後にシャットダウン）
     async def shutdown_after() -> None:
@@ -151,6 +153,7 @@ async def test_job_runner_errors() -> None:
     )
     thread = threading.Thread(target=add_jobs_thread, args=(runner.queue, jobs))
     thread.start()
+    time.sleep(0.0)
 
     # JobRunnerを実行（0.75秒後にシャットダウン）
     async def shutdown_after_and_add_job() -> CountingJob:
@@ -187,6 +190,7 @@ async def test_job_runner_graceful_shutdown() -> None:
     ]
     thread = threading.Thread(target=add_jobs_thread, args=(runner.queue, jobs))
     thread.start()
+    time.sleep(0.0)
 
     # JobRunnerを実行（0.3秒後にgraceful_shutdown - 全てのジョブが開始されるのを待つ）
     async def graceful_shutdown_after() -> None:
@@ -197,7 +201,7 @@ async def test_job_runner_graceful_shutdown() -> None:
     start_time = time.perf_counter()
     await asyncio.gather(runner.run(), graceful_shutdown_after())
     elapsed_time = time.perf_counter() - start_time
-    assert 0.6 <= elapsed_time < 1.0
+    assert 0.6 <= elapsed_time < 0.9
     thread.join()
 
     # 各ジョブの実行結果を確認
