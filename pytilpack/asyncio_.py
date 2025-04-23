@@ -2,6 +2,7 @@
 
 import abc
 import asyncio
+import concurrent.futures
 import logging
 import typing
 
@@ -10,16 +11,24 @@ logger = logging.getLogger(__name__)
 T = typing.TypeVar("T")
 
 
-def run(coro: typing.Awaitable[T]) -> T:
+def run(coro: typing.Coroutine[typing.Any, typing.Any, T]) -> T:
     """非同期関数を実行する。"""
     # https://github.com/microsoftgraph/msgraph-sdk-python/issues/366#issuecomment-1830756182
     try:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
     except RuntimeError:
-        logger.debug("EventLoop Error", exc_info=True)
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    return loop.run_until_complete(coro)
+        # 非同期環境でない場合
+        return asyncio.run(coro)
+
+    # 何らかの理由でイベントループは存在するが動いてない場合 (謎)
+    if not loop.is_running():
+        return loop.run_until_complete(coro)
+
+    # 現在のスレッドでイベントループが実行されている場合
+    # 別スレッド・別イベントループで実行する
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(lambda: asyncio.run(coro))
+        return future.result()
 
 
 JobStatus = typing.Literal["waiting", "running", "finished", "canceled", "errored"]

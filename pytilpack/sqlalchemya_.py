@@ -45,10 +45,46 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
     def init(
         cls,
         url: str | sqlalchemy.engine.URL,
+        pool_size: int | None = None,
+        max_overflow: int | None = None,
+        pool_recycle: int | None = 280,
+        pool_pre_ping: bool = True,
         autoflush: bool = True,
         expire_on_commit: bool = False,
         **kwargs,
     ):
+        """DB接続を初期化する。(デフォルトである程度おすすめの設定をしちゃう。)
+
+        # sqlalchemy.exc.TimeoutError: QueuePool limit of size 5 overflow 10 reached,
+        # connection timed out, timeout 30.00 (Background on this error at: https://sqlalche.me/e/20/3o7r)
+        "pool_size": pool_size,
+        "max_overflow": pool_size * 2,
+        # https://stackoverflow.com/questions/6471549/avoiding-mysql-server-has-gone-away-on-infrequently-used-python-flask-server
+        "pool_recycle": 280,
+        "pool_pre_ping": True,
+
+        Args:
+            url: DB接続URL。
+            pool_size: コネクションプールのサイズ。スレッド数に応じて調整要。
+            max_overflow: コネクションプールの最大オーバーフロー数。Noneの場合はデフォルト値を使用。
+            pool_recycle: コネクションプールのリサイクル時間。Noneの場合はデフォルト値を使用。
+            pool_pre_ping: コネクションプールのプレピン。Noneの場合はデフォルト値を使用。
+            autoflush: セッションのautoflushフラグ。デフォルトはTrue。
+            expire_on_commit: セッションのexpire_on_commitフラグ。デフォルトはFalse。
+
+        """
+        if pool_size is not None and max_overflow is None:
+            max_overflow = pool_size * 2
+        kwargs = kwargs.copy()
+        if pool_size is not None:
+            kwargs["pool_size"] = pool_size
+        if max_overflow is not None:
+            kwargs["max_overflow"] = max_overflow
+        if pool_recycle is not None:
+            kwargs["pool_recycle"] = pool_recycle
+        if pool_pre_ping is not None:
+            kwargs["pool_pre_ping"] = pool_pre_ping
+
         cls.engine = sqlalchemy.ext.asyncio.create_async_engine(url, **kwargs)
         cls.sessionmaker = sqlalchemy.ext.asyncio.async_sessionmaker(
             cls.engine, autoflush=autoflush, expire_on_commit=expire_on_commit
