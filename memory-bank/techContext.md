@@ -13,20 +13,39 @@
 ### 開発ツール設定
 
 ```toml
-# pyproject.toml
+# pyproject.toml の主要な設定
 [project]
 name = "pytilpack"
 requires-python = ">=3.11,<4.0"
+dependencies = ["typing-extensions>=4.0"]
 
 [tool.black]
 target-version = ['py311']
 skip-magic-trailing-comma = true
+
+[tool.pyfltr]
+pyupgrade-args = ["--py311-plus"]
+pylint-args = ["--jobs=4"]
+
+[tool.isort]
+profile = "black"
 
 [tool.pytest.ini_options]
 addopts = "--showlocals -p no:cacheprovider --durations=5 -vv"
 xfail_strict = true
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "module"
+
+[tool.mypy]
+allow_redefinition = true
+check_untyped_defs = true
+ignore_missing_imports = true
+strict_optional = true
+strict_equality = true
+warn_no_return = true
+warn_redundant_casts = true
+warn_unused_configs = true
+show_error_codes = true
 ```
 
 ## 使用技術

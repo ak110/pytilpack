@@ -2,29 +2,77 @@
 
 ## 現在の作業状況
 
-- コードベース全体が`black`フォーマッターによる一貫したスタイルを維持
+- コードベース全体が`black`と`isort`による一貫したスタイルを維持
 - GitHub Actionsによる継続的なテストとリンティングが実行中
 - PyPIへの安定したリリースが行われている状態
+- `uv`によるパッケージ管理の効率化
+- `pre-commit`による自動化された品質管理
 
 ## 最近の変更
 
-- uvによるパッケージ管理システムの導入
-- pre-commitによるコード品質管理の導入
-- GitHub Actionsワークフローの整備
+### パッケージ管理の改善
+
+#### uvの導入
+
+- インストール: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- 依存関係の更新: `uv sync --upgrade --all-extras --all-groups`
+- 開発用インストール: `uv pip install -e ".[all]"`
+- テスト実行: `uv run pytest`
+
+#### pre-commitの導入
+
+- インストール: `pip install pre-commit`
+- 設定の有効化: `pre-commit install`
+- コミット時の自動チェック:
+  - black: コードフォーマット
+  - isort: import文の整理
+  - pyfltr: Pythonコードの最適化
+  - pylint: コード品質チェック
+
+### GitHub Actionsワークフローの整備
+
+- リンティングとテストの自動化
+- PyPIへの自動デプロイ
+- プルリクエストの品質チェック
 
 ## 重要なパターンと設定
 
 ### コーディング規約
 
+#### 一般的なルール
+
 - importは可能な限り`import xxx`形式で記述
-- タイプヒントを積極的に活用
+- 相対importは避け、絶対パスでのimportを使用
+- モジュール名は小文字のスネークケース
+
+#### 型ヒント
+
+- Python 3.11以降の新しい構文を使用
   - `typing.List`の代わりに`list`を使用
   - `typing.Optional`の代わりに`| None`を使用
-- docstringは概要のみを記述
+  - `typing.Union[A, B]`の代わりに`A | B`を使用
+- Genericsは明示的に型パラメータを指定
+- コレクションは具体的な型を指定（例: `list[str]`）
+
+#### ドキュメント
+
+- docstringは概要のみを簡潔に記述
+- 複雑な関数は引数と戻り値の型を説明
+- 重要な実装の詳細はコメントで説明
+
+#### コード構造
+
+- 関数やクラスは単一責任の原則に従う
+- ネストは3レベル以内に抑える
+- 関数は50行以内を目標に
+
+#### ツール・ライブラリの使用
+
 - ログ出力は`logging`モジュールを使用
 - 日付処理は`datetime`を使用
 - ファイル操作は`pathlib`を使用
 - テーブルデータ処理は`polars`を使用（`pandas`は非推奨）
+- 設定ファイルは`yaml`を優先
 
 ### テストパターン
 
