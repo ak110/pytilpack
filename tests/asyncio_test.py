@@ -77,11 +77,14 @@ class JobRunner(pytilpack.asyncio_.JobRunner):
 
 
 def add_jobs_thread(
-    queue_: queue.Queue[pytilpack.asyncio_.Job], jobs: list[pytilpack.asyncio_.Job]
+    queue_: queue.Queue[pytilpack.asyncio_.Job],
+    jobs: list[pytilpack.asyncio_.Job],
+    sleep_time: float | None = 0.1,
 ) -> None:
     """別スレッドでジョブを追加する。"""
     for job in jobs:
-        time.sleep(0.1)
+        if sleep_time is not None:
+            time.sleep(sleep_time)
         queue_.put(job)
 
 
@@ -188,7 +191,7 @@ async def test_job_runner_graceful_shutdown() -> None:
         CountingJob(sleep_time=0.5),
         CountingJob(sleep_time=0.5),  # 実行待ちになる
     ]
-    thread = threading.Thread(target=add_jobs_thread, args=(runner.queue, jobs))
+    thread = threading.Thread(target=add_jobs_thread, args=(runner.queue, jobs, None))
     thread.start()
     time.sleep(0.0)
 
@@ -201,7 +204,7 @@ async def test_job_runner_graceful_shutdown() -> None:
     start_time = time.perf_counter()
     await asyncio.gather(runner.run(), graceful_shutdown_after())
     elapsed_time = time.perf_counter() - start_time
-    assert 0.6 <= elapsed_time < 0.9
+    assert 0.5 <= elapsed_time < 0.9
     thread.join()
 
     # 各ジョブの実行結果を確認
