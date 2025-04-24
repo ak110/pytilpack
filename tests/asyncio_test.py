@@ -183,19 +183,19 @@ async def test_job_runner_errors() -> None:
 @pytest.mark.asyncio
 async def test_job_runner_graceful_shutdown() -> None:
     """graceful_shutdownのテスト。"""
+    # 同時実行数2のJobRunnerを作成
     runner = JobRunner(max_job_concurrency=2)
 
-    # 実行時間の異なる3つのジョブを用意
-    jobs = [
-        CountingJob(sleep_time=0.5),
-        CountingJob(sleep_time=0.5),
+    # 3つのジョブを用意
+    jobs = (
+        CountingJob(sleep_time=0.5),  # 期待: count == 1
+        CountingJob(sleep_time=0.5),  # 期待: count == 1
         CountingJob(sleep_time=0.5),  # 実行待ちになる
-    ]
-    thread = threading.Thread(target=add_jobs_thread, args=(runner.queue, jobs, None))
-    thread.start()
-    time.sleep(0.0)
+    )
+    for job in jobs:
+        runner.queue.put(job)
 
-    # JobRunnerを実行（0.3秒後にgraceful_shutdown - 全てのジョブが開始されるのを待つ）
+    # JobRunnerを実行（0.3秒後にgraceful_shutdown）
     async def graceful_shutdown_after() -> None:
         await asyncio.sleep(0.3)
         await runner.graceful_shutdown()
@@ -205,7 +205,6 @@ async def test_job_runner_graceful_shutdown() -> None:
     await asyncio.gather(runner.run(), graceful_shutdown_after())
     elapsed_time = time.perf_counter() - start_time
     assert 0.5 <= elapsed_time < 0.9
-    thread.join()
 
     # 各ジョブの実行結果を確認
     assert jobs[0].status == "finished" and jobs[0].count == 1
