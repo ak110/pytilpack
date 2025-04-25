@@ -65,6 +65,9 @@ class QuartAuth(typing.Generic[UserType], quart_auth.QuartAuth):
             if quart.g.current_user is None:
                 # ユーザーが見つからない場合はAnonymousUserにする
                 quart.g.current_user = AnonymousUser()
+            else:
+                # ログイン状態を更新する
+                quart_auth.renew_login()
         else:
             # 未認証の場合はAnonymousUserにする
             quart.g.current_user = AnonymousUser()
@@ -77,9 +80,15 @@ class QuartAuth(typing.Generic[UserType], quart_auth.QuartAuth):
         return template_context
 
 
-def login_user(auth_id: str) -> None:
-    """ログイン処理。"""
-    quart_auth.login_user(quart_auth.AuthUser(auth_id))
+def login_user(auth_id: str, remember: bool = True) -> None:
+    """ログイン処理。
+
+    Args:
+        auth_id: 認証ID
+        remember: ログイン状態を保持するかどうか
+
+    """
+    quart_auth.login_user(quart_auth.AuthUser(auth_id), remember=remember)
 
 
 def logout_user() -> None:
