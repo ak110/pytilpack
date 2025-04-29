@@ -65,6 +65,5 @@ def check_html(input_stream: typing.Any, strict: bool = False) -> None:
         ]
         if strict:
             raise AssertionError(f"HTMLエラー: {'\n'.join(errors)}")
-        else:
-            for error in errors:
-                logger.warning(f"HTMLエラー: {error}")
+        for error in errors:
+            logger.warning(f"HTMLエラー: {error}")

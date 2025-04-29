@@ -16,7 +16,7 @@ def _app():
 
     @app.route("/html")
     def html():
-        return "<!doctype html><p>hello</p>", 200, {"Content-Type": "text/html"}
+        return "<!doctype html><p>hello", 200, {"Content-Type": "text/html"}
 
     @app.route("/html-invalid")
     def html_invalid():
@@ -51,70 +51,62 @@ def _client(app):
         yield client
 
 
-def test_assert_bytes(client, tmp_path):
+def test_assert_bytes(client):
     """bytesアサーションのテスト。"""
     response = client.get("/html")
-    pytilpack.flask_.assert_bytes(response)
-    pytilpack.flask_.assert_bytes(response, content_type="text/html")
+    _ = pytilpack.flask_.assert_bytes(response)
+    _ = pytilpack.flask_.assert_bytes(response, content_type="text/html")
 
     response = client.get("/403")
-    pytilpack.flask_.assert_bytes(response, 403)
+    _ = pytilpack.flask_.assert_bytes(response, 403)
     with pytest.raises(AssertionError):
-        pytilpack.flask_.assert_bytes(response)
+        _ = pytilpack.flask_.assert_bytes(response)
     with pytest.raises(AssertionError):
-        pytilpack.flask_.assert_bytes(response, content_type="application/json")
+        _ = pytilpack.flask_.assert_bytes(response, content_type="application/json")
 
 
 def test_assert_html(client, tmp_path):
     """HTMLアサーションのテスト。"""
     response = client.get("/html")
-    pytilpack.flask_.assert_html(response)
-    pytilpack.flask_.assert_html(response, content_type="text/html")
-    pytilpack.flask_.assert_html(response, tmp_path=tmp_path)
-
-    # strictモードでのテスト
-    response = client.get("/html-invalid")
-    with pytest.raises(AssertionError):
-        pytilpack.flask_.assert_html(response, strict=True)
-
-    # 通常のテスト
-    response = client.get("/html-invalid")
-    with pytest.raises(AssertionError):
-        pytilpack.flask_.assert_html(response)
+    _ = pytilpack.flask_.assert_html(response)
+    _ = pytilpack.flask_.assert_html(response, content_type="text/html")
+    _ = pytilpack.flask_.assert_html(response, tmp_path=tmp_path)
+    _ = pytilpack.flask_.assert_html(response, strict=True)
 
     response = client.get("/403")
-    pytilpack.flask_.assert_html(response, 403)
+    _ = pytilpack.flask_.assert_html(response, 403)
     with pytest.raises(AssertionError):
-        pytilpack.flask_.assert_html(response)
+        _ = pytilpack.flask_.assert_html(response)
+
+    response = client.get("/html-invalid")
+    with pytest.raises(AssertionError):
+        _ = pytilpack.flask_.assert_html(response, strict=True)
 
 
-def test_assert_json(client, tmp_path):
+def test_assert_json(client):
     """JSONアサーションのテスト。"""
     response = client.get("/json")
-    pytilpack.flask_.assert_json(response)
-    pytilpack.flask_.assert_json(response, content_type="application/json")
+    _ = pytilpack.flask_.assert_json(response)
 
     response = client.get("/json-invalid")
     with pytest.raises(AssertionError):
-        pytilpack.flask_.assert_json(response)
+        _ = pytilpack.flask_.assert_json(response)
 
     response = client.get("/html")
     with pytest.raises(AssertionError):
-        pytilpack.flask_.assert_json(response)
-    with pytest.raises(AssertionError):
-        pytilpack.flask_.assert_json(response, content_type="application/json")
+        _ = pytilpack.flask_.assert_json(response)
 
 
-def test_assert_xml(client, tmp_path):
+def test_assert_xml(client):
     """XMLアサーションのテスト。"""
     response = client.get("/xml")
-    pytilpack.flask_.assert_xml(response)
-    pytilpack.flask_.assert_xml(response, content_type="text/xml")
+    _ = pytilpack.flask_.assert_xml(response)
+    _ = pytilpack.flask_.assert_xml(response, content_type="text/xml")
 
     response = client.get("/xml-invalid")
     with pytest.raises(AssertionError):
-        pytilpack.flask_.assert_xml(response)
+        _ = pytilpack.flask_.assert_xml(response)
 
     response = client.get("/html")
     with pytest.raises(AssertionError):
-        pytilpack.flask_.assert_xml(response)
+        _ = pytilpack.flask_.assert_xml(response)

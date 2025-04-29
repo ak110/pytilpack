@@ -87,7 +87,7 @@ def assert_html(
         pytilpack.web.check_content_type(content_type_value, content_type)
 
         # HTMLのチェック
-        pytilpack.web.check_html(io.BytesIO(response.content))
+        pytilpack.web.check_html(io.BytesIO(response.content), strict=strict)
     except AssertionError as e:
         tmp_file_path = pytilpack.pytest_.create_temp_view(
             tmp_path, response_body, ".html"
