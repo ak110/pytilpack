@@ -156,8 +156,6 @@ def assert_html(
         レスポンスボディ (bs4.BeautifulSoup)
 
     """
-    import html5lib
-
     response_body = response.get_data().decode("utf-8")
 
     try:
@@ -170,11 +168,7 @@ def assert_html(
         pytilpack.web.check_content_type(response.content_type, content_type)
 
         # HTMLのチェック
-        parser = html5lib.HTMLParser(strict=strict, debug=True)
-        try:
-            _ = parser.parse(response.get_data())
-        except html5lib.html5parser.ParseError as e:
-            raise AssertionError(f"HTMLエラー: {e}") from e
+        pytilpack.web.check_html(response.get_data())
     except AssertionError as e:
         tmp_file_path = pytilpack.pytest_.create_temp_view(
             tmp_path, response_body, ".html"

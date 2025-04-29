@@ -49,3 +49,22 @@ def check_content_type(
             f"Content-Typeエラー: {content_type} != {valid_content_types}"
         )
     return None
+
+
+def check_html(input_stream: typing.Any, strict: bool = False) -> None:
+    """HTMLのチェック。html5libが必要なので注意。"""
+    import html5lib
+    import html5lib.constants
+
+    parser = html5lib.HTMLParser(debug=True)
+    _ = parser.parse(input_stream)
+    if len(parser.errors) > 0:
+        errors = [
+            f"{position}: {html5lib.constants.E[errorcode] % datavars}"
+            for position, errorcode, datavars in parser.errors
+        ]
+        if strict:
+            raise AssertionError(f"HTMLエラー: {'\n'.join(errors)}")
+        else:
+            for error in errors:
+                logger.warning(f"HTMLエラー: {error}")
