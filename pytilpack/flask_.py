@@ -135,6 +135,7 @@ def assert_html(
     response,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "__default__",
+    strict: bool = False,
     tmp_path: pathlib.Path | None = None,
 ) -> str:
     """flaskのテストコード用。
@@ -145,6 +146,7 @@ def assert_html(
         response: レスポンス
         status_code: 期待するステータスコード
         content_type: 期待するContent-Type
+        strict: Trueの場合、HTML5の仕様に従ったパースを行う
         tmp_path: 一時ファイルを保存するディレクトリ
 
     Raises:
@@ -168,7 +170,7 @@ def assert_html(
         pytilpack.web.check_content_type(response.content_type, content_type)
 
         # HTMLのチェック
-        parser = html5lib.HTMLParser(strict=True, debug=True)
+        parser = html5lib.HTMLParser(strict=strict, debug=True)
         try:
             _ = parser.parse(response.get_data())
         except html5lib.html5parser.ParseError as e:

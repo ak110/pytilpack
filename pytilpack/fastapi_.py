@@ -37,7 +37,9 @@ def assert_bytes(response: httpx.Response, status_code: int = 200) -> bytes:
     return response_body
 
 
-def assert_html(response: httpx.Response, status_code: int = 200) -> str:
+def assert_html(
+    response: httpx.Response, status_code: int = 200, strict: bool = False
+) -> str:
     """fastapiのテストコード用。
 
     html5libが必要なので注意。
@@ -58,7 +60,7 @@ def assert_html(response: httpx.Response, status_code: int = 200) -> str:
     response_body = response.text
 
     # HTMLのチェック
-    parser = html5lib.HTMLParser(strict=True, debug=True)
+    parser = html5lib.HTMLParser(strict=strict, debug=True)
     try:
         _ = parser.parse(io.BytesIO(response.content))
     except html5lib.html5parser.ParseError as e:
