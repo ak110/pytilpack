@@ -17,6 +17,7 @@ graph TD
         WebUtil[web.py]
         DataURL[data_url.py]
         HtmlRAG[htmlrag.py]
+        SSE[sse.py]
     end
 
     subgraph ライブラリ固有ユーティリティ
@@ -93,7 +94,66 @@ async def async_operation() -> None:
         await process_data()
 ```
 
-### 3. テストパターン
+### 3. 非同期イテレーター処理
+
+```python
+async def process_async_iterator(
+    it: AsyncIterator[T], interval: float
+) -> AsyncIterator[T]:
+    """非同期イテレーターの処理。
+
+    - イベントループを直接使用してタイムアウト制御
+    - キャンセル処理の適切なハンドリング
+    - StopAsyncIterationの適切な処理
+    """
+    loop = asyncio.get_running_loop()
+    next_task = loop.create_task(anext(it))
+
+    try:
+        while True:
+            done, _ = await asyncio.wait(
+                [next_task], timeout=interval,
+                return_when=asyncio.FIRST_COMPLETED
+            )
+            if next_task in done:
+                try:
+                    msg = next_task.result()
+                except StopAsyncIteration:
+                    break
+                yield msg
+                next_task = loop.create_task(anext(it))
+            else:
+                # タイムアウト時の処理
+                pass
+    except asyncio.CancelledError:
+        # キャンセル時の適切な終了処理
+        return
+```
+
+### 4. データクラスパターン
+
+```python
+@dataclasses.dataclass
+class MessageFormat:
+    """メッセージフォーマット。
+
+    - 必須フィールドは型のみ指定
+    - オプションフィールドはNone付きで定義
+    - シリアライズメソッドを提供
+    """
+    data: str
+    metadata: str | None = None
+
+    def serialize(self) -> str:
+        """データのシリアライズ。"""
+        lines = []
+        if self.metadata is not None:
+            lines.append(f"meta: {self.metadata}")
+        lines.append(f"data: {self.data}")
+        return "\n".join(lines)
+```
+
+### 5. テストパターン
 
 ```python
 @pytest.mark.parametrize(
@@ -106,6 +166,17 @@ async def async_operation() -> None:
 def test_function(input: str, expected: str) -> None:
     """関数のテスト。"""
     assert function(input) == expected
+
+@pytest.mark.asyncio
+async def test_async_operation():
+    """非同期処理のテスト。
+
+    - タイミングに依存する処理のテスト
+    - キャンセル処理のテスト
+    - 非同期イテレーターのテスト
+    """
+    result = await async_operation()
+    assert result == expected
 ```
 
 ## 重要な実装パス
