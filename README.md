@@ -69,6 +69,7 @@ import pytilpack.xxx
 
 - [pytilpack.data_url](pytilpack/data_url.py)  # データURL関連
 - [pytilpack.htmlrag](pytilpack/htmlrag.py)  # HtmlRAG関連
+- [pytilpack.sse](pytilpack/sse.py)  # Server-Sent Events関連
 - [pytilpack.web](pytilpack/web.py)  # Web関連
 
 ## 開発手順
