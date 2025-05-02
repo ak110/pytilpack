@@ -47,8 +47,17 @@ class SSE:
     id: str | None = None
     retry: int | None = None
 
-    def serialize(self) -> str:
-        """SSE形式の文字列にシリアライズ。
+    def __str__(self) -> str:
+        """SSE形式の文字列への変換。
+
+        Returns:
+            SSE形式の文字列。各フィールドはコロンで区切られ、最後に空行が付加されます。
+            data フィールドに改行が含まれる場合、複数の data: 行に分割されます。
+        """
+        return self.to_str()
+
+    def to_str(self) -> str:
+        """SSE形式の文字列への変換。
 
         Returns:
             SSE形式の文字列。各フィールドはコロンで区切られ、最後に空行が付加されます。
@@ -71,42 +80,51 @@ class SSE:
         return "\n".join(lines) + "\n\n"
 
 
-async def add_keepalive(
-    generator: typing.AsyncIterator[str], interval: float = 15
-) -> typing.AsyncIterator[str]:
-    """SSEメッセージストリームにキープアライブを追加。
+def generator(interval: float = 15):
+    """SSEジェネレーターのデコレーター。
 
     15秒以上メッセージが送信されない場合、コメント行を送信してコネクションを維持します。
 
     Args:
-        generator: SSEメッセージ文字列のイテレーター
         interval: キープアライブを送信する間隔（秒）。デフォルトは15秒
 
-    Yields:
-        キープアライブが追加されたSSEメッセージストリーム
+    Returns:
+        キープアライブが追加されたSSEメッセージストリームを生成するデコレーター
     """
-    loop = asyncio.get_running_loop()
-    last_msg_time = loop.time()
-    it: typing.AsyncIterator[str] = aiter(generator)
-    next_task: asyncio.Task[str] = loop.create_task(anext(it))  # type: ignore[arg-type]
+    T = typing.TypeVar("T", bound=str | SSE)
 
-    while True:
-        # 次メッセージ取得タスク完了 or タイムアウト待ち
-        delay = interval - (loop.time() - last_msg_time)
-        done, _ = await asyncio.wait(
-            [next_task], timeout=max(0.0, delay), return_when=asyncio.FIRST_COMPLETED
-        )
+    def decorator(
+        func: typing.Callable[..., typing.AsyncIterator[T]],
+    ) -> typing.Callable[..., typing.AsyncIterator[str]]:
+        async def wrapper(*args, **kwargs) -> typing.AsyncIterator[str]:
+            loop = asyncio.get_running_loop()
+            last_msg_time = loop.time()
+            it: typing.AsyncIterator[T] = aiter(func(*args, **kwargs))
+            next_task: asyncio.Task[T] = loop.create_task(anext(it))  # type: ignore[arg-type]
 
-        if next_task in done:
-            # メッセージ到着
-            try:
-                msg = next_task.result()
-            except StopAsyncIteration:
-                break
-            yield msg
-            last_msg_time = loop.time()
-            next_task = loop.create_task(anext(it))  # type: ignore[arg-type]
-        else:
-            # タイムアウト → キープアライブ送信
-            yield ": ping\n\n"
-            last_msg_time = loop.time()
+            while True:
+                # 次メッセージ取得タスク完了 or タイムアウト待ち
+                delay = interval - (loop.time() - last_msg_time)
+                done, _ = await asyncio.wait(
+                    [next_task],
+                    timeout=max(0.0, delay),
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+
+                if next_task in done:
+                    # メッセージ到着
+                    try:
+                        msg = next_task.result()
+                    except StopAsyncIteration:
+                        break
+                    yield str(msg)
+                    last_msg_time = loop.time()
+                    next_task = loop.create_task(anext(it))  # type: ignore[arg-type]
+                else:
+                    # タイムアウト → キープアライブ送信
+                    yield ": ping\n\n"
+                    last_msg_time = loop.time()
+
+        return wrapper
+
+    return decorator
