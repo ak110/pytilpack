@@ -72,14 +72,14 @@ class SSE:
 
 
 async def add_keepalive(
-    messages: typing.AsyncIterator[str], interval: float = 15
+    generator: typing.AsyncIterator[str], interval: float = 15
 ) -> typing.AsyncIterator[str]:
     """SSEメッセージストリームにキープアライブを追加。
 
     15秒以上メッセージが送信されない場合、コメント行を送信してコネクションを維持します。
 
     Args:
-        messages: SSEメッセージ文字列のイテレーター
+        generator: SSEメッセージ文字列のイテレーター
         interval: キープアライブを送信する間隔（秒）。デフォルトは15秒
 
     Yields:
@@ -87,8 +87,8 @@ async def add_keepalive(
     """
     loop = asyncio.get_running_loop()
     last_msg_time = loop.time()
-    it = aiter(messages)
-    next_task = loop.create_task(anext(it))
+    it: typing.AsyncIterator[str] = aiter(generator)
+    next_task: asyncio.Task[str] = loop.create_task(anext(it))  # type: ignore[arg-type]
 
     while True:
         # 次メッセージ取得タスク完了 or タイムアウト待ち
@@ -105,7 +105,7 @@ async def add_keepalive(
                 break
             yield msg
             last_msg_time = loop.time()
-            next_task = loop.create_task(anext(it))
+            next_task = loop.create_task(anext(it))  # type: ignore[arg-type]
         else:
             # タイムアウト → キープアライブ送信
             yield ": ping\n\n"
