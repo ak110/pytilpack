@@ -40,7 +40,7 @@ import pytilpack.xxx   # 特定のライブラリに依存しない機能
 ### 主要な機能グループ
 
 1. **標準ライブラリ拡張**
-   - asyncio_, pathlib_, threading_等の拡張機能
+   - asyncio_, base64_, pathlib_, threading_等の拡張機能
    - 一般的な操作のための便利な関数群
 
 2. **Webフレームワークサポート**

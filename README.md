@@ -47,6 +47,7 @@ import pytilpack.xxx
 ### 各種ライブラリ用のユーティリティのモジュール一覧
 
 - [pytilpack.asyncio_](pytilpack/asyncio_.py)
+- [pytilpack.base64_](pytilpack/base64_.py)
 - [pytilpack.csv_](pytilpack/csv_.py)
 - [pytilpack.dataclasses_](pytilpack/dataclasses_.py)
 - [pytilpack.fastapi_](pytilpack/fastapi_.py)
