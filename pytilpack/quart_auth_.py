@@ -15,7 +15,7 @@ class UserMixin:
         return True
 
 
-class AnonymousUser:
+class AnonymousUser(UserMixin):
     """未ログインの匿名ユーザー。"""
 
     @property
@@ -24,13 +24,15 @@ class AnonymousUser:
         return False
 
 
-UserType = typing.TypeVar("UserType")
+UserType = typing.TypeVar("UserType", bound=UserMixin)
 
 
 class QuartAuth(typing.Generic[UserType], quart_auth.QuartAuth):
     """Quart-Authの独自拡張。
 
     Flask-Loginのように@auth_manager.user_loaderを定義できるようにする。
+    読み込んだユーザーインスタンスは quart.g.current_user に格納する。
+    テンプレートでも {{ current_user }} でアクセスできるようにする。
 
     """
 
@@ -96,6 +98,6 @@ def logout_user() -> None:
     quart_auth.logout_user()
 
 
-def current_user() -> UserMixin | AnonymousUser:
+def current_user() -> UserMixin:
     """現在のユーザーを取得する。"""
     return quart.g.current_user
