@@ -17,13 +17,25 @@ logger = logging.getLogger(__name__)
 class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
     """モデルのベースクラス。SQLAlchemy 2.0スタイル・async前提。
 
-    使用例::
-        class Base(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy_.AsyncMixin):
-            pass
+    Examples:
+        モデル定義例::
 
-        class User(Base):
-            __tablename__ = "users"
-            ...
+            class Base(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy_.AsyncMixin):
+                pass
+
+            class User(Base):
+                __tablename__ = "users"
+                ...
+
+        Quart例::
+
+            @app.before_request
+            async def _before_request():
+                quart.g.db_session_token = await models.Base.start_session()
+
+            @app.after_request
+            async def _after_request(r: quart.Response):
+                await models.Base.close_session(quart.g.db_session_token)
 
     """
 
@@ -54,14 +66,6 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         **kwargs,
     ):
         """DB接続を初期化する。(デフォルトである程度おすすめの設定をしちゃう。)
-
-        # sqlalchemy.exc.TimeoutError: QueuePool limit of size 5 overflow 10 reached,
-        # connection timed out, timeout 30.00 (Background on this error at: https://sqlalche.me/e/20/3o7r)
-        "pool_size": pool_size,
-        "max_overflow": pool_size * 2,
-        # https://stackoverflow.com/questions/6471549/avoiding-mysql-server-has-gone-away-on-infrequently-used-python-flask-server
-        "pool_recycle": 280,
-        "pool_pre_ping": True,
 
         Args:
             url: DB接続URL。
