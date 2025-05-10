@@ -42,6 +42,7 @@ class QuartAuth(typing.Generic[UserType], quart_auth.QuartAuth):
             typing.Callable[[str], typing.Awaitable[UserType | None]] | None
         ) = None
 
+    @typing.override
     def init_app(self, app: quart.Quart) -> None:
         """初期化処理。"""
         super().init_app(app)
@@ -74,6 +75,7 @@ class QuartAuth(typing.Generic[UserType], quart_auth.QuartAuth):
             # 未認証の場合はAnonymousUserにする
             quart.g.current_user = AnonymousUser()
 
+    @typing.override
     def _template_context(self) -> dict[str, quart_auth.AuthUser]:
         """テンプレートでcurrent_userがquart.g.current_userになるようにする。"""
         template_context = super()._template_context()

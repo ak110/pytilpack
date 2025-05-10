@@ -7,7 +7,7 @@ authors = [
     {name = "aki.", email = "mark@aur.ll.to"}
 ]
 readme = "README.md"
-requires-python = ">=3.11,<4.0"
+requires-python = ">=3.12,<4.0"
 classifiers = [
     "Environment :: Console",
     "Intended Audience :: Developers",
@@ -76,14 +76,14 @@ build-backend = "hatchling.build"
 source = "vcs"
 
 [tool.pyfltr]
-pyupgrade-args = ["--py311-plus"]
+pyupgrade-args = ["--py312-plus"]
 pylint-args = ["--jobs=4"]
 
 [tool.isort]
 profile = "black"
 
 [tool.black]
-target-version = ['py311']
+target-version = ['py312']
 skip-magic-trailing-comma = true
 
 [tool.flake8]

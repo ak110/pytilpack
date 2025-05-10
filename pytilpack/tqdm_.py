@@ -4,6 +4,7 @@ import contextlib
 import io
 import logging
 import sys
+import typing
 
 import tqdm
 
@@ -22,6 +23,7 @@ class TqdmStreamHandler(logging.StreamHandler):
 
     """
 
+    @typing.override
     def emit(self, record):
         with tqdm.tqdm.external_write_mode(file=self.stream):
             super().emit(record)

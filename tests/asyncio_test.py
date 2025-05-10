@@ -4,6 +4,7 @@ import asyncio
 import queue
 import threading
 import time
+import typing
 
 import pytest
 
@@ -34,6 +35,7 @@ class CountingJob(pytilpack.asyncio_.Job):
         self.count = 0
         self.sleep_time = sleep_time
 
+    @typing.override
     async def run(self) -> None:
         await asyncio.sleep(self.sleep_time)
         self.count += 1
@@ -45,6 +47,7 @@ class CountingJob(pytilpack.asyncio_.Job):
 class ErrorJob(pytilpack.asyncio_.Job):
     """エラーを発生させるジョブ。"""
 
+    @typing.override
     async def run(self) -> None:
         raise ValueError("Test error")
 
@@ -66,6 +69,7 @@ class JobRunner(pytilpack.asyncio_.JobRunner):
         )
         self.queue = queue.Queue[pytilpack.asyncio_.Job]()
 
+    @typing.override
     async def poll(self) -> pytilpack.asyncio_.Job | None:
         try:
             return self.queue.get_nowait()

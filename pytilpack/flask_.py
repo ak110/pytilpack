@@ -312,6 +312,7 @@ class ProxyFix(werkzeug.middleware.proxy_fix.ProxyFix):
         )
         self.flaskapp = flaskapp
 
+    @typing.override
     def __call__(self, environ, start_response):
         if self.x_prefix != 0:
             prefix = environ.get("HTTP_X_FORWARDED_PREFIX", "/")
