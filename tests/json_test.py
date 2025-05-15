@@ -1,13 +1,15 @@
 """テストコード。"""
 
+import pathlib
+
 import pytilpack.json_
 
 
-def test_load_not_exist(tmp_path):
+def test_load_not_exist(tmp_path: pathlib.Path) -> None:
     assert pytilpack.json_.load(tmp_path / "not_exist.json") == {}
 
 
-def test_load_save(tmp_path):
+def test_load_save(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "a.json"
     data = {"a": "💯", "c": 1}
 

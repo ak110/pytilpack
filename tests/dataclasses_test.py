@@ -20,7 +20,7 @@ class Nested:
     a: A
 
 
-def test_asdict():
+def test_asdict() -> None:
     x = Nested(A(1, "a"))
     assert pytilpack.dataclasses_.asdict(x) == {"a": A(1, "a")}
     assert pytilpack.dataclasses_.asdict(x) != {"a": {"a": 1, "b": "a"}}

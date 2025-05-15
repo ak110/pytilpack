@@ -5,11 +5,11 @@ import pathlib
 import pytilpack.yaml_
 
 
-def test_load_not_exist(tmp_path):
+def test_load_not_exist(tmp_path: pathlib.Path) -> None:
     assert pytilpack.yaml_.load(tmp_path / "not_exist.yaml") == {}
 
 
-def test_load_save(tmp_path):
+def test_load_save(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "a.yaml"
     data = {"c": "💯\nあいうえお\n\n", "a": 1}
 

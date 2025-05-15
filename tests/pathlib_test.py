@@ -1,9 +1,11 @@
 """テストコード。"""
 
+import pathlib
+
 import pytilpack.pathlib_
 
 
-def test_delete_file(tmp_path):
+def test_delete_file(tmp_path: pathlib.Path) -> None:
     """delete_file()のテスト。"""
     path = tmp_path / "test.txt"
     path.write_text("test")
@@ -11,7 +13,7 @@ def test_delete_file(tmp_path):
     assert not path.exists()
 
 
-def test_get_size(tmp_path):
+def test_get_size(tmp_path: pathlib.Path) -> None:
     """get_size()のテスト。"""
     (tmp_path / "test").mkdir()
     (tmp_path / "test" / "test.txt").write_text("test")

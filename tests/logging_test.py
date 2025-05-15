@@ -1,11 +1,14 @@
 """テストコード。"""
 
 import logging
+import pathlib
+
+import pytest
 
 import pytilpack.logging_
 
 
-def test_logging(tmp_path, capsys):
+def test_logging(tmp_path: pathlib.Path, capsys: pytest.CaptureFixture) -> None:
     logger = logging.getLogger(__name__)
     try:
         logger.setLevel(logging.DEBUG)
@@ -25,7 +28,7 @@ def test_logging(tmp_path, capsys):
             logger.removeHandler(handler)
 
 
-def test_timer_done(caplog):
+def test_timer_done(caplog: pytest.LogCaptureFixture) -> None:
     with caplog.at_level(logging.INFO):
         with pytilpack.logging_.timer("test"):
             pass
@@ -35,7 +38,7 @@ def test_timer_done(caplog):
     ]
 
 
-def test_timer_failed(caplog):
+def test_timer_failed(caplog: pytest.LogCaptureFixture) -> None:
     with caplog.at_level(logging.INFO):
         try:
             with pytilpack.logging_.timer("test"):
