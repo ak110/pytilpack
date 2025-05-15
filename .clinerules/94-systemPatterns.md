@@ -34,7 +34,49 @@ graph TD
 
 ## 設計原則
 
-### 1. モジュール構造
+### 1. Webフレームワーク関連モジュール構造
+
+```mermaid
+graph TD
+    subgraph Flask
+        Flask[flask_]
+        FlaskAsserts[asserts.py]
+        FlaskProxy[proxy_fix.py]
+        FlaskMisc[misc.py]
+        FlaskInit[__init__.py]
+        Flask --> FlaskAsserts
+        Flask --> FlaskProxy
+        Flask --> FlaskMisc
+        Flask --> FlaskInit
+    end
+
+    subgraph FastAPI
+        FastAPI[fastapi_]
+        FastAPIAsserts[asserts.py]
+        FastAPIInit[__init__.py]
+        FastAPI --> FastAPIAsserts
+        FastAPI --> FastAPIInit
+    end
+
+    subgraph Quart
+        Quart[quart_]
+        QuartAsserts[asserts.py]
+        QuartProxy[proxy_fix.py]
+        QuartInit[__init__.py]
+        Quart --> QuartAsserts
+        Quart --> QuartProxy
+        Quart --> QuartInit
+    end
+```
+
+#### 共通パターン
+
+- asserts.py: テストコード用アサーション関数を集約
+- proxy_fix.py: リバースプロキシ対応のミドルウェア
+- misc.py: その他のユーティリティ機能
+- __init__.py: すべての機能を再エクスポート（後方互換性維持）
+
+### 2. 一般的なモジュール構造
 
 - ライブラリ固有のユーティリティは`xxx_`形式で命名
 - 汎用ユーティリティは単純な`xxx`形式で命名

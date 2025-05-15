@@ -10,6 +10,20 @@
 
 ## 最近の変更
 
+### Webフレームワーク関連モジュールのリファクタリング
+
+- 各モジュールをサブモジュール化
+  - アサーション関数を`asserts.py`に集約
+  - プロキシ関連の機能を`proxy_fix.py`に分離
+  - その他のユーティリティを`misc.py`に整理
+- 後方互換性の維持
+  - `__init__.py`で全機能を再エクスポート
+  - 既存のインポート文との互換性を確保
+- 影響したモジュール:
+  - flask_: asserts.py, proxy_fix.py, misc.py
+  - fastapi_: asserts.py
+  - quart_: asserts.py, proxy_fix.py
+
 ### Server-Sent Events (SSE) モジュールの追加
 
 - `SSE`データクラスの実装
