@@ -12,7 +12,7 @@ from pytilpack import cache
 
 def test_loader_none() -> None:
     """ローダーが未指定の場合のテスト。"""
-    loader = cache.CachedFileLoader()
+    loader = cache.CachedFileLoader[str]()
     with pytest.raises(ValueError, match="ローダー関数が指定されていません"):
         loader.load(pathlib.Path(__file__))
 
