@@ -17,7 +17,7 @@ async def assert_bytes(
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = None,
 ) -> bytes:
-    """quartのテストコード用。
+    """テストコード用。
 
     Args:
         response: レスポンス
@@ -53,7 +53,7 @@ async def assert_html(
     strict: bool = False,
     tmp_path: pathlib.Path | None = None,
 ) -> str:
-    """quartのテストコード用。
+    """テストコード用。
 
     html5libが必要なので注意。
 
@@ -98,7 +98,7 @@ async def assert_json(
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "application/json",
 ) -> dict[str, typing.Any]:
-    """quartのテストコード用。
+    """テストコード用。
 
     Args:
         response: レスポンス
@@ -138,7 +138,7 @@ async def assert_xml(
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "__default__",
 ) -> str:
-    """quartのテストコード用。
+    """テストコード用。
 
     Args:
         response: レスポンス

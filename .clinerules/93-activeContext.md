@@ -10,6 +10,20 @@
 
 ## 最近の変更
 
+### FlaskとQuartのstatic_url_for関数の追加
+
+- `flask_/misc.py`と`quart_/misc.py`に実装
+  - 静的ファイルのURLを生成する関数を追加
+  - キャッシュバスティング機能（ファイルの最終更新時刻を使用）
+  - pathlibを使用したファイルパス処理
+  - エラー処理（ファイルが存在しない場合、static_folderがない場合）
+- 対応するテストを追加
+  - Flask: `tests/flask_test.py`に同期テスト
+  - Quart: `tests/quart_test.py`に非同期テスト
+- コーディング規約の徹底
+  - importは`import xxx`形式を使用
+  - ファイルパス処理は`pathlib`を使用
+
 ### Webフレームワーク関連モジュールのリファクタリング
 
 - 各モジュールをサブモジュール化
@@ -22,7 +36,7 @@
 - 影響したモジュール:
   - flask_: asserts.py, proxy_fix.py, misc.py
   - fastapi_: asserts.py
-  - quart_: asserts.py, proxy_fix.py
+  - quart_: asserts.py, proxy_fix.py, misc.py
 
 ### Server-Sent Events (SSE) モジュールの追加
 

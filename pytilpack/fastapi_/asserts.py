@@ -20,7 +20,7 @@ def assert_bytes(
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = None,
 ) -> bytes:
-    """fastapiのテストコード用。
+    """テストコード用。
 
     Args:
         response: レスポンス
@@ -57,7 +57,7 @@ def assert_html(
     tmp_path: pathlib.Path | None = None,
     strict: bool = False,
 ) -> str:
-    """fastapiのテストコード用。
+    """テストコード用。
 
     html5libが必要なので注意。
 
@@ -103,7 +103,7 @@ def assert_json(
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "application/json",
 ) -> dict[str, typing.Any]:
-    """fastapiのテストコード用。
+    """テストコード用。
 
     Args:
         response: レスポンス
@@ -129,11 +129,7 @@ def assert_json(
 
         # JSONのチェック
         try:
-            try:
-                # FastAPIのresponse.jsonはエラーを出さないので手動でパース
-                data = json.loads(response_body)
-            except Exception as e:
-                raise AssertionError(f"JSONエラー: {e}") from e
+            data = json.loads(response_body)
         except Exception as e:
             raise AssertionError(f"JSONエラー: {e}") from e
     except AssertionError as e:
@@ -148,7 +144,7 @@ def assert_xml(
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "__default__",
 ) -> str:
-    """fastapiのテストコード用。
+    """テストコード用。
 
     Args:
         response: レスポンス

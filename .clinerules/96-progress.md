@@ -86,6 +86,12 @@
 
 ### バージョン履歴
 
+- v1.23.0: FlaskとQuart用のstatic_url_for機能追加
+  - static_url_for関数の実装（Flask/Quart）
+  - キャッシュバスティングのサポート
+  - pathlibベースのファイルパス処理
+  - 同期/非同期テストの追加
+
 - v1.22.0: SSE機能追加リリース
   - Server-Sent Events関連機能の追加
   - asyncio非同期パターンの改善
