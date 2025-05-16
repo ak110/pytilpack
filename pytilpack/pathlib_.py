@@ -1,5 +1,6 @@
 """ファイル関連のユーティリティ集。"""
 
+import datetime
 import logging
 import pathlib
 
@@ -37,3 +38,67 @@ def get_size(path: str | pathlib.Path) -> int:
     except Exception:
         logger.warning(f"ファイル・ディレクトリサイズ取得失敗: {path}", exc_info=True)
         return 0
+
+
+def delete_empty_dirs(path: str | pathlib.Path, keep_root: bool = True) -> None:
+    """指定したパス以下の空ディレクトリを削除する。
+
+    Args:
+        path: 対象のパス
+        keep_root: Trueの場合、指定したディレクトリ自体は削除しない
+    """
+    path = pathlib.Path(path)
+    if not path.is_dir():
+        return
+
+    for item in list(path.iterdir()):
+        if item.is_dir():
+            delete_empty_dirs(item, keep_root=False)
+
+    try:
+        if not keep_root:
+            remaining_files = list(path.iterdir())
+            if not remaining_files:
+                path.rmdir()
+    except Exception:
+        logger.warning(f"ディレクトリの削除に失敗: {path}", exc_info=True)
+
+
+def delete_old_files(
+    path: str | pathlib.Path,
+    before: datetime.datetime,
+    delete_empty_dirs: bool = True,
+    keep_root_empty_dir: bool = True,
+) -> None:
+    """指定した日時より古いファイルを削除し、空になったディレクトリも削除する。
+
+    Args:
+        path: 対象のパス
+        before: この日時より前に更新されたファイルを削除
+        delete_empty_dirs: Trueの場合、空になったディレクトリを削除
+        keep_root_empty_dir: Trueの場合、指定したディレクトリ自体は削除しない
+    """
+    path = pathlib.Path(path)
+    if not path.exists():
+        return
+
+    if path.is_file():
+        try:
+            mtime = datetime.datetime.fromtimestamp(path.stat().st_mtime)
+            if mtime < before:
+                path.unlink()
+        except Exception:
+            logger.warning(f"ファイルの削除に失敗: {path}", exc_info=True)
+    elif path.is_dir():
+        # 再帰的に子要素を処理
+        for item in list(path.iterdir()):
+            delete_old_files(item, before, delete_empty_dirs, keep_root_empty_dir=False)
+
+        # 空になったディレクトリを削除
+        if delete_empty_dirs and not keep_root_empty_dir:
+            try:
+                remaining_files = list(path.iterdir())
+                if not remaining_files:
+                    path.rmdir()
+            except Exception:
+                logger.warning(f"ディレクトリの削除に失敗: {path}", exc_info=True)
