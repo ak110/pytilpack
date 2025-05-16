@@ -67,7 +67,7 @@ def delete_empty_dirs(path: str | pathlib.Path, keep_root: bool = True) -> None:
 def delete_old_files(
     path: str | pathlib.Path,
     before: datetime.datetime,
-    delete_empty_dirs: bool = True,
+    delete_empty_dirs: bool = True,  # pylint: disable=redefined-outer-name
     keep_root_empty_dir: bool = True,
 ) -> None:
     """指定した日時より古いファイルを削除し、空になったディレクトリも削除する。
