@@ -10,6 +10,43 @@
 
 ## 最近の変更
 
+### dataclassesモジュールの機能拡張（2025/5/17）
+
+- fromdict: dictからdataclassを生成する関数を追加
+  - ネストされたdataclassにも対応
+  - Noneの値は適切にスキップ
+  - 型ヒントの改善（TDataClassの導入）
+
+- fromjson/tojson: JSON関連の機能追加
+  - jsonファイルからdataclassを生成
+  - dataclassをjsonファイルに保存
+  - シリアライズオプションのサポート
+
+### pathlib_モジュールの機能拡張（2025/5/16）
+
+- delete_empty_dirs: 空ディレクトリ削除
+  - 再帰的な削除
+  - ルートディレクトリの保持オプション
+  - エラー処理の実装
+
+- delete_old_files: 古いファイル削除
+  - 日時指定による削除
+  - 空ディレクトリの自動削除オプション
+  - ルートディレクトリの保持オプション
+  - 再帰的な処理
+
+### 型ヒントの全体的な改善
+
+- テストファイルに型ヒントを追加
+  - pytest.Fixtureの型指定
+  - pathlib.Pathの明示的な使用
+  - 戻り値の型指定（-> None）
+
+### その他の改善
+
+- READMEの更新：モジュールパスの修正
+- リリース手順の改善：コミットハッシュを使用した確認
+
 ### FlaskとQuartのstatic_url_for関数の追加
 
 - `flask_/misc.py`と`quart_/misc.py`に実装
@@ -155,7 +192,7 @@
 - リリース手順は`DEVELOPMENT.md`に定義
 - `gh`コマンドを使用したGitHubリリース作成
 - GitHub Actionsによる自動パブリッシュ
-- 詳細な手順は`DEVELOPMENT.md`を参照すること
+- コミットハッシュを使用した実行状況の確認
 
 ### モジュール規則
 
