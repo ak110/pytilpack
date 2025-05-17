@@ -2,65 +2,64 @@
 
 ## 解決する問題
 
-1. **ボイラープレートコードの削減**
-   - 各種ライブラリを使用する際の定型的なコードを減らす
-   - 共通パターンを再利用可能な形で提供
+- ボイラープレートコードの削減
+- 一貫性のある操作の提供
+- 開発効率の向上
 
-2. **一貫性の確保**
-   - 異なるライブラリ間での操作を統一的に扱う
-   - プロジェクト全体で一貫したコーディングスタイルを維持
+## インストール
 
-3. **開発効率の向上**
-   - 頻繁に使用される機能をユーティリティとして提供
-   - モジュール化された構造により必要な機能を素早く見つけられる
+```bash
+# 最小インストール
+pip install pytilpack
 
-4. **依存関係の最適化**
-   - 必要な機能のみをインストール可能
-   - 不要なライブラリのインストールを防ぐ
+# 全機能インストール
+pip install pytilpack[all]
 
-## 使用方法
-
-### 基本的な使用パターン
-
-```python
-# ライブラリ固有のユーティリティ
-import pytilpack.xxx_  # xxxは各ライブラリ名（openai, pathlib等）
-
-# 汎用ユーティリティ
-import pytilpack.xxx   # 特定のライブラリに依存しない機能
+# 個別機能インストール
+pip install pytilpack[fastapi]
 ```
 
-### インストールオプション
+## 主要機能グループ
 
-- 最小インストール: `pip install pytilpack`
-- 全機能インストール: `pip install pytilpack[all]`
-- 個別機能インストール: `pip install pytilpack[機能名]`
-  - 例: `pip install pytilpack[fastapi]`
+### 標準ライブラリ拡張
 
-### 主要な機能グループ
+- asyncio_: 非同期処理
+- pathlib_: ファイル操作
+- base64_: エンコード/デコード
+- json_/yaml_: データシリアライズ
+- csv_: データ処理
 
-1. **標準ライブラリ拡張**
-   - asyncio_, base64_, pathlib_, threading_等の拡張機能
-   - 一般的な操作のための便利な関数群
+### Webフレームワーク
 
-2. **Webフレームワークサポート**
-   - FastAPI, Flask, Quartのユーティリティ
-   - 認証、ルーティング等の共通機能
+- FastAPI: アサーション、ユーティリティ
+- Flask: アサーション、プロキシ対応
+- Quart: アサーション、プロキシ対応
 
-3. **データ処理ユーティリティ**
-   - JSON, YAML, CSVの操作
-   - データURLやHTMLのRAG処理
+### データ処理
 
-## 想定される利用シーン
+- htmlrag: HTML RAG処理
+- data_url: データURL操作
+- sqlalchemy_: SQLAlchemy拡張
+- sse: Server-Sent Events処理
 
-- Webアプリケーション開発
-- データ処理スクリプト作成
-- 自動化ツール開発
-- マイクロサービス実装
+### AI/ML
 
-## ユーザー体験目標
+- openai_: OpenAI API関連
+- tiktoken_: トークン処理
 
-- 直感的なAPIの提供
-- 最小限の学習コストで利用可能
-- 必要な機能への素早いアクセス
-- 柔軟な機能選択とカスタマイズ
+## 使用パターン
+
+```python
+# ライブラリ固有
+import pytilpack.xxx_  # xxxはライブラリ名
+
+# 汎用機能
+import pytilpack.xxx   # 共通機能
+```
+
+## 共通規約
+
+- 型ヒント必須（Python 3.11+）
+- テストコード完備
+- 一貫したコードスタイル
+- 明確なドキュメント
