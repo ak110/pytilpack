@@ -42,6 +42,27 @@ import pytilpack.xxx
 
 特定のライブラリに依存しないユーティリティ関数などが入っている。
 
+### CLIコマンド
+
+#### 空のディレクトリを削除
+
+```bash
+python -m pytilpack.cli.delete_empty_dirs path/to/dir [--no-keep-root] [--verbose]
+```
+
+- 空のディレクトリを削除
+- デフォルトでルートディレクトリを保持（`--no-keep-root`で削除可能）
+
+#### 古いファイルを削除
+
+```bash
+python -m pytilpack.cli.delete_old_files path/to/dir --days=7 [--no-delete-empty-dirs] [--no-keep-root-empty-dir] [--verbose]
+```
+
+- 指定した日数より古いファイルを削除（`--days`オプションで指定）
+- デフォルトで空ディレクトリを削除（`--no-delete-empty-dirs`で無効化）
+- デフォルトでルートディレクトリを保持（`--no-keep-root-empty-dir`で削除可能）
+
 ### モジュール一覧
 
 ### 各種ライブラリ用のユーティリティのモジュール一覧

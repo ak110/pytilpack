@@ -59,6 +59,7 @@ def delete_empty_dirs(path: str | pathlib.Path, keep_root: bool = True) -> None:
         if not keep_root:
             remaining_files = list(path.iterdir())
             if not remaining_files:
+                logger.info(f"削除: {path}")
                 path.rmdir()
     except Exception:
         logger.warning(f"ディレクトリの削除に失敗: {path}", exc_info=True)
@@ -86,6 +87,7 @@ def delete_old_files(
         try:
             mtime = datetime.datetime.fromtimestamp(path.stat().st_mtime)
             if mtime < before:
+                logger.info(f"削除: {path}")
                 path.unlink()
         except Exception:
             logger.warning(f"ファイルの削除に失敗: {path}", exc_info=True)
@@ -99,6 +101,7 @@ def delete_old_files(
             try:
                 remaining_files = list(path.iterdir())
                 if not remaining_files:
+                    logger.info(f"削除: {path}")
                     path.rmdir()
             except Exception:
                 logger.warning(f"ディレクトリの削除に失敗: {path}", exc_info=True)
