@@ -223,21 +223,49 @@ async def test_async_operation():
 
 ## 重要な実装パス
 
-### 1. モジュール初期化
+### 1. CLIコマンドの設計
+
+```mermaid
+flowchart TD
+    Parser[引数パーサー]
+    Logging[ログ設定]
+    Execute[処理実行]
+    Error[エラー処理]
+
+    Parser --> Logging
+    Logging --> Execute
+    Execute --> Error
+
+    subgraph 引数パーサー
+        Required[必須引数]
+        Optional[オプション引数]
+        Flags[フラグ]
+        Required --> Optional --> Flags
+    end
+
+    subgraph ログ設定
+        Level[レベル設定]
+        Format[フォーマット]
+        Output[出力先]
+        Level --> Format --> Output
+    end
+
+    subgraph エラー処理
+        Try[try/except]
+        Log[ログ出力]
+        Exit[終了コード]
+        Try --> Log --> Exit
+    end
+```
+
+### 2. モジュール初期化
 
 - `__init__.py`でのバージョン定義
 - 型ヒントの有効化（`py.typed`）
 - 必要な依存関係の確認
 
-### 2. 機能拡張
+### 3. 機能拡張
 
 - 新機能の追加時は対応するテストも作成
 - バージョン互換性の維持
 - ドキュメントの更新
-
-### 3. リリースプロセス
-
-1. テストの実行と確認
-2. バージョン番号の更新
-3. GitHub Actionsでの検証
-4. PyPIへのパッケージ公開

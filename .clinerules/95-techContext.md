@@ -182,8 +182,8 @@ gh release create --target=master --generate-notes vX.X.X
 import logging
 
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.DEBUG if args.verbose else logging.INFO,
+    format="[%(levelname)s] %(message)s",
 )
 ```
 
