@@ -42,27 +42,6 @@ import pytilpack.xxx
 
 特定のライブラリに依存しないユーティリティ関数などが入っている。
 
-### CLIコマンド
-
-#### 空のディレクトリを削除
-
-```bash
-python -m pytilpack.cli.delete_empty_dirs path/to/dir [--no-keep-root] [--verbose]
-```
-
-- 空のディレクトリを削除
-- デフォルトでルートディレクトリを保持（`--no-keep-root`で削除可能）
-
-#### 古いファイルを削除
-
-```bash
-python -m pytilpack.cli.delete_old_files path/to/dir --days=7 [--no-delete-empty-dirs] [--no-keep-root-empty-dir] [--verbose]
-```
-
-- 指定した日数より古いファイルを削除（`--days`オプションで指定）
-- デフォルトで空ディレクトリを削除（`--no-delete-empty-dirs`で無効化）
-- デフォルトでルートディレクトリを保持（`--no-keep-root-empty-dir`で削除可能）
-
 ### モジュール一覧
 
 ### 各種ライブラリ用のユーティリティのモジュール一覧
@@ -94,6 +73,39 @@ python -m pytilpack.cli.delete_old_files path/to/dir --days=7 [--no-delete-empty
 - [pytilpack.htmlrag](pytilpack/htmlrag.py)  # HtmlRAG関連
 - [pytilpack.sse](pytilpack/sse.py)  # Server-Sent Events関連
 - [pytilpack.web](pytilpack/web.py)  # Web関連
+
+## CLIコマンド
+
+一部の機能はCLIコマンドとしても利用可能。
+
+### 空のディレクトリを削除
+
+```bash
+python -m pytilpack.cli.delete_empty_dirs path/to/dir [--no-keep-root] [--verbose]
+```
+
+- 空のディレクトリを削除
+- デフォルトでルートディレクトリを保持（`--no-keep-root`で削除可能）
+
+### 古いファイルを削除
+
+```bash
+python -m pytilpack.cli.delete_old_files path/to/dir --days=7 [--no-delete-empty-dirs] [--no-keep-root-empty-dir] [--verbose]
+```
+
+- 指定した日数より古いファイルを削除（`--days`オプションで指定）
+- デフォルトで空ディレクトリを削除（`--no-delete-empty-dirs`で無効化）
+- デフォルトでルートディレクトリを保持（`--no-keep-root-empty-dir`で削除可能）
+
+### ディレクトリを同期
+
+```bash
+python -m pytilpack.cli.sync src dst [--delete] [--verbose]
+```
+
+- コピー元(src)からコピー先(dst)へファイル・ディレクトリを同期
+- 日付が異なるファイルをコピー
+- `--delete`オプションでコピー元に存在しないコピー先のファイル・ディレクトリを削除
 
 ## 開発手順
 

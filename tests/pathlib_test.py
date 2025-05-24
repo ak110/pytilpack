@@ -3,6 +3,7 @@
 import datetime
 import os
 import pathlib
+import shutil
 import time
 
 import pytilpack.pathlib_
@@ -51,6 +52,67 @@ def test_delete_empty_dirs(tmp_path: pathlib.Path) -> None:
     # keep_root=Falseの場合
     pytilpack.pathlib_.delete_empty_dirs(test_dir, keep_root=False)
     assert not test_dir.exists()
+
+
+def test_sync(tmp_path: pathlib.Path) -> None:
+    """sync()のテスト。"""
+    # テスト用のディレクトリ構造を作成
+    src = tmp_path / "src"
+    dst = tmp_path / "dst"
+    src.mkdir()
+    dst.mkdir()
+
+    # ファイルのコピーテスト
+    src_file = src / "test.txt"
+    src_file.write_text("test1")
+    pytilpack.pathlib_.sync(src, dst)
+    assert (dst / "test.txt").exists()
+    assert (dst / "test.txt").read_text() == "test1"
+
+    # ファイルの更新テスト
+    time.sleep(0.1)  # 時間差をつけるためにスリープ
+    src_file.write_text("test2")
+    pytilpack.pathlib_.sync(src, dst)
+    assert (dst / "test.txt").read_text() == "test2"
+
+    # サブディレクトリのテスト
+    (src / "subdir").mkdir()
+    (src / "subdir" / "test2.txt").write_text("test3")
+    pytilpack.pathlib_.sync(src, dst)
+    assert (dst / "subdir").is_dir()
+    assert (dst / "subdir" / "test2.txt").read_text() == "test3"
+
+    # ファイル→ディレクトリの変更テスト
+    file_to_dir = src / "file_to_dir"
+    file_to_dir.write_text("test4")
+    pytilpack.pathlib_.sync(src, dst)
+    assert (dst / "file_to_dir").is_file()
+    file_to_dir.unlink()
+    file_to_dir.mkdir()
+    (file_to_dir / "test.txt").write_text("test5")
+    pytilpack.pathlib_.sync(src, dst)
+    assert (dst / "file_to_dir").is_dir()
+    assert (dst / "file_to_dir" / "test.txt").read_text() == "test5"
+
+    # ディレクトリ→ファイルの変更テスト
+    dir_to_file = src / "dir_to_file"
+    dir_to_file.mkdir()
+    (dir_to_file / "test.txt").write_text("test6")
+    pytilpack.pathlib_.sync(src, dst)
+    assert (dst / "dir_to_file").is_dir()
+    shutil.rmtree(dir_to_file)
+    dir_to_file.write_text("test7")
+    pytilpack.pathlib_.sync(src, dst)
+    assert (dst / "dir_to_file").is_file()
+    assert (dst / "dir_to_file").read_text() == "test7"
+
+    # deleteオプションのテスト
+    (dst / "extra.txt").write_text("extra")
+    (dst / "extra_dir").mkdir()
+    (dst / "extra_dir" / "test.txt").write_text("extra")
+    pytilpack.pathlib_.sync(src, dst, delete=True)
+    assert not (dst / "extra.txt").exists()
+    assert not (dst / "extra_dir").exists()
 
 
 def test_delete_old_files(tmp_path: pathlib.Path) -> None:

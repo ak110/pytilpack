@@ -1,8 +1,10 @@
 """ファイル関連のユーティリティ集。"""
 
 import datetime
+import filecmp
 import logging
 import pathlib
+import shutil
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +65,81 @@ def delete_empty_dirs(path: str | pathlib.Path, keep_root: bool = True) -> None:
                 path.rmdir()
     except Exception:
         logger.warning(f"ディレクトリの削除に失敗: {path}", exc_info=True)
+
+
+def sync(
+    src: str | pathlib.Path, dst: str | pathlib.Path, delete: bool = False
+) -> None:
+    """コピー元からコピー先へ同期する。
+
+    Args:
+        src: コピー元のパス
+        dst: コピー先のパス
+        delete: Trueの場合、コピー元に存在しないコピー先のファイル・ディレクトリを削除
+
+    """
+    src = pathlib.Path(src)
+    dst = pathlib.Path(dst)
+
+    if not src.exists():
+        logger.warning(f"コピー元が存在しません: {src}")
+        return
+
+    if not dst.exists():
+        if src.is_file():
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            logger.info(f"コピー: {src} -> {dst}")
+            shutil.copy2(src, dst)
+        else:
+            logger.info(f"作成: {dst}")
+            dst.mkdir(parents=True)
+
+    if src.is_file():
+        if dst.is_file():
+            # ファイルのメタデータが一致しなければコピー
+            if not filecmp.cmp(src, dst):
+                logger.info(f"コピー: {src} -> {dst}")
+                shutil.copy2(src, dst)
+        else:
+            # コピー先がファイルでない場合はいったん削除
+            if dst.exists():
+                if dst.is_dir():
+                    logger.info(f"削除: {dst}")
+                    shutil.rmtree(dst)
+                else:
+                    logger.info(f"削除: {dst}")
+                    dst.unlink()
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            # コピー
+            logger.info(f"コピー: {src} -> {dst}")
+            shutil.copy2(src, dst)
+    elif src.is_dir():
+        # コピー先がファイルでない場合はいったん削除
+        if not dst.is_dir():
+            if dst.exists():
+                logger.info(f"削除: {dst}")
+                if dst.is_dir():
+                    shutil.rmtree(dst)
+                else:
+                    dst.unlink()
+            logger.info(f"作成: {dst}")
+            dst.mkdir(parents=True)
+
+        # コピー元のファイル・ディレクトリを同期
+        for src_child in src.iterdir():
+            dst_child = dst / src_child.name
+            sync(src_child, dst_child, delete)
+
+        # コピー元に存在しないコピー先のファイル・ディレクトリを削除
+        if delete:
+            for dst_child in dst.iterdir():
+                src_child = src / dst_child.name
+                if not src_child.exists():
+                    logger.info(f"削除: {dst_child}")
+                    if dst_child.is_dir():
+                        shutil.rmtree(dst_child)
+                    else:
+                        dst_child.unlink()
 
 
 def delete_old_files(
