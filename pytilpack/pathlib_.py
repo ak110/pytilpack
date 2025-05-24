@@ -1,7 +1,6 @@
 """ファイル関連のユーティリティ集。"""
 
 import datetime
-import filecmp
 import logging
 import pathlib
 import shutil
@@ -96,8 +95,8 @@ def sync(
 
     if src.is_file():
         if dst.is_file():
-            # ファイルのメタデータが一致しなければコピー
-            if not filecmp.cmp(src, dst):
+            # 更新日時を比較し、ソースの方が新しければコピー
+            if src.stat().st_mtime_ns != dst.stat().st_mtime_ns:
                 logger.info(f"コピー: {src} -> {dst}")
                 shutil.copy2(src, dst)
         else:
