@@ -7,8 +7,12 @@ import pytilpack.threading_
 
 async def test_acquire_with_timeout():
     lock = threading.Lock()
-    with pytilpack.threading_.acquire_with_timeout(lock, 0.1) as acquired:
+    with pytilpack.threading_.acquire_with_timeout(lock, 0.001) as acquired:
         assert acquired
+
+    with lock:
+        with pytilpack.threading_.acquire_with_timeout(lock, 0.001) as acquired:
+            assert not acquired
 
 
 def test_parallel():

@@ -13,8 +13,12 @@ import pytilpack.asyncio_
 
 async def test_acquire_with_timeout():
     lock = asyncio.Lock()
-    async with pytilpack.asyncio_.acquire_with_timeout(lock, 0.1) as acquired:
+    async with pytilpack.asyncio_.acquire_with_timeout(lock, 0.001) as acquired:
         assert acquired
+
+    async with lock:
+        async with pytilpack.asyncio_.acquire_with_timeout(lock, 0.001) as acquired:
+            assert not acquired
 
 
 async def async_func():
