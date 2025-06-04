@@ -1,6 +1,14 @@
 """テストコード。"""
 
+import threading
+
 import pytilpack.threading_
+
+
+async def test_acquire_with_timeout():
+    lock = threading.Lock()
+    with pytilpack.threading_.acquire_with_timeout(lock, 0.1) as acquired:
+        assert acquired
 
 
 def test_parallel():

@@ -3,12 +3,39 @@
 import abc
 import asyncio
 import concurrent.futures
+import contextlib
 import logging
 import typing
 
 logger = logging.getLogger(__name__)
 
 T = typing.TypeVar("T")
+
+
+@contextlib.asynccontextmanager
+async def acquire_with_timeout(
+    lock: asyncio.Lock | asyncio.Semaphore | asyncio.BoundedSemaphore, timeout: float
+) -> typing.AsyncGenerator[bool, None]:
+    """ロックを取得し、タイムアウト時間内に取得できなかった場合はFalseを返す。
+
+    Args:
+        lock: 取得するロック。
+        timeout: タイムアウト時間（秒）。
+
+    Returns:
+        ロックが取得できた場合はTrue、取得できなかった場合はFalse。
+
+    """
+    try:
+        await asyncio.wait_for(lock.acquire(), timeout=timeout)
+        acquired = True
+    except TimeoutError:
+        acquired = False
+    try:
+        yield acquired
+    finally:
+        if acquired:
+            lock.release()
 
 
 def run(coro: typing.Coroutine[typing.Any, typing.Any, T]) -> T:

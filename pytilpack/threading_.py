@@ -1,10 +1,37 @@
 """スレッド関連。"""
 
 import concurrent.futures
+import contextlib
 import typing
+
+if typing.TYPE_CHECKING:
+    import threading
 
 T = typing.TypeVar("T")
 U = typing.TypeVar("U")
+
+
+@contextlib.contextmanager
+def acquire_with_timeout(
+    lock: "threading.Lock | threading.RLock | threading.Semaphore | threading.BoundedSemaphore",
+    timeout: float,
+) -> typing.Generator[bool, None, None]:
+    """ロックを取得し、タイムアウト時間内に取得できなかった場合はFalseを返す。
+
+    Args:
+        lock: 取得するロック。
+        timeout: タイムアウト時間（秒）。
+
+    Returns:
+        ロックが取得できた場合はTrue、取得できなかった場合はFalse。
+
+    """
+    acquired = lock.acquire(timeout=timeout)
+    try:
+        yield acquired
+    finally:
+        if acquired:
+            lock.release()
 
 
 def parallel(
