@@ -14,7 +14,7 @@ T = typing.TypeVar("T")
 
 @contextlib.asynccontextmanager
 async def acquire_with_timeout(
-    lock: asyncio.Lock | asyncio.Semaphore | asyncio.BoundedSemaphore, timeout: float
+    lock: asyncio.Lock | asyncio.Semaphore, timeout: float
 ) -> typing.AsyncGenerator[bool, None]:
     """ロックを取得し、タイムアウト時間内に取得できなかった場合はFalseを返す。
 
@@ -31,6 +31,7 @@ async def acquire_with_timeout(
         acquired = True
     except TimeoutError:
         acquired = False
+
     try:
         yield acquired
     finally:
