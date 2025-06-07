@@ -81,7 +81,7 @@ class ProxyFix:
                 # rebuild Host header
                 headers = [(hn, hv) for hn, hv in headers if hn.lower() != b"host"]
                 host_hdr = host if port is None else f"{host}:{port}"
-                headers.append((b"host", host_hdr.encode("latin1")))
+                headers.append((b"host", host_hdr.encode("utf-8", errors="replace")))
 
             # X-Forwarded-Port → server port & Host header
             forwarded_port = self._get_trusted_value(
@@ -93,7 +93,7 @@ class ProxyFix:
                 orig_host = str(orig_server[0])
                 scope["server"] = (orig_host, port_int)
                 headers = [(hn, hv) for hn, hv in headers if hn.lower() != b"host"]
-                headers.append((b"host", f"{orig_host}:{port_int}".encode("latin1")))
+                headers.append((b"host", f"{orig_host}:{port_int}".encode()))
 
             # X-Forwarded-Prefix → root_path + config
             forwarded_prefix = self._get_trusted_value(
@@ -127,7 +127,7 @@ class ProxyFix:
             if header_name.lower() == name:
                 values.extend(
                     [
-                        value.decode("latin1").strip()
+                        value.decode("utf-8", errors="replace").strip()
                         for value in header_value.split(b",")
                     ]
                 )
