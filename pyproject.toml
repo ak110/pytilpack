@@ -20,14 +20,16 @@ dependencies = [
 
 [project.optional-dependencies]
 all = [
-    "bleach>=6.2",
+    "azure-identity>=1.23.0",
     "beautifulsoup4>=4.12",
+    "bleach>=6.2",
     "fastapi>=0.111",
-    "flask>=3.0",
     "flask-login>=0.6",
+    "flask>=3.0",
     "html5lib",
     "httpx",
     "markdown>=3.6",
+    "msal>=1.32.3",
     "openai>=1.25",
     "pillow",
     "pytest",
@@ -40,19 +42,64 @@ all = [
     "tinycss2>=1.4",
     "tqdm>=4.0",
 ]
-bleach = ["bleach>=6.2"]
-beautifulsoup4 = ["beautifulsoup4>=4.12"]
-fastapi = ["fastapi>=0.111", "httpx", "html5lib"]
-flask = ["flask>=3.0", "flask-login>=0.6", "html5lib", "pytest"]
-htmlrag = ["beautifulsoup4"]
-markdown = ["markdown>=3.6", "bleach", "tinycss2"]
-openai = ["openai>=1.25"]
-pytest = ["pytest", "pytest-asyncio"]
-pyyaml = ["pyyaml>=6.0"]
-sqlalchemy = ["sqlalchemy>=2.0", "tabulate[widechars]>=0.9"]
-tiktoken = ["tiktoken>=0.6", "openai", "httpx", "pillow"]
-tqdm = ["tqdm>=4.0"]
-quart = ["quart>=0.20.0", "quart-auth>=0.11.0", "html5lib", "pytest"]
+bleach = [
+    "bleach>=6.2",
+]
+beautifulsoup4 = [
+    "beautifulsoup4>=4.12",
+]
+fastapi = [
+    "fastapi>=0.111",
+    "html5lib",
+    "httpx",
+]
+flask = [
+    "flask>=3.0",
+    "flask-login>=0.6",
+    "html5lib",
+    "pytest",
+]
+htmlrag = [
+    "beautifulsoup4",
+]
+markdown = [
+    "markdown>=3.6",
+    "bleach",
+    "tinycss2",
+]
+openai = [
+    "openai>=1.25",
+]
+pytest = [
+    "pytest",
+    "pytest-asyncio",
+]
+pyyaml = [
+    "pyyaml>=6.0",
+]
+sqlalchemy = [
+    "sqlalchemy>=2.0",
+    "tabulate[widechars]>=0.9",
+]
+tiktoken = [
+    "tiktoken>=0.6",
+    "openai",
+    "httpx",
+    "pillow",
+]
+tqdm = [
+    "tqdm>=4.0",
+]
+quart = [
+    "quart>=0.20.0",
+    "quart-auth>=0.11.0",
+    "html5lib",
+    "pytest",
+]
+msal = [
+    "azure-identity>=1.23.0",
+    "msal>=1.32.3",
+]
 
 [dependency-groups]
 dev = [
