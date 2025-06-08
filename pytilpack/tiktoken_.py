@@ -5,6 +5,7 @@ import io
 import logging
 import math
 import re
+import typing
 
 import httpx
 import openai.types.chat
@@ -19,13 +20,15 @@ def get_encoding_for_model(model_name: str) -> tiktoken.Encoding:
     try:
         encoding = tiktoken.encoding_for_model(model_name)
     except KeyError:
-        logger.warning(f"model '{model_name}' not found. Using cl100k_base encoding.")
-        encoding = tiktoken.get_encoding("cl100k_base")
+        logger.warning(f"model '{model_name}' not found. Using o200k_base encoding.")
+        encoding = tiktoken.get_encoding("o200k_base")
     return encoding
 
 
 def num_tokens_from_messages(
-    model: str, messages: list[openai.types.chat.ChatCompletionMessageParam], tools=None
+    model: str,
+    messages: list[openai.types.chat.ChatCompletionMessageParam],
+    tools: list[openai.types.chat.ChatCompletionToolParam] | None = None,
 ) -> int:
     """メッセージからトークン数を算出。
 
@@ -46,26 +49,48 @@ def num_tokens_from_messages(
         "gpt-3.5-turbo-16k-0613",
         "gpt-3.5-turbo-1106",
         "gpt-3.5-turbo-0125",
+        "gpt-4-0314",
+        "gpt-4-32k-0314",
         "gpt-4-0613",
         "gpt-4-32k-0613",
         "gpt-4-1106-preview",
         "gpt-4-0125-preview",
         "gpt-4-vision-preview",
         "gpt-4-turbo-2024-04-09",
+        "gpt-4o-mini-2024-07-18",
+        "gpt-4o-2024-05-13",
+        "gpt-4o-2024-08-06",
     }:
         tokens_per_message = 3
         tokens_per_name = 1
+
     elif "gpt-3.5-turbo" in model:
-        return num_tokens_from_messages("gpt-3.5-turbo-0613", messages)
+        logger.warning(
+            "Warning: gpt-3.5-turbo may update over time. Returning num tokens assuming gpt-3.5-turbo-0125."
+        )
+        return num_tokens_from_messages("gpt-3.5-turbo-0125", messages, tools)
+    elif "gpt-4o-mini" in model:
+        logger.warning(
+            "Warning: gpt-4o-mini may update over time. Returning num tokens assuming gpt-4o-mini-2024-07-18."
+        )
+        return num_tokens_from_messages("gpt-4o-mini-2024-07-18", messages, tools)
+    elif "gpt-4o" in model:
+        logger.warning(
+            "Warning: gpt-4o and gpt-4o-mini may update over time. Returning num tokens assuming gpt-4o-2024-08-06."
+        )
+        return num_tokens_from_messages("gpt-4o-2024-08-06", messages, tools)
     elif "gpt-4" in model:
-        return num_tokens_from_messages("gpt-4-turbo-2024-04-09", messages)
+        logger.warning(
+            "Warning: gpt-4 may update over time. Returning num tokens assuming gpt-4-0613."
+        )
+        return num_tokens_from_messages("gpt-4-0613", messages, tools)
     else:
         logger.error(
             f"num_tokens_from_messages() is not implemented for model {model}."
             " See https://github.com/openai/openai-python/blob/main/chatml.md"
             " for information on how messages are converted to tokens."
         )
-        return num_tokens_from_messages("gpt-3.5-turbo-0613", messages)
+        return num_tokens_from_messages("gpt-3.5-turbo-0125", messages, tools)
     num_tokens = 0
     for message in messages:
         num_tokens += tokens_per_message
@@ -143,19 +168,17 @@ def _calculate_image_token_cost(image: str, detail: str) -> int:
         raise ValueError("Invalid detail_option. Use 'low' or 'high'.")
 
 
-def _get_image_dims(image):
+def _get_image_dims(image: str) -> tuple[int, int]:
     # regex to check if image is a URL or base64 string
     url_regex = r"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)"
     if re.match(url_regex, image):
         response = httpx.get(image)
         response.raise_for_status()
         response.read()
-        image = PIL.Image.open(io.BytesIO(response.content))
-        return image.size
+        return PIL.Image.open(io.BytesIO(response.content)).size
     elif re.match(r"data:image\/\w+;base64", image):
         image = re.sub(r"data:image\/\w+;base64,", "", image)
-        image = PIL.Image.open(io.BytesIO(base64.b64decode(image)))
-        return image.size
+        return PIL.Image.open(io.BytesIO(base64.b64decode(image))).size
     else:
         raise ValueError("Image must be a URL or base64 string.")
 
@@ -168,42 +191,48 @@ def num_tokens_from_texts(model: str, texts: list[str] | str) -> int:
     return sum(len(enc.encode(text)) for text in texts)
 
 
-def num_tokens_from_tools(encoding, tools) -> int:
+def num_tokens_from_tools(
+    encoding: tiktoken.Encoding, tools: list[openai.types.chat.ChatCompletionToolParam]
+) -> int:
     """Function calling部分のトークン数算出。
 
     <https://community.openai.com/t/how-to-calculate-the-tokens-when-using-function-call/266573/10>
 
     """
     num_tokens = 0
-    for function in tools:
-        function = function.get("function", function)
+    for tool in tools:
+        if tool.get("type") != "function":
+            logger.warning(
+                f"Tool type {tool.get('type')} is not supported. Only 'function' type is supported."
+            )
+            continue
+        function = tool["function"]
         try:
             function_tokens = len(encoding.encode(function["name"]))
             function_tokens += len(encoding.encode(function["description"]))
 
-            if "parameters" in function:
-                parameters = function["parameters"]
-                if "properties" in parameters:
-                    for properties_key in parameters["properties"]:
-                        function_tokens += len(encoding.encode(properties_key))
-                        v = parameters["properties"][properties_key]
-                        for field in v:
-                            if field == "type":
-                                function_tokens += 2
-                                function_tokens += len(encoding.encode(v["type"]))
-                            elif field == "description":
-                                function_tokens += 2
-                                function_tokens += len(
-                                    encoding.encode(v["description"])
-                                )
-                            elif field == "enum":
-                                function_tokens -= 3
-                                for o in v["enum"]:
-                                    function_tokens += 3
-                                    function_tokens += len(encoding.encode(o))
-                            else:
-                                logger.warning(f"not supported field {field}")
-                    function_tokens += 11
+            parameters = function["parameters"]
+            properties = typing.cast(
+                dict[str, dict[str, typing.Any]], parameters.get("properties", {})
+            )
+            if len(properties) > 0:
+                for k, v in properties.items():
+                    function_tokens += len(encoding.encode(k))
+                    for field, field_value in v.items():
+                        if field == "type":
+                            function_tokens += 2
+                            function_tokens += len(encoding.encode(field_value))
+                        elif field == "description":
+                            function_tokens += 2
+                            function_tokens += len(encoding.encode(field_value))
+                        elif field == "enum":
+                            function_tokens -= 3
+                            for o in field_value:
+                                function_tokens += 3
+                                function_tokens += len(encoding.encode(o))
+                        else:
+                            logger.warning(f"not supported field {field}")
+                function_tokens += 11
 
             num_tokens += function_tokens
         except Exception:

@@ -40,18 +40,22 @@ def test_num_tokens_from_texts():
 def test_num_tokens_from_tools():
     """num_tokens_from_tools()のテスト。"""
     encoding = pytilpack.tiktoken_.get_encoding_for_model("gpt-3.5-turbo-0613")
-
-    tools = [
-        {
-            "name": "tool1",
-            "description": "description1",
-            "parameters": {
-                "properties": {
-                    "prop1": {"type": "type1", "description": "desc1"},
-                    "prop2": {"type": "type2", "description": "desc2"},
-                }
-            },
-        }
-    ]
-    num_tokens = pytilpack.tiktoken_.num_tokens_from_tools(encoding, tools)
+    num_tokens = pytilpack.tiktoken_.num_tokens_from_tools(
+        encoding,
+        tools=[
+            {
+                "type": "function",
+                "function": {
+                    "name": "tool1",
+                    "description": "description1",
+                    "parameters": {
+                        "properties": {
+                            "prop1": {"type": "type1", "description": "desc1"},
+                            "prop2": {"type": "type2", "description": "desc2"},
+                        }
+                    },
+                },
+            }
+        ],
+    )
     assert num_tokens == 47
