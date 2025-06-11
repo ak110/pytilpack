@@ -104,6 +104,7 @@ msal = [
 [dependency-groups]
 dev = [
     "aiosqlite>=0.21.0",
+    "litellm>=1.72.4",
     "pyfltr>=1.6.0",
     "pytest-asyncio>=0.21.0",
     "types-bleach>=6.2.0.20241123",
