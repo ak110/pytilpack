@@ -5,6 +5,7 @@ import contextlib
 import logging
 import pathlib
 import threading
+import typing
 import warnings
 
 import flask
@@ -15,6 +16,9 @@ import pytilpack.secrets_
 import pytilpack.web
 
 logger = logging.getLogger(__name__)
+
+_TIMESTAMP_CACHE: dict[str, int] = {}
+"""静的ファイルの最終更新日時をキャッシュするための辞書。プロセス単位でキャッシュされる。"""
 
 
 def generate_secret_key(cache_path: str | pathlib.Path) -> bytes:
@@ -47,12 +51,20 @@ def get_next_url() -> str:
     return next_
 
 
-def static_url_for(filename: str, cache_busting: bool = True) -> str:
+def static_url_for(
+    filename: str,
+    cache_busting: bool = True,
+    cache_timestamp: bool | typing.Literal["when_not_debug"] = "when_not_debug",
+) -> str:
     """静的ファイルのURLを生成します。
 
     Args:
         filename: 静的ファイルの名前
         cache_busting: キャッシュバスティングを有効にするかどうか (デフォルト: True)
+        cache_timestamp: キャッシュバスティングするときのファイルの最終更新日時をプロセス単位でキャッシュするか否か。
+            - True: プロセス単位でキャッシュする。プロセスの再起動やSIGHUPなどをしない限り更新されない。
+            - False: キャッシュしない。常に最新を参照する。
+            - "when_not_debug": デバッグモードでないときのみキャッシュする。
 
     Returns:
         静的ファイルのURL
@@ -66,11 +78,23 @@ def static_url_for(filename: str, cache_busting: bool = True) -> str:
 
     filepath = pathlib.Path(static_folder) / filename
     try:
-        # ファイルの最終更新時刻をキャッシュバスティングに使用
-        timestamp = int(filepath.stat().st_mtime)
+        # ファイルの最終更新日時のキャッシュを利用するか否か
+        if cache_timestamp is True or (
+            cache_timestamp == "when_not_debug" and not flask.current_app.debug
+        ):
+            # キャッシュを使う
+            timestamp = _TIMESTAMP_CACHE.get(str(filepath))
+            if timestamp is None:
+                timestamp = int(filepath.stat().st_mtime)
+                _TIMESTAMP_CACHE[str(filepath)] = timestamp
+        else:
+            # キャッシュを使わない
+            timestamp = int(filepath.stat().st_mtime)
+
+        # キャッシュバスティングありのURLを返す
         return flask.url_for("static", filename=filename, v=timestamp)
     except OSError:
-        # ファイルが存在しない場合は通常のURLを返す
+        # ファイルが存在しない場合などは通常のURLを返す
         return flask.url_for("static", filename=filename)
 
 

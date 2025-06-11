@@ -1,5 +1,6 @@
 """Quartユーティリティのテスト。"""
 
+import httpx
 import pytest
 import quart
 
@@ -30,3 +31,18 @@ async def test_static_url_for(tmp_path):
         # 存在しないファイル
         url = pytilpack.quart_.static_url_for("notexist.css")
         assert url == "/static/notexist.css"
+
+
+@pytest.mark.asyncio
+async def test_run():
+    """runのテスト。"""
+    app = quart.Quart(__name__)
+
+    @app.route("/hello")
+    def index():
+        return "Hello, World!"
+
+    async with pytilpack.quart_.run(app):
+        response = httpx.get("http://localhost:5000/hello")
+        assert response.read() == b"Hello, World!"
+        assert response.status_code == 200

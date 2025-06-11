@@ -1,6 +1,7 @@
 """テストコード。"""
 
 import flask
+import httpx
 import pytest
 
 import pytilpack.flask_
@@ -135,3 +136,17 @@ def test_static_url_for(tmp_path):
         # 存在しないファイル
         url = pytilpack.flask_.static_url_for("notexist.css")
         assert url == "/static/notexist.css"
+
+
+def test_run():
+    """runのテスト。"""
+    app = flask.Flask(__name__)
+
+    @app.route("/hello")
+    def index():
+        return "Hello, World!"
+
+    with pytilpack.flask_.run(app):
+        response = httpx.get("http://localhost:5000/hello")
+        assert response.read() == b"Hello, World!"
+        assert response.status_code == 200

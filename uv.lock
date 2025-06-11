@@ -1431,6 +1431,7 @@ all = [
     { name = "tiktoken" },
     { name = "tinycss2" },
     { name = "tqdm" },
+    { name = "uvicorn" },
 ]
 beautifulsoup4 = [
     { name = "beautifulsoup4" },
@@ -1476,6 +1477,7 @@ quart = [
     { name = "pytest" },
     { name = "quart" },
     { name = "quart-auth" },
+    { name = "uvicorn" },
 ]
 sqlalchemy = [
     { name = "sqlalchemy" },
@@ -1557,6 +1559,8 @@ requires-dist = [
     { name = "tqdm", marker = "extra == 'all'", specifier = ">=4.0" },
     { name = "tqdm", marker = "extra == 'tqdm'", specifier = ">=4.0" },
     { name = "typing-extensions", specifier = ">=4.0" },
+    { name = "uvicorn", marker = "extra == 'all'", specifier = ">=0.34.3" },
+    { name = "uvicorn", marker = "extra == 'quart'", specifier = ">=0.34.3" },
 ]
 provides-extras = ["all", "beautifulsoup4", "bleach", "fastapi", "flask", "htmlrag", "markdown", "msal", "openai", "pytest", "pyyaml", "quart", "sqlalchemy", "tiktoken", "tqdm"]
 
@@ -2036,6 +2040,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/8a/78/16493d9c386d8e60e442a35feac5e00f0913c0f4b7c217c11e8ec2ff53e0/urllib3-2.4.0.tar.gz", hash = "sha256:414bc6535b787febd7567804cc015fee39daab8ad86268f1310a9250697de466", size = 390672 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6b/11/cc635220681e93a0183390e26485430ca2c7b5f9d33b15c74c2861cb8091/urllib3-2.4.0-py3-none-any.whl", hash = "sha256:4e16665048960a0900c702d4a66415956a584919c03361cac9f1df5c5dd7e813", size = 128680 },
+]
+
+[[package]]
+name = "uvicorn"
+version = "0.34.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "h11" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/de/ad/713be230bcda622eaa35c28f0d328c3675c371238470abdea52417f17a8e/uvicorn-0.34.3.tar.gz", hash = "sha256:35919a9a979d7a59334b6b10e05d77c1d0d574c50e0fc98b8b1a0f165708b55a", size = 76631 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6d/0d/8adfeaa62945f90d19ddc461c55f4a50c258af7662d34b6a3d5d1f8646f6/uvicorn-0.34.3-py3-none-any.whl", hash = "sha256:16246631db62bdfbf069b0645177d6e8a77ba950cfedbfd093acef9444e4d885", size = 62431 },
 ]
 
 [[package]]
