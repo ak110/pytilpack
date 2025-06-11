@@ -1,5 +1,6 @@
 """テストコード。"""
 
+import typing
 import warnings
 
 import litellm
@@ -170,7 +171,13 @@ def test_vs_litellm(model: str):
     actual_tokens = pytilpack.tiktoken_.num_tokens_from_messages(
         model=model, messages=messages, tools=tools
     )
-    litellm_tokens = litellm.token_counter(model=model, messages=messages, tools=tools)
+    litellm_tokens = litellm.token_counter(
+        model=model,
+        messages=messages,
+        tools=typing.cast(
+            list[litellm.types.llms.openai.ChatCompletionToolParam], tools
+        ),
+    )
 
     # LiteLLMは現在以下のモデルがgpt-3.5-turboとかと同じ扱いになっている (おそらくバグっている)
     if actual_tokens != litellm_tokens and model in [
@@ -185,7 +192,11 @@ def test_vs_litellm(model: str):
     ]:
         warnings.warn("LiteLLMのバグのため対症療法", UserWarning, stacklevel=1)
         litellm_tokens = litellm.token_counter(
-            model="gpt-4o", messages=messages, tools=tools
+            model="gpt-4o",
+            messages=messages,
+            tools=typing.cast(
+                list[litellm.types.llms.openai.ChatCompletionToolParam], tools
+            ),
         )
 
     assert actual_tokens == litellm_tokens, "ツールありトークン数の不一致"

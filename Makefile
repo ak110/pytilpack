@@ -1,5 +1,3 @@
-export PYTHONASYNCIODEBUG=1
-
 help:
 	@cat Makefile
 

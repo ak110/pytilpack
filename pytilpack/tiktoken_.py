@@ -165,7 +165,7 @@ def num_tokens_from_tools(
 def num_tokens_for_tools(
     model: str,
     tools: list[openai.types.chat.ChatCompletionToolParam],
-    tool_choice: openai.types.chat.ChatCompletionNamedToolChoiceParam | None = None,
+    tool_choice: openai.types.chat.ChatCompletionToolChoiceOptionParam | None = None,
     encoding: tiktoken.Encoding | None = None,
 ) -> int:
     """Function calling部分のトークン数算出。
