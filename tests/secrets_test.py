@@ -1,10 +1,8 @@
 """テストコード。"""
 
+import concurrent.futures
 import os
 import pathlib
-import unittest.mock
-
-import pytest
 
 import pytilpack.secrets_
 
@@ -17,43 +15,49 @@ def test_generate_secret_key(tmp_path: pathlib.Path) -> None:
     assert path.exists()
     secret_key2 = pytilpack.secrets_.generate_secret_key(path)
     assert secret_key1 == secret_key2
+    # パーミッションの確認
+    assert (os.stat(path).st_mode & 0o777) == 0o600
 
 
-def test_generate_secret_key_permissions(tmp_path: pathlib.Path) -> None:
-    """ファイルパーミッションのテスト。"""
+def test_generate_secret_key_concurrent(tmp_path: pathlib.Path) -> None:
+    """8プロセス×8スレッドで同時実行して同じ値が返ることを確認。"""
     path = tmp_path / "secret_key"
-    pytilpack.secrets_.generate_secret_key(path)
-    assert oct(os.stat(path).st_mode)[-3:] == "600"
+    # 8回試す
+    for _ in range(8):
+        path.unlink(missing_ok=True)  # 前のファイルを削除
+
+        # 8プロセスで並列実行
+        with concurrent.futures.ProcessPoolExecutor(max_workers=8) as process_executor:
+            process_futures = [
+                process_executor.submit(_run_threads, path, 8) for _ in range(8)
+            ]
+            results = sum(
+                (
+                    future.result()
+                    for future in concurrent.futures.as_completed(process_futures)
+                ),
+                [],
+            )
+
+        # 全ての結果が同じ値であることを確認
+        assert len(results) == 64
+        assert all(result == results[0] for result in results)
 
 
-@unittest.mock.patch("pytilpack.secrets_.secrets.token_bytes")
-def test_generate_secret_key_retry(
-    mock_token_bytes: unittest.mock.MagicMock, tmp_path: pathlib.Path
-) -> None:
-    """リトライのテスト。"""
-    path = tmp_path / "secret_key"
+def _run_threads(path: pathlib.Path, thread_count: int) -> list[bytes]:
+    """指定された数のスレッドでgenerate_secret_keyを実行。"""
 
-    # 1回目と2回目は失敗、3回目は成功
-    mock_token_bytes.side_effect = [
-        IOError("エラー1"),
-        IOError("エラー2"),
-        b"secret_bytes",
-    ]
+    def call_generate_secret_key() -> bytes:
+        return pytilpack.secrets_.generate_secret_key(path)
 
-    result = pytilpack.secrets_.generate_secret_key(path)
-    assert result == b"secret_bytes"
-    assert mock_token_bytes.call_count == 3
-
-
-@unittest.mock.patch("pytilpack.secrets_.secrets.token_bytes")
-def test_generate_secret_key_retry_exhausted(
-    mock_token_bytes: unittest.mock.MagicMock, tmp_path: pathlib.Path
-) -> None:
-    """リトライ上限のテスト。"""
-    path = tmp_path / "secret_key"
-
-    # 全てのリトライで失敗
-    mock_token_bytes.side_effect = IOError("常にエラー")
-
-    with pytest.raises(IOError, match="常にエラー"):
-        pytilpack.secrets_.generate_secret_key(path)
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=thread_count
+    ) as thread_executor:
+        thread_futures = [
+            thread_executor.submit(call_generate_secret_key)
+            for _ in range(thread_count)
+        ]
+        return [
+            future.result()
+            for future in concurrent.futures.as_completed(thread_futures)
+        ]
