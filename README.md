@@ -50,6 +50,7 @@ import pytilpack.xxx
 - [pytilpack.base64_](pytilpack/base64_.py)
 - [pytilpack.csv_](pytilpack/csv_.py)
 - [pytilpack.dataclasses_](pytilpack/dataclasses_.py)
+- [pytilpack.datetime_](pytilpack/datetime_.py)
 - [pytilpack.fastapi_](pytilpack/fastapi_/__init__.py)
 - [pytilpack.flask_](pytilpack/flask_/__init__.py)
 - [pytilpack.flask_login_](pytilpack/flask_.py)
