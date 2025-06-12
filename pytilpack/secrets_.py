@@ -3,7 +3,10 @@
 import pathlib
 import secrets
 
+import pytilpack.functools_
 
+
+@pytilpack.functools_.retry()
 def generate_secret_key(cache_path: str | pathlib.Path) -> bytes:
     """シークレットキーの作成/取得。
 
@@ -19,4 +22,5 @@ def generate_secret_key(cache_path: str | pathlib.Path) -> bytes:
             secret_key = secrets.token_bytes()
             secret.write(secret_key)
             secret.flush()
+            cache_path.chmod(0o600)
         return secret_key
