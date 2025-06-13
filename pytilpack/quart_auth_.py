@@ -34,6 +34,9 @@ class QuartAuth(typing.Generic[UserType], quart_auth.QuartAuth):
     読み込んだユーザーインスタンスは quart.g.current_user に格納する。
     テンプレートでも {{ current_user }} でアクセスできるようにする。
 
+    user_loaderは多くの場合DBアクセスが必要なので、
+    before_requestの順序関係に注意する必要がある。
+
     """
 
     def __init__(self, *args, **kwargs) -> None:
@@ -102,4 +105,6 @@ def logout_user() -> None:
 
 def current_user() -> UserMixin:
     """現在のユーザーを取得する。"""
+    assert hasattr(quart.g, "current_user")
+    # await quart.current_app.extensions["QUART_AUTH"].ensure_current_user()
     return quart.g.current_user
