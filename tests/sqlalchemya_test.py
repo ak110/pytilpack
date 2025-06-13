@@ -180,6 +180,65 @@ async def test_await_for_connection() -> None:
 
 
 @pytest.mark.asyncio
+async def test_paginate() -> None:
+    """paginateのテスト。"""
+    # テスト専用のセッションを作成
+    async with Base.session_scope() as session:
+        async with Base.connect() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+
+        # テストデータを準備（10件）
+        test_items = [Test1(unique_id=f"paginate_test_{i}") for i in range(1, 11)]
+        for item in test_items:
+            session.add(item)
+        await session.commit()
+
+        # 1ページあたり3件、1ページ目をテスト
+        query = (
+            Test1.select()
+            .where(Test1.unique_id.like("paginate_test_%"))
+            .order_by(Test1.id)
+        )
+        paginator = await Test1.paginate(query, page=1, per_page=3)
+
+        assert paginator.page == 1
+        assert paginator.per_page == 3
+        assert paginator.total_items == 10
+        assert len(paginator.items) == 3
+        assert paginator.pages == 4
+        assert paginator.has_next is True
+        assert paginator.has_prev is False
+
+        # 2ページ目をテスト
+        paginator = await Test1.paginate(query, page=2, per_page=3)
+        assert paginator.page == 2
+        assert len(paginator.items) == 3
+        assert paginator.has_next is True
+        assert paginator.has_prev is True
+
+        # 最終ページ（4ページ目）をテスト
+        paginator = await Test1.paginate(query, page=4, per_page=3)
+        assert paginator.page == 4
+        assert len(paginator.items) == 1  # 最後は1件のみ
+        assert paginator.has_next is False
+        assert paginator.has_prev is True
+
+        # 境界値テスト：無効なページ番号
+        with pytest.raises(AssertionError):
+            await Test1.paginate(query, page=0, per_page=3)
+
+        with pytest.raises(AssertionError):
+            await Test1.paginate(query, page=1, per_page=0)
+
+        # 空のクエリの場合
+        empty_query = Test1.select().where(Test1.id > 100000)
+        paginator = await Test1.paginate(empty_query, page=1, per_page=3)
+        assert paginator.total_items == 0
+        assert len(paginator.items) == 0
+        assert paginator.pages == 1
+
+
+@pytest.mark.asyncio
 async def test_asafe_close() -> None:
     """asafe_closeのテスト。"""
     engine = sqlalchemy.ext.asyncio.create_async_engine("sqlite+aiosqlite:///:memory:")

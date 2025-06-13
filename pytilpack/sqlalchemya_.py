@@ -11,6 +11,8 @@ import typing
 import sqlalchemy
 import sqlalchemy.ext.asyncio
 
+import pytilpack._paginator
+
 logger = logging.getLogger(__name__)
 
 
@@ -187,6 +189,40 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
             q = q.with_for_update()
         result = await cls.session().execute(q)
         return result.scalar_one_or_none()
+
+    @classmethod
+    async def paginate(
+        cls, query: sqlalchemy.Select, page: int, per_page: int
+    ) -> pytilpack._paginator.Paginator:
+        """Flask-SQLAlchemy風ページネーション。
+
+        Args:
+            query: ページネーションするクエリ。
+            page: ページ番号。
+            per_page: 1ページあたりのアイテム数。
+        Returns:
+            ページネーションされた結果を返すpytilpack._paginator.Paginatorインスタンス。
+
+        """
+        assert page > 0, "ページ番号は1以上でなければなりません。"
+        assert per_page > 0, "1ページあたりのアイテム数は1以上でなければなりません。"
+        total = (
+            await cls.session().execute(
+                # pylint: disable=not-callable
+                query.with_only_columns(sqlalchemy.func.count()).order_by(None)
+            )
+        ).scalar_one()
+        items = list(
+            (
+                await cls.session().execute(
+                    query.offset((page - 1) * per_page).limit(per_page)
+                )
+            ).all()
+        )
+        # pylint: disable=protected-access
+        return pytilpack._paginator.Paginator(
+            page=page, per_page=per_page, items=items, total=total
+        )
 
     def to_dict(
         self,
