@@ -296,8 +296,7 @@ class SyncMixin:
         q = cls.select().where(cls.id == id_)  # type: ignore  # pylint: disable=no-member
         if for_update:
             q = q.with_for_update()
-        result = cls.session().execute(q)
-        return result.scalar_one_or_none()
+        return cls.scalar_one_or_none(q)
 
     @classmethod
     def paginate(
@@ -397,8 +396,7 @@ class SyncUniqueIDMixin:
             q = cls.select().where(cls.unique_id == unique_id)  # type: ignore
         if for_update:
             q = q.with_for_update()
-        result = cls.session().execute(q)
-        return result.scalar_one_or_none()
+        return cls.scalar_one_or_none(q)
 
 
 def wait_for_connection(url: str, timeout: float = 60.0) -> None:

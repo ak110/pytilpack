@@ -307,8 +307,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         q = cls.select().where(cls.id == id_)  # type: ignore  # pylint: disable=no-member
         if for_update:
             q = q.with_for_update()
-        result = await cls.session().execute(q)
-        return result.scalar_one_or_none()
+        return await cls.scalar_one_or_none(q)  # type: ignore[arg-type]
 
     @classmethod
     async def paginate(
@@ -408,8 +407,7 @@ class AsyncUniqueIDMixin:
             q = cls.select().where(cls.unique_id == unique_id)  # type: ignore
         if for_update:
             q = q.with_for_update()
-        result = await cls.session().execute(q)
-        return result.scalar_one_or_none()
+        return await cls.scalar_one_or_none(q)
 
 
 async def await_for_connection(url: str, timeout: float = 60.0) -> None:
