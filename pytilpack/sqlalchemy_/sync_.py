@@ -106,7 +106,7 @@ class SyncMixin:
 
     @classmethod
     @contextlib.contextmanager
-    def session_scope(cls):
+    def session_scope(cls) -> typing.Generator[sqlalchemy.orm.Session, None, None]:
         """セッションを開始するコンテキストマネージャ。
 
         使用例::
