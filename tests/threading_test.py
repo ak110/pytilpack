@@ -2,9 +2,12 @@
 
 import threading
 
+import pytest
+
 import pytilpack.threading_
 
 
+@pytest.mark.asyncio
 async def test_acquire_with_timeout():
     lock = threading.Lock()
     with pytilpack.threading_.acquire_with_timeout(lock, 0.001) as acquired:

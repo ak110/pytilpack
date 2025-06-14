@@ -4,6 +4,7 @@ import datetime
 import pathlib
 
 import pytest
+import pytest_asyncio
 import sqlalchemy
 import sqlalchemy.exc
 import sqlalchemy.ext.asyncio
@@ -89,14 +90,14 @@ async def test_mixin_basic_functionality(tmp_path: pathlib.Path) -> None:
         assert await Base.count(Test1.select()) == 0
 
 
-@pytest.fixture(name="engine", scope="module", autouse=True)
+@pytest_asyncio.fixture(name="engine", scope="module", autouse=True)
 async def _engine():
     """DB接続。"""
     Base.init("sqlite+aiosqlite:///:memory:")
     yield Base.engine
 
 
-@pytest.fixture(name="session", scope="module")
+@pytest_asyncio.fixture(name="session", scope="module")
 async def _session(engine: sqlalchemy.ext.asyncio.AsyncEngine):
     """セッション。"""
     del engine  # noqa
