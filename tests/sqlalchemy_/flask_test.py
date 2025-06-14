@@ -1,21 +1,22 @@
-"""テストコード。"""
+"""Flask-SQLAlchemy版のテストコード。"""
 
 import datetime
 
 import pytest
 import sqlalchemy
-import sqlalchemy.exc
 import sqlalchemy.ext.asyncio
 import sqlalchemy.orm
 
 import pytilpack.sqlalchemy_
 
 
-class Base(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy_.AsyncMixin):
+class Base(sqlalchemy.orm.DeclarativeBase):  # type: ignore[name-defined]
     """ベースクラス。"""
 
+    __test__ = False
 
-class Test1(Base, pytilpack.sqlalchemy_.AsyncUniqueIDMixin):
+
+class Test1(Base, pytilpack.sqlalchemy_.Mixin, pytilpack.sqlalchemy_.UniqueIDMixin):
     """テストクラス。"""
 
     __test__ = False
@@ -27,7 +28,7 @@ class Test1(Base, pytilpack.sqlalchemy_.AsyncUniqueIDMixin):
     )
 
 
-class Test2(Base):
+class Test2(Base, pytilpack.sqlalchemy_.Mixin):
     """テストクラス。"""
 
     __test__ = False
@@ -54,49 +55,46 @@ class Test2(Base):
 
 
 @pytest.fixture(name="engine", scope="module", autouse=True)
-async def _engine():
+def _engine():
     """DB接続。"""
-    Base.init("sqlite+aiosqlite:///:memory:")
-    yield Base.engine
+    engine = sqlalchemy.create_engine("sqlite:///:memory:")
+    pytilpack.sqlalchemy_.register_ping()
+    yield engine
 
 
 @pytest.fixture(name="session", scope="module")
-async def _session(engine: sqlalchemy.ext.asyncio.AsyncEngine):
+def _session(engine: sqlalchemy.engine.Engine):
     """セッション。"""
-    del engine  # noqa
-    async with Base.session_scope() as session:
-        yield session
+    yield sqlalchemy.orm.Session(engine)
 
 
-@pytest.mark.asyncio
-async def test_get_by_id(session: sqlalchemy.ext.asyncio.AsyncSession) -> None:
-    """get_by_idのテスト。"""
-    async with Base.connect() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+def test_get_by_id(session: sqlalchemy.orm.Session) -> None:
+    Test1.query = session.query(Test1)  # 仮
+
+    Base.metadata.create_all(session.bind)  # type: ignore
     session.add(Test1(id=1))
-    await session.commit()
+    session.commit()
 
-    assert (await Test1.get_by_id(1)).id == 1  # type: ignore
-    assert (await Test1.get_by_id(2)) is None
-    assert (await Test1.get_by_id(1, for_update=True)).id == 1  # type: ignore
+    assert Test1.get_by_id(1).id == 1  # type: ignore
+    assert Test1.get_by_id(2) is None
+    assert Test1.get_by_id(1, for_update=True).id == 1  # type: ignore
 
 
-@pytest.mark.asyncio
-async def test_get_by_unique_id(session: sqlalchemy.ext.asyncio.AsyncSession) -> None:
-    """get_by_unique_idのテスト。"""
-    async with Base.connect() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+def test_get_by_unique_id(session: sqlalchemy.orm.Session) -> None:
+    Test1.query = session.query(Test1)  # 仮
+
+    Base.metadata.create_all(session.bind)  # type: ignore
     test1 = Test1(id=2, unique_id=Test1.generate_unique_id())
     assert test1.unique_id is not None and len(test1.unique_id) == 43
     unique_id = test1.unique_id
     session.add(test1)
-    await session.commit()
+    session.commit()
 
-    assert (await Test1.get_by_unique_id(unique_id)).id == 2  # type: ignore
-    assert (await Test1.get_by_unique_id(unique_id, allow_id=True)).id == 2  # type: ignore
-    assert (await Test1.get_by_unique_id(2)) is None
-    assert (await Test1.get_by_unique_id(2, allow_id=True)).id == 2  # type: ignore
-    assert (await Test1.get_by_unique_id("2", allow_id=True)) is None
+    assert Test1.get_by_unique_id(unique_id).id == 2  # type: ignore
+    assert Test1.get_by_unique_id(unique_id, allow_id=True).id == 2  # type: ignore
+    assert Test1.get_by_unique_id(2) is None
+    assert Test1.get_by_unique_id(2, allow_id=True).id == 2  # type: ignore
+    assert Test1.get_by_unique_id("2", allow_id=True) is None
 
 
 def test_to_dict() -> None:
@@ -164,88 +162,25 @@ Table: test2
     )
 
 
-@pytest.mark.asyncio
-async def test_await_for_connection() -> None:
-    """await_for_connectionのテスト。"""
+def test_wait_for_connection() -> None:
+    """wait_for_connectionのテスト。"""
     # 正常系
-    await pytilpack.sqlalchemy_.await_for_connection(
-        "sqlite+aiosqlite:///:memory:", timeout=1.0
-    )
+    pytilpack.sqlalchemy_.wait_for_connection("sqlite:///:memory:", timeout=1.0)
 
     # 異常系: タイムアウト
     with pytest.raises(sqlalchemy.exc.OperationalError):
-        await pytilpack.sqlalchemy_.await_for_connection(
-            "sqlite+aiosqlite:////nonexistent/path/db.sqlite3", timeout=1.0
+        pytilpack.sqlalchemy_.wait_for_connection(
+            "sqlite:////nonexistent/path/db.sqlite3", timeout=1.0
         )
 
 
-@pytest.mark.asyncio
-async def test_paginate() -> None:
-    """paginateのテスト。"""
-    # テスト専用のセッションを作成
-    async with Base.session_scope() as session:
-        async with Base.connect() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-
-        # テストデータを準備（10件）
-        test_items = [Test1(unique_id=f"paginate_test_{i}") for i in range(1, 11)]
-        for item in test_items:
-            session.add(item)
-        await session.commit()
-
-        # 1ページあたり3件、1ページ目をテスト
-        query = (
-            Test1.select()
-            .where(Test1.unique_id.like("paginate_test_%"))
-            .order_by(Test1.id)
-        )
-        paginator = await Test1.paginate(query, page=1, per_page=3)
-
-        assert paginator.page == 1
-        assert paginator.per_page == 3
-        assert paginator.total_items == 10
-        assert len(paginator.items) == 3
-        assert paginator.pages == 4
-        assert paginator.has_next is True
-        assert paginator.has_prev is False
-
-        # 2ページ目をテスト
-        paginator = await Test1.paginate(query, page=2, per_page=3)
-        assert paginator.page == 2
-        assert len(paginator.items) == 3
-        assert paginator.has_next is True
-        assert paginator.has_prev is True
-
-        # 最終ページ（4ページ目）をテスト
-        paginator = await Test1.paginate(query, page=4, per_page=3)
-        assert paginator.page == 4
-        assert len(paginator.items) == 1  # 最後は1件のみ
-        assert paginator.has_next is False
-        assert paginator.has_prev is True
-
-        # 境界値テスト：無効なページ番号
-        with pytest.raises(AssertionError):
-            await Test1.paginate(query, page=0, per_page=3)
-
-        with pytest.raises(AssertionError):
-            await Test1.paginate(query, page=1, per_page=0)
-
-        # 空のクエリの場合
-        empty_query = Test1.select().where(Test1.id > 100000)
-        paginator = await Test1.paginate(empty_query, page=1, per_page=3)
-        assert paginator.total_items == 0
-        assert len(paginator.items) == 0
-        assert paginator.pages == 1
-
-
-@pytest.mark.asyncio
-async def test_asafe_close() -> None:
-    """asafe_closeのテスト。"""
-    engine = sqlalchemy.ext.asyncio.create_async_engine("sqlite+aiosqlite:///:memory:")
-    session = sqlalchemy.ext.asyncio.AsyncSession(engine)
-    await pytilpack.sqlalchemy_.asafe_close(session)  # 正常ケース
+def test_safe_close() -> None:
+    """safe_closeのテスト。"""
+    engine = sqlalchemy.create_engine("sqlite:///:memory:")
+    session = sqlalchemy.orm.Session(engine)
+    pytilpack.sqlalchemy_.safe_close(session)  # 正常ケース
 
     # エラーケース（既にクローズ済み）
-    await session.close()
-    await pytilpack.sqlalchemy_.asafe_close(session)
-    await pytilpack.sqlalchemy_.asafe_close(session, log_level=None)
+    session.close()
+    pytilpack.sqlalchemy_.safe_close(session)
+    pytilpack.sqlalchemy_.safe_close(session, log_level=None)

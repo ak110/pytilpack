@@ -1,4 +1,4 @@
-"""SQLAlchemy用のユーティリティ集。(async版)"""
+"""SQLAlchemy用のユーティリティ集（async版）。"""
 
 import asyncio
 import contextlib
