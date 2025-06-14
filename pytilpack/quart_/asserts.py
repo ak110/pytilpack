@@ -6,14 +6,19 @@ import pathlib
 import typing
 import xml.etree.ElementTree
 
+import quart
+
 import pytilpack.pytest_
 import pytilpack.web
 
 logger = logging.getLogger(__name__)
 
+ResponseType = quart.Response | typing.Awaitable[quart.Response]
+"""レスポンスの型。"""
+
 
 async def assert_bytes(
-    response,
+    response: ResponseType,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = None,
 ) -> bytes:
@@ -31,7 +36,8 @@ async def assert_bytes(
         レスポンスボディ
 
     """
-    response_body = await response.get_data()
+    response = await _get_response(response)
+    response_body = await response.get_data(as_text=False)
 
     try:
         # ステータスコードチェック
@@ -47,7 +53,7 @@ async def assert_bytes(
 
 
 async def assert_html(
-    response,
+    response: ResponseType,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "__default__",
     strict: bool = False,
@@ -71,7 +77,8 @@ async def assert_html(
         レスポンスボディ (bs4.BeautifulSoup)
 
     """
-    response_body = (await response.get_data()).decode("utf-8")
+    response = await _get_response(response)
+    response_body = await response.get_data(as_text=True)
 
     try:
         # ステータスコードチェック
@@ -83,7 +90,7 @@ async def assert_html(
         pytilpack.web.check_content_type(response.content_type, content_type)
 
         # HTMLのチェック
-        pytilpack.web.check_html(await response.get_data(), strict=strict)
+        pytilpack.web.check_html(await response.get_data(as_text=False), strict=strict)
     except AssertionError as e:
         tmp_file_path = pytilpack.pytest_.create_temp_view(
             tmp_path, response_body, ".html"
@@ -94,7 +101,7 @@ async def assert_html(
 
 
 async def assert_json(
-    response,
+    response: ResponseType,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "application/json",
 ) -> dict[str, typing.Any]:
@@ -112,7 +119,8 @@ async def assert_json(
         レスポンスのjson
 
     """
-    response_body = (await response.get_data()).decode("utf-8")
+    response = await _get_response(response)
+    response_body = await response.get_data(as_text=True)
 
     try:
         # ステータスコードチェック
@@ -134,7 +142,7 @@ async def assert_json(
 
 
 async def assert_xml(
-    response,
+    response: ResponseType,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "__default__",
 ) -> str:
@@ -152,7 +160,8 @@ async def assert_xml(
         レスポンスのxml
 
     """
-    response_body = (await response.get_data()).decode("utf-8")
+    response = await _get_response(response)
+    response_body = await response.get_data(as_text=True)
 
     try:
         # ステータスコードチェック
@@ -173,3 +182,9 @@ async def assert_xml(
         raise e
 
     return response_body
+
+
+async def _get_response(response: ResponseType) -> quart.Response:
+    if isinstance(response, typing.Awaitable):
+        return await response
+    return response
