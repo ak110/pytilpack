@@ -103,6 +103,11 @@ def logout_user() -> None:
     quart_auth.logout_user()
 
 
+async def is_authenticated() -> bool:
+    """ユーザー認証済みかどうかを取得する。"""
+    return await quart_auth.current_user.is_authenticated
+
+
 def current_user() -> UserMixin:
     """現在のユーザーを取得する。"""
     assert hasattr(quart.g, "current_user")
