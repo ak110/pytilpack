@@ -10,10 +10,14 @@ import typing
 
 import sqlalchemy
 import sqlalchemy.ext.asyncio
+import sqlalchemy.orm
 
 import pytilpack._paginator
 
 logger = logging.getLogger(__name__)
+
+T = typing.TypeVar("T")
+TT = typing.TypeVar("TT", bound=tuple)
 
 
 class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
@@ -173,6 +177,122 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         return sqlalchemy.delete(cls)
 
     @classmethod
+    async def count(cls, query: sqlalchemy.Select | sqlalchemy.CompoundSelect) -> int:
+        """queryのレコード数を取得する。"""
+        # pylint: disable=not-callable
+        if isinstance(query, sqlalchemy.Select):
+            return await cls.scalar_one(
+                query.with_only_columns(sqlalchemy.func.count())
+            )
+        return await cls.scalar_one(
+            sqlalchemy.select(sqlalchemy.func.count()).select_from(query.subquery())
+        )
+
+    @classmethod
+    async def scalar_one(
+        cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]
+    ) -> T:
+        """queryの結果を1件取得する。
+
+        Args:
+            query: クエリ。
+
+        Returns:
+            1件のインスタンス。
+
+        Raises:
+            sqlalchemy.exc.NoResultFound: 結果が0件の場合。
+            sqlalchemy.exc.MultipleResultsFound: 結果が複数件の場合。
+
+        """
+        return (await cls.session().execute(query)).scalar_one()
+
+    @classmethod
+    async def scalar_one_or_none(
+        cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]
+    ) -> T | None:
+        """queryの結果を0件または1件取得する。
+
+        Args:
+            query: クエリ。
+
+        Returns:
+            0件の場合はNone、1件の場合はインスタンス。
+
+        Raises:
+            sqlalchemy.exc.MultipleResultsFound: 結果が複数件の場合。
+
+        """
+        return (await cls.session().execute(query)).scalar_one_or_none()
+
+    @classmethod
+    async def scalars(
+        cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]
+    ) -> list[T]:
+        """queryの結果を全件取得する。
+
+        Args:
+            query: クエリ。
+
+        Returns:
+            全件のインスタンスのリスト。
+
+        """
+        return list((await cls.session().execute(query)).scalars().all())
+
+    @classmethod
+    async def one(
+        cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]
+    ) -> sqlalchemy.Row[TT]:
+        """queryの結果を1件取得する。
+
+        Args:
+            query: クエリ。
+
+        Returns:
+            1件のインスタンス。
+
+        Raises:
+            sqlalchemy.exc.NoResultFound: 結果が0件の場合。
+            sqlalchemy.exc.MultipleResultsFound: 結果が複数件の場合。
+
+        """
+        return (await cls.session().execute(query)).one()
+
+    @classmethod
+    async def one_or_none(
+        cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]
+    ) -> sqlalchemy.Row[TT] | None:
+        """queryの結果を0件または1件取得する。
+
+        Args:
+            query: クエリ。
+
+        Returns:
+            0件の場合はNone、1件の場合はインスタンス。
+
+        Raises:
+            sqlalchemy.exc.MultipleResultsFound: 結果が複数件の場合。
+
+        """
+        return (await cls.session().execute(query)).one_or_none()
+
+    @classmethod
+    async def all(
+        cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]
+    ) -> list[sqlalchemy.Row[TT]]:
+        """queryの結果を全件取得する。
+
+        Args:
+            query: クエリ。
+
+        Returns:
+            全件のインスタンスのリスト。
+
+        """
+        return list((await cls.session().execute(query)).all())
+
+    @classmethod
     async def get_by_id(cls, id_: int, for_update: bool = False) -> typing.Self | None:
         """IDを元にインスタンスを取得。
 
@@ -192,7 +312,11 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
 
     @classmethod
     async def paginate(
-        cls, query: sqlalchemy.GenerativeSelect, page: int, per_page: int
+        cls,
+        query: sqlalchemy.Select | sqlalchemy.CompoundSelect,
+        page: int,
+        per_page: int,
+        scalar: bool = True,
     ) -> pytilpack._paginator.Paginator:
         """Flask-SQLAlchemy風ページネーション。
 
@@ -200,25 +324,16 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
             query: ページネーションするクエリ。
             page: ページ番号。
             per_page: 1ページあたりのアイテム数。
+            scalar: Trueの場合、スカラー値を返す。Falseの場合、全件のインスタンスを返す。
+
         Returns:
             ページネーションされた結果を返すpytilpack._paginator.Paginatorインスタンス。
-
         """
         assert page > 0, "ページ番号は1以上でなければなりません。"
         assert per_page > 0, "1ページあたりのアイテム数は1以上でなければなりません。"
-        total = (
-            await cls.session().execute(
-                # pylint: disable=not-callable
-                query.with_only_columns(sqlalchemy.func.count()).order_by(None)
-            )
-        ).scalar_one()
-        items = list(
-            (
-                await cls.session().execute(
-                    query.offset((page - 1) * per_page).limit(per_page)
-                )
-            ).all()
-        )
+        total = await cls.count(query)
+        page_query = query.offset((page - 1) * per_page).limit(per_page)
+        items = await (cls.scalars(page_query) if scalar else cls.all(page_query))
         # pylint: disable=protected-access
         return pytilpack._paginator.Paginator(
             page=page, per_page=per_page, items=items, total=total
