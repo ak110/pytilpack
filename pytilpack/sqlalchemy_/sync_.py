@@ -184,7 +184,7 @@ class SyncMixin:
 
     @classmethod
     def paginate(
-        cls, query: sqlalchemy.Select, page: int, per_page: int
+        cls, query: sqlalchemy.GenerativeSelect, page: int, per_page: int
     ) -> pytilpack._paginator.Paginator:
         """Flask-SQLAlchemy風ページネーション。
 
