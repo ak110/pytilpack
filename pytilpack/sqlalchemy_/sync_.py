@@ -125,6 +125,25 @@ class SyncMixin:
             cls.close_session(token)
 
     @classmethod
+    @contextlib.asynccontextmanager
+    async def asession_scope(
+        cls,
+    ) -> typing.AsyncGenerator[sqlalchemy.orm.Session, None]:
+        """セッションを開始するコンテキストマネージャ。
+
+        使用例::
+            with Base.session_scope() as session:
+                ...
+
+        """
+        assert cls.sessionmaker is not None
+        token = cls.start_session()
+        try:
+            yield cls.session()
+        finally:
+            cls.close_session(token)
+
+    @classmethod
     def start_session(cls) -> contextvars.Token[sqlalchemy.orm.Session]:
         """セッションを開始する。"""
         assert cls.sessionmaker is not None
