@@ -44,7 +44,7 @@ def data_url(data: bytes, mime_type: str) -> str:
 
 
 def get_next_url() -> str:
-    """flask_loginのnextパラメータ用のURLを返す。"""
+    """ログイン後遷移用のnextパラメータ用のURLを返す。"""
     path = flask.request.script_root + flask.request.path
     query_string = flask.request.query_string.decode("utf-8")
     next_ = f"{path}?{query_string}" if query_string else path

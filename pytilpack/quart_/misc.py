@@ -14,6 +14,14 @@ _TIMESTAMP_CACHE: dict[str, int] = {}
 """静的ファイルの最終更新日時をキャッシュするための辞書。プロセス単位でキャッシュされる。"""
 
 
+def get_next_url() -> str:
+    """ログイン後遷移用のnextパラメータ用のURLを返す。"""
+    path = quart.request.script_root + quart.request.path
+    query_string = quart.request.query_string.decode("utf-8")
+    next_ = f"{path}?{query_string}" if query_string else path
+    return next_
+
+
 def static_url_for(
     filename: str,
     cache_busting: bool = True,
