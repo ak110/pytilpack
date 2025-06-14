@@ -18,6 +18,7 @@ def static_url_for(
     filename: str,
     cache_busting: bool = True,
     cache_timestamp: bool | typing.Literal["when_not_debug"] = "when_not_debug",
+    **kwargs,
 ) -> str:
     """静的ファイルのURLを生成します。
 
@@ -33,7 +34,7 @@ def static_url_for(
         静的ファイルのURL
     """
     if not cache_busting:
-        return quart.url_for("static", filename=filename)
+        return quart.url_for("static", filename=filename, **kwargs)
 
     # スタティックファイルのパスを取得
     static_folder = quart.current_app.static_folder
@@ -55,10 +56,10 @@ def static_url_for(
             timestamp = int(filepath.stat().st_mtime)
 
         # キャッシュバスティングありのURLを返す
-        return quart.url_for("static", filename=filename, v=timestamp)
+        return quart.url_for("static", filename=filename, v=timestamp, **kwargs)
     except OSError:
         # ファイルが存在しない場合などは通常のURLを返す
-        return quart.url_for("static", filename=filename)
+        return quart.url_for("static", filename=filename, **kwargs)
 
 
 @contextlib.asynccontextmanager
