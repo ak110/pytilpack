@@ -181,11 +181,19 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         """queryのレコード数を取得する。"""
         # pylint: disable=not-callable
         if isinstance(query, sqlalchemy.Select):
-            return await cls.scalar_one(
-                query.with_only_columns(sqlalchemy.func.count())
+            return (
+                await cls.scalar_one_or_none(
+                    query.with_only_columns(sqlalchemy.func.count()).order_by(None)
+                )
+                or 0
             )
-        return await cls.scalar_one(
-            sqlalchemy.select(sqlalchemy.func.count()).select_from(query.subquery())
+        return (
+            await cls.scalar_one_or_none(
+                sqlalchemy.select(sqlalchemy.func.count()).select_from(
+                    query.order_by(None).subquery()
+                )
+            )
+            or 0
         )
 
     @classmethod
