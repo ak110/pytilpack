@@ -1,4 +1,6 @@
-"""テストコード。"""
+"""FastAPIアサーションのテスト。"""
+
+import pathlib
 
 import fastapi
 import fastapi.testclient
@@ -8,7 +10,7 @@ import pytilpack.fastapi_
 
 
 @pytest.fixture(name="app")
-def _app():
+def _app() -> fastapi.FastAPI:
     app = fastapi.FastAPI()
 
     @app.get("/403")
@@ -57,11 +59,11 @@ def _app():
 
 
 @pytest.fixture(name="client")
-def _client(app):
+def _client(app: fastapi.FastAPI) -> fastapi.testclient.TestClient:
     return fastapi.testclient.TestClient(app)
 
 
-def test_assert_bytes(client):
+def test_assert_bytes(client: fastapi.testclient.TestClient):
     """bytesアサーションのテスト。"""
     response = client.get("/html")
     _ = pytilpack.fastapi_.assert_bytes(response)
@@ -73,7 +75,9 @@ def test_assert_bytes(client):
         _ = pytilpack.fastapi_.assert_bytes(response)
 
 
-def test_assert_html(client, tmp_path):
+def test_assert_html(
+    client: fastapi.testclient.TestClient, tmp_path: pathlib.Path
+) -> None:
     """HTMLアサーションのテスト。"""
     response = client.get("/html")
     _ = pytilpack.fastapi_.assert_html(response)
@@ -91,7 +95,7 @@ def test_assert_html(client, tmp_path):
         _ = pytilpack.fastapi_.assert_html(response, strict=True)
 
 
-def test_assert_json(client):
+def test_assert_json(client: fastapi.testclient.TestClient) -> None:
     """JSONアサーションのテスト。"""
     response = client.get("/json")
     _ = pytilpack.fastapi_.assert_json(response)
@@ -105,7 +109,7 @@ def test_assert_json(client):
         _ = pytilpack.fastapi_.assert_json(response)
 
 
-def test_assert_xml(client):
+def test_assert_xml(client: fastapi.testclient.TestClient) -> None:
     """XMLアサーションのテスト。"""
     response = client.get("/xml")
     _ = pytilpack.fastapi_.assert_xml(response)

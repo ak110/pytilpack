@@ -1,4 +1,4 @@
-"""Quartユーティリティのテスト。"""
+"""Quart miscのテスト。"""
 
 import httpx
 import pytest
