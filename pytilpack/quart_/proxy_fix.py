@@ -104,7 +104,7 @@ class ProxyFix:
                 scope["root_path"] = scope["root_path"].removeprefix(prefix)
                 # config adjustments
                 self.quartapp.config["APPLICATION_ROOT"] = prefix
-                for key in ("SESSION_COOKIE_PATH", "REMEMBER_COOKIE_PATH"):
+                for key in ("SESSION_COOKIE_PATH", "QUART_AUTH_COOKIE_PATH"):
                     orig = self.quartapp.config.get(key)
                     if orig:
                         self.quartapp.config[key] = prefix + orig
