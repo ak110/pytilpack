@@ -13,43 +13,81 @@ class Base(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy_.SyncMixin):
     """ベースクラス。"""
 
 
-class TestTable(Base):
-    """テスト用テーブル。"""
+class Test1(Base, pytilpack.sqlalchemy_.AsyncUniqueIDMixin):
+    """テストクラス。"""
 
+    __test__ = False
     __tablename__ = "test"
 
     id: sqlalchemy.orm.Mapped[int] = sqlalchemy.orm.mapped_column(primary_key=True)
-    name: sqlalchemy.orm.Mapped[str] = sqlalchemy.orm.mapped_column(
-        sqlalchemy.String(50)
+    unique_id: sqlalchemy.orm.Mapped[str | None] = sqlalchemy.orm.mapped_column(
+        sqlalchemy.String(43), unique=True, nullable=True, doc="ユニークID"
     )
 
 
-def test_sync_mixin_basic_functionality(tmp_path: pathlib.Path) -> None:
+class Test2(Base):
+    """テストクラス。"""
+
+    __test__ = False
+    __tablename__ = "test2"
+    __table_args__ = (sqlalchemy.UniqueConstraint("value1", "value2", name="uc1"),)
+
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
+    name = sqlalchemy.Column(
+        sqlalchemy.String(250), nullable=False, unique=True, doc="名前"
+    )
+    pass_hash = sqlalchemy.Column(
+        sqlalchemy.String(100), default=None, comment="パスハッシュ"
+    )
+    # 有効フラグ
+    enabled = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False, default=True)
+    is_admin = sqlalchemy.Column(  # このコメントは無視されてほしい
+        sqlalchemy.Boolean, nullable=False, default=False
+    )
+    value1 = sqlalchemy.Column(sqlalchemy.Integer, nullable=True, default=0)
+    value2 = sqlalchemy.Column(sqlalchemy.Integer, nullable=False, default=512)
+    value3 = sqlalchemy.Column(sqlalchemy.Float, nullable=False, default=1.0)
+    value4 = sqlalchemy.Column(sqlalchemy.DateTime, nullable=False)
+    value5 = sqlalchemy.Column(sqlalchemy.Text, nullable=False, default=lambda: "func")
+
+
+def test_mixin_basic_functionality(tmp_path: pathlib.Path) -> None:
     """SyncMixinの基本機能をテスト。"""
-    db_path = tmp_path / "test.db"
-    Base.init(f"sqlite:///{db_path}")
+    Base.init(f"sqlite:///{tmp_path}/test.db")
 
     # テーブル作成
     with Base.connect() as conn:
         Base.metadata.create_all(conn)
 
     # セッションスコープのテスト
-    with Base.session_scope() as session:
+    with Base.session_scope():
+        # 件数取得 (0件)
+        assert Base.count(Test1.select()) == 0
+
         # データ挿入
-        test_record = TestTable(name="test_name")
-        session.add(test_record)
-        session.commit()
+        test_record = Test1(unique_id="test_name")
+        Base.session().add(test_record)
+        Base.session().commit()
 
         # データ取得
-        result = TestTable.get_by_id(test_record.id)
+        result = Test1.get_by_id(test_record.id)
         assert result is not None
-        assert result.name == "test_name"
+        assert result.unique_id == "test_name"
+
+        # 件数取得 (1件)
+        assert Base.count(Test1.select()) == 1
+
+        # 削除
+        Base.session().execute(Test1.delete())
+        Base.session().commit()
+
+        # 件数取得 (0件)
+        assert Base.count(Test1.select()) == 0
 
 
 def test_sync_mixin_context_vars(tmp_path: pathlib.Path) -> None:
     """SyncMixinのcontextvar管理をテスト。"""
-    db_path = tmp_path / "test.db"
-    Base.init(f"sqlite:///{db_path}")
+    Base.init(f"sqlite:///{tmp_path}/test.db")
 
     # テーブル作成
     with Base.connect() as conn:
@@ -63,14 +101,14 @@ def test_sync_mixin_context_vars(tmp_path: pathlib.Path) -> None:
         assert session is not None
 
         # データ操作
-        test_record = TestTable(name="test_context")
+        test_record = Test1(unique_id="test_context")
         session.add(test_record)
         session.commit()
 
         # select メソッドのテスト
-        query = TestTable.select().where(TestTable.name == "test_context")
+        query = Test1.select().where(Test1.unique_id == "test_context")
         result = session.execute(query).scalar_one()
-        assert result.name == "test_context"
+        assert result.unique_id == "test_context"
 
     finally:
         Base.close_session(token)
@@ -82,15 +120,15 @@ def test_sync_mixin_context_vars(tmp_path: pathlib.Path) -> None:
 
 def test_sync_mixin_to_dict() -> None:
     """to_dictメソッドのテスト。"""
-    test_record = TestTable(id=1, name="test_dict")
+    test_record = Test1(id=1, unique_id="test_dict")
     result = test_record.to_dict()
 
-    assert result == {"id": 1, "name": "test_dict"}
+    assert result == {"id": 1, "unique_id": "test_dict"}
 
     # includes テスト
-    result_includes = test_record.to_dict(includes=["name"])
-    assert result_includes == {"name": "test_dict"}
+    result_includes = test_record.to_dict(includes=["unique_id"])
+    assert result_includes == {"unique_id": "test_dict"}
 
     # excludes テスト
     result_excludes = test_record.to_dict(excludes=["id"])
-    assert result_excludes == {"name": "test_dict"}
+    assert result_excludes == {"unique_id": "test_dict"}

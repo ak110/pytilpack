@@ -169,7 +169,8 @@ class SyncMixin:
     @classmethod
     def select(cls) -> sqlalchemy.Select[tuple[typing.Self]]:
         """sqlalchemy.Selectを返す。"""
-        return sqlalchemy.select(cls)
+        # cls.count()などでfrom句が消えないように明示的にfrom句を指定して返す。
+        return sqlalchemy.select(cls).select_from(cls)
 
     @classmethod
     def insert(cls) -> sqlalchemy.Insert:
@@ -193,8 +194,8 @@ class SyncMixin:
         if isinstance(query, sqlalchemy.Select):
             return (
                 cls.scalar_one_or_none(
-                    query.with_only_columns(sqlalchemy.func.count())
-                ).order_by(None)
+                    query.with_only_columns(sqlalchemy.func.count()).order_by(None)
+                )
                 or 0
             )
         return (
@@ -223,6 +224,7 @@ class SyncMixin:
             sqlalchemy.exc.MultipleResultsFound: 結果が複数件の場合。
 
         """
+        logger.debug(f"scalar_one: {query}")
         return cls.session().execute(query).scalar_one()
 
     @classmethod
@@ -241,6 +243,7 @@ class SyncMixin:
             sqlalchemy.exc.MultipleResultsFound: 結果が複数件の場合。
 
         """
+        logger.debug(f"scalar_one_or_none: {query}")
         return cls.session().execute(query).scalar_one_or_none()
 
     @classmethod
@@ -256,6 +259,7 @@ class SyncMixin:
             全件のインスタンスのリスト。
 
         """
+        logger.debug(f"scalars: {query}")
         return list(cls.session().execute(query).scalars().all())
 
     @classmethod
@@ -275,6 +279,7 @@ class SyncMixin:
             sqlalchemy.exc.MultipleResultsFound: 結果が複数件の場合。
 
         """
+        logger.debug(f"one: {query}")
         return cls.session().execute(query).one()
 
     @classmethod
@@ -293,6 +298,7 @@ class SyncMixin:
             sqlalchemy.exc.MultipleResultsFound: 結果が複数件の場合。
 
         """
+        logger.debug(f"one_or_none: {query}")
         return cls.session().execute(query).one_or_none()
 
     @classmethod
@@ -308,6 +314,7 @@ class SyncMixin:
             全件のインスタンスのリスト。
 
         """
+        logger.debug(f"all: {query}")
         return list(cls.session().execute(query).all())
 
     @classmethod

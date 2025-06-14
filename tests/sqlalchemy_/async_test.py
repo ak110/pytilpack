@@ -1,6 +1,7 @@
 """async版のテストコード。"""
 
 import datetime
+import pathlib
 
 import pytest
 import sqlalchemy
@@ -51,6 +52,41 @@ class Test2(Base):
     value3 = sqlalchemy.Column(sqlalchemy.Float, nullable=False, default=1.0)
     value4 = sqlalchemy.Column(sqlalchemy.DateTime, nullable=False)
     value5 = sqlalchemy.Column(sqlalchemy.Text, nullable=False, default=lambda: "func")
+
+
+@pytest.mark.asyncio
+async def test_mixin_basic_functionality(tmp_path: pathlib.Path) -> None:
+    """AsyncMixinの基本機能をテスト。"""
+    Base.init(f"sqlite+aiosqlite:///{tmp_path}/test.db")
+
+    # テーブル作成
+    async with Base.connect() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    # セッションスコープのテスト
+    async with Base.session_scope():
+        # 件数取得 (0件)
+        assert await Base.count(Test1.select()) == 0
+
+        # データ挿入
+        test_record = Test1(unique_id="test_name")
+        Base.session().add(test_record)
+        await Base.session().commit()
+
+        # データ取得
+        result = await Test1.get_by_id(test_record.id)
+        assert result is not None
+        assert result.unique_id == "test_name"
+
+        # 件数取得 (1件)
+        assert await Base.count(Test1.select()) == 1
+
+        # 削除
+        await Base.session().execute(Test1.delete())
+        await Base.session().commit()
+
+        # 件数取得 (0件)
+        assert await Base.count(Test1.select()) == 0
 
 
 @pytest.fixture(name="engine", scope="module", autouse=True)
