@@ -153,7 +153,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
             ) from e
 
     @classmethod
-    def select(cls) -> sqlalchemy.Select:
+    def select(cls) -> sqlalchemy.Select[tuple[typing.Self]]:
         """sqlalchemy.Selectを返す。"""
         return sqlalchemy.select(cls)
 
