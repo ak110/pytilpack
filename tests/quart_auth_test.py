@@ -31,7 +31,7 @@ def _app() -> quart.Quart:
     users = {"user1": User("test user")}
 
     @auth_manager.user_loader
-    async def load_user(user_id: str) -> User | None:
+    def load_user(user_id: str) -> User | None:
         return users.get(user_id)
 
     assert auth_manager.user_loader_func is not None

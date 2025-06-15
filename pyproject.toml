@@ -153,6 +153,9 @@ show_error_codes = true
 
 [tool.pytest.ini_options]
 addopts = "--showlocals -p no:cacheprovider --durations=5 -vv"
+filterwarnings = [
+    "ignore:Secure cookies will be ignored on insecure requests:UserWarning",
+]
 xfail_strict = true
 log_level = "DEBUG"
 asyncio_mode = "strict"

@@ -1,6 +1,7 @@
 """テストコード。"""
 
 import concurrent.futures
+import multiprocessing
 import os
 import pathlib
 
@@ -27,7 +28,9 @@ def test_generate_secret_key_concurrent(tmp_path: pathlib.Path) -> None:
         path.unlink(missing_ok=True)  # 前のファイルを削除
 
         # 8プロセスで並列実行
-        with concurrent.futures.ProcessPoolExecutor(max_workers=8) as process_executor:
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=8, mp_context=multiprocessing.get_context("spawn")
+        ) as process_executor:
             process_futures = [
                 process_executor.submit(_run_threads, path, 8) for _ in range(8)
             ]

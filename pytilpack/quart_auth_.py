@@ -1,9 +1,12 @@
 """Quart-Auth関連のユーティリティ。"""
 
+import logging
 import typing
 
 import quart
 import quart_auth
+
+logger = logging.getLogger(__name__)
 
 
 class UserMixin:
@@ -31,19 +34,14 @@ class QuartAuth(typing.Generic[UserType], quart_auth.QuartAuth):
     """Quart-Authの独自拡張。
 
     Flask-Loginのように@auth_manager.user_loaderを定義できるようにする。
-    読み込んだユーザーインスタンスは quart.g.current_user に格納する。
+    読み込んだユーザーインスタンスは quart.g.quart_auth_current_user に格納する。
     テンプレートでも {{ current_user }} でアクセスできるようにする。
-
-    user_loaderは多くの場合DBアクセスが必要なので、
-    before_requestの順序関係に注意する必要がある。
 
     """
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.user_loader_func: (
-            typing.Callable[[str], typing.Awaitable[UserType | None]] | None
-        ) = None
+        self.user_loader_func: typing.Callable[[str], UserType | None] | None = None
 
     @typing.override
     def init_app(self, app: quart.Quart) -> None:
@@ -53,38 +51,56 @@ class QuartAuth(typing.Generic[UserType], quart_auth.QuartAuth):
         # リクエスト前処理を登録
         app.before_request(self._before_request)
 
+    async def _before_request(self) -> None:
+        """リクエスト前処理。"""
+        quart.g.quart_auth_current_user = None
+
+    @typing.override
+    def _template_context(self) -> dict[str, quart_auth.AuthUser]:
+        """テンプレートでcurrent_userがquart.g.quart_auth_current_userになるようにする。"""
+        template_context = super()._template_context()
+        assert "current_user" in template_context
+        template_context["current_user"] = self.current_user  # type: ignore[assignment]
+        return template_context
+
     def user_loader(
-        self, user_loader: typing.Callable[[str], typing.Awaitable[UserType | None]]
-    ) -> typing.Callable[[str], typing.Awaitable[UserType | None]]:
+        self, user_loader: typing.Callable[[str], UserType | None]
+    ) -> typing.Callable[[str], UserType | None]:
         """ユーザーローダーのデコレータ。"""
         self.user_loader_func = user_loader
         return user_loader
 
-    async def _before_request(self) -> None:
-        """リクエスト前処理。user_loader_funcを実行する。"""
+    @property
+    def current_user(self) -> UserType | AnonymousUser:
+        """現在のユーザーを取得する。"""
+        # ユーザーがロード済みの場合はそれを返す
+        if quart.g.quart_auth_current_user is not None:
+            return quart.g.quart_auth_current_user
+
+        # staticの場合はロードをさぼる (高速化のため)
+        if quart.request.endpoint == "static":
+            return AnonymousUser()
+
+        # ユーザーの読み込みを行う
         assert self.user_loader_func is not None
-        if await quart_auth.current_user.is_authenticated:
+        auth_id = quart_auth.current_user.auth_id
+        if auth_id is None:
+            # 未認証の場合はAnonymousUserにする
+            quart.g.quart_auth_current_user = AnonymousUser()
+        else:
             # 認証済みの場合はuser_loader_funcを実行する
-            auth_id = quart_auth.current_user.auth_id
             assert auth_id is not None
-            quart.g.current_user = await self.user_loader_func(auth_id)
-            if quart.g.current_user is None:
+            quart.g.quart_auth_current_user = self.user_loader_func(auth_id)
+            if quart.g.quart_auth_current_user is None:
                 # ユーザーが見つからない場合はAnonymousUserにする
-                quart.g.current_user = AnonymousUser()
+                logger.error(f"ユーザーロードエラー: {auth_id}")
+                quart.g.quart_auth_current_user = AnonymousUser()
+                quart_auth.logout_user()
             else:
                 # ログイン状態を更新する
                 quart_auth.renew_login()
-        else:
-            # 未認証の場合はAnonymousUserにする
-            quart.g.current_user = AnonymousUser()
 
-    @typing.override
-    def _template_context(self) -> dict[str, quart_auth.AuthUser]:
-        """テンプレートでcurrent_userがquart.g.current_userになるようにする。"""
-        template_context = super()._template_context()
-        assert "current_user" in template_context
-        template_context["current_user"] = quart.g.current_user
-        return template_context
+        return quart.g.quart_auth_current_user
 
 
 def login_user(auth_id: str, remember: bool = True) -> None:
@@ -103,13 +119,24 @@ def logout_user() -> None:
     quart_auth.logout_user()
 
 
-async def is_authenticated() -> bool:
+def is_authenticated() -> bool:
     """ユーザー認証済みかどうかを取得する。"""
-    return await quart_auth.current_user.is_authenticated
+    return quart_auth.current_user.auth_id is not None
 
 
 def current_user() -> UserMixin:
     """現在のユーザーを取得する。"""
     assert hasattr(quart.g, "current_user")
-    # await quart.current_app.extensions["QUART_AUTH"].ensure_current_user()
-    return quart.g.current_user
+    extension = typing.cast(
+        QuartAuth | None,
+        next(
+            (
+                extension
+                for extension in quart.current_app.extensions["QUART_AUTH"]
+                if extension.singleton
+            ),
+            None,
+        ),
+    )
+    assert extension is not None
+    return extension.current_user
