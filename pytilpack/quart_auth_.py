@@ -126,7 +126,6 @@ def is_authenticated() -> bool:
 
 def current_user() -> UserMixin:
     """現在のユーザーを取得する。"""
-    assert hasattr(quart.g, "current_user")
     extension = typing.cast(
         QuartAuth | None,
         next(
