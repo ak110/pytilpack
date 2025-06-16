@@ -16,7 +16,9 @@ class ProxyFix:
         proxy_set_header X-Forwarded-Port $server_port;
         proxy_set_header X-Forwarded-Prefix $http_x_forwarded_prefix;
 
-    参考: hypercorn.middleware.ProxyFixMiddleware
+    参考:
+        - hypercorn.middleware.ProxyFixMiddleware
+          <https://github.com/pgjones/hypercorn/blob/main/src/hypercorn/middleware/proxy_fix.py>
 
     """
 
@@ -99,15 +101,12 @@ class ProxyFix:
             forwarded_prefix = self._get_trusted_value(
                 b"x-forwarded-prefix", headers, self.x_prefix
             )
-            if forwarded_prefix:
+            if forwarded_prefix and forwarded_prefix != "/":
                 prefix = forwarded_prefix.rstrip("/")
-                scope["root_path"] = scope["root_path"].removeprefix(prefix)
-                # config adjustments
+                scope["root_path"] = prefix
                 self.quartapp.config["APPLICATION_ROOT"] = prefix
-                for key in ("SESSION_COOKIE_PATH", "QUART_AUTH_COOKIE_PATH"):
-                    orig = self.quartapp.config.get(key)
-                    if orig:
-                        self.quartapp.config[key] = prefix + orig
+                self.quartapp.config["SESSION_COOKIE_PATH"] = prefix
+                self.quartapp.config["QUART_AUTH_COOKIE_PATH"] = prefix
 
             scope["headers"] = headers
 

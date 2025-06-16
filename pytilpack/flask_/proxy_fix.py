@@ -41,9 +41,9 @@ class ProxyFix(werkzeug.middleware.proxy_fix.ProxyFix):
         if self.x_prefix != 0:
             prefix = environ.get("HTTP_X_FORWARDED_PREFIX", "/")
             if prefix != "/":
+                environ["SCRIPT_NAME"] = prefix
+                environ["PATH_INFO"] = environ["PATH_INFO"][len(prefix) :]
                 self.flaskapp.config["APPLICATION_ROOT"] = prefix
                 self.flaskapp.config["SESSION_COOKIE_PATH"] = prefix
                 self.flaskapp.config["REMEMBER_COOKIE_PATH"] = prefix
-                environ["SCRIPT_NAME"] = prefix
-                environ["PATH_INFO"] = environ["PATH_INFO"][len(prefix) :]
         return super().__call__(environ, start_response)
