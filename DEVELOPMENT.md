@@ -1,13 +1,14 @@
 # 開発手順
 
-## パッケージ管理
+## 開発環境構築手順
 
-- [uv](https://docs.astral.sh/uv/)を使用してパッケージ管理を行う。
+1. 本リポジトリをcloneする。
+2. [uvをインストール](https://docs.astral.sh/uv/getting-started/installation/)する。
+3. [pre-commit](https://pre-commit.com/)フックをインストールする。
 
-## pre-commit
-
-- [pre-commit](https://pre-commit.com/)を使用してコミット時にコードの整形・チェックを行う。
-- `pre-commit install`で有効化する。
+    ```bash
+    uv run pre-commit install
+    ```
 
 ## リリース手順
 
