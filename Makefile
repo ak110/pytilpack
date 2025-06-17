@@ -2,8 +2,8 @@ help:
 	@cat Makefile
 
 update:
-	uv run pre-commit autoupdate
 	uv sync --upgrade --all-extras --all-groups
+	uv run pre-commit autoupdate
 	$(MAKE) test
 
 format:
