@@ -23,13 +23,21 @@ def gather_chunks(
             id="", choices=[], created=0, model="", object="chat.completion"
         )
 
-    # max_choices = max(len(chunk.choices) for chunk in chunks)
+    # chunks[i].choices は型ヒント上はList[Choice]だが、Noneが入っている場合がある
     min_choice = min(
-        (min(c.index for c in chunk.choices) if len(chunk.choices) > 0 else 0)
+        (
+            min(c.index for c in chunk.choices)
+            if chunk.choices is not None and len(chunk.choices) > 0
+            else 0
+        )
         for chunk in chunks
     )
     max_choice = max(
-        (max(c.index for c in chunk.choices) if len(chunk.choices) > 0 else 0)
+        (
+            max(c.index for c in chunk.choices)
+            if chunk.choices is not None and len(chunk.choices) > 0
+            else 0
+        )
         for chunk in chunks
     )
     choices = [

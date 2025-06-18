@@ -28,6 +28,7 @@ async def async_func():
     return "Done"
 
 
+@pytest.mark.asyncio(loop_scope="function")
 def test_run():
     for _ in range(3):
         assert pytilpack.asyncio_.run(async_func()) == "Done"
