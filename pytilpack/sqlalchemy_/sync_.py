@@ -1,5 +1,6 @@
 """SQLAlchemy用のユーティリティ集（同期版）。"""
 
+import atexit
 import contextlib
 import contextvars
 import logging
@@ -11,7 +12,6 @@ import sqlalchemy
 import sqlalchemy.orm
 
 import pytilpack._paginator
-import pytilpack.functools_
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,9 @@ class SyncMixin:
 
             @app.teardown_request
             async def _teardown_request(_: BaseException | None) -> None:
-                models.Base.close_session(quart.g.db_session_token)
+                if hasattr(quart.g, "db_session_token"):
+                    models.Base.close_session(quart.g.db_session_token)
+                    del quart.g.db_session_token
 
     """
 
@@ -92,6 +94,8 @@ class SyncMixin:
             kwargs["pool_pre_ping"] = pool_pre_ping
 
         cls.engine = sqlalchemy.create_engine(url, **kwargs)
+        atexit.register(cls.engine.dispose)
+
         cls.sessionmaker = sqlalchemy.orm.sessionmaker(
             cls.engine, autoflush=autoflush, expire_on_commit=expire_on_commit
         )
@@ -164,7 +168,7 @@ class SyncMixin:
         except LookupError as e:
             raise RuntimeError(
                 "セッションが開始されていません。"
-                f"{cls.__class__.__qualname__}.start_session()を呼び出してください。"
+                f"{cls.__qualname__}.start_session()を呼び出してください。"
             ) from e
 
     @classmethod
@@ -463,6 +467,8 @@ def safe_close(
 ):
     """例外を出さずにセッションをクローズ。"""
     try:
+        if session.is_active:
+            session.rollback()
         session.close()
     except Exception:
         if log_level is not None:

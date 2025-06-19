@@ -12,7 +12,6 @@ import sqlalchemy
 import sqlalchemy.ext.asyncio
 
 import pytilpack._paginator
-import pytilpack.functools_
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +40,9 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
 
             @app.teardown_request
             async def _teardown_request(_: BaseException | None) -> None:
-                await models.Base.close_session(quart.g.db_session_token)
+                if hasattr(quart.g, "db_session_token"):
+                    await models.Base.close_session(quart.g.db_session_token)
+                    del quart.g.db_session_token
 
     """
 
@@ -153,7 +154,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         except LookupError as e:
             raise RuntimeError(
                 "セッションが開始されていません。"
-                f"{cls.__class__.__qualname__}.start_session()を呼び出してください。"
+                f"{cls.__qualname__}.start_session()を呼び出してください。"
             ) from e
 
     @classmethod
@@ -450,6 +451,8 @@ async def asafe_close(
 ):
     """例外を出さずにセッションをクローズ。"""
     try:
+        if session.is_active:
+            await session.rollback()
         await session.close()
     except Exception:
         if log_level is not None:
