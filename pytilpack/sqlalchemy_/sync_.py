@@ -56,7 +56,6 @@ class SyncMixin:
     """セッション。"""
 
     @classmethod
-    @pytilpack.functools_.warn_if_slow()
     def init(
         cls,
         url: str | sqlalchemy.engine.URL,
@@ -98,7 +97,6 @@ class SyncMixin:
         )
 
     @classmethod
-    @pytilpack.functools_.warn_if_slow()
     def connect(cls) -> sqlalchemy.Connection:
         """DBに接続する。
 
@@ -147,14 +145,12 @@ class SyncMixin:
             cls.close_session(token)
 
     @classmethod
-    @pytilpack.functools_.warn_if_slow()
     def start_session(cls) -> contextvars.Token[sqlalchemy.orm.Session]:
         """セッションを開始する。"""
         assert cls.sessionmaker is not None
         return cls.session_var.set(cls.sessionmaker())  # pylint: disable=not-callable
 
     @classmethod
-    @pytilpack.functools_.warn_if_slow()
     def close_session(cls, token: contextvars.Token[sqlalchemy.orm.Session]) -> None:
         """セッションを終了する。"""
         safe_close(cls.session())

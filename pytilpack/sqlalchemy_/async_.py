@@ -60,7 +60,6 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
     """セッション。"""
 
     @classmethod
-    @pytilpack.functools_.warn_if_slow()
     def init(
         cls,
         url: str | sqlalchemy.engine.URL,
@@ -102,7 +101,6 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         )
 
     @classmethod
-    @pytilpack.functools_.warn_if_slow()
     def connect(cls) -> sqlalchemy.ext.asyncio.AsyncConnection:
         """DBに接続する。
 
@@ -132,7 +130,6 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
             await cls.close_session(token)
 
     @classmethod
-    @pytilpack.functools_.warn_if_slow()
     async def start_session(
         cls,
     ) -> contextvars.Token[sqlalchemy.ext.asyncio.AsyncSession]:
@@ -141,7 +138,6 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         return cls.session_var.set(cls.sessionmaker())  # pylint: disable=not-callable
 
     @classmethod
-    @pytilpack.functools_.warn_if_slow()
     async def close_session(
         cls, token: contextvars.Token[sqlalchemy.ext.asyncio.AsyncSession]
     ) -> None:
