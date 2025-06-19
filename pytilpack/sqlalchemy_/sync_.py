@@ -35,11 +35,11 @@ class SyncMixin:
         Quart例::
 
             @app.before_request
-            def _before_request():
+            async def _before_request() -> None:
                 quart.g.db_session_token = models.Base.start_session()
 
-            @app.after_request
-            def _after_request(r: quart.Response):
+            @app.teardown_request
+            async def _teardown_request(_: BaseException | None) -> None:
                 models.Base.close_session(quart.g.db_session_token)
 
     """
