@@ -84,6 +84,8 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
             expire_on_commit: セッションのexpire_on_commitフラグ。デフォルトはFalse。
 
         """
+        assert cls.engine is None, "DB接続はすでに初期化されています。"
+
         if pool_size is not None and max_overflow is None:
             max_overflow = pool_size * 2
         kwargs = kwargs.copy()
@@ -97,6 +99,8 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
             kwargs["pool_pre_ping"] = pool_pre_ping
 
         cls.engine = sqlalchemy.ext.asyncio.create_async_engine(url, **kwargs)
+        # atexit.register(cls.engine.dispose)
+
         cls.sessionmaker = sqlalchemy.ext.asyncio.async_sessionmaker(
             cls.engine, autoflush=autoflush, expire_on_commit=expire_on_commit
         )

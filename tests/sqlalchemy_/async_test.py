@@ -1,7 +1,7 @@
 """async版のテストコード。"""
 
 import datetime
-import pathlib
+import typing
 
 import pytest
 import pytest_asyncio
@@ -55,11 +55,26 @@ class Test2(Base):
     value5 = sqlalchemy.Column(sqlalchemy.Text, nullable=False, default=lambda: "func")
 
 
-@pytest.mark.asyncio
-async def test_mixin_basic_functionality(tmp_path: pathlib.Path) -> None:
-    """AsyncMixinの基本機能をテスト。"""
-    Base.init(f"sqlite+aiosqlite:///{tmp_path}/test.db")
+@pytest_asyncio.fixture(name="engine", scope="module", autouse=True)
+async def _engine() -> typing.AsyncGenerator[sqlalchemy.ext.asyncio.AsyncEngine, None]:
+    """DB接続。"""
+    Base.init("sqlite+aiosqlite:///:memory:")
+    assert Base.engine is not None
+    yield Base.engine
 
+
+@pytest_asyncio.fixture(name="session", scope="module")
+async def _session() -> (
+    typing.AsyncGenerator[sqlalchemy.ext.asyncio.AsyncSession, None]
+):
+    """セッション。"""
+    async with Base.session_scope() as session:
+        yield session
+
+
+@pytest.mark.asyncio
+async def test_mixin_basic_functionality() -> None:
+    """AsyncMixinの基本機能をテスト。"""
     # テーブル作成
     async with Base.connect() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -88,21 +103,6 @@ async def test_mixin_basic_functionality(tmp_path: pathlib.Path) -> None:
 
         # 件数取得 (0件)
         assert await Base.count(Test1.select()) == 0
-
-
-@pytest_asyncio.fixture(name="engine", scope="module", autouse=True)
-async def _engine():
-    """DB接続。"""
-    Base.init("sqlite+aiosqlite:///:memory:")
-    yield Base.engine
-
-
-@pytest_asyncio.fixture(name="session", scope="module")
-async def _session(engine: sqlalchemy.ext.asyncio.AsyncEngine):
-    """セッション。"""
-    del engine  # noqa
-    async with Base.session_scope() as session:
-        yield session
 
 
 @pytest.mark.asyncio

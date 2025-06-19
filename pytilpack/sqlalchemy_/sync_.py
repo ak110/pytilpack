@@ -81,6 +81,8 @@ class SyncMixin:
             expire_on_commit: セッションのexpire_on_commitフラグ。デフォルトはFalse。
 
         """
+        assert cls.engine is None, "DB接続はすでに初期化されています。"
+
         if pool_size is not None and max_overflow is None:
             max_overflow = pool_size * 2
         kwargs = kwargs.copy()

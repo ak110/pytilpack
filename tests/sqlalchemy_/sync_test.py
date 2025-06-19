@@ -1,6 +1,6 @@
 """SyncMixinのテストコード。"""
 
-import pathlib
+import typing
 
 import pytest
 import sqlalchemy
@@ -51,10 +51,23 @@ class Test2(Base):
     value5 = sqlalchemy.Column(sqlalchemy.Text, nullable=False, default=lambda: "func")
 
 
-def test_mixin_basic_functionality(tmp_path: pathlib.Path) -> None:
-    """SyncMixinの基本機能をテスト。"""
-    Base.init(f"sqlite:///{tmp_path}/test.db")
+@pytest.fixture(name="engine", scope="module", autouse=True)
+def _engine() -> typing.Generator[sqlalchemy.engine.Engine, None, None]:
+    """DB接続。"""
+    Base.init("sqlite:///:memory:")
+    assert Base.engine is not None
+    yield Base.engine
 
+
+@pytest.fixture(name="session", scope="module")
+def _session() -> typing.Generator[sqlalchemy.orm.Session, None, None]:
+    """セッション。"""
+    with Base.session_scope() as session:
+        yield session
+
+
+def test_mixin_basic_functionality() -> None:
+    """SyncMixinの基本機能をテスト。"""
     # テーブル作成
     with Base.connect() as conn:
         Base.metadata.create_all(conn)
@@ -85,10 +98,8 @@ def test_mixin_basic_functionality(tmp_path: pathlib.Path) -> None:
         assert Base.count(Test1.select()) == 0
 
 
-def test_sync_mixin_context_vars(tmp_path: pathlib.Path) -> None:
+def test_sync_mixin_context_vars() -> None:
     """SyncMixinのcontextvar管理をテスト。"""
-    Base.init(f"sqlite:///{tmp_path}/test.db")
-
     # テーブル作成
     with Base.connect() as conn:
         Base.metadata.create_all(conn)
