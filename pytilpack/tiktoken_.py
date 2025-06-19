@@ -210,13 +210,13 @@ def num_tokens_for_tools(
             print(f"{num_tokens=} func_init")
 
             func_name = function["name"]
-            func_desc = function["description"]
+            func_desc = function.get("description", "")
             if func_desc.endswith("."):
                 func_desc = func_desc[:-1]
             num_tokens += len(encoding.encode(f"{func_name}:{func_desc}"))
             print(f"{num_tokens=} func")
 
-            parameters = function["parameters"]
+            parameters = function.get("parameters", {})
             properties = typing.cast(
                 dict[str, dict[str, typing.Any]], parameters.get("properties", {})
             )

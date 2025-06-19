@@ -4,7 +4,7 @@ import datetime
 
 import pytest
 import sqlalchemy
-import sqlalchemy.ext.asyncio
+import sqlalchemy.exc
 import sqlalchemy.orm
 
 import pytilpack.sqlalchemy_

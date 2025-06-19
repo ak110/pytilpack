@@ -239,7 +239,7 @@ def get(
     default_value: T | None = None,
     errors: typing.Literal["strict", "ignore"] = "strict",
     default_if_none: bool = True,
-) -> typing.Any | None:
+) -> T | None:
     """辞書またはリストから値を取得する。
 
     Args:
@@ -285,7 +285,7 @@ def get(
     if data is None and default_if_none:
         return default_value
 
-    return data
+    return typing.cast(T, data)
 
 
 def _stringify_key(key: str | int | list[str | int]) -> str:

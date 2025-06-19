@@ -2,14 +2,16 @@
 
 import asyncio
 import functools
+import inspect
 import logging
 import random
 import time
 import typing
 
-T = typing.TypeVar("T")
+P = typing.ParamSpec("P")
+R = typing.TypeVar("R")
 
-logger = logging.getLogger(__name__)
+T = typing.TypeVar("T")
 
 
 def retry(
@@ -47,6 +49,8 @@ def retry(
         excludes = ()
 
     def decorator(func: typing.Callable) -> typing.Callable:
+        logger = logging.getLogger(func.__module__)
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             # pylint: disable=catching-non-exception,raising-non-exception
@@ -112,6 +116,8 @@ def aretry(
         excludes = ()
 
     def decorator(func: typing.Callable) -> typing.Callable:
+        logger = logging.getLogger(func.__module__)
+
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             # pylint: disable=catching-non-exception,raising-non-exception
@@ -138,5 +144,54 @@ def aretry(
                     delay = min(delay * exponential_base, max_delay)
 
         return wrapper
+
+    return decorator
+
+
+def warn_if_slow(
+    threshold_seconds: float = 0.001,
+) -> typing.Callable[[typing.Callable[P, R]], typing.Callable[P, R]]:
+    """処理に一定以上の時間がかかっていたら警告ログを出力するデコレーター。
+
+    Args:
+        threshold_seconds: 警告ログを記録するまでの秒数。既定値は1ミリ秒。
+    """
+
+    def decorator(func: typing.Callable[P, R]) -> typing.Callable[P, R]:
+        logger = logging.getLogger(func.__module__)
+
+        if inspect.iscoroutinefunction(func):
+
+            @functools.wraps(func)
+            async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+                start = time.perf_counter()
+                result = await func(*args, **kwargs)
+                duration = time.perf_counter() - start
+                if duration >= threshold_seconds:
+                    logger.warning(
+                        "Function %s took %.3f s (threshold %.3f s)",
+                        func.__qualname__,
+                        duration,
+                        threshold_seconds,
+                    )
+                return result
+
+            return async_wrapper  # type: ignore[return-value]
+
+        @functools.wraps(func)
+        def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            start = time.perf_counter()
+            result = func(*args, **kwargs)
+            duration = time.perf_counter() - start
+            if duration >= threshold_seconds:
+                logger.warning(
+                    "Function %s took %.3f s (threshold %.3f s)",
+                    func.__qualname__,
+                    duration,
+                    threshold_seconds,
+                )
+            return result
+
+        return sync_wrapper
 
     return decorator

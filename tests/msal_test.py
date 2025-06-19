@@ -6,6 +6,7 @@ import pathlib
 import azure.core.credentials
 import cryptography
 import cryptography.hazmat.primitives.asymmetric.rsa
+import cryptography.hazmat.primitives.hashes
 import cryptography.hazmat.primitives.serialization
 import cryptography.x509
 import cryptography.x509.oid

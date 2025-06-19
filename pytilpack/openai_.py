@@ -5,6 +5,8 @@ import typing
 
 import openai
 import openai.types.chat
+import openai.types.chat.chat_completion_message
+import openai.types.chat.chat_completion_message_tool_call
 
 from pytilpack.python_ import coalesce, remove_none
 
@@ -141,7 +143,10 @@ def _make_tool_calls(
     ],
     strict: bool,
 ) -> (
-    list[openai.types.chat.chat_completion_message.ChatCompletionMessageToolCall] | None
+    list[
+        openai.types.chat.chat_completion_message_tool_call.ChatCompletionMessageToolCall
+    ]
+    | None
 ):
     """list[ChoiceDeltaToolCall]を作成する。"""
     if len(tool_calls_list) == 0:
@@ -166,7 +171,7 @@ def _make_tool_call(
     ],
     index: int,
     strict: bool,
-) -> openai.types.chat.chat_completion_message.ChatCompletionMessageToolCall:
+) -> openai.types.chat.chat_completion_message_tool_call.ChatCompletionMessageToolCall:
     """ChoiceDeltaToolCallを作成する。"""
     tool_call_list = sum(
         (
@@ -181,7 +186,7 @@ def _make_tool_call(
     )
 
     tool_call = (
-        openai.types.chat.chat_completion_message.ChatCompletionMessageToolCall.model_construct()
+        openai.types.chat.chat_completion_message_tool_call.ChatCompletionMessageToolCall.model_construct()
     )
 
     if len(ids := remove_none(delta.id for delta in tool_call_list)) > 0:

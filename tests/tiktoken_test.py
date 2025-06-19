@@ -4,6 +4,7 @@ import typing
 import warnings
 
 import litellm
+import litellm.types.llms.openai
 import openai.types.chat
 import pytest
 
