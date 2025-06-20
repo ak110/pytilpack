@@ -6,6 +6,7 @@
 
 import base64
 import dataclasses
+import typing
 import urllib.parse
 
 
@@ -13,9 +14,18 @@ import urllib.parse
 class DataURL:
     """データURLを扱うクラス。"""
 
-    mime_type: str
-    encoding: str
     data: bytes
+    mime_type: str = ""
+    encoding: typing.Literal["base64", "plain"] = "base64"
+
+    def to_url(self) -> str:
+        """データURLを文字列として返す。"""
+        if self.encoding == "base64":
+            b64 = base64.b64encode(self.data).decode("ascii")
+            return f"data:{self.mime_type};base64,{b64}"
+        else:
+            encoded_data = urllib.parse.quote(self.data.decode("utf-8"))
+            return f"data:{self.mime_type},{encoded_data}"
 
 
 def create(mime_type: str, data: bytes) -> str:
@@ -45,6 +55,7 @@ def parse(data_url: str) -> DataURL:
         )
     prefix, content = data_url.split(",", 1)
     prefix = prefix.removeprefix("data:")
+    encoding: typing.Literal["base64", "plain"]
     if prefix.endswith(";base64"):
         mime_type = prefix.removesuffix(";base64")
         encoding = "base64"
@@ -56,3 +67,18 @@ def parse(data_url: str) -> DataURL:
     if mime_type == "":
         mime_type = "text/plain"
     return DataURL(mime_type=mime_type, encoding=encoding, data=data)
+
+
+def get_base64_data(data_url: str) -> str:
+    """データURLからbase64エンコードされたデータ部分を取り出して返す。
+
+    Args:
+        data_url: 'data:image/png;base64,....'
+
+    """
+    header, body = data_url.split(",", 1)
+    if header.endswith(";base64"):
+        return body
+    # base64ではない場合はURLデコードしてからbase64エンコードする
+    decoded = urllib.parse.unquote(body).encode("utf-8")
+    return base64.b64encode(decoded).decode("ascii")
