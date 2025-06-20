@@ -2,6 +2,7 @@
 
 import asyncio
 import contextlib
+import logging
 import pathlib
 import threading
 import typing
@@ -10,8 +11,55 @@ import httpx
 import quart
 import uvicorn
 
+logger = logging.getLogger(__name__)
+
 _TIMESTAMP_CACHE: dict[str, int] = {}
 """静的ファイルの最終更新日時をキャッシュするための辞書。プロセス単位でキャッシュされる。"""
+
+
+def set_max_concurrency(
+    app: quart.Quart, max_concurrency: int, timeout: float | None = 3.0
+) -> None:
+    """
+    Quart アプリ全体の最大同時リクエスト数を制限する。
+
+    Args:
+        app: 対象の Quart アプリケーション。
+        max_concurrency: 許可する同時リクエスト数の上限。
+        timeout: 最大待機秒数。タイムアウト時は 503 Service Unavailable を返す。
+
+    Notes:
+        * Hypercorn の ``--workers`` / ``--threads`` とは独立した
+        アプリレベルの制御。1 ワーカー内のコルーチン数を絞る用途で使う。
+    """
+
+    if max_concurrency < 1:
+        raise ValueError("max_concurrency must be >= 1")
+
+    semaphore = asyncio.Semaphore(max_concurrency)
+
+    async def _acquire() -> None:  # before_request
+        try:
+            if timeout is None:
+                await semaphore.acquire()
+            else:
+                await asyncio.wait_for(semaphore.acquire(), timeout=timeout)
+            quart.g.__concurrency_token = True  # pylint: disable=protected-access
+        except TimeoutError:
+            logger.warning(
+                f"Concurrency limit reached, aborting request: {quart.request.path}"
+            )
+            quart.abort(
+                503,
+                description="サーバーが混みあっています。しばらく待ってから再度お試しください。",
+            )
+
+    async def _release(_: typing.Any) -> None:
+        if hasattr(quart.g, "__concurrency_token"):
+            semaphore.release()
+
+    app.before_request(_acquire)
+    app.teardown_request(_release)
 
 
 def get_next_url() -> str:

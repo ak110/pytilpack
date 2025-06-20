@@ -165,13 +165,13 @@ class SyncMixin:
     @classmethod
     def session(cls) -> sqlalchemy.orm.Session:
         """セッションを取得する。"""
-        try:
-            return cls.session_var.get()
-        except LookupError as e:
+        sess = cls.session_var.get(None)
+        if sess is None:
             raise RuntimeError(
                 "セッションが開始されていません。"
                 f"{cls.__qualname__}.start_session()を呼び出してください。"
-            ) from e
+            )
+        return sess
 
     @classmethod
     def select(cls) -> sqlalchemy.Select[tuple[typing.Self]]:
