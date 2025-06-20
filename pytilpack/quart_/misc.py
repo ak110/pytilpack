@@ -44,7 +44,7 @@ def set_max_concurrency(
                 await semaphore.acquire()
             else:
                 await asyncio.wait_for(semaphore.acquire(), timeout=timeout)
-            quart.g.__concurrency_token = True  # pylint: disable=protected-access
+            quart.g.quart__concurrency_token = True
         except TimeoutError:
             logger.warning(
                 f"Concurrency limit reached, aborting request: {quart.request.path}"
@@ -55,8 +55,9 @@ def set_max_concurrency(
             )
 
     async def _release(_: typing.Any) -> None:
-        if hasattr(quart.g, "__concurrency_token"):
+        if hasattr(quart.g, "quart__concurrency_token"):
             semaphore.release()
+            del quart.g.quart__concurrency_token
 
     app.before_request(_acquire)
     app.teardown_request(_release)
