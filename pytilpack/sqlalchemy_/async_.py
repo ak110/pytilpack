@@ -87,7 +87,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         assert cls.engine is None, "DB接続はすでに初期化されています。"
 
         if pool_size is not None and max_overflow is None:
-            max_overflow = pool_size * 2
+            max_overflow = pool_size * 1  # デフォルトで倍まで許可
         kwargs = kwargs.copy()
         if pool_size is not None:
             kwargs["pool_size"] = pool_size
