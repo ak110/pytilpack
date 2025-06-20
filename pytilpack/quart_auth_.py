@@ -77,10 +77,6 @@ class QuartAuth(typing.Generic[UserType], quart_auth.QuartAuth):
         if quart.g.quart_auth_current_user is not None:
             return quart.g.quart_auth_current_user
 
-        # staticの場合はロードをさぼる (高速化のため)
-        if quart.request.endpoint == "static":
-            return AnonymousUser()
-
         # ユーザーの読み込みを行う
         assert self.user_loader_func is not None
         auth_id = quart_auth.current_user.auth_id
