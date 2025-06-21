@@ -69,11 +69,14 @@ def set_max_concurrency(
 
 
 def run_sync(func: typing.Callable[P, R]) -> typing.Callable[P, typing.Awaitable[R]]:
-    """quart.utils.run_syncのデコレーター。"""
+    """同期関数を非同期に実行するデコレーター。
+
+    quart.utils.run_syncの型ヒントがいまいちなので用意。
+
+    """
 
     @functools.wraps(func)
     async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-        """同期関数を非同期で実行するラッパー。"""
         result = await quart.utils.run_sync(func)(*args, **kwargs)
         return typing.cast(R, result)
 
