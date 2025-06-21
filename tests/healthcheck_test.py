@@ -111,7 +111,7 @@ async def test_run(
             assert isinstance(detail["response_time_ms"], (int, float))
             assert detail["response_time_ms"] >= 0
             if detail["status"] == "ok":
-                assert detail["error"] is None
+                assert "error" not in detail
             else:
                 assert detail["error"] is not None
     else:
@@ -156,10 +156,10 @@ async def test_run_error_handling() -> None:
     fail_detail = result["details"]["fail"]
 
     assert success_detail["status"] == "ok"
-    assert success_detail["error"] is None
+    assert "error" not in success_detail
 
     assert fail_detail["status"] == "fail"
-    assert fail_detail["error"] == "テストエラー"
+    assert fail_detail["error"] == "ValueError('テストエラー')"
 
 
 @pytest.mark.asyncio
