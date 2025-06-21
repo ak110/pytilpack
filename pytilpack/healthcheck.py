@@ -2,11 +2,15 @@
 
 import asyncio
 import datetime
+import functools
 import logging
 import time
 import typing
 
 import pytilpack.logging_
+
+P = typing.ParamSpec("P")
+R = typing.TypeVar("R")
 
 CheckerType = typing.Callable[[], typing.Coroutine[typing.Any, typing.Any, None]]
 """ヘルスチェック関数の型。"""
@@ -38,6 +42,42 @@ class HealthCheckResult(typing.TypedDict):
     checked: str
     uptime: str
     details: typing.NotRequired[dict[str, HealthCheckDetail]]
+
+
+def make_entry(
+    name: str,
+    func: (
+        typing.Callable[P, None]
+        | typing.Callable[P, typing.Coroutine[typing.Any, typing.Any, None]]
+    ),
+    /,
+    *args: P.args,
+    **kwargs: P.kwargs,
+) -> CheckerEntry:
+    """CheckerEntryを作成する。
+
+    Args:
+        name: ヘルスチェックの名前。
+        func: ヘルスチェック関数。
+        *args: ヘルスチェック関数に渡す引数。
+        **kwargs: ヘルスチェック関数に渡すキーワード引数。
+
+    Returns:
+        ヘルスチェックの名前と関数を持つタプル。
+    """
+    if asyncio.iscoroutinefunction(func):
+
+        @functools.wraps(func)
+        async def async_wrapped_func() -> None:
+            await func(*args, **kwargs)
+
+        return (name, async_wrapped_func)
+
+    @functools.wraps(func)
+    async def sync_wrapper() -> None:
+        await asyncio.to_thread(func, *args, **kwargs)
+
+    return (name, sync_wrapper)
 
 
 async def run(

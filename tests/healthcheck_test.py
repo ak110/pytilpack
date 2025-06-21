@@ -2,10 +2,16 @@
 
 import asyncio
 import datetime
+import time
 
 import pytest
 
 import pytilpack.healthcheck
+
+
+def sync_success_check() -> None:
+    """成功するヘルスチェック。"""
+    time.sleep(0.01)  # 短い処理時間をシミュレート
 
 
 async def mock_success_check() -> None:
@@ -29,13 +35,48 @@ async def mock_slow_check() -> None:
     "checks,expected_status,expected_details_count,output_details",
     [
         # 成功ケース
-        ([("test1", mock_success_check)], "ok", 1, True),
-        ([("test1", mock_success_check), ("test2", mock_success_check)], "ok", 2, True),
+        (
+            [pytilpack.healthcheck.make_entry("test1", mock_success_check)],
+            "ok",
+            1,
+            True,
+        ),
+        (
+            [
+                pytilpack.healthcheck.make_entry("test1", mock_success_check),
+                pytilpack.healthcheck.make_entry("test2", mock_success_check),
+            ],
+            "ok",
+            2,
+            True,
+        ),
+        (
+            [
+                pytilpack.healthcheck.make_entry("test1", sync_success_check),
+                pytilpack.healthcheck.make_entry("test2", mock_success_check),
+            ],
+            "ok",
+            2,
+            True,
+        ),
         # 失敗ケース
-        ([("test1", mock_fail_check)], "fail", 1, True),
-        ([("test1", mock_success_check), ("test2", mock_fail_check)], "fail", 2, True),
+        ([pytilpack.healthcheck.make_entry("test1", mock_fail_check)], "fail", 1, True),
+        (
+            [
+                pytilpack.healthcheck.make_entry("test1", mock_success_check),
+                pytilpack.healthcheck.make_entry("test2", mock_fail_check),
+            ],
+            "fail",
+            2,
+            True,
+        ),
         # details非出力ケース
-        ([("test1", mock_success_check)], "ok", 1, False),
+        (
+            [pytilpack.healthcheck.make_entry("test1", mock_success_check)],
+            "ok",
+            1,
+            False,
+        ),
         # 空リスト
         ([], "ok", 0, True),
     ],
