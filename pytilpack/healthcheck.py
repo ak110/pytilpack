@@ -48,7 +48,9 @@ def make_entry(
     name: str,
     func: (
         typing.Callable[P, None]
+        | typing.Callable[P, R]
         | typing.Callable[P, typing.Coroutine[typing.Any, typing.Any, None]]
+        | typing.Callable[P, typing.Coroutine[typing.Any, typing.Any, R]]
     ),
     /,
     *args: P.args,
