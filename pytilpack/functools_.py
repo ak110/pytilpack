@@ -8,10 +8,9 @@ import random
 import time
 import typing
 
+T = typing.TypeVar("T")
 P = typing.ParamSpec("P")
 R = typing.TypeVar("R")
-
-T = typing.TypeVar("T")
 
 
 def retry(

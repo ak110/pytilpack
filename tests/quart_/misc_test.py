@@ -8,6 +8,24 @@ import pytilpack.quart_
 
 
 @pytest.mark.asyncio
+async def test_run_sync():
+    """run_syncのテスト。"""
+
+    @pytilpack.quart_.run_sync
+    def sync_function(x: int, y: int) -> int:
+        """同期関数の例。"""
+        return x + y
+
+    # 非同期関数として実行
+    result = await sync_function(3, 5)
+    assert result == 8
+
+    # キーワード引数でもテスト
+    result = await sync_function(x=10, y=20)
+    assert result == 30
+
+
+@pytest.mark.asyncio
 async def test_static_url_for(tmp_path):
     """static_url_forのテスト。"""
     static_dir = tmp_path / "static"

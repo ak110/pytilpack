@@ -2,6 +2,7 @@
 
 import asyncio
 import contextlib
+import functools
 import logging
 import pathlib
 import threading
@@ -9,9 +10,13 @@ import typing
 
 import httpx
 import quart
+import quart.utils
 import uvicorn
 
 logger = logging.getLogger(__name__)
+
+P = typing.ParamSpec("P")
+R = typing.TypeVar("R")
 
 _TIMESTAMP_CACHE: dict[str, int] = {}
 """静的ファイルの最終更新日時をキャッシュするための辞書。プロセス単位でキャッシュされる。"""
@@ -61,6 +66,18 @@ def set_max_concurrency(
 
     app.before_request(_acquire)
     app.teardown_request(_release)
+
+
+def run_sync(func: typing.Callable[P, R]) -> typing.Callable[P, typing.Awaitable[R]]:
+    """quart.utils.run_syncのデコレーター。"""
+
+    @functools.wraps(func)
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        """同期関数を非同期で実行するラッパー。"""
+        result = await quart.utils.run_sync(func)(*args, **kwargs)
+        return typing.cast(R, result)
+
+    return wrapper
 
 
 def get_next_url() -> str:

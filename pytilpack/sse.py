@@ -2,7 +2,11 @@
 
 import asyncio
 import dataclasses
+import functools
 import typing
+
+P = typing.ParamSpec("P")
+R = typing.TypeVar("R")
 
 
 @dataclasses.dataclass
@@ -94,9 +98,13 @@ def generator(interval: float = 15):
     T = typing.TypeVar("T", bound=str | SSE)
 
     def decorator(
-        func: typing.Callable[..., typing.AsyncIterator[T]],
-    ) -> typing.Callable[..., typing.AsyncIterator[str]]:
-        async def wrapper(*args, **kwargs) -> typing.AsyncIterator[str]:
+        func: typing.Callable[P, typing.AsyncIterator[T]],
+    ) -> typing.Callable[P, typing.AsyncIterator[str]]:
+
+        @functools.wraps(func)
+        async def wrapper(
+            *args: P.args, **kwargs: P.kwargs
+        ) -> typing.AsyncIterator[str]:
             loop = asyncio.get_running_loop()
             last_msg_time = loop.time()
             it: typing.AsyncIterator[T] = aiter(func(*args, **kwargs))
