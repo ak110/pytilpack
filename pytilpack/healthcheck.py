@@ -129,7 +129,7 @@ async def run(
             return name, {
                 "status": "fail",
                 "response_time_ms": int(elapsed),
-                "error": str(e),
+                "error": repr(e),
             }
 
     tasks = [run_check(name, func) for name, func in checks]
