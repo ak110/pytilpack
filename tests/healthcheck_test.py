@@ -159,7 +159,7 @@ async def test_run_error_handling() -> None:
     assert "error" not in success_detail
 
     assert fail_detail["status"] == "fail"
-    assert fail_detail["error"] == "ValueError('テストエラー')"
+    assert fail_detail["error"] == "ValueError: テストエラー"
 
 
 @pytest.mark.asyncio
