@@ -70,7 +70,7 @@ def retry(
                         "%s: %s (retry %d/%d)",
                         func.__name__,
                         e,
-                        retry_count + 1,
+                        retry_count,
                         max_retries,
                     )
                     time.sleep(delay * random.uniform(1.0, 1.0 + max_jitter))
@@ -137,7 +137,7 @@ def aretry(
                         "%s: %s (retry %d/%d)",
                         func.__name__,
                         e,
-                        retry_count + 1,
+                        retry_count,
                         max_retries,
                     )
                     await asyncio.sleep(delay * random.uniform(1.0, 1.0 + max_jitter))
