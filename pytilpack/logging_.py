@@ -69,7 +69,6 @@ def timer(name, logger: logging.Logger | None = None):
 def exception_with_dedup(
     logger: logging.Logger,
     exc: BaseException,
-    *,
     msg: str = "Unhandled exception occurred",
     dedup_window: datetime.timedelta | None = None,
     now: datetime.datetime | None = None,
