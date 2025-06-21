@@ -1,10 +1,15 @@
 """Quart-Auth関連のユーティリティ。"""
 
+import functools
+import inspect
 import logging
 import typing
 
 import quart
 import quart_auth
+
+P = typing.ParamSpec("P")
+R = typing.TypeVar("R")
 
 logger = logging.getLogger(__name__)
 
@@ -135,3 +140,33 @@ def current_user() -> UserMixin:
     )
     assert extension is not None
     return extension.current_user
+
+
+def is_admin(attr_name: str = "is_admin") -> bool:
+    """現在のユーザーが認証済みかつ管理者であるか否かを取得する。
+
+    Args:
+        attr_name: 管理者かどうかを判定する属性名。デフォルトは "is_admin"。
+    """
+    return is_authenticated() and getattr(current_user(), attr_name)
+
+
+def admin_only(func: typing.Callable[P, R]) -> typing.Callable[P, R]:
+    """管理者のみアクセス可能なルートを定義するデコレータ。"""
+    if inspect.iscoroutinefunction(func):
+
+        @functools.wraps(func)
+        async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            if not is_admin():
+                quart.abort(403)
+            return await func(*args, **kwargs)
+
+        return async_wrapper  # type: ignore[return-value]
+
+    @functools.wraps(func)
+    def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        if not is_admin():
+            quart.abort(403)
+        return func(*args, **kwargs)
+
+    return sync_wrapper

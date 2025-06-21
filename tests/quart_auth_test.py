@@ -13,8 +13,9 @@ import pytilpack.quart_auth_
 class User(pytilpack.quart_auth_.UserMixin):
     """テスト用ユーザーモデル。"""
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, is_admin: bool = False) -> None:
         self.name = name
+        self.is_admin = is_admin
 
 
 @pytest.fixture(name="app", scope="module")
@@ -28,7 +29,7 @@ def _app() -> quart.Quart:
     auth_manager.init_app(app)
 
     # ユーザーローダーの設定
-    users = {"user1": User("test user")}
+    users = {"user1": User("test user"), "admin1": User("admin user", is_admin=True)}
 
     @auth_manager.user_loader
     def load_user(user_id: str) -> User | None:
@@ -63,6 +64,22 @@ def _app() -> quart.Quart:
         return await quart.render_template_string(
             "User: {{ current_user.name if current_user.is_authenticated else '<anonymous>' }}"
         )
+
+    @app.route("/admin")
+    @pytilpack.quart_auth_.admin_only
+    async def admin():
+        return "admin page"
+
+    @app.route("/admin-sync")
+    @pytilpack.quart_auth_.admin_only
+    def admin_sync():
+        return "admin sync page"
+
+    @app.route("/login_admin")
+    async def login_admin():
+        # 管理者ログイン処理
+        pytilpack.quart_auth_.login_user("admin1")
+        return "admin logged in"
 
     return app
 
@@ -151,3 +168,65 @@ async def test_logout(client: quart.typing.TestClientProtocol) -> None:
         response = await client.get("/user")
         text = await response.get_data(as_text=True)
         assert text == "User: &lt;anonymous&gt;"
+
+
+@pytest.mark.asyncio
+async def test_admin_only(client: quart.typing.TestClientProtocol) -> None:
+    # 未認証状態でadmin_onlyデコレータ付きの非同期関数にアクセスすると403エラー。
+    response = await client.get("/admin")
+    assert response.status_code == 403
+
+    # 未認証状態でadmin_onlyデコレータ付きの同期関数にアクセスすると403エラー。
+    response = await client.get("/admin-sync")
+    assert response.status_code == 403
+
+    # 一般ユーザーでadmin_onlyデコレータ付きの非同期関数にアクセスすると403エラー。
+    async with client.session_transaction():
+        # 一般ユーザーでログイン
+        response = await client.get("/login")
+        assert response.status_code == 200
+
+        # 管理者専用ページにアクセス
+        response = await client.get("/admin")
+        assert response.status_code == 403
+
+        # 管理者専用ページにアクセス
+        response = await client.get("/admin-sync")
+        assert response.status_code == 403
+
+    # 管理者ユーザーでadmin_onlyデコレータ付きの非同期関数にアクセスできる。
+    async with client.session_transaction():
+        # 管理者ユーザーでログイン
+        response = await client.get("/login_admin")
+        assert response.status_code == 200
+        assert await response.get_data(as_text=True) == "admin logged in"
+
+        # 管理者専用ページにアクセス
+        response = await client.get("/admin")
+        assert response.status_code == 200
+        assert await response.get_data(as_text=True) == "admin page"
+
+        # 管理者専用ページにアクセス
+        response = await client.get("/admin-sync")
+        assert response.status_code == 200
+        assert await response.get_data(as_text=True) == "admin sync page"
+
+    # admin_onlyデコレータが関数のメタデータを保持することをテスト。
+
+    @pytilpack.quart_auth_.admin_only
+    async def test_async_function() -> str:
+        """非同期テスト関数。"""
+        return "test"
+
+    @pytilpack.quart_auth_.admin_only
+    def test_sync_function() -> str:
+        """同期テスト関数。"""
+        return "test"
+
+    # 非同期関数のメタデータ確認
+    assert test_async_function.__name__ == "test_async_function"
+    assert test_async_function.__doc__ == "非同期テスト関数。"
+
+    # 同期関数のメタデータ確認
+    assert test_sync_function.__name__ == "test_sync_function"
+    assert test_sync_function.__doc__ == "同期テスト関数。"
