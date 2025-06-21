@@ -32,7 +32,7 @@ class HealthCheckDetail(typing.TypedDict):
 
     status: typing.Literal["ok", "fail"]
     response_time_ms: float
-    error: str | None
+    error: typing.NotRequired[str]
 
 
 class HealthCheckResult(typing.TypedDict):
@@ -116,12 +116,9 @@ async def run(
         try:
             await func()
             elapsed = (time.perf_counter() - start) * 1000
-            return name, {
-                "status": "ok",
-                "response_time_ms": int(elapsed),
-                "error": None,
-            }
+            return name, {"status": "ok", "response_time_ms": int(elapsed)}
         except Exception as e:
+            elapsed = (time.perf_counter() - start) * 1000
             pytilpack.logging_.exception_with_dedup(
                 logger,
                 e,
@@ -129,7 +126,6 @@ async def run(
                 dedup_window=dedup_window,
                 now=now,
             )
-            elapsed = (time.perf_counter() - start) * 1000
             return name, {
                 "status": "fail",
                 "response_time_ms": int(elapsed),
