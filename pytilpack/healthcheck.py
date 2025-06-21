@@ -14,6 +14,9 @@ CheckerType = typing.Callable[[], typing.Coroutine[typing.Any, typing.Any, None]
 CheckerEntry = tuple[str, CheckerType]
 """ヘルスチェックの名前と関数を持つタプル。"""
 
+CheckerEntries = list[CheckerEntry]
+"""ヘルスチェックの名前と関数のリスト。"""
+
 startup_time = datetime.datetime.now()
 """アプリケーションの起動時間を記録する変数。ヘルスチェックの uptime に使用される。"""
 
@@ -38,7 +41,7 @@ class HealthCheckResult(typing.TypedDict):
 
 
 async def run(
-    checks: list[CheckerEntry],
+    checks: CheckerEntries,
     output_details: bool = True,
     dedup_window: datetime.timedelta | None = None,
     now: datetime.datetime | None = None,
