@@ -12,7 +12,7 @@ import pytilpack.logging_
 P = typing.ParamSpec("P")
 R = typing.TypeVar("R")
 
-CheckerType = typing.Callable[[], typing.Coroutine[typing.Any, typing.Any, None]]
+CheckerType = typing.Callable[[], typing.Awaitable[None]]
 """ヘルスチェック関数の型。"""
 
 CheckerEntry = tuple[str, CheckerType]
@@ -49,8 +49,8 @@ def make_entry(
     func: (
         typing.Callable[P, None]
         | typing.Callable[P, R]
-        | typing.Callable[P, typing.Coroutine[typing.Any, typing.Any, None]]
-        | typing.Callable[P, typing.Coroutine[typing.Any, typing.Any, R]]
+        | typing.Callable[P, typing.Awaitable[None]]
+        | typing.Callable[P, typing.Awaitable[R]]
     ),
     /,
     *args: P.args,

@@ -121,7 +121,10 @@ async def test_run(
 @pytest.mark.asyncio
 async def test_run_with_duplicate_names() -> None:
     """重複した名前のチェックでAssertionErrorが発生することをテスト。"""
-    checks = [("duplicate", mock_success_check), ("duplicate", mock_success_check)]
+    checks = [
+        pytilpack.healthcheck.make_entry("duplicate", mock_success_check),
+        pytilpack.healthcheck.make_entry("duplicate", mock_success_check),
+    ]
 
     with pytest.raises(AssertionError, match="名前の重複"):
         await pytilpack.healthcheck.run(checks)
@@ -130,7 +133,10 @@ async def test_run_with_duplicate_names() -> None:
 @pytest.mark.asyncio
 async def test_run_response_time() -> None:
     """レスポンス時間が正しく測定されることをテスト。"""
-    checks = [("slow", mock_slow_check), ("fast", mock_success_check)]
+    checks = [
+        pytilpack.healthcheck.make_entry("slow", mock_slow_check),
+        pytilpack.healthcheck.make_entry("fast", mock_success_check),
+    ]
 
     result = await pytilpack.healthcheck.run(checks)
 
@@ -146,7 +152,10 @@ async def test_run_response_time() -> None:
 @pytest.mark.asyncio
 async def test_run_error_handling() -> None:
     """エラーハンドリングのテスト。"""
-    checks = [("success", mock_success_check), ("fail", mock_fail_check)]
+    checks = [
+        pytilpack.healthcheck.make_entry("success", mock_success_check),
+        pytilpack.healthcheck.make_entry("fail", mock_fail_check),
+    ]
 
     result = await pytilpack.healthcheck.run(checks)
 
