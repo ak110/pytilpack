@@ -2,6 +2,7 @@
 
 import dataclasses
 import pathlib
+import types
 import typing
 
 import pytilpack.json_
@@ -95,3 +96,68 @@ def tojson(
         separators=separators,
         sort_keys=sort_keys,
     )
+
+
+def validate(instance: "TDataClass") -> None:
+    """dataclassインスタンスのフィールド型を簡易チェックする。
+
+    Raises:
+        TypeError: 型不一致、またはdataclassでない場合。
+    """
+    if not dataclasses.is_dataclass(instance):
+        raise TypeError(f"{instance!r} is not a dataclass instance")
+
+    hints = typing.get_type_hints(instance.__class__)
+    for field in dataclasses.fields(instance):
+        expected = hints.get(field.name, typing.Any)
+        actual = getattr(instance, field.name)
+        if not _is_instance(actual, expected):
+            raise TypeError(
+                f"フィールド {field.name} は、型 {expected} を期待しますが、"
+                f"{type(actual)} の値が設定されています。(値:{actual!r})"
+            )
+
+
+def _is_instance(value: typing.Any, expected_type: type) -> bool:
+    """Recursively check whether *value* conforms to *expected_type*.
+
+    Args:
+        value: 実際の値。
+        expected_type: アノテーションで指定された型。
+
+    Returns:
+        bool: 型が一致すればTrue、合致しなければFalse。
+    """
+    origin = typing.get_origin(expected_type)
+
+    # 組み込み型やユーザー定義クラス
+    if origin is None:
+        return isinstance(value, expected_type)
+
+    args = typing.get_args(expected_type)
+
+    # Optional[X] / Union[X, Y, ...]
+    if origin is typing.Union or origin is types.UnionType:
+        return any(_is_instance(value, arg) for arg in args)
+
+    # list[X], set[X], tuple[X, ...]
+    if origin in {list, set, tuple}:
+        if not isinstance(value, origin):
+            return False
+        if not args:  # list[Any] のように引数が無い場合
+            return True
+        elem_type = args[0]
+        return all(_is_instance(elem, elem_type) for elem in value)
+
+    # dict[K, V]
+    if origin is dict:
+        if not isinstance(value, dict):
+            return False
+        key_type, val_type = args
+        return all(
+            _is_instance(k, key_type) and _is_instance(v, val_type)
+            for k, v in value.items()
+        )
+
+    # それ以外 (例: TypedDict, NewType 等) は簡易的にoriginで判定
+    return isinstance(value, origin)
