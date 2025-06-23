@@ -1,58 +1,134 @@
 """typing関連のユーティリティ。"""
 
+import dataclasses
 import types
 import typing
 
 
-def is_instance(value: typing.Any, expected_type: typing.Any) -> bool:
+def is_instance_safe(
+    value: typing.Any, expected_type: typing.Any, path: str = ""
+) -> bool:
+    """型チェックを行い、エラーの場合はFalseを返す。
+
+    Args:
+        value: 実際の値。
+        expected_type: アノテーションで指定された型。
+        path: エラー位置を示すパス（xxx.yyy形式）。
+
+    Returns:
+        bool: 型が一致すればTrue、合致しなければFalse。
+    """
+    try:
+        return is_instance(value, expected_type, path)
+    except TypeError:
+        return False
+
+
+def is_instance(value: typing.Any, expected_type: typing.Any, path: str = "") -> bool:
     """Recursively check whether *value* conforms to *expected_type*.
 
     Args:
         value: 実際の値。
         expected_type: アノテーションで指定された型。
+        path: エラー位置を示すパス（xxx.yyy形式）。
 
     Returns:
         bool: 型が一致すればTrue、合致しなければFalse。
+
+    Raises:
+        TypeError: 型が一致しない場合、詳細なエラー位置を含む。
     """
 
     # NewType の場合は、__supertype__ を確認
     if hasattr(expected_type, "__supertype__"):
-        return is_instance(value, expected_type.__supertype__)
+        return is_instance(value, expected_type.__supertype__, path)
 
     origin = typing.get_origin(expected_type)
 
     # 組み込み型やユーザー定義クラス
     if origin is None:
-        return isinstance(value, expected_type)
+        # dataclassの場合は再帰的にチェック
+        if dataclasses.is_dataclass(expected_type):
+            if not isinstance(value, expected_type):  # type: ignore[arg-type]
+                _raise_type_error(value, expected_type, path)
+            # dataclassのフィールドを再帰的にチェック
+            hints = typing.get_type_hints(expected_type)
+            for field in dataclasses.fields(expected_type):
+                field_value = getattr(value, field.name)
+                field_type = hints.get(field.name, typing.Any)
+                field_path = f"{path}.{field.name}" if path else field.name
+                if not is_instance(field_value, field_type, field_path):
+                    return False
+            return True
+        else:
+            if not isinstance(value, expected_type):
+                _raise_type_error(value, expected_type, path)
+            return True
 
     args = typing.get_args(expected_type)
 
     # Optional[X] / Union[X, Y, ...]
     if origin is typing.Union or origin is types.UnionType:
-        return any(is_instance(value, arg) for arg in args)
+        for arg in args:
+            try:
+                if is_instance(value, arg, path):
+                    return True
+            except TypeError:
+                continue
+        _raise_type_error(value, expected_type, path)
+        return False
 
     # list[X], set[X], tuple[X, ...]
     if origin in {list, set, tuple}:
         if not isinstance(value, origin):
-            return False
+            _raise_type_error(value, expected_type, path)
         if not args:  # list[Any] のように引数が無い場合
             return True
         elem_type = args[0]
-        return all(is_instance(elem, elem_type) for elem in value)
+        for i, elem in enumerate(value):
+            elem_path = f"{path}[{i}]" if path else f"[{i}]"
+            if not is_instance(elem, elem_type, elem_path):
+                return False
+        return True
 
     # dict[K, V]
     if origin is dict:
         if not isinstance(value, dict):
-            return False
+            _raise_type_error(value, expected_type, path)
         key_type, val_type = args
-        return all(
-            is_instance(k, key_type) and is_instance(v, val_type)
-            for k, v in value.items()
-        )
+        for k, v in value.items():
+            key_path = f"{path}[{k!r}]" if path else f"[{k!r}]"
+            if not is_instance(k, key_type, f"{path}.<key>" if path else "<key>"):
+                return False
+            if not is_instance(v, val_type, key_path):
+                return False
+        return True
 
     # Literal[values...]
     if origin is typing.Literal:
-        return value in args
+        if value not in args:
+            _raise_type_error(value, expected_type, path)
+        return True
 
     # それ以外 (例: TypedDict, NewType 等) は簡易的にoriginで判定
-    return isinstance(value, origin)
+    if not isinstance(value, origin):
+        _raise_type_error(value, expected_type, path)
+    return True
+
+
+def _raise_type_error(value: typing.Any, expected_type: typing.Any, path: str) -> None:
+    """型エラーを発生させる。
+
+    Args:
+        value: 実際の値。
+        expected_type: 期待される型。
+        path: エラー位置を示すパス。
+
+    Raises:
+        TypeError: 詳細なエラー情報を含む型エラー。
+    """
+    location = f"位置 {path}: " if path else ""
+    raise TypeError(
+        f"{location}型 {expected_type} を期待しますが、"
+        f"{type(value)} の値が設定されています。(値:{value!r})"
+    )

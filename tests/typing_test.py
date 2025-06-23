@@ -60,7 +60,7 @@ import pytilpack.typing_
 )
 def test_is_instance(value: typing.Any, expected_type: type, expected: bool) -> None:
     """is_instanceのテスト。"""
-    actual = pytilpack.typing_.is_instance(value, expected_type)
+    actual = pytilpack.typing_.is_instance_safe(value, expected_type)
     assert actual == expected
 
 
@@ -69,8 +69,8 @@ def test_newtype() -> None:
     UserId = typing.NewType("UserId", int)
 
     # NewTypeは基本型として扱われる
-    assert pytilpack.typing_.is_instance(123, UserId) is True
-    assert pytilpack.typing_.is_instance("hello", UserId) is False
+    assert pytilpack.typing_.is_instance_safe(123, UserId) is True
+    assert pytilpack.typing_.is_instance_safe("hello", UserId) is False
 
 
 def test_union_type() -> None:
@@ -78,37 +78,97 @@ def test_union_type() -> None:
     # Python 3.10+のUnionType
     union_type = int | str
 
-    assert pytilpack.typing_.is_instance(123, union_type) is True
-    assert pytilpack.typing_.is_instance("hello", union_type) is True
-    assert pytilpack.typing_.is_instance(1.0, union_type) is False
+    assert pytilpack.typing_.is_instance_safe(123, union_type) is True
+    assert pytilpack.typing_.is_instance_safe("hello", union_type) is True
+    assert pytilpack.typing_.is_instance_safe(1.0, union_type) is False
 
 
 def test_literal() -> None:
     """Literalのテスト。"""
     # 文字列リテラル
     literal_str = typing.Literal["red", "green", "blue"]
-    assert pytilpack.typing_.is_instance("red", literal_str) is True
-    assert pytilpack.typing_.is_instance("green", literal_str) is True
-    assert pytilpack.typing_.is_instance("blue", literal_str) is True
-    assert pytilpack.typing_.is_instance("yellow", literal_str) is False
+    assert pytilpack.typing_.is_instance_safe("red", literal_str) is True
+    assert pytilpack.typing_.is_instance_safe("green", literal_str) is True
+    assert pytilpack.typing_.is_instance_safe("blue", literal_str) is True
+    assert pytilpack.typing_.is_instance_safe("yellow", literal_str) is False
 
     # 数値リテラル
     literal_int = typing.Literal[1, 2, 3]
-    assert pytilpack.typing_.is_instance(1, literal_int) is True
-    assert pytilpack.typing_.is_instance(2, literal_int) is True
-    assert pytilpack.typing_.is_instance(3, literal_int) is True
-    assert pytilpack.typing_.is_instance(4, literal_int) is False
+    assert pytilpack.typing_.is_instance_safe(1, literal_int) is True
+    assert pytilpack.typing_.is_instance_safe(2, literal_int) is True
+    assert pytilpack.typing_.is_instance_safe(3, literal_int) is True
+    assert pytilpack.typing_.is_instance_safe(4, literal_int) is False
 
     # 混合リテラル
     literal_mixed = typing.Literal["active", "inactive", 0, 1]
-    assert pytilpack.typing_.is_instance("active", literal_mixed) is True
-    assert pytilpack.typing_.is_instance("inactive", literal_mixed) is True
-    assert pytilpack.typing_.is_instance(0, literal_mixed) is True
-    assert pytilpack.typing_.is_instance(1, literal_mixed) is True
-    assert pytilpack.typing_.is_instance("pending", literal_mixed) is False
-    assert pytilpack.typing_.is_instance(2, literal_mixed) is False
+    assert pytilpack.typing_.is_instance_safe("active", literal_mixed) is True
+    assert pytilpack.typing_.is_instance_safe("inactive", literal_mixed) is True
+    assert pytilpack.typing_.is_instance_safe(0, literal_mixed) is True
+    assert pytilpack.typing_.is_instance_safe(1, literal_mixed) is True
+    assert pytilpack.typing_.is_instance_safe("pending", literal_mixed) is False
+    assert pytilpack.typing_.is_instance_safe(2, literal_mixed) is False
 
     # ブールリテラル
     literal_bool = typing.Literal[True, False]
-    assert pytilpack.typing_.is_instance(True, literal_bool) is True
-    assert pytilpack.typing_.is_instance(False, literal_bool) is True
+    assert pytilpack.typing_.is_instance_safe(True, literal_bool) is True
+    assert pytilpack.typing_.is_instance_safe(False, literal_bool) is True
+
+
+def test_dataclass() -> None:
+    """dataclassのテスト。"""
+    import dataclasses
+
+    @dataclasses.dataclass
+    class Person:
+        """テスト用データクラス。"""
+
+        name: str
+        age: int
+        tags: list[str]
+
+    @dataclasses.dataclass
+    class Company:
+        """テスト用データクラス。"""
+
+        name: str
+        employees: list[Person]
+
+    # 正常ケース
+    person = Person("Alice", 30, ["developer", "python"])
+    assert pytilpack.typing_.is_instance_safe(person, Person) is True
+
+    company = Company("Tech Corp", [person])
+    assert pytilpack.typing_.is_instance_safe(company, Company) is True
+
+    # 型不一致ケース（is_instance_safeを使用）
+    invalid_person = Person("Bob", "not_int", ["tag"])  # type: ignore[arg-type]
+    assert pytilpack.typing_.is_instance_safe(invalid_person, Person) is False
+
+    # エラー位置のテスト（is_instanceを使用）
+    with pytest.raises(TypeError, match=r"位置 age:.*int.*str"):
+        pytilpack.typing_.is_instance(invalid_person, Person)
+
+    # ネストしたdataclassのエラー位置テスト
+    invalid_company = Company("Bad Corp", [invalid_person])
+    with pytest.raises(TypeError, match=r"位置 employees\[0\]\.age:.*int.*str"):
+        pytilpack.typing_.is_instance(invalid_company, Company)
+
+
+def test_error_path() -> None:
+    """エラーパスのテスト。"""
+    # リストのエラー
+    with pytest.raises(TypeError, match=r"位置 \[1\]:.*int.*str"):
+        pytilpack.typing_.is_instance([1, "hello", 3], list[int])
+
+    # 辞書のエラー
+    with pytest.raises(TypeError, match=r"位置 \['key2'\]:.*int.*str"):
+        pytilpack.typing_.is_instance({"key1": 1, "key2": "hello"}, dict[str, int])
+
+    # ネストしたリストのエラー
+    with pytest.raises(TypeError, match=r"位置 \[1\]\[0\]:.*int.*str"):
+        pytilpack.typing_.is_instance([[1, 2], ["hello", 4]], list[list[int]])
+
+    # 複雑なネストのエラー
+    data = {"items": [[1, 2], [3, "invalid"]]}
+    with pytest.raises(TypeError, match=r"位置 \['items'\]\[1\]\[1\]:.*int.*str"):
+        pytilpack.typing_.is_instance(data, dict[str, list[list[int]]])

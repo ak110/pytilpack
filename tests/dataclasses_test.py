@@ -69,7 +69,7 @@ def test_validate() -> None:
     user_bad = User(id="oops", name="Taro")  # type: ignore[arg-type]
     with pytest.raises(
         TypeError,
-        match="フィールド id は、型 <class 'int'> を期待しますが、<class 'str'> の値が設定されています。",
+        match=r"位置 id: 型 <class 'int'> を期待しますが、<class 'str'> の値が設定されています。",
     ):
         pytilpack.dataclasses_.validate(user_bad)
 
@@ -90,5 +90,5 @@ def test_validate_newtype() -> None:
 
     # 型不一致のケース
     user_bad = UserWithNewType(id="oops", name="Taro")  # type: ignore[arg-type]
-    with pytest.raises(TypeError, match="フィールド id は、型"):
+    with pytest.raises(TypeError, match=r"位置 id: 型.*int.*str"):
         pytilpack.dataclasses_.validate(user_bad)

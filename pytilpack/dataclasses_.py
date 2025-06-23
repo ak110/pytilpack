@@ -99,20 +99,12 @@ def tojson(
 
 
 def validate(instance: "TDataClass") -> None:
-    """dataclassインスタンスのフィールド型を簡易チェックする。
+    """dataclassインスタンスのフィールド型を詳細チェックする。
 
     Raises:
-        TypeError: 型不一致、またはdataclassでない場合。
+        TypeError: 型不一致、またはdataclassでない場合。詳細なエラー位置を含む。
     """
     if not dataclasses.is_dataclass(instance):
         raise TypeError(f"{instance!r} is not a dataclass instance")
 
-    hints = typing.get_type_hints(instance.__class__)
-    for field in dataclasses.fields(instance):
-        expected = hints.get(field.name, typing.Any)
-        actual = getattr(instance, field.name)
-        if not pytilpack.typing_.is_instance(actual, expected):
-            raise TypeError(
-                f"フィールド {field.name} は、型 {expected} を期待しますが、"
-                f"{type(actual)} の値が設定されています。(値:{actual!r})"
-            )
+    pytilpack.typing_.is_instance(instance, instance.__class__)
