@@ -24,6 +24,11 @@ repos:
       - id: trailing-whitespace
         exclude: ^tests/data/
 
+  - repo: https://github.com/ninoseki/uv-sort
+    rev: v0.6.0
+    hooks:
+      - id: uv-sort
+
   - repo: local
     hooks:
       - id: system
