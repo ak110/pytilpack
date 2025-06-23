@@ -2,6 +2,7 @@
 
 import dataclasses
 import pathlib
+import typing
 
 import pytest
 
@@ -23,6 +24,11 @@ class Nested:
     a: A
 
 
+# NewType for testing
+StrType = typing.NewType("StrType", str)
+IntType = typing.NewType("IntType", int)
+
+
 @dataclasses.dataclass
 class User:
     """テスト用。"""
@@ -31,6 +37,14 @@ class User:
     name: str
     tags: list[str] | None = None
     home: pathlib.Path | None = None
+
+
+@dataclasses.dataclass
+class UserWithNewType:
+    """NewType用テスト。"""
+
+    id: IntType
+    name: StrType
 
 
 def test_asdict() -> None:
@@ -62,3 +76,19 @@ def test_validate() -> None:
     # dataclassでないケースのテスト
     with pytest.raises(TypeError, match="is not a dataclass instance"):
         pytilpack.dataclasses_.validate("not a dataclass")  # type: ignore[type-var]
+
+
+def test_validate_newtype() -> None:
+    """NewTypeに対するvalidateのテスト。"""
+    # 正常なケース - NewTypeは基底型と同じ値で通る
+    user = UserWithNewType(id=IntType(1), name=StrType("Taro"))
+    pytilpack.dataclasses_.validate(user)  # 例外は発生しない
+
+    # 基底型の値でも通る（NewTypeは実行時には基底型と同じ）
+    user2 = UserWithNewType(id=1, name="Taro")  # type: ignore[arg-type]
+    pytilpack.dataclasses_.validate(user2)  # 例外は発生しない
+
+    # 型不一致のケース
+    user_bad = UserWithNewType(id="oops", name="Taro")  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="フィールド id は、型"):
+        pytilpack.dataclasses_.validate(user_bad)

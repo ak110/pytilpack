@@ -67,6 +67,7 @@ import pytilpack.xxx
 - [pytilpack.threadinga_](pytilpack/threadinga_.py)  # asyncio版
 - [pytilpack.tiktoken_](pytilpack/tiktoken_.py)
 - [pytilpack.tqdm_](pytilpack/tqdm_.py)
+- [pytilpack.typing_](pytilpack/typing_.py)
 - [pytilpack.yaml_](pytilpack/yaml_.py)
 
 ### その他のユーティリティのモジュール一覧
