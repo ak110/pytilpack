@@ -29,7 +29,11 @@ async def async_func():
 
 
 @pytest.mark.asyncio(loop_scope="function")
-def test_run():
+async def test_run():
+    await asyncio.to_thread(_sync_test_run)
+
+
+def _sync_test_run():
     for _ in range(3):
         assert pytilpack.asyncio_.run(async_func()) == "Done"
 
