@@ -47,6 +47,9 @@ def is_instance(value: typing.Any, expected_type: typing.Any, path: str = "") ->
 
     # 組み込み型やユーザー定義クラス
     if origin is None:
+        # typing.Anyの場合は常にTrue
+        if expected_type is typing.Any:
+            return True
         # dataclassの場合は再帰的にチェック
         if dataclasses.is_dataclass(expected_type):
             if not isinstance(value, expected_type):  # type: ignore[arg-type]
