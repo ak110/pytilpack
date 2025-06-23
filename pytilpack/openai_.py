@@ -230,22 +230,26 @@ def _equals_all_get(
 ) -> T | None:
     """すべての要素が等しいかどうかを確認しつつ最後の要素を返す。"""
     values = list(values)
-    unique_values = set(values)
+    # 空文字列や空の値を除外
+    non_empty_values = [v for v in values if v != "" and v is not None]
+    unique_values = set(non_empty_values)
     if len(unique_values) == 0:
         return default_value
     if len(unique_values) > 1:
         _warn(strict, f"{name}に複数の値が含まれています。{unique_values=}")
-    return values[-1]
+    return non_empty_values[-1]
 
 
 def _get_single(strict: bool, name: str, values: typing.Iterable[T]) -> T | None:
     """リストの要素が1つだけであることを確認して取得する。"""
     values = list(values)
-    if len(values) == 0:
+    # 空文字列や空の値を除外
+    non_empty_values = [v for v in values if v != "" and v is not None]
+    if len(non_empty_values) == 0:
         return None
-    if len(values) > 1:
+    if len(non_empty_values) > 1:
         _warn(strict, f"{name}に複数の値が含まれています。{values=}")
-    return values[0]
+    return non_empty_values[0]
 
 
 def _warn(strict: bool, message: str) -> None:
