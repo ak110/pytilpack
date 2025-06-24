@@ -22,7 +22,7 @@ class Paginator(typing.Generic[T]):
                 <li class="page-item{% if not paginator.has_prev %} disabled{% endif %}">
                     <a class="page-link" href="{{ url_for(endpoint, page=paginator.prev_num, **kwargs) }}">&lt;</a>
                 </li>
-                {% for page in data.iter_pages() %}
+                {% for page in paginator.iter_pages() %}
                     {% if page is none %}
                         <li class="page-item disabled">...</li>
                     {% else %}
@@ -32,7 +32,7 @@ class Paginator(typing.Generic[T]):
                     {% endif %}
                 {% endfor %}
                 <li class="page-item{% if not paginator.has_next %} disabled{% endif %}">
-                    <a class="page-link" href="{{ url_for(endpoint, page=paginator.next_num) }}">&gt;</a>
+                    <a class="page-link" href="{{ url_for(endpoint, page=paginator.next_num, **kwargs) }}">&gt;</a>
                 </li>
             </ul>
         </nav>
@@ -79,7 +79,6 @@ class Paginator(typing.Generic[T]):
         """次ページ"""
         return self.page + 1
 
-    @property
     def next(self) -> typing.Self:
         """次ページのPaginatorオブジェクト。"""
         if not self.has_next:
@@ -91,7 +90,6 @@ class Paginator(typing.Generic[T]):
             total=self.total_items,
         )
 
-    @property
     def prev(self) -> typing.Self:
         """前ページのPaginatorオブジェクト。"""
         if not self.has_prev:
