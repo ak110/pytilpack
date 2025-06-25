@@ -1,10 +1,11 @@
 """HtmlRAG関連。
 
 clean_htmlだけを使用したい場合に依存関係が色々厳しいため切り出したものを用意しちゃう。
+ついでに少し独自拡張。
 
 <https://github.com/plageon/HtmlRAG/blob/main/toolkit/README.md>
+<https://github.com/plageon/HtmlRAG/blob/main/toolkit/LICENSE>
 <https://github.com/plageon/HtmlRAG/blob/main/toolkit/htmlrag/html_utils.py>
-
 """
 
 import re
