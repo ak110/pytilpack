@@ -13,7 +13,7 @@ def test_tqdm_stream_handler(capsys):
     logger.addHandler(pytilpack.tqdm.TqdmStreamHandler())
     try:
         logger.handlers[-1].setFormatter(
-            logging.Formatter("[%(levelname)s] %(message)s")
+            logging.Formatter("[%(levelname)-5s] %(message)s")
         )
 
         logger.debug("debug")
@@ -24,7 +24,7 @@ def test_tqdm_stream_handler(capsys):
 
         assert (
             capsys.readouterr().err
-            == "[INFO] info\n[WARNING] warning\n[ERROR] error\n[CRITICAL] critical\n"
+            == "[INFO ] info\n[WARNING] warning\n[ERROR] error\n[CRITICAL] critical\n"
         )
     finally:
         logger.removeHandler(pytilpack.tqdm.TqdmStreamHandler())

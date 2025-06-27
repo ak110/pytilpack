@@ -117,6 +117,12 @@ dev = [
     "uv-sort>=0.6.0",
 ]
 
+[project.scripts]
+pytilpack-delete_empty_dirs = "pytilpack.cli.delete_empty_dirs:main"
+pytilpack-delete_old_files = "pytilpack.cli.delete_old_files:main"
+pytilpack-sync = "pytilpack.cli.sync:main"
+pytilpack-fetch = "pytilpack.cli.fetch:main"
+
 [tool.uv]
 default-groups = ["dev"]
 

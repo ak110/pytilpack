@@ -76,7 +76,7 @@ async def test_fetch_with_verbose(mock_server: tuple[str, int]) -> None:
 
     assert result.returncode == 0
     assert "Verbose Test" in result.stdout
-    assert "[INFO]" in result.stderr
+    assert "[INFO ]" in result.stderr
 
 
 def test_fetch_non_existent_url() -> None:

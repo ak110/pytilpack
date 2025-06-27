@@ -17,7 +17,7 @@ class TqdmStreamHandler(logging.StreamHandler):
 
         logging.basicConfig(
             level=logging.INFO,
-            format="[%(levelname)s] %(message)s",
+            format="[%(levelname)-5s] %(message)s",
             handlers=[pytilpack.tqdm_.TqdmStreamHandler()],
         )
 

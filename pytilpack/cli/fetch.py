@@ -29,16 +29,16 @@ def main() -> None:
 
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
-        format="[%(levelname)s] %(message)s",
+        format="[%(levelname)-5s] %(message)s",
     )
 
     r = httpx.get(args.url, verify=not args.no_verify, follow_redirects=True)
     if r.status_code != 200:
-        logger.error(f"URL {args.url} の取得に失敗しました: {r.status_code}")
+        logger.error(f"URL {args.url} の取得に失敗しました。\n{r.text}")
         return
 
     if "html" not in r.headers.get("Content-Type", "text/html"):
-        logger.error(f"URL {args.url} はHTMLではありません。")
+        logger.error(f"URL {args.url} はHTMLではありません。\n{r.text[:100]}...")
         return
 
     content = r.text

@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.12,<4.0"
-# dependencies = []
+# dependencies = ["pytilpack"]
 # ///
 """空のディレクトリを削除するCLIユーティリティ。"""
 
@@ -27,7 +27,7 @@ def main() -> None:
 
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
-        format="[%(levelname)s] %(message)s",
+        format="[%(levelname)-5s] %(message)s",
     )
 
     pytilpack.pathlib.delete_empty_dirs(args.path, keep_root=args.keep_root)
