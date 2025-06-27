@@ -161,7 +161,7 @@ warn_unused_configs = true
 show_error_codes = true
 
 [tool.pytest.ini_options]
-addopts = "--showlocals -p no:cacheprovider --durations=5 -vv"
+addopts = "--showlocals -p no:cacheprovider --durations=5"
 filterwarnings = [
     "ignore:Secure cookies will be ignored on insecure requests:UserWarning",
 ]
