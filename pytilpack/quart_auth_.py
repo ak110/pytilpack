@@ -156,7 +156,7 @@ def admin_only(func: typing.Callable[P, R]) -> typing.Callable[P, R]:
     if inspect.iscoroutinefunction(func):
 
         @functools.wraps(func)
-        async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        async def async_wrapper(*args: P.args, **kwargs: P.kwargs):
             if not is_admin():
                 quart.abort(403)
             return await func(*args, **kwargs)
