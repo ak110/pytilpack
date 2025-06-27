@@ -108,6 +108,16 @@ python -m pytilpack.cli.sync src dst [--delete] [--verbose]
 - 日付が異なるファイルをコピー
 - `--delete`オプションでコピー元に存在しないコピー先のファイル・ディレクトリを削除
 
+### URLの内容を取得
+
+```bash
+python -m pytilpack.cli.fetch url [--no-verify] [--verbose]
+```
+
+- URLからHTMLを取得し、簡略化して標準出力に出力
+- `--no-verify`オプションでSSL証明書の検証を無効化
+- `--verbose`オプションで詳細なログを出力
+
 ## 開発手順
 
 - [DEVELOPMENT.md](DEVELOPMENT.md) を参照

@@ -1,3 +1,8 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.12,<4.0"
+# dependencies = []
+# ///
 """ディレクトリ同期コマンド。"""
 
 import argparse
