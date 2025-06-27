@@ -6,8 +6,8 @@ import flask
 import openai
 import openai.types.chat
 
-import pytilpack.flask_
-import pytilpack.openai_
+import pytilpack.flask
+import pytilpack.openai
 
 
 def test_gather_chunks():
@@ -58,7 +58,7 @@ def test_gather_chunks():
             object="chat.completion.chunk",
         ),
     ]
-    actual = pytilpack.openai_.gather_chunks(chunks, strict=True)
+    actual = pytilpack.openai.gather_chunks(chunks, strict=True)
     expected = openai.types.chat.ChatCompletion(
         id="id",
         choices=[
@@ -118,7 +118,7 @@ def test_gather_chunks_claude_tools():
             system_fingerprint="fingerprint",
         )
     ]
-    actual = pytilpack.openai_.gather_chunks(chunks, strict=True)
+    actual = pytilpack.openai.gather_chunks(chunks, strict=True)
     expected = openai.types.chat.ChatCompletion(
         id="id",
         choices=[
@@ -163,7 +163,7 @@ def test_gather_chunks_stream(data_dir: pathlib.Path):
             response_body.split("\r\n"), content_type="text/event-stream"
         )
 
-    with pytilpack.flask_.run(app):
+    with pytilpack.flask.run(app):
         response = openai.OpenAI(
             api_key="sk-dummy", base_url="http://localhost:5000/v1"
         ).chat.completions.create(
@@ -171,7 +171,7 @@ def test_gather_chunks_stream(data_dir: pathlib.Path):
             messages=[{"role": "user", "content": "1+1=?"}],
             stream=True,
         )
-        actual = pytilpack.openai_.gather_chunks(response, strict=True)
+        actual = pytilpack.openai.gather_chunks(response, strict=True)
         expected = openai.types.chat.ChatCompletion(
             id="chatcmpl-9LkPsGgzcOKvsoNpPxy722wmnc8Ij",
             choices=[
@@ -205,7 +205,7 @@ def test_gather_chunks_function1(data_dir: pathlib.Path):
             response_body.split("\r\n"), content_type="text/event-stream"
         )
 
-    with pytilpack.flask_.run(app):
+    with pytilpack.flask.run(app):
         response = openai.OpenAI(
             api_key="sk-dummy", base_url="http://localhost:5000/v1"
         ).chat.completions.create(
@@ -213,7 +213,7 @@ def test_gather_chunks_function1(data_dir: pathlib.Path):
             messages=[{"role": "user", "content": "1+1=?"}],
             stream=True,
         )
-        actual = pytilpack.openai_.gather_chunks(response, strict=True)
+        actual = pytilpack.openai.gather_chunks(response, strict=True)
         expected = openai.types.chat.ChatCompletion(
             id="chatcmpl-9Lkf3AWNcFV03tyCd5LaAXb2xgZ65",
             choices=[
@@ -257,7 +257,7 @@ def test_gather_chunks_function2(data_dir: pathlib.Path):
             response_body.split("\r\n"), content_type="text/event-stream"
         )
 
-    with pytilpack.flask_.run(app):
+    with pytilpack.flask.run(app):
         response = openai.OpenAI(
             api_key="sk-dummy", base_url="http://localhost:5000/v1"
         ).chat.completions.create(
@@ -265,7 +265,7 @@ def test_gather_chunks_function2(data_dir: pathlib.Path):
             messages=[{"role": "user", "content": "1+1=?"}],
             stream=True,
         )
-        actual = pytilpack.openai_.gather_chunks(response, strict=True)
+        actual = pytilpack.openai.gather_chunks(response, strict=True)
         expected = openai.types.chat.ChatCompletion(
             id="chatcmpl-9LkecCMw4qvicGMfOU00PBHbVbpNL",
             choices=[

@@ -6,7 +6,7 @@ import fastapi
 import fastapi.testclient
 import pytest
 
-import pytilpack.fastapi_
+import pytilpack.fastapi
 
 
 @pytest.fixture(name="app")
@@ -66,13 +66,13 @@ def _client(app: fastapi.FastAPI) -> fastapi.testclient.TestClient:
 def test_assert_bytes(client: fastapi.testclient.TestClient):
     """bytesアサーションのテスト。"""
     response = client.get("/html")
-    _ = pytilpack.fastapi_.assert_bytes(response)
-    _ = pytilpack.fastapi_.assert_bytes(response, content_type="text/html")
+    _ = pytilpack.fastapi.assert_bytes(response)
+    _ = pytilpack.fastapi.assert_bytes(response, content_type="text/html")
 
     response = client.get("/403")
-    _ = pytilpack.fastapi_.assert_bytes(response, 403)
+    _ = pytilpack.fastapi.assert_bytes(response, 403)
     with pytest.raises(AssertionError):
-        _ = pytilpack.fastapi_.assert_bytes(response)
+        _ = pytilpack.fastapi.assert_bytes(response)
 
 
 def test_assert_html(
@@ -80,45 +80,45 @@ def test_assert_html(
 ) -> None:
     """HTMLアサーションのテスト。"""
     response = client.get("/html")
-    _ = pytilpack.fastapi_.assert_html(response)
-    _ = pytilpack.fastapi_.assert_html(response, content_type="text/html")
-    _ = pytilpack.fastapi_.assert_html(response, tmp_path=tmp_path)
-    _ = pytilpack.fastapi_.assert_html(response, strict=True)
+    _ = pytilpack.fastapi.assert_html(response)
+    _ = pytilpack.fastapi.assert_html(response, content_type="text/html")
+    _ = pytilpack.fastapi.assert_html(response, tmp_path=tmp_path)
+    _ = pytilpack.fastapi.assert_html(response, strict=True)
 
     response = client.get("/403")
-    _ = pytilpack.fastapi_.assert_html(response, 403)
+    _ = pytilpack.fastapi.assert_html(response, 403)
     with pytest.raises(AssertionError):
-        _ = pytilpack.fastapi_.assert_html(response)
+        _ = pytilpack.fastapi.assert_html(response)
 
     response = client.get("/html-invalid")
     with pytest.raises(AssertionError):
-        _ = pytilpack.fastapi_.assert_html(response, strict=True)
+        _ = pytilpack.fastapi.assert_html(response, strict=True)
 
 
 def test_assert_json(client: fastapi.testclient.TestClient) -> None:
     """JSONアサーションのテスト。"""
     response = client.get("/json")
-    _ = pytilpack.fastapi_.assert_json(response)
+    _ = pytilpack.fastapi.assert_json(response)
 
     response = client.get("/json-invalid")
     with pytest.raises(AssertionError):
-        _ = pytilpack.fastapi_.assert_json(response)
+        _ = pytilpack.fastapi.assert_json(response)
 
     response = client.get("/html")
     with pytest.raises(AssertionError):
-        _ = pytilpack.fastapi_.assert_json(response)
+        _ = pytilpack.fastapi.assert_json(response)
 
 
 def test_assert_xml(client: fastapi.testclient.TestClient) -> None:
     """XMLアサーションのテスト。"""
     response = client.get("/xml")
-    _ = pytilpack.fastapi_.assert_xml(response)
-    _ = pytilpack.fastapi_.assert_xml(response, content_type="text/xml")
+    _ = pytilpack.fastapi.assert_xml(response)
+    _ = pytilpack.fastapi.assert_xml(response, content_type="text/xml")
 
     response = client.get("/xml-invalid")
     with pytest.raises(AssertionError):
-        _ = pytilpack.fastapi_.assert_xml(response)
+        _ = pytilpack.fastapi.assert_xml(response)
 
     response = client.get("/html")
     with pytest.raises(AssertionError):
-        _ = pytilpack.fastapi_.assert_xml(response)
+        _ = pytilpack.fastapi.assert_xml(response)

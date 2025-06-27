@@ -7,10 +7,10 @@ import pytest_asyncio
 import quart
 import quart_auth
 
-import pytilpack.quart_auth_
+import pytilpack.quart_auth
 
 
-class User(pytilpack.quart_auth_.UserMixin):
+class User(pytilpack.quart_auth.UserMixin):
     """テスト用ユーザーモデル。"""
 
     def __init__(self, name: str, is_admin: bool = False) -> None:
@@ -25,7 +25,7 @@ def _app() -> quart.Quart:
     app.secret_key = "secret"  # 暗号化に必要
 
     # Quart-Authの設定
-    auth_manager = pytilpack.quart_auth_.QuartAuth[User]()
+    auth_manager = pytilpack.quart_auth.QuartAuth[User]()
     auth_manager.init_app(app)
 
     # ユーザーローダーの設定
@@ -45,13 +45,13 @@ def _app() -> quart.Quart:
     @app.route("/login")
     async def login():
         # ログイン処理
-        pytilpack.quart_auth_.login_user("user1")
+        pytilpack.quart_auth.login_user("user1")
         return "logged in"
 
     @app.route("/logout")
     async def logout():
         # ログアウト処理
-        pytilpack.quart_auth_.logout_user()
+        pytilpack.quart_auth.logout_user()
         return "logged out"
 
     @app.route("/private")
@@ -66,19 +66,19 @@ def _app() -> quart.Quart:
         )
 
     @app.route("/admin")
-    @pytilpack.quart_auth_.admin_only
+    @pytilpack.quart_auth.admin_only
     async def admin():
         return "admin page"
 
     @app.route("/admin-sync")
-    @pytilpack.quart_auth_.admin_only
+    @pytilpack.quart_auth.admin_only
     def admin_sync():
         return "admin sync page"
 
     @app.route("/login_admin")
     async def login_admin():
         # 管理者ログイン処理
-        pytilpack.quart_auth_.login_user("admin1")
+        pytilpack.quart_auth.login_user("admin1")
         return "admin logged in"
 
     return app
@@ -213,12 +213,12 @@ async def test_admin_only(client: quart.typing.TestClientProtocol) -> None:
 
     # admin_onlyデコレータが関数のメタデータを保持することをテスト。
 
-    @pytilpack.quart_auth_.admin_only
+    @pytilpack.quart_auth.admin_only
     async def test_async_function() -> str:
         """非同期テスト関数。"""
         return "test"
 
-    @pytilpack.quart_auth_.admin_only
+    @pytilpack.quart_auth.admin_only
     def test_sync_function() -> str:
         """同期テスト関数。"""
         return "test"

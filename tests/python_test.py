@@ -2,25 +2,25 @@
 
 import pytest
 
-import pytilpack.python_
+import pytilpack.python
 
 
 def test_coalesce():
-    assert pytilpack.python_.coalesce([]) is None
-    assert pytilpack.python_.coalesce([None]) is None
-    assert pytilpack.python_.coalesce([], 123) == 123
-    assert pytilpack.python_.coalesce([None], 123) == 123
-    assert pytilpack.python_.coalesce([None, 1, 2], 123) == 1
+    assert pytilpack.python.coalesce([]) is None
+    assert pytilpack.python.coalesce([None]) is None
+    assert pytilpack.python.coalesce([], 123) == 123
+    assert pytilpack.python.coalesce([None], 123) == 123
+    assert pytilpack.python.coalesce([None, 1, 2], 123) == 1
 
 
 def test_remove_none():
-    assert pytilpack.python_.remove_none([]) == []
-    assert pytilpack.python_.remove_none([None]) == []
-    assert pytilpack.python_.remove_none([1, None, 2]) == [1, 2]
+    assert pytilpack.python.remove_none([]) == []
+    assert pytilpack.python.remove_none([None]) == []
+    assert pytilpack.python.remove_none([1, None, 2]) == [1, 2]
 
 
 def test_empty():
-    from pytilpack.python_ import empty
+    from pytilpack.python import empty
 
     assert empty(None)
     assert empty("")
@@ -31,7 +31,7 @@ def test_empty():
 
 
 def test_default():
-    from pytilpack.python_ import default
+    from pytilpack.python import default
 
     assert default(None, 123) == 123
     assert default("", "123") == "123"
@@ -42,7 +42,7 @@ def test_default():
 
 
 def test_doc_summary():
-    from pytilpack.python_ import doc_summary
+    from pytilpack.python import doc_summary
 
     assert doc_summary(None) == ""
     assert doc_summary(0) == "int([x]) -> integer"
@@ -62,7 +62,7 @@ def test_class_field_comments():
         # (無視されてほしいコメント)
         d: str = "d"
 
-    assert pytilpack.python_.class_field_comments(A) == {
+    assert pytilpack.python.class_field_comments(A) == {
         "b": "bbb",
         "c": "ccc",
         "d": "ddd",
@@ -70,7 +70,7 @@ def test_class_field_comments():
 
 
 def test_get():
-    from pytilpack.python_ import get
+    from pytilpack.python import get
 
     data = {"a": [{"b": 1}], "none": None}
 
@@ -100,7 +100,7 @@ def test_get():
 
 
 def test_get_float():
-    from pytilpack.python_ import get_float
+    from pytilpack.python import get_float
 
     data = {"a": 1.1, "b": "string", "c": None}
 
@@ -114,7 +114,7 @@ def test_get_float():
 
 
 def test_get_bool():
-    from pytilpack.python_ import get_bool
+    from pytilpack.python import get_bool
 
     data = {"a": True, "b": "string", "c": None}
 
@@ -128,7 +128,7 @@ def test_get_bool():
 
 
 def test_get_int():
-    from pytilpack.python_ import get_int
+    from pytilpack.python import get_int
 
     data = {"a": 1, "b": "string", "c": None}
 
@@ -142,7 +142,7 @@ def test_get_int():
 
 
 def test_get_str():
-    from pytilpack.python_ import get_str
+    from pytilpack.python import get_str
 
     data = {"a": "string", "b": 1, "c": None}
 
@@ -156,7 +156,7 @@ def test_get_str():
 
 
 def test_get_list():
-    from pytilpack.python_ import get_list
+    from pytilpack.python import get_list
 
     data = {"a": [1, 2, 3], "b": "string", "c": None}
 
@@ -170,7 +170,7 @@ def test_get_list():
 
 
 def test_get_dict():
-    from pytilpack.python_ import get_dict
+    from pytilpack.python import get_dict
 
     data = {"a": {"key": "value"}, "b": "string", "c": None}
 

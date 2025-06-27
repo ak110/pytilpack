@@ -1,22 +1,20 @@
-"""FastAPIのテストコード用アサーション関数。"""
+"""Flaskのテストコード用アサーション関数。"""
 
-import io
 import json
 import logging
 import pathlib
 import typing
+import warnings
 import xml.etree.ElementTree
 
-import httpx
-
-import pytilpack.pytest_
+import pytilpack.pytest
 import pytilpack.web
 
 logger = logging.getLogger(__name__)
 
 
 def assert_bytes(
-    response: httpx.Response,
+    response,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = None,
 ) -> bytes:
@@ -34,15 +32,14 @@ def assert_bytes(
         レスポンスボディ
 
     """
-    response_body = response.content
+    response_body = response.get_data()
 
     try:
         # ステータスコードチェック
         pytilpack.web.check_status_code(response.status_code, status_code)
 
         # Content-Typeチェック
-        content_type_value = response.headers.get("content-type")
-        pytilpack.web.check_content_type(content_type_value, content_type)
+        pytilpack.web.check_content_type(response.content_type, content_type)
     except AssertionError as e:
         logger.info(f"{e}\n\n{response_body!r}")
         raise e
@@ -51,11 +48,11 @@ def assert_bytes(
 
 
 def assert_html(
-    response: httpx.Response,
+    response,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "__default__",
-    tmp_path: pathlib.Path | None = None,
     strict: bool = False,
+    tmp_path: pathlib.Path | None = None,
 ) -> str:
     """テストコード用。
 
@@ -65,8 +62,8 @@ def assert_html(
         response: レスポンス
         status_code: 期待するステータスコード
         content_type: 期待するContent-Type
+        strict: Trueの場合、HTML5の仕様に従ったパースを行う
         tmp_path: 一時ファイルを保存するディレクトリ
-        strict: HTML解析を厳格に行うかどうか
 
     Raises:
         AssertionError: ステータスコードが異なる場合
@@ -75,7 +72,7 @@ def assert_html(
         レスポンスボディ (bs4.BeautifulSoup)
 
     """
-    response_body = response.text
+    response_body = response.get_data().decode("utf-8")
 
     try:
         # ステータスコードチェック
@@ -84,13 +81,12 @@ def assert_html(
         # Content-Typeチェック
         if content_type == "__default__":
             content_type = ["text/html", "application/xhtml+xml"]
-        content_type_value = response.headers.get("content-type")
-        pytilpack.web.check_content_type(content_type_value, content_type)
+        pytilpack.web.check_content_type(response.content_type, content_type)
 
         # HTMLのチェック
-        pytilpack.web.check_html(io.BytesIO(response.content), strict=strict)
+        pytilpack.web.check_html(response.get_data(), strict=strict)
     except AssertionError as e:
-        tmp_file_path = pytilpack.pytest_.create_temp_view(
+        tmp_file_path = pytilpack.pytest.create_temp_view(
             tmp_path, response_body, ".html"
         )
         raise AssertionError(f"{e} (HTML: {tmp_file_path} )") from e
@@ -99,7 +95,7 @@ def assert_html(
 
 
 def assert_json(
-    response: httpx.Response,
+    response,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "application/json",
 ) -> dict[str, typing.Any]:
@@ -117,15 +113,14 @@ def assert_json(
         レスポンスのjson
 
     """
-    response_body = response.text
+    response_body = response.get_data().decode("utf-8")
 
     try:
         # ステータスコードチェック
         pytilpack.web.check_status_code(response.status_code, status_code)
 
         # Content-Typeチェック
-        content_type_value = response.headers.get("content-type")
-        pytilpack.web.check_content_type(content_type_value, content_type)
+        pytilpack.web.check_content_type(response.content_type, content_type)
 
         # JSONのチェック
         try:
@@ -140,7 +135,7 @@ def assert_json(
 
 
 def assert_xml(
-    response: httpx.Response,
+    response,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "__default__",
 ) -> str:
@@ -158,7 +153,7 @@ def assert_xml(
         レスポンスのxml
 
     """
-    response_body = response.text
+    response_body = response.get_data().decode("utf-8")
 
     try:
         # ステータスコードチェック
@@ -167,8 +162,7 @@ def assert_xml(
         # Content-Typeチェック
         if content_type == "__default__":
             content_type = ["text/xml", "application/xml"]
-        content_type_value = response.headers.get("content-type")
-        pytilpack.web.check_content_type(content_type_value, content_type)
+        pytilpack.web.check_content_type(response.content_type, content_type)
 
         # XMLのチェック
         try:
@@ -180,3 +174,25 @@ def assert_xml(
         raise e
 
     return response_body
+
+
+def check_status_code(status_code: int, valid_status_code: int) -> None:
+    """deprecated."""
+    warnings.warn(
+        "pytilpack.flask_.check_status_code is deprecated. Use pytilpack.web.check_status_code instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    pytilpack.web.check_status_code(status_code, valid_status_code)
+
+
+def check_content_type(
+    content_type: str, valid_content_types: str | typing.Iterable[str] | None
+) -> None:
+    """deprecated."""
+    warnings.warn(
+        "pytilpack.flask_.check_content_type is deprecated. Use pytilpack.web.check_content_type instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    pytilpack.web.check_content_type(content_type, valid_content_types)

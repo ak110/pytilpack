@@ -10,14 +10,14 @@ import sqlalchemy.exc
 import sqlalchemy.ext.asyncio
 import sqlalchemy.orm
 
-import pytilpack.sqlalchemy_
+import pytilpack.sqlalchemy
 
 
-class Base(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy_.AsyncMixin):
+class Base(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.AsyncMixin):
     """ベースクラス。"""
 
 
-class Test1(Base, pytilpack.sqlalchemy_.AsyncUniqueIDMixin):
+class Test1(Base, pytilpack.sqlalchemy.AsyncUniqueIDMixin):
     """テストクラス。"""
 
     __test__ = False
@@ -157,7 +157,7 @@ def test_to_dict() -> None:
 
 def test_describe() -> None:
     """describe()のテスト。"""
-    desc = pytilpack.sqlalchemy_.describe(Base)
+    desc = pytilpack.sqlalchemy.describe(Base)
     print(f"{'=' * 64}")
     print(desc)
     print(f"{'=' * 64}")
@@ -205,13 +205,13 @@ Table: test2
 async def test_await_for_connection() -> None:
     """await_for_connectionのテスト。"""
     # 正常系
-    await pytilpack.sqlalchemy_.await_for_connection(
+    await pytilpack.sqlalchemy.await_for_connection(
         "sqlite+aiosqlite:///:memory:", timeout=1.0
     )
 
     # 異常系: タイムアウト
     with pytest.raises(sqlalchemy.exc.OperationalError):
-        await pytilpack.sqlalchemy_.await_for_connection(
+        await pytilpack.sqlalchemy.await_for_connection(
             "sqlite+aiosqlite:////nonexistent/path/db.sqlite3", timeout=1.0
         )
 
@@ -280,9 +280,9 @@ async def test_asafe_close() -> None:
     """asafe_closeのテスト。"""
     engine = sqlalchemy.ext.asyncio.create_async_engine("sqlite+aiosqlite:///:memory:")
     session = sqlalchemy.ext.asyncio.AsyncSession(engine)
-    await pytilpack.sqlalchemy_.asafe_close(session)  # 正常ケース
+    await pytilpack.sqlalchemy.asafe_close(session)  # 正常ケース
 
     # エラーケース（既にクローズ済み）
     await session.close()
-    await pytilpack.sqlalchemy_.asafe_close(session)
-    await pytilpack.sqlalchemy_.asafe_close(session, log_level=None)
+    await pytilpack.sqlalchemy.asafe_close(session)
+    await pytilpack.sqlalchemy.asafe_close(session, log_level=None)

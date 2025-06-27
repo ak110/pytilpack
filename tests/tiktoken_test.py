@@ -8,7 +8,7 @@ import litellm.types.llms.openai
 import openai.types.chat
 import pytest
 
-import pytilpack.tiktoken_
+import pytilpack.tiktoken
 
 ALL_MODELS = [
     "gpt-3.5-turbo",  # alias
@@ -49,16 +49,16 @@ ALL_MODELS = [
 
 def test_get_encoding_for_model():
     """get_encoding_for_model()のテスト。"""
-    encoding = pytilpack.tiktoken_.get_encoding_for_model("gpt-3.5-turbo-0613")
+    encoding = pytilpack.tiktoken.get_encoding_for_model("gpt-3.5-turbo-0613")
     assert encoding is not None
 
-    encoding = pytilpack.tiktoken_.get_encoding_for_model("unknown-model")
+    encoding = pytilpack.tiktoken.get_encoding_for_model("unknown-model")
     assert encoding is not None
 
 
 def test_num_tokens_from_messages():
     assert (
-        pytilpack.tiktoken_.num_tokens_from_messages(
+        pytilpack.tiktoken.num_tokens_from_messages(
             "gpt-3.5-turbo-0613",
             [
                 {"role": "system", "content": "てすと"},
@@ -71,10 +71,10 @@ def test_num_tokens_from_messages():
 
 def test_num_tokens_from_texts():
     """num_tokens_from_texts()のテスト。"""
-    assert pytilpack.tiktoken_.num_tokens_from_texts("gpt-3.5-turbo-0613", "2") == 1
+    assert pytilpack.tiktoken.num_tokens_from_texts("gpt-3.5-turbo-0613", "2") == 1
 
     assert (
-        pytilpack.tiktoken_.num_tokens_from_texts(
+        pytilpack.tiktoken.num_tokens_from_texts(
             "gpt-4-turbo-2024-04-09", "1+1=2です。"
         )
         == 7
@@ -88,7 +88,7 @@ def test_num_tokens_from_texts():
 def test_num_tokens_from_messages_with_tools(model: str, expected: int):
     """num_tokens_for_tools()のテスト。"""
     # https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
-    num_tokens = pytilpack.tiktoken_.num_tokens_from_messages(
+    num_tokens = pytilpack.tiktoken.num_tokens_from_messages(
         model=model,
         messages=[
             {
@@ -136,7 +136,7 @@ def test_vs_litellm(model: str):
     ]
 
     # ツールなし
-    actual_tokens = pytilpack.tiktoken_.num_tokens_from_messages(
+    actual_tokens = pytilpack.tiktoken.num_tokens_from_messages(
         model=model, messages=messages, tools=None
     )
     litellm_tokens = litellm.token_counter(model=model, messages=messages, tools=None)
@@ -169,7 +169,7 @@ def test_vs_litellm(model: str):
             },
         }
     ]
-    actual_tokens = pytilpack.tiktoken_.num_tokens_from_messages(
+    actual_tokens = pytilpack.tiktoken.num_tokens_from_messages(
         model=model, messages=messages, tools=tools
     )
     litellm_tokens = litellm.token_counter(

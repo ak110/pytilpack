@@ -25,50 +25,46 @@ pip install pytilpack
 
 ## 使い方
 
-### 各種ライブラリ用のユーティリティ
+### import
 
-```python
-import pytilpack.xxx_
-```
-
-xxxのところは各種モジュール名。`openai`とか`pathlib`とか。
-それぞれのモジュールに関連するユーティリティ関数などが入っている。
-
-### その他のユーティリティ
+各モジュールを個別にimportして利用する。
 
 ```python
 import pytilpack.xxx
 ```
 
-特定のライブラリに依存しないユーティリティ関数などが入っている。
+xxxのところは対象ライブラリと同名になっている。`openai`とか`pathlib`とか。
+それぞれのモジュールに関連するユーティリティ関数などが入っている。
+
+特定のライブラリに依存しないものもある。
 
 ### モジュール一覧
 
 ### 各種ライブラリ用のユーティリティのモジュール一覧
 
-- [pytilpack.asyncio_](pytilpack/asyncio_.py)
-- [pytilpack.base64_](pytilpack/base64_.py)
-- [pytilpack.csv_](pytilpack/csv_.py)
-- [pytilpack.dataclasses_](pytilpack/dataclasses_.py)
-- [pytilpack.datetime_](pytilpack/datetime_.py)
-- [pytilpack.fastapi_](pytilpack/fastapi_/__init__.py)
-- [pytilpack.flask_](pytilpack/flask_/__init__.py)
-- [pytilpack.flask_login_](pytilpack/flask_.py)
-- [pytilpack.functools_](pytilpack/functools_.py)
-- [pytilpack.json_](pytilpack/json_.py)
-- [pytilpack.logging_](pytilpack/logging_.py)
-- [pytilpack.openai_](pytilpack/openai_.py)
-- [pytilpack.pathlib_](pytilpack/pathlib_.py)
-- [pytilpack.python_](pytilpack/python_.py)
-- [pytilpack.quart_](pytilpack/quart_/__init__.py)
-- [pytilpack.sqlalchemy_](pytilpack/sqlalchemy_.py)
-- [pytilpack.sqlalchemya_](pytilpack/sqlalchemya_.py)  # asyncio版
-- [pytilpack.threading_](pytilpack/threading_.py)
-- [pytilpack.threadinga_](pytilpack/threadinga_.py)  # asyncio版
-- [pytilpack.tiktoken_](pytilpack/tiktoken_.py)
-- [pytilpack.tqdm_](pytilpack/tqdm_.py)
-- [pytilpack.typing_](pytilpack/typing_.py)
-- [pytilpack.yaml_](pytilpack/yaml_.py)
+- [pytilpack.asyncio](pytilpack/asyncio.py)
+- [pytilpack.base64](pytilpack/base64.py)
+- [pytilpack.csv](pytilpack/csv.py)
+- [pytilpack.dataclasses](pytilpack/dataclasses.py)
+- [pytilpack.datetime](pytilpack/datetime.py)
+- [pytilpack.fastapi](pytilpack/fastapi_/__init_.py)
+- [pytilpack.flask](pytilpack/flask_/__init_.py)
+- [pytilpack.flask_login](pytilpack/flask.py)
+- [pytilpack.functools](pytilpack/functools.py)
+- [pytilpack.json](pytilpack/json.py)
+- [pytilpack.logging](pytilpack/logging.py)
+- [pytilpack.openai](pytilpack/openai.py)
+- [pytilpack.pathlib](pytilpack/pathlib.py)
+- [pytilpack.python](pytilpack/python.py)
+- [pytilpack.quart](pytilpack/quart_/__init_.py)
+- [pytilpack.sqlalchemy](pytilpack/sqlalchemy.py)
+- [pytilpack.sqlalchemya](pytilpack/sqlalchemya.py)  # asyncio版
+- [pytilpack.threading](pytilpack/threading.py)
+- [pytilpack.threadinga](pytilpack/threadinga.py)  # asyncio版
+- [pytilpack.tiktoken](pytilpack/tiktoken.py)
+- [pytilpack.tqdm](pytilpack/tqdm.py)
+- [pytilpack.typing](pytilpack/typing.py)
+- [pytilpack.yaml](pytilpack/yaml.py)
 
 ### その他のユーティリティのモジュール一覧
 

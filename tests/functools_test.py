@@ -5,13 +5,13 @@ import time
 
 import pytest
 
-import pytilpack.functools_
+import pytilpack.functools
 
 
 def test_retry_1():
     call_count = 0
 
-    @pytilpack.functools_.retry(2, initial_delay=0, exponential_base=0)
+    @pytilpack.functools.retry(2, initial_delay=0, exponential_base=0)
     def f():
         nonlocal call_count
         call_count += 1
@@ -23,7 +23,7 @@ def test_retry_1():
 def test_retry_2():
     call_count = 0
 
-    @pytilpack.functools_.retry(2, initial_delay=0, exponential_base=0)
+    @pytilpack.functools.retry(2, initial_delay=0, exponential_base=0)
     def f():
         nonlocal call_count
         call_count += 1
@@ -38,7 +38,7 @@ def test_retry_2():
 async def test_retry_1_async():
     call_count = 0
 
-    @pytilpack.functools_.retry(2, initial_delay=0, exponential_base=0)
+    @pytilpack.functools.retry(2, initial_delay=0, exponential_base=0)
     async def f():
         nonlocal call_count
         call_count += 1
@@ -51,7 +51,7 @@ async def test_retry_1_async():
 async def test_retry_2_async():
     call_count = 0
 
-    @pytilpack.functools_.retry(2, initial_delay=0, exponential_base=0)
+    @pytilpack.functools.retry(2, initial_delay=0, exponential_base=0)
     async def f():
         nonlocal call_count
         call_count += 1
@@ -66,7 +66,7 @@ def test_warn_if_slow_not_trigger(caplog):
     """閾値以下の時間では警告が出ないことを確認。"""
     with caplog.at_level(logging.WARNING):
 
-        @pytilpack.functools_.warn_if_slow()
+        @pytilpack.functools.warn_if_slow()
         def fast_function(x: int, y: str = "default"):
             return f"{x}-{y}"
 
@@ -79,7 +79,7 @@ def test_warn_if_slow_trigger(caplog):
     """閾値を超える時間で警告が出ることを確認。"""
     with caplog.at_level(logging.WARNING):
 
-        @pytilpack.functools_.warn_if_slow()
+        @pytilpack.functools.warn_if_slow()
         def slow_function(x: int, y: str = "default"):
             time.sleep(0.01)
             return f"{x}-{y}"
@@ -99,7 +99,7 @@ async def test_warn_if_slow_async_not_trigger(caplog):
     """非同期関数で閾値以下の時間では警告が出ないことを確認。"""
     with caplog.at_level(logging.WARNING):
 
-        @pytilpack.functools_.warn_if_slow()
+        @pytilpack.functools.warn_if_slow()
         async def fast_async_function(x: int, y: str = "default"):
             return f"{x}-{y}"
 
@@ -113,7 +113,7 @@ async def test_warn_if_slow_async_trigger(caplog):
     """非同期関数で閾値を超える時間で警告が出ることを確認。"""
     with caplog.at_level(logging.WARNING):
 
-        @pytilpack.functools_.warn_if_slow()
+        @pytilpack.functools.warn_if_slow()
         def slow_async_function(x: int, y: str = "default"):
             time.sleep(0.01)
             return f"{x}-{y}"

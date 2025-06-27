@@ -4,7 +4,7 @@ import argparse
 import logging
 import pathlib
 
-import pytilpack.pathlib_
+import pytilpack.pathlib
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ def main() -> None:
         format="[%(levelname)s] %(message)s",
     )
 
-    pytilpack.pathlib_.sync(args.src, args.dst, delete=args.delete)
+    pytilpack.pathlib.sync(args.src, args.dst, delete=args.delete)
 
 
 if __name__ == "__main__":

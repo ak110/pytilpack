@@ -6,14 +6,14 @@ import pytest
 import sqlalchemy
 import sqlalchemy.orm
 
-import pytilpack.sqlalchemy_
+import pytilpack.sqlalchemy
 
 
-class Base(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy_.SyncMixin):
+class Base(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.SyncMixin):
     """ベースクラス。"""
 
 
-class Test1(Base, pytilpack.sqlalchemy_.AsyncUniqueIDMixin):
+class Test1(Base, pytilpack.sqlalchemy.AsyncUniqueIDMixin):
     """テストクラス。"""
 
     __test__ = False

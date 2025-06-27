@@ -12,7 +12,7 @@ import flask
 import httpx
 import werkzeug.serving
 
-import pytilpack.secrets_
+import pytilpack.secrets
 import pytilpack.web
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ def generate_secret_key(cache_path: str | pathlib.Path) -> bytes:
         DeprecationWarning,
         stacklevel=2,
     )
-    return pytilpack.secrets_.generate_secret_key(cache_path)
+    return pytilpack.secrets.generate_secret_key(cache_path)
 
 
 def data_url(data: bytes, mime_type: str) -> str:

@@ -7,7 +7,7 @@ import sqlalchemy
 import sqlalchemy.exc
 import sqlalchemy.orm
 
-import pytilpack.sqlalchemy_
+import pytilpack.sqlalchemy
 
 
 class Base(sqlalchemy.orm.DeclarativeBase):  # type: ignore[name-defined]
@@ -16,7 +16,7 @@ class Base(sqlalchemy.orm.DeclarativeBase):  # type: ignore[name-defined]
     __test__ = False
 
 
-class Test1(Base, pytilpack.sqlalchemy_.Mixin, pytilpack.sqlalchemy_.UniqueIDMixin):
+class Test1(Base, pytilpack.sqlalchemy.Mixin, pytilpack.sqlalchemy.UniqueIDMixin):
     """テストクラス。"""
 
     __test__ = False
@@ -28,7 +28,7 @@ class Test1(Base, pytilpack.sqlalchemy_.Mixin, pytilpack.sqlalchemy_.UniqueIDMix
     )
 
 
-class Test2(Base, pytilpack.sqlalchemy_.Mixin):
+class Test2(Base, pytilpack.sqlalchemy.Mixin):
     """テストクラス。"""
 
     __test__ = False
@@ -58,7 +58,7 @@ class Test2(Base, pytilpack.sqlalchemy_.Mixin):
 def _engine():
     """DB接続。"""
     engine = sqlalchemy.create_engine("sqlite:///:memory:")
-    pytilpack.sqlalchemy_.register_ping()
+    pytilpack.sqlalchemy.register_ping()
     yield engine
 
 
@@ -118,7 +118,7 @@ def test_to_dict() -> None:
 
 def test_describe() -> None:
     """describe()のテスト。"""
-    desc = pytilpack.sqlalchemy_.describe(Base)
+    desc = pytilpack.sqlalchemy.describe(Base)
     print(f"{'=' * 64}")
     print(desc)
     print(f"{'=' * 64}")
@@ -165,11 +165,11 @@ Table: test2
 def test_wait_for_connection() -> None:
     """wait_for_connectionのテスト。"""
     # 正常系
-    pytilpack.sqlalchemy_.wait_for_connection("sqlite:///:memory:", timeout=1.0)
+    pytilpack.sqlalchemy.wait_for_connection("sqlite:///:memory:", timeout=1.0)
 
     # 異常系: タイムアウト
     with pytest.raises(sqlalchemy.exc.OperationalError):
-        pytilpack.sqlalchemy_.wait_for_connection(
+        pytilpack.sqlalchemy.wait_for_connection(
             "sqlite:////nonexistent/path/db.sqlite3", timeout=1.0
         )
 
@@ -178,9 +178,9 @@ def test_safe_close() -> None:
     """safe_closeのテスト。"""
     engine = sqlalchemy.create_engine("sqlite:///:memory:")
     session = sqlalchemy.orm.Session(engine)
-    pytilpack.sqlalchemy_.safe_close(session)  # 正常ケース
+    pytilpack.sqlalchemy.safe_close(session)  # 正常ケース
 
     # エラーケース（既にクローズ済み）
     session.close()
-    pytilpack.sqlalchemy_.safe_close(session)
-    pytilpack.sqlalchemy_.safe_close(session, log_level=None)
+    pytilpack.sqlalchemy.safe_close(session)
+    pytilpack.sqlalchemy.safe_close(session, log_level=None)

@@ -7,7 +7,7 @@ import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.sql.elements
 
-import pytilpack.python_
+import pytilpack.python
 
 if typing.TYPE_CHECKING:
     import tabulate
@@ -52,7 +52,7 @@ def describe_table(
     import tabulate
 
     try:
-        class_field_comments = pytilpack.python_.class_field_comments(orm_class)
+        class_field_comments = pytilpack.python.class_field_comments(orm_class)
     except Exception as e:
         logger.warning(f"クラスフィールドコメント取得失敗: {e}")
         class_field_comments = {}

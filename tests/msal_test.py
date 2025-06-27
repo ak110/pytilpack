@@ -12,7 +12,7 @@ import cryptography.x509
 import cryptography.x509.oid
 import pytest
 
-import pytilpack.msal_
+import pytilpack.msal
 
 
 def test_load_pem_certificate(tmp_path: pathlib.Path) -> None:
@@ -53,7 +53,7 @@ def test_load_pem_certificate(tmp_path: pathlib.Path) -> None:
     cert_path.write_bytes(cert_pem + key_pem)
 
     # load_pem_certificateのテスト
-    result = pytilpack.msal_.load_pem_certificate(cert_path)
+    result = pytilpack.msal.load_pem_certificate(cert_path)
     assert isinstance(result, dict)
     assert "private_key" in result
     assert "thumbprint" in result
@@ -66,7 +66,7 @@ def test_load_pem_certificate(tmp_path: pathlib.Path) -> None:
 )
 def test_simple_token_credential(access_token: str, expires_in: int) -> None:
     """SimpleTokenCredentialのテスト。"""
-    cred = pytilpack.msal_.SimpleTokenCredential(access_token, expires_in)
+    cred = pytilpack.msal.SimpleTokenCredential(access_token, expires_in)
     assert isinstance(cred, azure.core.credentials.TokenCredential)
 
     token = cred.get_token("scope")
@@ -80,7 +80,7 @@ def test_simple_token_credential(access_token: str, expires_in: int) -> None:
 def test_file_token_cache(tmp_path: pathlib.Path) -> None:
     """FileTokenCacheのテスト。"""
     cache_path = tmp_path / "token_cache.json"
-    cache = pytilpack.msal_.FileTokenCache(cache_path)
+    cache = pytilpack.msal.FileTokenCache(cache_path)
     assert not cache_path.exists()  # キャッシュファイルはまだ存在しない
 
     # キャッシュデータを追加して保存
@@ -94,6 +94,6 @@ def test_file_token_cache(tmp_path: pathlib.Path) -> None:
     assert not cache.get().has_state_changed
 
     # 保存したキャッシュを読み込み
-    new_cache = pytilpack.msal_.FileTokenCache(cache_path)
+    new_cache = pytilpack.msal.FileTokenCache(cache_path)
     assert not new_cache.get().has_state_changed
     assert cache.get().serialize() == new_cache.get().serialize()

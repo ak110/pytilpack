@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-import pytilpack.threadinga_
+import pytilpack.threadinga
 
 
 @pytest.mark.asyncio
@@ -15,7 +15,7 @@ async def test_parallel():
         return x + 1
 
     start = time.time()
-    assert await pytilpack.threadinga_.parallel(
+    assert await pytilpack.threadinga.parallel(
         [lambda x=x: func(x) for x in range(3)]  # type: ignore[misc]
     ) == [1, 2, 3]
     duration = time.time() - start
@@ -30,7 +30,7 @@ async def test_parallel_for():
         return x + 1
 
     start = time.time()
-    assert await pytilpack.threadinga_.parallel_for(func, 3) == [1, 2, 3]
+    assert await pytilpack.threadinga.parallel_for(func, 3) == [1, 2, 3]
     duration = time.time() - start
     assert duration < 2  # 3つの処理が並列実行されるので2秒未満で完了するはず
 
@@ -43,6 +43,6 @@ async def test_parallel_foreach():
         return x + 1
 
     start = time.time()
-    assert await pytilpack.threadinga_.parallel_foreach(func, range(3)) == [1, 2, 3]
+    assert await pytilpack.threadinga.parallel_foreach(func, range(3)) == [1, 2, 3]
     duration = time.time() - start
     assert duration < 2  # 3つの処理が並列実行されるので2秒未満で完了するはず

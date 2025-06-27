@@ -5,7 +5,7 @@ import datetime
 import logging
 import pathlib
 
-import pytilpack.pathlib_
+import pytilpack.pathlib
 
 
 def main() -> None:
@@ -38,7 +38,7 @@ def main() -> None:
 
     days = max(0, args.days)  # 負の値は0として扱う
     before = datetime.datetime.now() - datetime.timedelta(days=days)
-    pytilpack.pathlib_.delete_old_files(
+    pytilpack.pathlib.delete_old_files(
         args.path,
         before=before,
         delete_empty_dirs=args.delete_empty_dirs,

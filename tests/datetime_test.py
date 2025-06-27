@@ -5,7 +5,7 @@ import zoneinfo
 
 import pytest
 
-import pytilpack.datetime_
+import pytilpack.datetime
 
 
 @pytest.mark.parametrize(
@@ -86,7 +86,7 @@ def test_fromiso(
     expected: datetime.datetime,
 ) -> None:
     """fromisoのテスト。"""
-    actual = pytilpack.datetime_.fromiso(iso_str, tz, remove_tz)
+    actual = pytilpack.datetime.fromiso(iso_str, tz, remove_tz)
     assert actual == expected
     if remove_tz:
         assert actual.tzinfo is None

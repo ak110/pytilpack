@@ -6,7 +6,7 @@ import typing
 
 import pytest
 
-import pytilpack.dataclasses_
+import pytilpack.dataclasses
 
 
 @dataclasses.dataclass
@@ -49,21 +49,21 @@ class UserWithNewType:
 
 def test_asdict() -> None:
     x = Nested(A(1, "a"))
-    assert pytilpack.dataclasses_.asdict(x) == {"a": A(1, "a")}
-    assert pytilpack.dataclasses_.asdict(x) != {"a": {"a": 1, "b": "a"}}
+    assert pytilpack.dataclasses.asdict(x) == {"a": A(1, "a")}
+    assert pytilpack.dataclasses.asdict(x) != {"a": {"a": 1, "b": "a"}}
 
 
 def test_json(tmp_path: pathlib.Path) -> None:
     x = Nested(A(1, "a"))
-    pytilpack.dataclasses_.tojson(x, tmp_path / "test.json")
-    assert pytilpack.dataclasses_.fromjson(Nested, tmp_path / "test.json") == x
+    pytilpack.dataclasses.tojson(x, tmp_path / "test.json")
+    assert pytilpack.dataclasses.fromjson(Nested, tmp_path / "test.json") == x
 
 
 def test_validate() -> None:
     """validateのテスト。"""
     # 正常なケース
     user = User(id=1, name="Taro", tags=["dev", "ai"], home=pathlib.Path.home())
-    pytilpack.dataclasses_.validate(user)  # 例外は発生しない
+    pytilpack.dataclasses.validate(user)  # 例外は発生しない
 
     # 型不一致のケース
     user_bad = User(id="oops", name="Taro")  # type: ignore[arg-type]
@@ -71,24 +71,24 @@ def test_validate() -> None:
         TypeError,
         match=r"位置 id: 型 <class 'int'> を期待しますが、<class 'str'> の値が設定されています。",
     ):
-        pytilpack.dataclasses_.validate(user_bad)
+        pytilpack.dataclasses.validate(user_bad)
 
     # dataclassでないケースのテスト
     with pytest.raises(TypeError, match="is not a dataclass instance"):
-        pytilpack.dataclasses_.validate("not a dataclass")  # type: ignore[arg-type]
+        pytilpack.dataclasses.validate("not a dataclass")  # type: ignore[arg-type]
 
 
 def test_validate_newtype() -> None:
     """NewTypeに対するvalidateのテスト。"""
     # 正常なケース - NewTypeは基底型と同じ値で通る
     user = UserWithNewType(id=IntType(1), name=StrType("Taro"))
-    pytilpack.dataclasses_.validate(user)  # 例外は発生しない
+    pytilpack.dataclasses.validate(user)  # 例外は発生しない
 
     # 基底型の値でも通る（NewTypeは実行時には基底型と同じ）
     user2 = UserWithNewType(id=1, name="Taro")  # type: ignore[arg-type]
-    pytilpack.dataclasses_.validate(user2)  # 例外は発生しない
+    pytilpack.dataclasses.validate(user2)  # 例外は発生しない
 
     # 型不一致のケース
     user_bad = UserWithNewType(id="oops", name="Taro")  # type: ignore[arg-type]
     with pytest.raises(TypeError, match=r"位置 id: 型.*int.*str"):
-        pytilpack.dataclasses_.validate(user_bad)
+        pytilpack.dataclasses.validate(user_bad)

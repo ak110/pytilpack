@@ -2,7 +2,7 @@
 
 import pathlib
 
-import pytilpack.csv_
+import pytilpack.csv
 
 
 def test_read_to_dict(tmp_path: pathlib.Path) -> None:
@@ -10,5 +10,5 @@ def test_read_to_dict(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "test.csv"
     path.write_text("name,age\nAlice,20\nBob,30")
 
-    result = pytilpack.csv_.read_to_dict(path, ["name", "age"])
+    result = pytilpack.csv.read_to_dict(path, ["name", "age"])
     assert result == [{"name": "Alice", "age": "20"}, {"name": "Bob", "age": "30"}]

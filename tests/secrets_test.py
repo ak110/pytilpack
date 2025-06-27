@@ -5,16 +5,16 @@ import multiprocessing
 import os
 import pathlib
 
-import pytilpack.secrets_
+import pytilpack.secrets
 
 
 def test_generate_secret_key(tmp_path: pathlib.Path) -> None:
     """generate_secret_keyの基本テスト。"""
     path = tmp_path / "secret_key"
     assert not path.exists()
-    secret_key1 = pytilpack.secrets_.generate_secret_key(path)
+    secret_key1 = pytilpack.secrets.generate_secret_key(path)
     assert path.exists()
-    secret_key2 = pytilpack.secrets_.generate_secret_key(path)
+    secret_key2 = pytilpack.secrets.generate_secret_key(path)
     assert secret_key1 == secret_key2
     # パーミッションの確認
     assert (os.stat(path).st_mode & 0o777) == 0o600
@@ -51,7 +51,7 @@ def _run_threads(path: pathlib.Path, thread_count: int) -> list[bytes]:
     """指定された数のスレッドでgenerate_secret_keyを実行。"""
 
     def call_generate_secret_key() -> bytes:
-        return pytilpack.secrets_.generate_secret_key(path)
+        return pytilpack.secrets.generate_secret_key(path)
 
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=thread_count

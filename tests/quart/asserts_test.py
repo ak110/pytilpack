@@ -7,7 +7,7 @@ import pytest
 import pytest_asyncio
 import quart
 
-import pytilpack.quart_
+import pytilpack.quart
 
 
 @pytest.fixture(name="app")
@@ -61,15 +61,15 @@ async def _client(
 async def test_assert_bytes(client: quart.typing.TestClientProtocol) -> None:
     """bytesアサーションのテスト。"""
     response = await client.get("/html")
-    _ = await pytilpack.quart_.assert_bytes(response)
-    _ = await pytilpack.quart_.assert_bytes(response, content_type="text/html")
+    _ = await pytilpack.quart.assert_bytes(response)
+    _ = await pytilpack.quart.assert_bytes(response, content_type="text/html")
 
     response = await client.get("/403")
-    _ = await pytilpack.quart_.assert_bytes(response, 403)
+    _ = await pytilpack.quart.assert_bytes(response, 403)
     with pytest.raises(AssertionError):
-        _ = await pytilpack.quart_.assert_bytes(response)
+        _ = await pytilpack.quart.assert_bytes(response)
     with pytest.raises(AssertionError):
-        _ = await pytilpack.quart_.assert_bytes(
+        _ = await pytilpack.quart.assert_bytes(
             response, content_type="application/json"
         )
 
@@ -80,47 +80,47 @@ async def test_assert_html(
 ) -> None:
     """HTMLアサーションのテスト。"""
     response = await client.get("/html")
-    _ = await pytilpack.quart_.assert_html(response)
-    _ = await pytilpack.quart_.assert_html(response, content_type="text/html")
-    _ = await pytilpack.quart_.assert_html(response, tmp_path=tmp_path)
-    _ = await pytilpack.quart_.assert_html(response, strict=True)
+    _ = await pytilpack.quart.assert_html(response)
+    _ = await pytilpack.quart.assert_html(response, content_type="text/html")
+    _ = await pytilpack.quart.assert_html(response, tmp_path=tmp_path)
+    _ = await pytilpack.quart.assert_html(response, strict=True)
 
     response = await client.get("/403")
-    _ = await pytilpack.quart_.assert_html(response, 403)
+    _ = await pytilpack.quart.assert_html(response, 403)
     with pytest.raises(AssertionError):
-        _ = await pytilpack.quart_.assert_html(response)
+        _ = await pytilpack.quart.assert_html(response)
 
     response = await client.get("/html-invalid")
     with pytest.raises(AssertionError):
-        _ = await pytilpack.quart_.assert_html(response, strict=True)
+        _ = await pytilpack.quart.assert_html(response, strict=True)
 
 
 @pytest.mark.asyncio
 async def test_assert_json(client: quart.typing.TestClientProtocol) -> None:
     """JSONアサーションのテスト。"""
     response = await client.get("/json")
-    _ = await pytilpack.quart_.assert_json(response)
+    _ = await pytilpack.quart.assert_json(response)
 
     response = await client.get("/json-invalid")
     with pytest.raises(AssertionError):
-        _ = await pytilpack.quart_.assert_json(response)
+        _ = await pytilpack.quart.assert_json(response)
 
     response = await client.get("/html")
     with pytest.raises(AssertionError):
-        _ = await pytilpack.quart_.assert_json(response)
+        _ = await pytilpack.quart.assert_json(response)
 
 
 @pytest.mark.asyncio
 async def test_assert_xml(client: quart.typing.TestClientProtocol) -> None:
     """XMLアサーションのテスト。"""
     response = await client.get("/xml")
-    _ = await pytilpack.quart_.assert_xml(response)
-    _ = await pytilpack.quart_.assert_xml(response, content_type="text/xml")
+    _ = await pytilpack.quart.assert_xml(response)
+    _ = await pytilpack.quart.assert_xml(response, content_type="text/xml")
 
     response = await client.get("/xml-invalid")
     with pytest.raises(AssertionError):
-        _ = await pytilpack.quart_.assert_xml(response)
+        _ = await pytilpack.quart.assert_xml(response)
 
     response = await client.get("/html")
     with pytest.raises(AssertionError):
-        _ = await pytilpack.quart_.assert_xml(response)
+        _ = await pytilpack.quart.assert_xml(response)

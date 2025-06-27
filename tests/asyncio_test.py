@@ -8,17 +8,17 @@ import typing
 
 import pytest
 
-import pytilpack.asyncio_
+import pytilpack.asyncio
 
 
 @pytest.mark.asyncio
 async def test_acquire_with_timeout():
     lock = asyncio.Lock()
-    async with pytilpack.asyncio_.acquire_with_timeout(lock, 0.001) as acquired:
+    async with pytilpack.asyncio.acquire_with_timeout(lock, 0.001) as acquired:
         assert acquired
 
     async with lock:
-        async with pytilpack.asyncio_.acquire_with_timeout(lock, 0.001) as acquired:
+        async with pytilpack.asyncio.acquire_with_timeout(lock, 0.001) as acquired:
             assert not acquired
 
 
@@ -35,16 +35,16 @@ async def test_run():
 
 def _sync_test_run():
     for _ in range(3):
-        assert pytilpack.asyncio_.run(async_func()) == "Done"
+        assert pytilpack.asyncio.run(async_func()) == "Done"
 
 
 @pytest.mark.asyncio
 async def test_run_async():
     for _ in range(3):
-        assert pytilpack.asyncio_.run(async_func()) == "Done"
+        assert pytilpack.asyncio.run(async_func()) == "Done"
 
 
-class CountingJob(pytilpack.asyncio_.Job):
+class CountingJob(pytilpack.asyncio.Job):
     """実行回数をカウントするジョブ。"""
 
     def __init__(self, sleep_time: float = 0.1) -> None:
@@ -61,7 +61,7 @@ class CountingJob(pytilpack.asyncio_.Job):
         return f"{self.__class__.__name__}({self.__dict__})"
 
 
-class ErrorJob(pytilpack.asyncio_.Job):
+class ErrorJob(pytilpack.asyncio.Job):
     """エラーを発生させるジョブ。"""
 
     @typing.override
@@ -72,7 +72,7 @@ class ErrorJob(pytilpack.asyncio_.Job):
         return f"{self.__class__.__name__}({self.__dict__})"
 
 
-class JobRunner(pytilpack.asyncio_.JobRunner):
+class JobRunner(pytilpack.asyncio.JobRunner):
     """テスト用のJobRunner。"""
 
     def __init__(
@@ -84,10 +84,10 @@ class JobRunner(pytilpack.asyncio_.JobRunner):
             poll_interval=poll_interval,
             **kwargs,
         )
-        self.queue = queue.Queue[pytilpack.asyncio_.Job]()
+        self.queue = queue.Queue[pytilpack.asyncio.Job]()
 
     @typing.override
-    async def poll(self) -> pytilpack.asyncio_.Job | None:
+    async def poll(self) -> pytilpack.asyncio.Job | None:
         try:
             return self.queue.get_nowait()
         except queue.Empty:
@@ -98,8 +98,8 @@ class JobRunner(pytilpack.asyncio_.JobRunner):
 
 
 def add_jobs_thread(
-    queue_: queue.Queue[pytilpack.asyncio_.Job],
-    jobs: list[pytilpack.asyncio_.Job],
+    queue_: queue.Queue[pytilpack.asyncio.Job],
+    jobs: list[pytilpack.asyncio.Job],
     sleep_time: float | None = 0.1,
 ) -> None:
     """別スレッドでジョブを追加する。"""

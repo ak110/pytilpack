@@ -4,7 +4,7 @@ import argparse
 import logging
 import pathlib
 
-import pytilpack.pathlib_
+import pytilpack.pathlib
 
 
 def main() -> None:
@@ -25,7 +25,7 @@ def main() -> None:
         format="[%(levelname)s] %(message)s",
     )
 
-    pytilpack.pathlib_.delete_empty_dirs(args.path, keep_root=args.keep_root)
+    pytilpack.pathlib.delete_empty_dirs(args.path, keep_root=args.keep_root)
 
 
 if __name__ == "__main__":

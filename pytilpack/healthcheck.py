@@ -7,7 +7,7 @@ import logging
 import time
 import typing
 
-import pytilpack.logging_
+import pytilpack.logging
 
 P = typing.ParamSpec("P")
 R = typing.TypeVar("R")
@@ -119,7 +119,7 @@ async def run(
             return name, {"status": "ok", "response_time_ms": int(elapsed)}
         except Exception as e:
             elapsed = (time.perf_counter() - start) * 1000
-            pytilpack.logging_.exception_with_dedup(
+            pytilpack.logging.exception_with_dedup(
                 logger,
                 e,
                 f"Health check failed: {name}",

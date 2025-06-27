@@ -4,8 +4,8 @@ import dataclasses
 import pathlib
 import typing
 
-import pytilpack.json_
-import pytilpack.typing_
+import pytilpack.json
+import pytilpack.typing
 
 # https://stackoverflow.com/questions/77071473/where-can-i-import-dataclassinstance-for-mypy-check
 if typing.TYPE_CHECKING:
@@ -70,7 +70,7 @@ def fromjson(cls: "type[TDataClass]", json_path: str | pathlib.Path) -> "TDataCl
         dataclassのインスタンス
 
     """
-    return fromdict(cls, pytilpack.json_.load(json_path))
+    return fromdict(cls, pytilpack.json.load(json_path))
 
 
 def tojson(
@@ -88,7 +88,7 @@ def tojson(
         json_path: 保存先のパス
 
     """
-    pytilpack.json_.save(
+    pytilpack.json.save(
         json_path,
         dataclasses.asdict(obj),
         ensure_ascii=ensure_ascii,
@@ -107,4 +107,4 @@ def validate(instance: "DataclassInstance") -> None:
     if not dataclasses.is_dataclass(instance):
         raise TypeError(f"{instance!r} is not a dataclass instance")
 
-    pytilpack.typing_.is_instance(instance, instance.__class__)
+    pytilpack.typing.is_instance(instance, instance.__class__)

@@ -5,13 +5,13 @@ import pathlib
 import secrets
 import threading
 
-import pytilpack.functools_
+import pytilpack.functools
 
 _lock = threading.Lock()
 """スレッド間での排他制御用ロック。"""
 
 
-@pytilpack.functools_.retry()
+@pytilpack.functools.retry()
 def generate_secret_key(
     cache_path: str | pathlib.Path, nbytes: int | None = None
 ) -> bytes:

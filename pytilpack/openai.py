@@ -8,7 +8,7 @@ import openai.types.chat
 import openai.types.chat.chat_completion_message
 import openai.types.chat.chat_completion_message_tool_call
 
-from pytilpack.python_ import coalesce, remove_none
+from pytilpack.python import coalesce, remove_none
 
 T = typing.TypeVar("T")
 

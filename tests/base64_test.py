@@ -1,8 +1,8 @@
-"""pytilpack.base64_ のテスト。"""
+"""pytilpack.base64 のテスト。"""
 
 import pytest
 
-from pytilpack import base64_
+import pytilpack.base64
 
 
 @pytest.mark.parametrize(
@@ -16,7 +16,7 @@ from pytilpack import base64_
 )
 def test_encode(input_data: str | bytes, expected_output: str) -> None:
     """encode関数のテスト。"""
-    assert base64_.encode(input_data) == expected_output
+    assert pytilpack.base64.encode(input_data) == expected_output
 
 
 @pytest.mark.parametrize(
@@ -30,17 +30,17 @@ def test_encode(input_data: str | bytes, expected_output: str) -> None:
 )
 def test_decode(input_data: str, expected_output: bytes) -> None:
     """decode関数のテスト。"""
-    assert base64_.decode(input_data) == expected_output
+    assert pytilpack.base64.decode(input_data) == expected_output
 
 
 def test_encode_decode_roundtrip() -> None:
     """エンコードとデコードのラウンドトリップテスト。"""
     original_str = "This is a test string with 日本語 characters."
-    encoded = base64_.encode(original_str)
-    decoded = base64_.decode(encoded)
+    encoded = pytilpack.base64.encode(original_str)
+    decoded = pytilpack.base64.decode(encoded)
     assert decoded == original_str.encode("utf-8")
 
     original_bytes = b"This is a test byte string \x01\x02\x03"
-    encoded_bytes = base64_.encode(original_bytes)
-    decoded_bytes = base64_.decode(encoded_bytes)
+    encoded_bytes = pytilpack.base64.encode(original_bytes)
+    decoded_bytes = pytilpack.base64.decode(encoded_bytes)
     assert decoded_bytes == original_bytes
