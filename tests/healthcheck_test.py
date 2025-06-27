@@ -108,7 +108,7 @@ async def test_run(
         for name, detail in result.get("details", {}).items():
             assert name in [check[0] for check in checks]
             assert detail["status"] in ["ok", "fail"]
-            assert isinstance(detail["response_time_ms"], (int, float))
+            assert isinstance(detail["response_time_ms"], int | float)
             assert detail["response_time_ms"] >= 0
             if detail["status"] == "ok":
                 assert "error" not in detail

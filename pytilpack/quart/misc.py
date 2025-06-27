@@ -15,9 +15,6 @@ import uvicorn
 
 logger = logging.getLogger(__name__)
 
-P = typing.ParamSpec("P")
-R = typing.TypeVar("R")
-
 _TIMESTAMP_CACHE: dict[str, int] = {}
 """静的ファイルの最終更新日時をキャッシュするための辞書。プロセス単位でキャッシュされる。"""
 
@@ -68,7 +65,9 @@ def set_max_concurrency(
     app.teardown_request(_release)
 
 
-def run_sync(func: typing.Callable[P, R]) -> typing.Callable[P, typing.Awaitable[R]]:
+def run_sync[**P, R](
+    func: typing.Callable[P, R],
+) -> typing.Callable[P, typing.Awaitable[R]]:
     """同期関数を非同期に実行するデコレーター。
 
     quart.utils.run_syncの型ヒントがいまいちなので用意。

@@ -10,8 +10,6 @@ import openai.types.chat.chat_completion_message_tool_call
 
 from pytilpack.python import coalesce, remove_none
 
-T = typing.TypeVar("T")
-
 logger = logging.getLogger(__name__)
 
 
@@ -212,20 +210,20 @@ def _make_tool_call(
 
 
 @typing.overload
-def _equals_all_get(
+def _equals_all_get[T](
     strict: bool, name: str, values: typing.Iterable[T], default_value: None = None
 ) -> T | None:
     pass
 
 
 @typing.overload
-def _equals_all_get(
+def _equals_all_get[T](
     strict: bool, name: str, values: typing.Iterable[T], default_value: T
 ) -> T:
     pass
 
 
-def _equals_all_get(
+def _equals_all_get[T](
     strict: bool, name: str, values: typing.Iterable[T], default_value: T | None = None
 ) -> T | None:
     """すべての要素が等しいかどうかを確認しつつ最後の要素を返す。"""
@@ -240,7 +238,7 @@ def _equals_all_get(
     return non_empty_values[-1]
 
 
-def _get_single(strict: bool, name: str, values: typing.Iterable[T]) -> T | None:
+def _get_single[T](strict: bool, name: str, values: typing.Iterable[T]) -> T | None:
     """リストの要素が1つだけであることを確認して取得する。"""
     values = list(values)
     # 空文字列や空の値を除外

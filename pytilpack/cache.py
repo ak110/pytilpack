@@ -8,7 +8,7 @@ T = typing.TypeVar("T")
 
 
 @dataclasses.dataclass
-class CacheEntry(typing.Generic[T]):
+class CacheEntry[T]:
     """キャッシュエントリ。
 
     タイムスタンプ、データ、ローダー関数を保持します。
@@ -19,7 +19,7 @@ class CacheEntry(typing.Generic[T]):
     loader: typing.Callable[[pathlib.Path], T]
 
 
-class CachedFileLoader(typing.Generic[T]):
+class CachedFileLoader[T]:
     """ファイルの最終更新日時に基づいてキャッシュを管理するローダー。
 
     使用例::

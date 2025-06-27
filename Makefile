@@ -7,9 +7,11 @@ update:
 	$(MAKE) test
 
 format:
-	uv run pyfltr --exit-zero-even-if-formatted --commands=fast
+	- uv run ruff check --fix
+	- uv run pyfltr --exit-zero-even-if-formatted --commands=fast
 
 test:
+	uv run ruff check --fix
 	uv run pyfltr --exit-zero-even-if-formatted
 
 .PHONY: help update test format

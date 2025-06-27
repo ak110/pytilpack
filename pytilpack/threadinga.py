@@ -5,11 +5,8 @@ import multiprocessing
 import threading
 import typing
 
-T = typing.TypeVar("T")
-U = typing.TypeVar("U")
 
-
-async def parallel(
+async def parallel[T](
     funcs: list[typing.Callable[[], typing.Coroutine[typing.Any, typing.Any, T]]],
     max_workers: int | None = None,
     timeout: float | None = None,
@@ -45,7 +42,7 @@ async def parallel(
     return list(results)
 
 
-async def parallel_for(
+async def parallel_for[T](
     func: typing.Callable[[int], typing.Awaitable[T]], n: int
 ) -> list[T]:
     """複数の関数を並列実行する。
@@ -61,7 +58,7 @@ async def parallel_for(
     return await parallel([lambda i=i: func(i) for i in range(n)])  # type: ignore[misc]
 
 
-async def parallel_foreach(
+async def parallel_foreach[T, U](
     func: typing.Callable[[U], typing.Awaitable[T]], items: typing.Iterable[U]
 ) -> list[T]:
     """複数の関数を並列実行する。

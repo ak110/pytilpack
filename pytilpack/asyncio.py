@@ -9,8 +9,6 @@ import typing
 
 logger = logging.getLogger(__name__)
 
-T = typing.TypeVar("T")
-
 
 @contextlib.asynccontextmanager
 async def acquire_with_timeout(
@@ -39,7 +37,7 @@ async def acquire_with_timeout(
             lock.release()
 
 
-def run(coro: typing.Coroutine[typing.Any, typing.Any, T]) -> T:
+def run[T](coro: typing.Coroutine[typing.Any, typing.Any, T]) -> T:
     """非同期関数を実行する。"""
     # https://github.com/microsoftgraph/msgraph-sdk-python/issues/366#issuecomment-1830756182
     try:

@@ -8,20 +8,18 @@ import inspect
 import re
 import typing
 
-T = typing.TypeVar("T")
-
 
 @typing.overload
-def coalesce(iterable: typing.Iterable[T | None], default_value: None = None) -> T:
+def coalesce[T](iterable: typing.Iterable[T | None], default_value: None = None) -> T:
     pass
 
 
 @typing.overload
-def coalesce(iterable: typing.Iterable[T | None], default_value: T) -> T:
+def coalesce[T](iterable: typing.Iterable[T | None], default_value: T) -> T:
     pass
 
 
-def coalesce(
+def coalesce[T](
     iterable: typing.Iterable[T | None], default_value: T | None = None
 ) -> T | None:
     """Noneでない最初の要素を取得する。"""
@@ -31,12 +29,12 @@ def coalesce(
     return default_value
 
 
-def remove_none(iterable: typing.Iterable[T | None]) -> list[T]:
+def remove_none[T](iterable: typing.Iterable[T | None]) -> list[T]:
     """Noneを除去する。"""
     return [item for item in iterable if item is not None]
 
 
-def find(
+def find[T](
     collection: typing.Iterable[T], predicate: typing.Callable[[T], bool]
 ) -> T | None:
     """条件を満たす最初の要素を取得する。"""
@@ -46,7 +44,7 @@ def find(
     return None
 
 
-def find_index(
+def find_index[T](
     collection: typing.Iterable[T], predicate: typing.Callable[[T], bool]
 ) -> int:
     """条件を満たす最初の要素のインデックスを取得する。"""
@@ -70,7 +68,7 @@ def empty(x: typing.Any) -> bool:
     )
 
 
-def default(x: typing.Any, default_value: T) -> T:
+def default[T](x: typing.Any, default_value: T) -> T:
     """Noneまたは空の場合にデフォルト値を返す。
 
     関数名はdefault_if_null_or_emptyとかの方が正しいが、
@@ -233,7 +231,7 @@ def get_dict(
     raise ValueError(f"{_stringify_key(key)} is not dict: {value!r}")
 
 
-def get(
+def get[T](
     data: list | dict,
     key: str | int | list[str | int],
     default_value: T | None = None,

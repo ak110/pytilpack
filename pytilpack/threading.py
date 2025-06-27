@@ -7,9 +7,6 @@ import typing
 if typing.TYPE_CHECKING:
     import threading
 
-T = typing.TypeVar("T")
-U = typing.TypeVar("U")
-
 
 @contextlib.contextmanager
 def acquire_with_timeout(
@@ -34,7 +31,7 @@ def acquire_with_timeout(
             lock.release()
 
 
-def parallel(
+def parallel[T](
     funcs: typing.Iterable[typing.Callable[[], T]],
     max_workers: int | None = None,
     thread_name_prefix: str = "",
@@ -64,7 +61,7 @@ def parallel(
         )
 
 
-def parallel_for(func: typing.Callable[[int], T], n: int) -> list[T]:
+def parallel_for[T](func: typing.Callable[[int], T], n: int) -> list[T]:
     """複数の関数を並列実行する。
 
     Args:
@@ -78,7 +75,7 @@ def parallel_for(func: typing.Callable[[int], T], n: int) -> list[T]:
     return parallel([lambda i=i: func(i) for i in range(n)])  # type: ignore[misc]
 
 
-def parallel_foreach(
+def parallel_foreach[T, U](
     func: typing.Callable[[U], T], items: typing.Iterable[U]
 ) -> list[T]:
     """複数の関数を並列実行する。

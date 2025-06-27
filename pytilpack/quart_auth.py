@@ -8,9 +8,6 @@ import typing
 import quart
 import quart_auth
 
-P = typing.ParamSpec("P")
-R = typing.TypeVar("R")
-
 logger = logging.getLogger(__name__)
 
 
@@ -35,7 +32,7 @@ class AnonymousUser(UserMixin):
 UserType = typing.TypeVar("UserType", bound=UserMixin)
 
 
-class QuartAuth(typing.Generic[UserType], quart_auth.QuartAuth):
+class QuartAuth[UserType](quart_auth.QuartAuth):
     """Quart-Authの独自拡張。
 
     Flask-Loginのように@auth_manager.user_loaderを定義できるようにする。
@@ -151,7 +148,7 @@ def is_admin(attr_name: str = "is_admin") -> bool:
     return is_authenticated() and getattr(current_user(), attr_name)
 
 
-def admin_only(func: typing.Callable[P, R]) -> typing.Callable[P, R]:
+def admin_only[**P, R](func: typing.Callable[P, R]) -> typing.Callable[P, R]:
     """管理者のみアクセス可能なルートを定義するデコレータ。"""
     if inspect.iscoroutinefunction(func):
 
