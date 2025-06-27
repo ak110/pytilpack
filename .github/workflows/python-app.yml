@@ -31,11 +31,8 @@ jobs:
       - name: Test with ruff
         run: uv run ruff check
 
-      - name: Test with mypy
-        run: uv run mypy pytilpack
-
-      - name: Test with pytest
-        run: uv run pytest
+      - name: Test with pyfltr
+        run: uv run pyfltr
 
       - name: Prune uv cache for CI
         run: uv cache prune --ci

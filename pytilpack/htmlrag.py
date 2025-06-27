@@ -47,12 +47,16 @@ def clean_html(
         keep_href = not aggressive
 
     soup = bs4.BeautifulSoup(html, "html.parser")
-    html = _simplify_html(soup, aggressive=aggressive, keep_title=keep_title, keep_href=keep_href)
+    html = _simplify_html(
+        soup, aggressive=aggressive, keep_title=keep_title, keep_href=keep_href
+    )
     html = _clean_xml(html)
     return html
 
 
-def _simplify_html(soup: bs4.BeautifulSoup, aggressive: bool, keep_title: bool, keep_href: bool) -> str:
+def _simplify_html(
+    soup: bs4.BeautifulSoup, aggressive: bool, keep_title: bool, keep_href: bool
+) -> str:
     for script in soup(["script", "style"]):
         script.decompose()
     # 独自拡張: メインコンテンツじゃなさそうなタグとtitleタグを削除
@@ -100,7 +104,13 @@ def _simplify_html(soup: bs4.BeautifulSoup, aggressive: bool, keep_title: bool, 
             children = [child for child in tag.contents if not isinstance(child, str)]
             if len(children) == 1:
                 tag_text = tag.get_text()
-                child_text = "".join([child.get_text() for child in tag.contents if not isinstance(child, str)])
+                child_text = "".join(
+                    [
+                        child.get_text()
+                        for child in tag.contents
+                        if not isinstance(child, str)
+                    ]
+                )
                 if concat_text(child_text) == concat_text(tag_text):
                     tag.replace_with_children()
     #  if html is not wrapped in a html tag, wrap it

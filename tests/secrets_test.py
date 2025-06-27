@@ -31,9 +31,14 @@ def test_generate_secret_key_concurrent(tmp_path: pathlib.Path) -> None:
         with concurrent.futures.ProcessPoolExecutor(
             max_workers=4, mp_context=multiprocessing.get_context("spawn")
         ) as process_executor:
-            process_futures = [process_executor.submit(_run_threads, path, 4) for _ in range(4)]
+            process_futures = [
+                process_executor.submit(_run_threads, path, 4) for _ in range(4)
+            ]
             results = sum(
-                (future.result() for future in concurrent.futures.as_completed(process_futures)),
+                (
+                    future.result()
+                    for future in concurrent.futures.as_completed(process_futures)
+                ),
                 [],
             )
 
@@ -48,6 +53,14 @@ def _run_threads(path: pathlib.Path, thread_count: int) -> list[bytes]:
     def call_generate_secret_key() -> bytes:
         return pytilpack.secrets.generate_secret_key(path)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as thread_executor:
-        thread_futures = [thread_executor.submit(call_generate_secret_key) for _ in range(thread_count)]
-        return [future.result() for future in concurrent.futures.as_completed(thread_futures)]
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=thread_count
+    ) as thread_executor:
+        thread_futures = [
+            thread_executor.submit(call_generate_secret_key)
+            for _ in range(thread_count)
+        ]
+        return [
+            future.result()
+            for future in concurrent.futures.as_completed(thread_futures)
+        ]

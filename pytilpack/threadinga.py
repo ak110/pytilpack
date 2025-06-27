@@ -24,7 +24,9 @@ async def parallel[T](
         各関数の戻り値のリスト。
 
     """
-    semaphore = threading.Semaphore(max_workers if max_workers is not None else multiprocessing.cpu_count())
+    semaphore = threading.Semaphore(
+        max_workers if max_workers is not None else multiprocessing.cpu_count()
+    )
 
     def _thread(
         func: typing.Callable[[], typing.Coroutine[typing.Any, typing.Any, T]],
@@ -40,7 +42,9 @@ async def parallel[T](
     return list(results)
 
 
-async def parallel_for[T](func: typing.Callable[[int], typing.Awaitable[T]], n: int) -> list[T]:
+async def parallel_for[T](
+    func: typing.Callable[[int], typing.Awaitable[T]], n: int
+) -> list[T]:
     """複数の関数を並列実行する。
 
     Args:
@@ -54,7 +58,9 @@ async def parallel_for[T](func: typing.Callable[[int], typing.Awaitable[T]], n: 
     return await parallel([lambda i=i: func(i) for i in range(n)])  # type: ignore[misc]
 
 
-async def parallel_foreach[T, U](func: typing.Callable[[U], typing.Awaitable[T]], items: typing.Iterable[U]) -> list[T]:
+async def parallel_foreach[T, U](
+    func: typing.Callable[[U], typing.Awaitable[T]], items: typing.Iterable[U]
+) -> list[T]:
     """複数の関数を並列実行する。
 
     Args:

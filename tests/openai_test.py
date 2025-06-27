@@ -21,7 +21,9 @@ def test_gather_chunks():
             choices=[
                 openai.types.chat.chat_completion_chunk.Choice(
                     index=0,
-                    delta=openai.types.chat.chat_completion_chunk.ChoiceDelta(role="assistant"),
+                    delta=openai.types.chat.chat_completion_chunk.ChoiceDelta(
+                        role="assistant"
+                    ),
                 )
             ],
             created=0,
@@ -33,7 +35,9 @@ def test_gather_chunks():
             choices=[
                 openai.types.chat.chat_completion_chunk.Choice(
                     index=0,
-                    delta=openai.types.chat.chat_completion_chunk.ChoiceDelta(content="cont"),
+                    delta=openai.types.chat.chat_completion_chunk.ChoiceDelta(
+                        content="cont"
+                    ),
                 )
             ],
             created=0,
@@ -46,7 +50,9 @@ def test_gather_chunks():
             choices=[
                 openai.types.chat.chat_completion_chunk.Choice(
                     index=0,
-                    delta=openai.types.chat.chat_completion_chunk.ChoiceDelta(content="ent"),
+                    delta=openai.types.chat.chat_completion_chunk.ChoiceDelta(
+                        content="ent"
+                    ),
                     finish_reason="stop",
                 )
             ],
@@ -62,7 +68,9 @@ def test_gather_chunks():
             openai.types.chat.chat_completion.Choice(
                 finish_reason="stop",
                 index=0,
-                message=openai.types.chat.ChatCompletionMessage(content="content", role="assistant"),
+                message=openai.types.chat.ChatCompletionMessage(
+                    content="content", role="assistant"
+                ),
             )
         ],
         created=0,
@@ -99,7 +107,9 @@ def test_gather_chunks_claude_tools():
                                     name=None, arguments='{"expression":"1+1"}'
                                 ),
                             ),
-                            openai.types.chat.chat_completion_chunk.ChoiceDeltaToolCall(index=1, type="function"),
+                            openai.types.chat.chat_completion_chunk.ChoiceDeltaToolCall(
+                                index=1, type="function"
+                            ),
                         ],
                     ),
                     finish_reason="tool_calls",
@@ -147,11 +157,19 @@ def test_gather_chunks_stream(data_dir: pathlib.Path):
 
     @app.route("/v1/chat/completions", methods=["POST"])
     def mock_chat_completions():
-        response_body = (data_dir / "openai.chat.stream.txt").read_text(encoding="utf-8").split("\r\n\r\n", 1)[-1]
-        return flask.Response(response_body.split("\r\n"), content_type="text/event-stream")
+        response_body = (
+            (data_dir / "openai.chat.stream.txt")
+            .read_text(encoding="utf-8")
+            .split("\r\n\r\n", 1)[-1]
+        )
+        return flask.Response(
+            response_body.split("\r\n"), content_type="text/event-stream"
+        )
 
     with pytilpack.flask.run(app):
-        response = openai.OpenAI(api_key="sk-dummy", base_url="http://localhost:5000/v1").chat.completions.create(
+        response = openai.OpenAI(
+            api_key="sk-dummy", base_url="http://localhost:5000/v1"
+        ).chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": "1+1=?"}],
             stream=True,
@@ -163,7 +181,9 @@ def test_gather_chunks_stream(data_dir: pathlib.Path):
                 openai.types.chat.chat_completion.Choice(
                     finish_reason="stop",
                     index=0,
-                    message=openai.types.chat.ChatCompletionMessage(content="1+1=2", role="assistant"),
+                    message=openai.types.chat.ChatCompletionMessage(
+                        content="1+1=2", role="assistant"
+                    ),
                 )
             ],
             created=1714970340,
@@ -179,11 +199,19 @@ def test_gather_chunks_function1(data_dir: pathlib.Path):
 
     @app.route("/v1/chat/completions", methods=["POST"])
     def mock_chat_completions():
-        response_body = (data_dir / "openai.chat.function1.txt").read_text(encoding="utf-8").split("\r\n\r\n", 1)[-1]
-        return flask.Response(response_body.split("\r\n"), content_type="text/event-stream")
+        response_body = (
+            (data_dir / "openai.chat.function1.txt")
+            .read_text(encoding="utf-8")
+            .split("\r\n\r\n", 1)[-1]
+        )
+        return flask.Response(
+            response_body.split("\r\n"), content_type="text/event-stream"
+        )
 
     with pytilpack.flask.run(app):
-        response = openai.OpenAI(api_key="sk-dummy", base_url="http://localhost:5000/v1").chat.completions.create(
+        response = openai.OpenAI(
+            api_key="sk-dummy", base_url="http://localhost:5000/v1"
+        ).chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": "1+1=?"}],
             stream=True,
@@ -223,11 +251,19 @@ def test_gather_chunks_function2(data_dir: pathlib.Path):
 
     @app.route("/v1/chat/completions", methods=["POST"])
     def mock_chat_completions():
-        response_body = (data_dir / "openai.chat.function2.txt").read_text(encoding="utf-8").split("\r\n\r\n", 1)[-1]
-        return flask.Response(response_body.split("\r\n"), content_type="text/event-stream")
+        response_body = (
+            (data_dir / "openai.chat.function2.txt")
+            .read_text(encoding="utf-8")
+            .split("\r\n\r\n", 1)[-1]
+        )
+        return flask.Response(
+            response_body.split("\r\n"), content_type="text/event-stream"
+        )
 
     with pytilpack.flask.run(app):
-        response = openai.OpenAI(api_key="sk-dummy", base_url="http://localhost:5000/v1").chat.completions.create(
+        response = openai.OpenAI(
+            api_key="sk-dummy", base_url="http://localhost:5000/v1"
+        ).chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": "1+1=?"}],
             stream=True,
@@ -239,7 +275,9 @@ def test_gather_chunks_function2(data_dir: pathlib.Path):
                 openai.types.chat.chat_completion.Choice(
                     finish_reason="stop",
                     index=0,
-                    message=openai.types.chat.ChatCompletionMessage(content="The result of 1 + 1 is 789.", role="assistant"),
+                    message=openai.types.chat.ChatCompletionMessage(
+                        content="The result of 1 + 1 is 789.", role="assistant"
+                    ),
                 )
             ],
             created=1714971254,

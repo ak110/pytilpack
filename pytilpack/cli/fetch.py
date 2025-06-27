@@ -17,9 +17,13 @@ logger = logging.getLogger(__name__)
 
 def main() -> None:
     """コマンドラインエントリポイント。"""
-    parser = argparse.ArgumentParser(description="URL先のHTMLを取得し、簡略化して標準出力に出力します。")
+    parser = argparse.ArgumentParser(
+        description="URL先のHTMLを取得し、簡略化して標準出力に出力します。"
+    )
     parser.add_argument("url", help="URL", type=str)
-    parser.add_argument("--no-verify", action="store_true", help="SSL証明書の検証を無効化する。")
+    parser.add_argument(
+        "--no-verify", action="store_true", help="SSL証明書の検証を無効化する。"
+    )
     parser.add_argument("--verbose", action="store_true", help="詳細なログを出力")
     args = parser.parse_args()
 
@@ -38,7 +42,9 @@ def main() -> None:
         return
 
     content = r.text
-    output = pytilpack.htmlrag.clean_html(content, aggressive=True, keep_title=True, keep_href=True)
+    output = pytilpack.htmlrag.clean_html(
+        content, aggressive=True, keep_title=True, keep_href=True
+    )
     print(output)
 
 

@@ -151,7 +151,9 @@ def num_tokens_from_texts(model: str, texts: list[str] | str) -> int:
     return sum(len(enc.encode(text)) for text in texts)
 
 
-def num_tokens_from_tools(encoding: tiktoken.Encoding, tools: list[openai.types.chat.ChatCompletionToolParam]) -> int:
+def num_tokens_from_tools(
+    encoding: tiktoken.Encoding, tools: list[openai.types.chat.ChatCompletionToolParam]
+) -> int:
     warnings.warn(
         "num_tokens_from_tools is deprecated. Use num_tokens_for_tools instead.",
         DeprecationWarning,
@@ -198,7 +200,9 @@ def num_tokens_for_tools(
     num_tokens = 0
     for tool in tools:
         if tool.get("type") != "function":
-            logger.warning(f"Tool type {tool.get('type')} is not supported. Only 'function' type is supported.")
+            logger.warning(
+                f"Tool type {tool.get('type')} is not supported. Only 'function' type is supported."
+            )
             continue
         function = tool["function"]
         try:
@@ -213,7 +217,9 @@ def num_tokens_for_tools(
             print(f"{num_tokens=} func")
 
             parameters = function.get("parameters", {})
-            properties = typing.cast(dict[str, dict[str, typing.Any]], parameters.get("properties", {}))
+            properties = typing.cast(
+                dict[str, dict[str, typing.Any]], parameters.get("properties", {})
+            )
             if len(properties) > 0:
                 num_tokens += prop_init
                 print(f"{num_tokens=} prop_init")
@@ -222,7 +228,9 @@ def num_tokens_for_tools(
 
                     prop_type = fields.get("type", "")
                     prop_desc = fields.get("description", "")
-                    num_tokens += len(encoding.encode(f"{prop_name}:{prop_type}:{prop_desc}"))
+                    num_tokens += len(
+                        encoding.encode(f"{prop_name}:{prop_type}:{prop_desc}")
+                    )
 
                     if "enum" in fields:
                         num_tokens += enum_init
@@ -241,6 +249,8 @@ def num_tokens_for_tools(
         num_tokens += 1
     elif isinstance(tool_choice, dict):
         num_tokens += 7
-        num_tokens += len(encoding.encode(str(tool_choice.get("function", {}).get("name", ""))))
+        num_tokens += len(
+            encoding.encode(str(tool_choice.get("function", {}).get("name", "")))
+        )
 
     return num_tokens

@@ -48,7 +48,11 @@ def parse(data_url: str) -> DataURL:
 
     """
     if not data_url.startswith("data:") or "," not in data_url:
-        raise ValueError("Invalid data URL: " + data_url[:32] + ("" if len(data_url) <= 32 else "..."))
+        raise ValueError(
+            "Invalid data URL: "
+            + data_url[:32]
+            + ("" if len(data_url) <= 32 else "...")
+        )
     prefix, content = data_url.split(",", 1)
     prefix = prefix.removeprefix("data:")
     encoding: typing.Literal["base64", "plain"]

@@ -21,7 +21,9 @@ def load_pem_certificate(certificate_path: pathlib.Path | str) -> dict:
 
 def load_pem_certificate_data(certificate_data: bytes) -> dict:
     """PEM形式の証明書データを読み込み、秘密鍵と指紋を返す。"""
-    cert = cryptography.x509.load_pem_x509_certificate(certificate_data, cryptography.hazmat.backends.default_backend())
+    cert = cryptography.x509.load_pem_x509_certificate(
+        certificate_data, cryptography.hazmat.backends.default_backend()
+    )
     fingerprint = cert.fingerprint(cryptography.hazmat.primitives.hashes.SHA1())
     return {
         "private_key": certificate_data,
@@ -34,7 +36,9 @@ class SimpleTokenCredential(azure.core.credentials.TokenCredential):
 
     def __init__(self, access_token: str, expires_in: int):
         self.access_token = access_token
-        self.expires: datetime.datetime = datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=expires_in)
+        self.expires: datetime.datetime = datetime.datetime.now(
+            datetime.UTC
+        ) + datetime.timedelta(seconds=expires_in)
         self.expires_on: int = int(self.expires.timestamp())
 
     def get_token(self, *args, **kwargs) -> azure.core.credentials.AccessToken:
@@ -68,7 +72,9 @@ class FileTokenCache:
         self.cache = msal.SerializableTokenCache()
         with _file_token_cache_lock:
             if self.cache_path.exists():
-                self.cache.deserialize(self.cache_path.read_text("utf-8", errors="replace"))
+                self.cache.deserialize(
+                    self.cache_path.read_text("utf-8", errors="replace")
+                )
 
     def get(self) -> msal.SerializableTokenCache:
         """キャッシュを取得する。"""
@@ -78,4 +84,6 @@ class FileTokenCache:
         """キャッシュをファイルに保存する。"""
         with _file_token_cache_lock:
             if self.cache.has_state_changed:
-                self.cache_path.write_text(self.cache.serialize(), "utf-8", errors="replace")
+                self.cache_path.write_text(
+                    self.cache.serialize(), "utf-8", errors="replace"
+                )

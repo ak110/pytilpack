@@ -7,7 +7,9 @@ import pathlib
 import typing
 
 
-def converter(o: typing.Any, _default: typing.Callable[[typing.Any], typing.Any] | None = None):
+def converter(
+    o: typing.Any, _default: typing.Callable[[typing.Any], typing.Any] | None = None
+):
     """JSONエンコード時の変換処理。
 
     日付はJavaScriptで対応できるようにISO8601形式に変換する。

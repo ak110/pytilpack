@@ -146,7 +146,9 @@ ALLOWED_PROTOCOLS = {"http", "https", "mailto"}
 def markdownfy(
     text: str,
     extensions: typing.Sequence[str | markdown.Extension] | None = None,
-    extension_configs: (typing.Mapping[str, typing.Mapping[str, typing.Any]] | None) = None,
+    extension_configs: (
+        typing.Mapping[str, typing.Mapping[str, typing.Any]] | None
+    ) = None,
     tab_length: int | None = 2,
     sanitize: bool = True,
     allow_tags: typing.Iterable[str] | None = None,

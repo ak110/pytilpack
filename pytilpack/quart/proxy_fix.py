@@ -51,19 +51,25 @@ class ProxyFix:
             headers = list(scope["headers"])
 
             # X-Forwarded-For → client
-            forwarded_for = self._get_trusted_value(b"x-forwarded-for", headers, self.x_for)
+            forwarded_for = self._get_trusted_value(
+                b"x-forwarded-for", headers, self.x_for
+            )
             if forwarded_for and scope.get("client"):
                 forwarded_for = forwarded_for.split(",")[-1].strip()
                 _, orig_port = scope.get("client") or (None, None)
                 scope["client"] = (forwarded_for, orig_port or 0)
 
             # X-Forwarded-Proto → scheme
-            forwarded_proto = self._get_trusted_value(b"x-forwarded-proto", headers, self.x_proto)
+            forwarded_proto = self._get_trusted_value(
+                b"x-forwarded-proto", headers, self.x_proto
+            )
             if forwarded_proto:
                 scope["scheme"] = forwarded_proto
 
             # X-Forwarded-Host → server & Host header
-            forwarded_host = self._get_trusted_value(b"x-forwarded-host", headers, self.x_host)
+            forwarded_host = self._get_trusted_value(
+                b"x-forwarded-host", headers, self.x_host
+            )
             if forwarded_host:
                 host_val = forwarded_host
                 host, port = host_val, None
@@ -81,7 +87,9 @@ class ProxyFix:
                 headers.append((b"host", host_hdr.encode("utf-8", errors="replace")))
 
             # X-Forwarded-Port → server port & Host header
-            forwarded_port = self._get_trusted_value(b"x-forwarded-port", headers, self.x_port)
+            forwarded_port = self._get_trusted_value(
+                b"x-forwarded-port", headers, self.x_port
+            )
             if forwarded_port and forwarded_port.isdigit():
                 port_int = int(forwarded_port)
                 orig_server = scope.get("server") or (None, None)
@@ -91,7 +99,9 @@ class ProxyFix:
                 headers.append((b"host", f"{orig_host}:{port_int}".encode()))
 
             # X-Forwarded-Prefix → root_path + config
-            forwarded_prefix = self._get_trusted_value(b"x-forwarded-prefix", headers, self.x_prefix)
+            forwarded_prefix = self._get_trusted_value(
+                b"x-forwarded-prefix", headers, self.x_prefix
+            )
             if forwarded_prefix and forwarded_prefix != "/":
                 prefix = forwarded_prefix.rstrip("/")
                 scope["root_path"] = prefix
@@ -119,7 +129,12 @@ class ProxyFix:
         values = []
         for header_name, header_value in headers:
             if header_name.lower() == name:
-                values.extend([value.decode("utf-8", errors="replace").strip() for value in header_value.split(b",")])
+                values.extend(
+                    [
+                        value.decode("utf-8", errors="replace").strip()
+                        for value in header_value.split(b",")
+                    ]
+                )
 
         if len(values) >= trusted_hops:
             return values[-trusted_hops]

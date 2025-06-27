@@ -37,8 +37,12 @@ class Test2(Base, pytilpack.sqlalchemy.Mixin):
     __table_args__ = (sqlalchemy.UniqueConstraint("value1", "value2", name="uc1"),)
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
-    name = sqlalchemy.Column(sqlalchemy.String(250), nullable=False, unique=True, doc="名前")
-    pass_hash = sqlalchemy.Column(sqlalchemy.String(100), default=None, comment="パスハッシュ")
+    name = sqlalchemy.Column(
+        sqlalchemy.String(250), nullable=False, unique=True, doc="名前"
+    )
+    pass_hash = sqlalchemy.Column(
+        sqlalchemy.String(100), default=None, comment="パスハッシュ"
+    )
     # 有効フラグ
     enabled = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False, default=True)
     is_admin = sqlalchemy.Column(  # このコメントは無視されてほしい
@@ -108,7 +112,9 @@ def test_to_dict() -> None:
         "value4": datetime.datetime(2021, 1, 1),
         "value5": None,
     }
-    assert test2.to_dict(includes=["name", "value3"], exclude_none=True) == {"name": "test2"}
+    assert test2.to_dict(includes=["name", "value3"], exclude_none=True) == {
+        "name": "test2"
+    }
 
 
 def test_describe() -> None:
@@ -164,7 +170,9 @@ def test_wait_for_connection() -> None:
 
     # 異常系: タイムアウト
     with pytest.raises(sqlalchemy.exc.OperationalError):
-        pytilpack.sqlalchemy.wait_for_connection("sqlite:////nonexistent/path/db.sqlite3", timeout=1.0)
+        pytilpack.sqlalchemy.wait_for_connection(
+            "sqlite:////nonexistent/path/db.sqlite3", timeout=1.0
+        )
 
 
 def test_safe_close() -> None:

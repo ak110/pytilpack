@@ -17,7 +17,9 @@ def main() -> None:
     """古いファイルを削除します。"""
     parser = argparse.ArgumentParser(description="古いファイルを削除します")
     parser.add_argument("path", type=pathlib.Path, help="対象のディレクトリパス")
-    parser.add_argument("--days", type=float, required=True, help="指定した日数より古いファイルを削除")
+    parser.add_argument(
+        "--days", type=float, required=True, help="指定した日数より古いファイルを削除"
+    )
     parser.add_argument(
         "--no-delete-empty-dirs",
         action="store_false",

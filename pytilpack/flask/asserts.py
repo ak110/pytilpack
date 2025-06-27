@@ -86,7 +86,9 @@ def assert_html(
         # HTMLのチェック
         pytilpack.web.check_html(response.get_data(), strict=strict)
     except AssertionError as e:
-        tmp_file_path = pytilpack.pytest.create_temp_view(tmp_path, response_body, ".html")
+        tmp_file_path = pytilpack.pytest.create_temp_view(
+            tmp_path, response_body, ".html"
+        )
         raise AssertionError(f"{e} (HTML: {tmp_file_path} )") from e
 
     return response_body
@@ -184,7 +186,9 @@ def check_status_code(status_code: int, valid_status_code: int) -> None:
     pytilpack.web.check_status_code(status_code, valid_status_code)
 
 
-def check_content_type(content_type: str, valid_content_types: str | typing.Iterable[str] | None) -> None:
+def check_content_type(
+    content_type: str, valid_content_types: str | typing.Iterable[str] | None
+) -> None:
     """deprecated."""
     warnings.warn(
         "pytilpack.flask_.check_content_type is deprecated. Use pytilpack.web.check_content_type instead.",

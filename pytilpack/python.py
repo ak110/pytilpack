@@ -19,7 +19,9 @@ def coalesce[T](iterable: typing.Iterable[T | None], default_value: T) -> T:
     pass
 
 
-def coalesce[T](iterable: typing.Iterable[T | None], default_value: T | None = None) -> T | None:
+def coalesce[T](
+    iterable: typing.Iterable[T | None], default_value: T | None = None
+) -> T | None:
     """Noneでない最初の要素を取得する。"""
     for item in iterable:
         if item is not None:
@@ -32,7 +34,9 @@ def remove_none[T](iterable: typing.Iterable[T | None]) -> list[T]:
     return [item for item in iterable if item is not None]
 
 
-def find[T](collection: typing.Iterable[T], predicate: typing.Callable[[T], bool]) -> T | None:
+def find[T](
+    collection: typing.Iterable[T], predicate: typing.Callable[[T], bool]
+) -> T | None:
     """条件を満たす最初の要素を取得する。"""
     for item in collection:
         if predicate(item):
@@ -40,7 +44,9 @@ def find[T](collection: typing.Iterable[T], predicate: typing.Callable[[T], bool
     return None
 
 
-def find_index[T](collection: typing.Iterable[T], predicate: typing.Callable[[T], bool]) -> int:
+def find_index[T](
+    collection: typing.Iterable[T], predicate: typing.Callable[[T], bool]
+) -> int:
     """条件を満たす最初の要素のインデックスを取得する。"""
     for i, item in enumerate(collection):
         if predicate(item):
@@ -55,7 +61,11 @@ def empty(x: typing.Any) -> bool:
     短く使いたいのでemptyにしている。
 
     """
-    return x is None or (isinstance(x, str) and x == "") or (hasattr(x, "__len__") and len(x) == 0)
+    return (
+        x is None
+        or (isinstance(x, str) and x == "")
+        or (hasattr(x, "__len__") and len(x) == 0)
+    )
 
 
 def default[T](x: typing.Any, default_value: T) -> T:
@@ -80,7 +90,11 @@ def doc_summary(obj: typing.Any) -> str:
     """
     if obj is None:
         return ""
-    return obj.__doc__.strip().split("\n", 1)[0] if hasattr(obj, "__doc__") and not empty(obj.__doc__) else ""
+    return (
+        obj.__doc__.strip().split("\n", 1)[0]
+        if hasattr(obj, "__doc__") and not empty(obj.__doc__)
+        else ""
+    )
 
 
 def class_field_comments(cls: typing.Any) -> dict[str, str | None]:

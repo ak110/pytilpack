@@ -53,8 +53,12 @@ def parallel[T](
         各関数の戻り値のリスト。
 
     """
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix=thread_name_prefix) as executor:
-        return list(executor.map(lambda f: f(), funcs, timeout=timeout, chunksize=chunksize))
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=max_workers, thread_name_prefix=thread_name_prefix
+    ) as executor:
+        return list(
+            executor.map(lambda f: f(), funcs, timeout=timeout, chunksize=chunksize)
+        )
 
 
 def parallel_for[T](func: typing.Callable[[int], T], n: int) -> list[T]:
@@ -71,7 +75,9 @@ def parallel_for[T](func: typing.Callable[[int], T], n: int) -> list[T]:
     return parallel([lambda i=i: func(i) for i in range(n)])  # type: ignore[misc]
 
 
-def parallel_foreach[T, U](func: typing.Callable[[U], T], items: typing.Iterable[U]) -> list[T]:
+def parallel_foreach[T, U](
+    func: typing.Callable[[U], T], items: typing.Iterable[U]
+) -> list[T]:
     """複数の関数を並列実行する。
 
     Args:

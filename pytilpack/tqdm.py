@@ -42,8 +42,16 @@ def capture(capture_stdout: bool = True, capture_stderr: bool = True):
     stderr_buffer = io.StringIO()
     try:
         with (
-            contextlib.redirect_stdout(stdout_buffer) if capture_stdout else contextlib.nullcontext(),
-            contextlib.redirect_stderr(stderr_buffer) if capture_stderr else contextlib.nullcontext(),
+            (
+                contextlib.redirect_stdout(stdout_buffer)
+                if capture_stdout
+                else contextlib.nullcontext()
+            ),
+            (
+                contextlib.redirect_stderr(stderr_buffer)
+                if capture_stderr
+                else contextlib.nullcontext()
+            ),
         ):
             yield
     finally:

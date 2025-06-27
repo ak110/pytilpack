@@ -53,7 +53,9 @@ class SyncMixin:
     sessionmaker: sqlalchemy.orm.sessionmaker[sqlalchemy.orm.Session] | None = None
     """セッションファクトリ。"""
 
-    session_var: contextvars.ContextVar[sqlalchemy.orm.Session] = contextvars.ContextVar("session_var")
+    session_var: contextvars.ContextVar[sqlalchemy.orm.Session] = (
+        contextvars.ContextVar("session_var")
+    )
     """セッション。"""
 
     @classmethod
@@ -97,7 +99,9 @@ class SyncMixin:
         cls.engine = sqlalchemy.create_engine(url, **kwargs)
         atexit.register(cls.engine.dispose)
 
-        cls.sessionmaker = sqlalchemy.orm.sessionmaker(cls.engine, autoflush=autoflush, expire_on_commit=expire_on_commit)
+        cls.sessionmaker = sqlalchemy.orm.sessionmaker(
+            cls.engine, autoflush=autoflush, expire_on_commit=expire_on_commit
+        )
 
     @classmethod
     def connect(cls) -> sqlalchemy.Connection:
@@ -164,7 +168,9 @@ class SyncMixin:
         """セッションを取得する。"""
         sess = cls.session_var.get(None)
         if sess is None:
-            raise RuntimeError(f"セッションが開始されていません。{cls.__qualname__}.start_session()を呼び出してください。")
+            raise RuntimeError(
+                f"セッションが開始されていません。{cls.__qualname__}.start_session()を呼び出してください。"
+            )
         return sess
 
     @classmethod
@@ -193,13 +199,25 @@ class SyncMixin:
         """queryのレコード数を取得する。"""
         # pylint: disable=not-callable
         if isinstance(query, sqlalchemy.Select):
-            return cls.scalar_one_or_none(query.with_only_columns(sqlalchemy.func.count()).order_by(None)) or 0
+            return (
+                cls.scalar_one_or_none(
+                    query.with_only_columns(sqlalchemy.func.count()).order_by(None)
+                )
+                or 0
+            )
         return (
-            cls.scalar_one_or_none(sqlalchemy.select(sqlalchemy.func.count()).select_from(query.order_by(None).subquery())) or 0
+            cls.scalar_one_or_none(
+                sqlalchemy.select(sqlalchemy.func.count()).select_from(
+                    query.order_by(None).subquery()
+                )
+            )
+            or 0
         )
 
     @classmethod
-    def scalar_one(cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T:
+    def scalar_one(
+        cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]
+    ) -> T:
         """queryの結果を1件取得する。
 
         Args:
@@ -216,7 +234,9 @@ class SyncMixin:
         return cls.session().execute(query).scalar_one()
 
     @classmethod
-    def scalar_one_or_none(cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T | None:
+    def scalar_one_or_none(
+        cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]
+    ) -> T | None:
         """queryの結果を0件または1件取得する。
 
         Args:
@@ -232,7 +252,9 @@ class SyncMixin:
         return cls.session().execute(query).scalar_one_or_none()
 
     @classmethod
-    def scalars(cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> list[T]:
+    def scalars(
+        cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]
+    ) -> list[T]:
         """queryの結果を全件取得する。
 
         Args:
@@ -245,7 +267,9 @@ class SyncMixin:
         return list(cls.session().execute(query).scalars().all())
 
     @classmethod
-    def one(cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT]:
+    def one(
+        cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]
+    ) -> sqlalchemy.Row[TT]:
         """queryの結果を1件取得する。
 
         Args:
@@ -262,7 +286,9 @@ class SyncMixin:
         return cls.session().execute(query).one()
 
     @classmethod
-    def one_or_none(cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT] | None:
+    def one_or_none(
+        cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]
+    ) -> sqlalchemy.Row[TT] | None:
         """queryの結果を0件または1件取得する。
 
         Args:
@@ -278,7 +304,9 @@ class SyncMixin:
         return cls.session().execute(query).one_or_none()
 
     @classmethod
-    def all(cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> list[sqlalchemy.Row[TT]]:
+    def all(
+        cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]
+    ) -> list[sqlalchemy.Row[TT]]:
         """queryの結果を全件取得する。
 
         Args:
@@ -332,7 +360,9 @@ class SyncMixin:
         page_query = query.offset((page - 1) * per_page).limit(per_page)
         items = cls.scalars(page_query) if scalar else cls.all(page_query)
         # pylint: disable=protected-access
-        return pytilpack._paginator.Paginator(page=page, per_page=per_page, items=items, total=total)
+        return pytilpack._paginator.Paginator(
+            page=page, per_page=per_page, items=items, total=total
+        )
 
     def to_dict(
         self,

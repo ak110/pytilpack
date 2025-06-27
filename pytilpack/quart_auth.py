@@ -65,7 +65,9 @@ class QuartAuth[UserType](quart_auth.QuartAuth):
         template_context["current_user"] = self.current_user  # type: ignore[assignment]
         return template_context
 
-    def user_loader(self, user_loader: typing.Callable[[str], UserType | None]) -> typing.Callable[[str], UserType | None]:
+    def user_loader(
+        self, user_loader: typing.Callable[[str], UserType | None]
+    ) -> typing.Callable[[str], UserType | None]:
         """ユーザーローダーのデコレータ。"""
         self.user_loader_func = user_loader
         return user_loader
@@ -125,7 +127,11 @@ def current_user() -> UserMixin:
     extension = typing.cast(
         QuartAuth | None,
         next(
-            (extension for extension in quart.current_app.extensions["QUART_AUTH"] if extension.singleton),
+            (
+                extension
+                for extension in quart.current_app.extensions["QUART_AUTH"]
+                if extension.singleton
+            ),
             None,
         ),
     )

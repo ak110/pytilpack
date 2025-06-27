@@ -11,7 +11,9 @@ logger = logging.getLogger(__name__)
 
 
 @contextlib.asynccontextmanager
-async def acquire_with_timeout(lock: asyncio.Lock | asyncio.Semaphore, timeout: float) -> typing.AsyncGenerator[bool, None]:
+async def acquire_with_timeout(
+    lock: asyncio.Lock | asyncio.Semaphore, timeout: float
+) -> typing.AsyncGenerator[bool, None]:
     """ロックを取得し、タイムアウト時間内に取得できなかった場合はFalseを返す。
 
     Args:
@@ -90,7 +92,9 @@ class JobRunner(metaclass=abc.ABCMeta):
         poll_interval: ジョブ取得のポーリング間隔（秒）
     """
 
-    def __init__(self, max_job_concurrency: int = 8, poll_interval: float = 1.0) -> None:
+    def __init__(
+        self, max_job_concurrency: int = 8, poll_interval: float = 1.0
+    ) -> None:
         self.poll_interval = poll_interval
         self.max_job_concurrency = max_job_concurrency
         self.running = True

@@ -109,6 +109,7 @@ dev = [
     "aiosqlite>=0.21.0",
     "litellm>=1.72.4",
     "pre-commit>=4.2.0",
+    "pyfltr>=1.10.0",
     "pytest-asyncio>=0.21.0",
     "pytest>=8.4.1",
     "ruff>=0.12.1",
@@ -144,6 +145,28 @@ ignore = []
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.pyfltr]
+pyupgrade-args = ["--py310-plus"]
+pylint-args = ["--jobs=4"]
+
+[tool.isort]
+# https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#isort
+# https://pycqa.github.io/isort/docs/configuration/options.html
+profile = "black"
+
+[tool.black]
+# https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html
+target-version = ['py310']
+skip-magic-trailing-comma = true
+
+[tool.flake8]
+# https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#flake8
+# https://flake8.pycqa.org/en/latest/user/configuration.html
+# https://pypi.org/project/flake8-tidy-imports/
+max-line-length = 128
+extend-ignore = "E203,"
+ban-relative-imports = "parents"
 
 [tool.mypy]
 allow_redefinition = true

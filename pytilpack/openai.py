@@ -21,24 +21,42 @@ def gather_chunks(
     """ストリーミングのチャンクを結合する。"""
     chunks = list(chunks)
     if len(chunks) == 0:
-        return openai.types.chat.ChatCompletion(id="", choices=[], created=0, model="", object="chat.completion")
+        return openai.types.chat.ChatCompletion(
+            id="", choices=[], created=0, model="", object="chat.completion"
+        )
 
     # chunks[i].choices は型ヒント上はList[Choice]だが、Noneが入っている場合がある
     min_choice = min(
-        (min(c.index for c in chunk.choices) if chunk.choices is not None and len(chunk.choices) > 0 else 0) for chunk in chunks
+        (
+            min(c.index for c in chunk.choices)
+            if chunk.choices is not None and len(chunk.choices) > 0
+            else 0
+        )
+        for chunk in chunks
     )
     max_choice = max(
-        (max(c.index for c in chunk.choices) if chunk.choices is not None and len(chunk.choices) > 0 else 0) for chunk in chunks
+        (
+            max(c.index for c in chunk.choices)
+            if chunk.choices is not None and len(chunk.choices) > 0
+            else 0
+        )
+        for chunk in chunks
     )
-    choices = [_make_choice(chunks, i, strict) for i in range(min_choice, max_choice + 1)]
+    choices = [
+        _make_choice(chunks, i, strict) for i in range(min_choice, max_choice + 1)
+    ]
 
     response = openai.types.chat.ChatCompletion.model_construct(
         id=_equals_all_get(strict, "id", remove_none(c.id for c in chunks), ""),
         choices=choices,
         created=coalesce((c.created for c in chunks), 0),
-        model=_equals_all_get(strict, "model", remove_none(c.model for c in chunks), ""),
+        model=_equals_all_get(
+            strict, "model", remove_none(c.model for c in chunks), ""
+        ),
         object="chat.completion",
-        service_tier=_equals_all_get(strict, "service_tier", remove_none(c.service_tier for c in chunks)),
+        service_tier=_equals_all_get(
+            strict, "service_tier", remove_none(c.service_tier for c in chunks)
+        ),
         system_fingerprint=_equals_all_get(
             strict,
             "system_fingerprint",
@@ -54,7 +72,14 @@ def _make_choice(
 ) -> openai.types.chat.chat_completion.Choice:
     """ストリーミングのチャンクからi番目のChoiceを作成する。"""
     choice_list = sum(
-        ([choice for choice in chunk.choices if choice is not None and choice.index == index] for chunk in chunks),
+        (
+            [
+                choice
+                for choice in chunk.choices
+                if choice is not None and choice.index == index
+            ]
+            for chunk in chunks
+        ),
         [],
     )
 
@@ -66,13 +91,18 @@ def _make_choice(
     if len(contents := remove_none(c.delta.content for c in choice_list)) > 0:
         message.content = "".join(contents)
 
-    if len(function_calls := remove_none(c.delta.function_call for c in choice_list)) > 0:
+    if (
+        len(function_calls := remove_none(c.delta.function_call for c in choice_list))
+        > 0
+    ):
         message.function_call = _make_function_call(function_calls, strict)
 
     if len(tool_calls_list := remove_none(c.delta.tool_calls for c in choice_list)) > 0:
         message.tool_calls = _make_tool_calls(tool_calls_list, strict)
 
-    choice = openai.types.chat.chat_completion.Choice.model_construct(index=index, message=message)
+    choice = openai.types.chat.chat_completion.Choice.model_construct(
+        index=index, message=message
+    )
 
     if len(finish_reasons := remove_none(c.finish_reason for c in choice_list)) > 0:
         choice.finish_reason = _equals_all_get(strict, "finish_reason", finish_reasons)  # type: ignore
@@ -83,7 +113,11 @@ def _make_choice(
                 strict,
                 f"logprobsが複数存在します。最後のlogprobsを使用します。{logprobs_list=}",
             )
-        choice.logprobs = openai.types.chat.chat_completion.ChoiceLogprobs.model_construct(content=logprobs_list[-1].content)
+        choice.logprobs = (
+            openai.types.chat.chat_completion.ChoiceLogprobs.model_construct(
+                content=logprobs_list[-1].content
+            )
+        )
 
     return choice
 
@@ -97,37 +131,63 @@ def _make_function_call(
         return None
     return openai.types.chat.chat_completion_message.FunctionCall.model_construct(
         arguments="".join(remove_none(d.arguments for d in deltas)),
-        name=_equals_all_get(strict, "function.name", remove_none(d.name for d in deltas)),
+        name=_equals_all_get(
+            strict, "function.name", remove_none(d.name for d in deltas)
+        ),
     )
 
 
 def _make_tool_calls(
-    tool_calls_list: list[list[openai.types.chat.chat_completion_chunk.ChoiceDeltaToolCall]],
+    tool_calls_list: list[
+        list[openai.types.chat.chat_completion_chunk.ChoiceDeltaToolCall]
+    ],
     strict: bool,
-) -> list[openai.types.chat.chat_completion_message_tool_call.ChatCompletionMessageToolCall] | None:
+) -> (
+    list[
+        openai.types.chat.chat_completion_message_tool_call.ChatCompletionMessageToolCall
+    ]
+    | None
+):
     """list[ChoiceDeltaToolCall]を作成する。"""
     if len(tool_calls_list) == 0:
         return None
-    min_tool_call = min((min(d.index for d in deltas) if len(deltas) > 0 else 0) for deltas in tool_calls_list)
-    max_tool_call = max((max(d.index for d in deltas) if len(deltas) > 0 else 0) for deltas in tool_calls_list)
-    return [_make_tool_call(tool_calls_list, i, strict) for i in range(min_tool_call, max_tool_call + 1)]
+    min_tool_call = min(
+        (min(d.index for d in deltas) if len(deltas) > 0 else 0)
+        for deltas in tool_calls_list
+    )
+    max_tool_call = max(
+        (max(d.index for d in deltas) if len(deltas) > 0 else 0)
+        for deltas in tool_calls_list
+    )
+    return [
+        _make_tool_call(tool_calls_list, i, strict)
+        for i in range(min_tool_call, max_tool_call + 1)
+    ]
 
 
 def _make_tool_call(
-    tool_calls_list: list[list[openai.types.chat.chat_completion_chunk.ChoiceDeltaToolCall]],
+    tool_calls_list: list[
+        list[openai.types.chat.chat_completion_chunk.ChoiceDeltaToolCall]
+    ],
     index: int,
     strict: bool,
 ) -> openai.types.chat.chat_completion_message_tool_call.ChatCompletionMessageToolCall:
     """ChoiceDeltaToolCallを作成する。"""
     tool_call_list = sum(
         (
-            [tool_call for tool_call in tool_calls if tool_call is not None and tool_call.index == index]
+            [
+                tool_call
+                for tool_call in tool_calls
+                if tool_call is not None and tool_call.index == index
+            ]
             for tool_calls in tool_calls_list
         ),
         [],
     )
 
-    tool_call = openai.types.chat.chat_completion_message_tool_call.ChatCompletionMessageToolCall.model_construct()
+    tool_call = (
+        openai.types.chat.chat_completion_message_tool_call.ChatCompletionMessageToolCall.model_construct()
+    )
 
     if len(ids := remove_none(delta.id for delta in tool_call_list)) > 0:
         tool_call.id = _equals_all_get(strict, f"delta.tool_calls[{index}].id", ids, "")
@@ -136,30 +196,38 @@ def _make_tool_call(
         tool_call.type = _equals_all_get(strict, f"delta.tool_calls[{index}].type", types)  # type: ignore[assignment]
 
     if len(functions := remove_none(delta.function for delta in tool_call_list)) > 0:
-        tool_call.function = openai.types.chat.chat_completion_message_tool_call.Function(
-            arguments="".join(remove_none(f.arguments for f in functions)),
-            name=_equals_all_get(
-                strict,
-                f"delta.tool_calls[{index}].function.name",
-                remove_none(f.name for f in functions),
-                "",
-            ),
+        tool_call.function = (
+            openai.types.chat.chat_completion_message_tool_call.Function(
+                arguments="".join(remove_none(f.arguments for f in functions)),
+                name=_equals_all_get(
+                    strict,
+                    f"delta.tool_calls[{index}].function.name",
+                    remove_none(f.name for f in functions),
+                    "",
+                ),
+            )
         )
 
     return tool_call
 
 
 @typing.overload
-def _equals_all_get[T](strict: bool, name: str, values: typing.Iterable[T], default_value: None = None) -> T | None:
+def _equals_all_get[T](
+    strict: bool, name: str, values: typing.Iterable[T], default_value: None = None
+) -> T | None:
     pass
 
 
 @typing.overload
-def _equals_all_get[T](strict: bool, name: str, values: typing.Iterable[T], default_value: T) -> T:
+def _equals_all_get[T](
+    strict: bool, name: str, values: typing.Iterable[T], default_value: T
+) -> T:
     pass
 
 
-def _equals_all_get[T](strict: bool, name: str, values: typing.Iterable[T], default_value: T | None = None) -> T | None:
+def _equals_all_get[T](
+    strict: bool, name: str, values: typing.Iterable[T], default_value: T | None = None
+) -> T | None:
     """すべての要素が等しいかどうかを確認しつつ最後の要素を返す。"""
     values = list(values)
     # 空文字列や空の値を除外

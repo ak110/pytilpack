@@ -31,17 +31,23 @@ def get_safe_url(target: str | None, host_url: str, default_url: str) -> str:
 def check_status_code(status_code: int, valid_status_code: int) -> None:
     """ステータスコードのチェック。"""
     if status_code != valid_status_code:
-        raise AssertionError(f"ステータスコードエラー: {status_code} != {valid_status_code}")
+        raise AssertionError(
+            f"ステータスコードエラー: {status_code} != {valid_status_code}"
+        )
 
 
-def check_content_type(content_type: str, valid_content_types: str | typing.Iterable[str] | None) -> None:
+def check_content_type(
+    content_type: str, valid_content_types: str | typing.Iterable[str] | None
+) -> None:
     """Content-Typeのチェック。"""
     if valid_content_types is None:
         return None
     if isinstance(valid_content_types, str):
         valid_content_types = [valid_content_types]
     if not any(content_type.startswith(c) for c in valid_content_types):
-        raise AssertionError(f"Content-Typeエラー: {content_type} != {valid_content_types}")
+        raise AssertionError(
+            f"Content-Typeエラー: {content_type} != {valid_content_types}"
+        )
     return None
 
 
@@ -54,7 +60,8 @@ def check_html(input_stream: typing.Any, strict: bool = False) -> None:
     _ = parser.parse(input_stream)
     if len(parser.errors) > 0:
         errors = [
-            f"{position}: {html5lib.constants.E[errorcode] % datavars}" for position, errorcode, datavars in parser.errors
+            f"{position}: {html5lib.constants.E[errorcode] % datavars}"
+            for position, errorcode, datavars in parser.errors
         ]
         if strict:
             error_str = "\n".join(errors)

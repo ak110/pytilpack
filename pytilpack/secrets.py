@@ -12,7 +12,9 @@ _lock = threading.Lock()
 
 
 @pytilpack.functools.retry()
-def generate_secret_key(cache_path: str | pathlib.Path, nbytes: int | None = None) -> bytes:
+def generate_secret_key(
+    cache_path: str | pathlib.Path, nbytes: int | None = None
+) -> bytes:
     """シークレットキーの作成/取得。
 
     既にcache_pathに保存済みならそれを返し、でなくば作成する。

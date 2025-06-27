@@ -5,7 +5,9 @@ import types
 import typing
 
 
-def is_instance_safe(value: typing.Any, expected_type: typing.Any, path: str = "") -> bool:
+def is_instance_safe(
+    value: typing.Any, expected_type: typing.Any, path: str = ""
+) -> bool:
     """型チェックを行い、エラーの場合はFalseを返す。
 
     Args:
@@ -129,4 +131,6 @@ def _raise_type_error(value: typing.Any, expected_type: typing.Any, path: str) -
         TypeError: 詳細なエラー情報を含む型エラー。
     """
     location = f"位置 {path}: " if path else ""
-    raise TypeError(f"{location}型 {expected_type} を期待しますが、{type(value)} の値が設定されています。(値:{value!r})")
+    raise TypeError(
+        f"{location}型 {expected_type} を期待しますが、{type(value)} の値が設定されています。(値:{value!r})"
+    )

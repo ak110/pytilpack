@@ -70,11 +70,15 @@ async def test_assert_bytes(client: quart.typing.TestClientProtocol) -> None:
     with pytest.raises(AssertionError):
         _ = await pytilpack.quart.assert_bytes(response)
     with pytest.raises(AssertionError):
-        _ = await pytilpack.quart.assert_bytes(response, content_type="application/json")
+        _ = await pytilpack.quart.assert_bytes(
+            response, content_type="application/json"
+        )
 
 
 @pytest.mark.asyncio
-async def test_assert_html(client: quart.typing.TestClientProtocol, tmp_path: pathlib.Path) -> None:
+async def test_assert_html(
+    client: quart.typing.TestClientProtocol, tmp_path: pathlib.Path
+) -> None:
     """HTMLアサーションのテスト。"""
     response = await client.get("/html")
     _ = await pytilpack.quart.assert_html(response)

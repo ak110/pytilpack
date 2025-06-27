@@ -80,7 +80,9 @@ def static_url_for(
     filepath = pathlib.Path(static_folder) / filename
     try:
         # ファイルの最終更新日時のキャッシュを利用するか否か
-        if cache_timestamp is True or (cache_timestamp == "when_not_debug" and not flask.current_app.debug):
+        if cache_timestamp is True or (
+            cache_timestamp == "when_not_debug" and not flask.current_app.debug
+        ):
             # キャッシュを使う
             timestamp = _TIMESTAMP_CACHE.get(str(filepath))
             if timestamp is None:
@@ -111,7 +113,9 @@ def get_safe_url(target: str | None, host_url: str, default_url: str) -> str:
 def run(app: flask.Flask, host: str = "localhost", port: int = 5000):
     """Flaskアプリを実行するコンテキストマネージャ。テストコードなど用。"""
 
-    if not any(m.endpoint == "_pytilpack_flask_dummy" for m in app.url_map.iter_rules()):
+    if not any(
+        m.endpoint == "_pytilpack_flask_dummy" for m in app.url_map.iter_rules()
+    ):
 
         @app.route("/_pytilpack_flask_dummy")
         def _pytilpack_flask_dummy():
@@ -126,7 +130,9 @@ def run(app: flask.Flask, host: str = "localhost", port: int = 5000):
         # サーバーが起動するまで待機
         while True:
             try:
-                httpx.get(f"http://{host}:{port}/_pytilpack_flask_dummy").raise_for_status()
+                httpx.get(
+                    f"http://{host}:{port}/_pytilpack_flask_dummy"
+                ).raise_for_status()
                 break
             except Exception:
                 pass
