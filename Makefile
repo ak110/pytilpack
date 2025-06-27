@@ -11,8 +11,7 @@ format:
 	uv run ruff check --fix
 
 test:
-	uv run ruff format
-	uv run ruff check --fix
+	uv run pre-commit run --all-files
 	uv run mypy pytilpack
 	uv run pytest
 

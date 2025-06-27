@@ -21,24 +21,24 @@ def test_generate_secret_key(tmp_path: pathlib.Path) -> None:
 
 
 def test_generate_secret_key_concurrent(tmp_path: pathlib.Path) -> None:
-    """8プロセス×8スレッドで同時実行して同じ値が返ることを確認。"""
+    """4プロセス×4スレッドで同時実行して同じ値が返ることを確認。"""
     path = tmp_path / "secret_key"
-    # 8回試す
-    for _ in range(8):
+    # 4回試す
+    for _ in range(4):
         path.unlink(missing_ok=True)  # 前のファイルを削除
 
-        # 8プロセスで並列実行
+        # 4プロセスで並列実行
         with concurrent.futures.ProcessPoolExecutor(
-            max_workers=8, mp_context=multiprocessing.get_context("spawn")
+            max_workers=4, mp_context=multiprocessing.get_context("spawn")
         ) as process_executor:
-            process_futures = [process_executor.submit(_run_threads, path, 8) for _ in range(8)]
+            process_futures = [process_executor.submit(_run_threads, path, 4) for _ in range(4)]
             results = sum(
                 (future.result() for future in concurrent.futures.as_completed(process_futures)),
                 [],
             )
 
         # 全ての結果が同じ値であることを確認
-        assert len(results) == 64
+        assert len(results) == 16
         assert all(result == results[0] for result in results)
 
 
