@@ -95,16 +95,12 @@ def generator(interval: float = 15):
     Returns:
         キープアライブが追加されたSSEメッセージストリームを生成するデコレーター
     """
-    T = typing.TypeVar("T", bound=str | SSE)
 
-    def decorator(
+    def decorator[**P, T: str | SSE](
         func: typing.Callable[P, typing.AsyncIterator[T]],
     ) -> typing.Callable[P, typing.AsyncIterator[str]]:
-
         @functools.wraps(func)
-        async def wrapper(
-            *args: P.args, **kwargs: P.kwargs
-        ) -> typing.AsyncIterator[str]:
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> typing.AsyncIterator[str]:
             loop = asyncio.get_running_loop()
             last_msg_time = loop.time()
             it: typing.AsyncIterator[T] = aiter(func(*args, **kwargs))

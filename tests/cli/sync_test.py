@@ -18,9 +18,7 @@ def test_sync(tmp_path: pathlib.Path) -> None:
     src_file.write_text("test1")
 
     # 同期実行
-    subprocess.run(
-        [sys.executable, "-m", "pytilpack.cli.sync", str(src), str(dst)], check=True
-    )
+    subprocess.run([sys.executable, "-m", "pytilpack.cli.sync", str(src), str(dst)], check=True)
 
     # ファイルがコピーされていることを確認
     assert (dst / "test.txt").exists()

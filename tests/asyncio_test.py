@@ -75,9 +75,7 @@ class ErrorJob(pytilpack.asyncio.Job):
 class JobRunner(pytilpack.asyncio.JobRunner):
     """テスト用のJobRunner。"""
 
-    def __init__(
-        self, max_job_concurrency: int = 8, poll_interval: float = 0.1, **kwargs
-    ) -> None:
+    def __init__(self, max_job_concurrency: int = 8, poll_interval: float = 0.1, **kwargs) -> None:
         # テスト高速化のためpoll_intervalのデフォルトは短くする
         super().__init__(
             max_job_concurrency=max_job_concurrency,

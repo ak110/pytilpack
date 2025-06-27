@@ -3,6 +3,7 @@
 import pathlib
 
 import fastapi
+import fastapi.responses
 import fastapi.testclient
 import pytest
 
@@ -15,15 +16,11 @@ def _app() -> fastapi.FastAPI:
 
     @app.get("/403")
     def forbidden():
-        return fastapi.responses.HTMLResponse(
-            "403 Error", status_code=403, media_type="text/html"
-        )
+        return fastapi.responses.HTMLResponse("403 Error", status_code=403, media_type="text/html")
 
     @app.get("/html")
     def html():
-        return fastapi.responses.HTMLResponse(
-            "<!doctype html><p>hello", status_code=200, media_type="text/html"
-        )
+        return fastapi.responses.HTMLResponse("<!doctype html><p>hello", status_code=200, media_type="text/html")
 
     @app.get("/html-invalid")
     def html_invalid():
@@ -39,21 +36,15 @@ def _app() -> fastapi.FastAPI:
 
     @app.get("/json-invalid")
     def json_invalid():
-        return fastapi.responses.Response(
-            '{hello: "world"}', status_code=200, media_type="application/json"
-        )
+        return fastapi.responses.Response('{hello: "world"}', status_code=200, media_type="application/json")
 
     @app.get("/xml")
     def xml():
-        return fastapi.responses.Response(
-            "<root><hello>world</hello></root>", status_code=200, media_type="text/xml"
-        )
+        return fastapi.responses.Response("<root><hello>world</hello></root>", status_code=200, media_type="text/xml")
 
     @app.get("/xml-invalid")
     def xml_invalid():
-        return fastapi.responses.Response(
-            "<root>hello & world</root>", status_code=200, media_type="application/xml"
-        )
+        return fastapi.responses.Response("<root>hello & world</root>", status_code=200, media_type="application/xml")
 
     return app
 
@@ -75,9 +66,7 @@ def test_assert_bytes(client: fastapi.testclient.TestClient):
         _ = pytilpack.fastapi.assert_bytes(response)
 
 
-def test_assert_html(
-    client: fastapi.testclient.TestClient, tmp_path: pathlib.Path
-) -> None:
+def test_assert_html(client: fastapi.testclient.TestClient, tmp_path: pathlib.Path) -> None:
     """HTMLアサーションのテスト。"""
     response = client.get("/html")
     _ = pytilpack.fastapi.assert_html(response)

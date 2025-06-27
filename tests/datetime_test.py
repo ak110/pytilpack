@@ -51,18 +51,14 @@ import pytilpack.datetime
             "2023-12-25T10:30:00+00:00",
             "Asia/Tokyo",
             False,
-            datetime.datetime(
-                2023, 12, 25, 19, 30, 0, tzinfo=zoneinfo.ZoneInfo("Asia/Tokyo")
-            ),
+            datetime.datetime(2023, 12, 25, 19, 30, 0, tzinfo=zoneinfo.ZoneInfo("Asia/Tokyo")),
         ),
         # タイムゾーン変換（ZoneInfo指定）
         (
             "2023-12-25T10:30:00+00:00",
             zoneinfo.ZoneInfo("America/New_York"),
             False,
-            datetime.datetime(
-                2023, 12, 25, 5, 30, 0, tzinfo=zoneinfo.ZoneInfo("America/New_York")
-            ),
+            datetime.datetime(2023, 12, 25, 5, 30, 0, tzinfo=zoneinfo.ZoneInfo("America/New_York")),
         ),
         # タイムゾーン情報を削除
         (

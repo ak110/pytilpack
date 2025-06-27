@@ -87,10 +87,7 @@ def test_warn_if_slow_trigger(caplog):
         result = slow_function(42, y="test")
         assert result == "42-test"
         assert len(caplog.records) == 1
-        assert (
-            "Function test_warn_if_slow_trigger.<locals>.slow_function took"
-            in caplog.records[0].message
-        )
+        assert "Function test_warn_if_slow_trigger.<locals>.slow_function took" in caplog.records[0].message
         assert "threshold 0.001 s" in caplog.records[0].message
 
 
@@ -121,7 +118,4 @@ async def test_warn_if_slow_async_trigger(caplog):
         result = slow_async_function(42, y="test")
         assert result == "42-test"
         assert len(caplog.records) == 1
-        assert (
-            "Function test_warn_if_slow_async_trigger.<locals>.slow_async_function took"
-            in caplog.records[0].message
-        )
+        assert "Function test_warn_if_slow_async_trigger.<locals>.slow_async_function took" in caplog.records[0].message

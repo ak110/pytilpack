@@ -33,10 +33,7 @@ async def _mock_server() -> typing.AsyncGenerator[tuple[str, int], None]:
 
     @app.route("/verbose")
     async def verbose():
-        return (
-            "<html><head><title>Verbose Test</title></head>"
-            "<body><h1>Verbose Test</h1></body></html>"
-        )
+        return "<html><head><title>Verbose Test</title></head><body><h1>Verbose Test</h1></body></html>"
 
     async with pytilpack.quart.run(app, port=port):
         yield "localhost", port

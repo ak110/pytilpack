@@ -5,6 +5,7 @@ import typing
 import pytest
 import pytest_asyncio
 import quart
+import quart.typing
 import quart_auth
 
 import pytilpack.quart_auth

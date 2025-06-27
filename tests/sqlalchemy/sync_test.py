@@ -4,6 +4,7 @@ import typing
 
 import pytest
 import sqlalchemy
+import sqlalchemy.engine
 import sqlalchemy.orm
 
 import pytilpack.sqlalchemy
@@ -33,12 +34,8 @@ class Test2(Base):
     __table_args__ = (sqlalchemy.UniqueConstraint("value1", "value2", name="uc1"),)
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
-    name = sqlalchemy.Column(
-        sqlalchemy.String(250), nullable=False, unique=True, doc="名前"
-    )
-    pass_hash = sqlalchemy.Column(
-        sqlalchemy.String(100), default=None, comment="パスハッシュ"
-    )
+    name = sqlalchemy.Column(sqlalchemy.String(250), nullable=False, unique=True, doc="名前")
+    pass_hash = sqlalchemy.Column(sqlalchemy.String(100), default=None, comment="パスハッシュ")
     # 有効フラグ
     enabled = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False, default=True)
     is_admin = sqlalchemy.Column(  # このコメントは無視されてほしい

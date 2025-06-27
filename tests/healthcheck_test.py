@@ -90,9 +90,7 @@ async def test_run(
     """run関数のテスト。"""
     now = datetime.datetime(2024, 1, 1, 12, 0, 0)
 
-    result = await pytilpack.healthcheck.run(
-        checks=checks, output_details=output_details, now=now
-    )
+    result = await pytilpack.healthcheck.run(checks=checks, output_details=output_details, now=now)
 
     # 基本的な構造をチェック
     assert result["status"] == expected_status

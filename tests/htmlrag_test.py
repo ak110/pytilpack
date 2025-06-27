@@ -30,9 +30,7 @@ document.write("Hello World!");
 </script>
 </html>
 """
-    simplified_html = pytilpack.htmlrag.clean_html(
-        html, aggressive=False, keep_title=True, keep_href=False
-    )
+    simplified_html = pytilpack.htmlrag.clean_html(html, aggressive=False, keep_title=True, keep_href=False)
     assert (
         simplified_html
         == """<html>
@@ -66,9 +64,7 @@ def test_htmlrag_clean_aggressive():
 </body>
 </html>
 """
-    simplified_html = pytilpack.htmlrag.clean_html(
-        html, aggressive=True, keep_title=False, keep_href=True
-    )
+    simplified_html = pytilpack.htmlrag.clean_html(html, aggressive=True, keep_title=False, keep_href=True)
     assert (
         simplified_html
         == """<h1>見出し</h1>

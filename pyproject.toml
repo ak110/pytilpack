@@ -15,6 +15,7 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
 ]
 dependencies = [
+    "mypy>=1.16.1",
     "typing-extensions>=4.0",
 ]
 
@@ -108,8 +109,8 @@ dev = [
     "aiosqlite>=0.21.0",
     "litellm>=1.72.4",
     "pre-commit>=4.2.0",
-    "pyfltr>=1.6.0",
     "pytest-asyncio>=0.21.0",
+    "pytest>=8.4.1",
     "ruff>=0.12.1",
     "types-bleach>=6.2.0.20241123",
     "types-markdown>=3.7.0.20241204",
@@ -134,20 +135,15 @@ build-backend = "hatchling.build"
 [tool.hatch.version]
 source = "vcs"
 
-[tool.pyfltr]
-pyupgrade-args = ["--py312-plus"]
-pylint-args = ["--jobs=4"]
+[tool.ruff]
+line-length = 128
 
-[tool.isort]
-profile = "black"
+[tool.ruff.lint]
+select = ["F", "E", "UP", "B"]
+ignore = []
 
-[tool.black]
-target-version = ['py312']
-skip-magic-trailing-comma = true
-
-[tool.flake8]
-max-line-length = 128
-extend-ignore = "E203,"
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.mypy]
 allow_redefinition = true
@@ -161,7 +157,7 @@ warn_unused_configs = true
 show_error_codes = true
 
 [tool.pytest.ini_options]
-addopts = "--showlocals -p no:cacheprovider --durations=5"
+addopts = "--showlocals -p no:cacheprovider --maxfail=3 --durations=30 --durations-min=0.5"
 filterwarnings = [
     "ignore:Secure cookies will be ignored on insecure requests:UserWarning",
 ]
@@ -170,13 +166,3 @@ log_level = "DEBUG"
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "session"
 asyncio_default_test_loop_scope = "session"
-
-[tool.ruff]
-line-length = 256
-
-[tool.ruff.lint]
-select = ["F", "E", "UP", "B"]
-ignore = []
-
-[tool.ruff.lint.pydocstyle]
-convention = "google"

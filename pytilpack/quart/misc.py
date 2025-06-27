@@ -19,9 +19,7 @@ _TIMESTAMP_CACHE: dict[str, int] = {}
 """静的ファイルの最終更新日時をキャッシュするための辞書。プロセス単位でキャッシュされる。"""
 
 
-def set_max_concurrency(
-    app: quart.Quart, max_concurrency: int, timeout: float | None = 3.0
-) -> None:
+def set_max_concurrency(app: quart.Quart, max_concurrency: int, timeout: float | None = 3.0) -> None:
     """
     Quart アプリ全体の最大同時リクエスト数を制限する。
 
@@ -48,9 +46,7 @@ def set_max_concurrency(
                 await asyncio.wait_for(semaphore.acquire(), timeout=timeout)
             quart.g.quart__concurrency_token = True
         except TimeoutError:
-            logger.warning(
-                f"Concurrency limit reached, aborting request: {quart.request.path}"
-            )
+            logger.warning(f"Concurrency limit reached, aborting request: {quart.request.path}")
             quart.abort(
                 503,
                 description="サーバーが混みあっています。しばらく待ってから再度お試しください。",
@@ -119,9 +115,7 @@ def static_url_for(
     filepath = pathlib.Path(static_folder) / filename
     try:
         # ファイルの最終更新日時のキャッシュを利用するか否か
-        if cache_timestamp is True or (
-            cache_timestamp == "when_not_debug" and not quart.current_app.debug
-        ):
+        if cache_timestamp is True or (cache_timestamp == "when_not_debug" and not quart.current_app.debug):
             # キャッシュを使う
             timestamp = _TIMESTAMP_CACHE.get(str(filepath))
             if timestamp is None:
@@ -143,9 +137,7 @@ async def run(app: quart.Quart, host: str = "localhost", port: int = 5000):
     """Quartアプリを実行するコンテキストマネージャ。テストコードなど用。"""
 
     # ダミーエンドポイントが存在しない場合は追加
-    if not any(
-        rule.endpoint == "_pytilpack_quart_dummy" for rule in app.url_map.iter_rules()
-    ):
+    if not any(rule.endpoint == "_pytilpack_quart_dummy" for rule in app.url_map.iter_rules()):
 
         @app.route("/_pytilpack_quart_dummy")
         async def _pytilpack_quart_dummy():
@@ -167,9 +159,7 @@ async def run(app: quart.Quart, host: str = "localhost", port: int = 5000):
         async with httpx.AsyncClient() as client:
             while True:
                 try:
-                    response = await client.get(
-                        f"http://{host}:{port}/_pytilpack_quart_dummy"
-                    )
+                    response = await client.get(f"http://{host}:{port}/_pytilpack_quart_dummy")
                     response.raise_for_status()
                     break
                 except Exception:

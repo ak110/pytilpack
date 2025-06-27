@@ -36,9 +36,7 @@ import pytilpack.web
         ),
     ],
 )
-def test_get_safe_url(
-    target: str | None, host_url: str, default_url: str, expected: str
-) -> None:
+def test_get_safe_url(target: str | None, host_url: str, default_url: str, expected: str) -> None:
     """get_safe_urlのテスト。"""
     actual = pytilpack.web.get_safe_url(target, host_url, default_url)
     assert actual == expected
@@ -53,14 +51,10 @@ def test_get_safe_url(
         (404, 200, "ステータスコードエラー: 404 != 200"),
     ],
 )
-def test_check_status_code(
-    status_code: int, valid_status_code: int, expected_error: str | None
-) -> None:
+def test_check_status_code(status_code: int, valid_status_code: int, expected_error: str | None) -> None:
     """check_status_codeのテスト。"""
     if expected_error is None:
-        pytilpack.web.check_status_code(
-            status_code, valid_status_code
-        )  # 例外が発生しないことを確認
+        pytilpack.web.check_status_code(status_code, valid_status_code)  # 例外が発生しないことを確認
     else:
         with pytest.raises(AssertionError) as exc_info:
             pytilpack.web.check_status_code(status_code, valid_status_code)
@@ -82,14 +76,10 @@ def test_check_status_code(
         ("text/plain", "text/html", "Content-Typeエラー: text/plain != ['text/html']"),
     ],
 )
-def test_check_content_type(
-    content_type: str, valid_types: str | list[str] | None, expected_error: str | None
-) -> None:
+def test_check_content_type(content_type: str, valid_types: str | list[str] | None, expected_error: str | None) -> None:
     """check_content_typeのテスト。"""
     if expected_error is None:
-        pytilpack.web.check_content_type(
-            content_type, valid_types
-        )  # 例外が発生しないことを確認
+        pytilpack.web.check_content_type(content_type, valid_types)  # 例外が発生しないことを確認
     else:
         with pytest.raises(AssertionError) as exc_info:
             pytilpack.web.check_content_type(content_type, valid_types)

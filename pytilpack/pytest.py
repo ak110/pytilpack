@@ -15,21 +15,15 @@ def tmp_path() -> pathlib.Path:
 
     """
     username = getpass.getuser()
-    path = (
-        pathlib.Path(tempfile.gettempdir()) / f"pytest-of-{username}" / "pytest-current"
-    )
+    path = pathlib.Path(tempfile.gettempdir()) / f"pytest-of-{username}" / "pytest-current"
     return path.resolve()
 
 
-def tmp_file_path(
-    tmp_path_: pathlib.Path | None = None, suffix: str = ".txt", prefix: str = "tmp"
-) -> pathlib.Path:
+def tmp_file_path(tmp_path_: pathlib.Path | None = None, suffix: str = ".txt", prefix: str = "tmp") -> pathlib.Path:
     """一時ファイルパスを返す。"""
     if tmp_path_ is None:
         tmp_path_ = tmp_path()
-    with tempfile.NamedTemporaryFile(
-        suffix=suffix, prefix=prefix, dir=tmp_path_, delete=False
-    ) as f:
+    with tempfile.NamedTemporaryFile(suffix=suffix, prefix=prefix, dir=tmp_path_, delete=False) as f:
         return pathlib.Path(f.name)
 
 

@@ -5,6 +5,7 @@ import typing
 
 import sqlalchemy
 import sqlalchemy.orm
+import sqlalchemy.schema
 import sqlalchemy.sql.elements
 
 import pytilpack.python
@@ -21,10 +22,7 @@ def describe(
 ) -> str:
     """DBのテーブル構造を文字列化する。"""
     return "\n".join(
-        [
-            describe_table(table, get_class_by_table(Base, table), tablefmt=tablefmt)
-            for table in Base.metadata.tables.values()
-        ]
+        [describe_table(table, get_class_by_table(Base, table), tablefmt=tablefmt) for table in Base.metadata.tables.values()]
     )
 
 
@@ -33,9 +31,7 @@ def get_class_by_table(
 ) -> type[sqlalchemy.orm.DeclarativeBase]:
     """テーブルからクラスを取得する。"""
     # https://stackoverflow.com/questions/72325242/type-object-base-has-no-attribute-decl-class-registry
-    for (
-        cls
-    ) in Base.registry._class_registry.values():  # pylint: disable=protected-access
+    for cls in Base.registry._class_registry.values():  # pylint: disable=protected-access
         if hasattr(cls, "__table__") and cls.__table__ == table:
             cls = typing.cast(type, cls)
             assert issubclass(cls, sqlalchemy.orm.DeclarativeBase)
@@ -72,11 +68,7 @@ def describe_table(
         if column.autoincrement and column.primary_key:
             extra = "auto_increment"
 
-        default_value = (
-            column.default.arg
-            if column.default is not None and hasattr(column.default, "arg")
-            else column.default
-        )
+        default_value = column.default.arg if column.default is not None and hasattr(column.default, "arg") else column.default
         default: str
         if default_value is None:
             default = "NULL"

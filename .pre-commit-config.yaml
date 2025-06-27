@@ -32,15 +32,8 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.12.1
     hooks:
+      - id: ruff-format
+        types_or: [python, pyi]
       - id: ruff-check
         types_or: [python, pyi]
         args: [--fix]
-
-  - repo: local
-    hooks:
-      - id: system
-        name: pyfltr
-        entry: pyfltr --exit-zero-even-if-formatted --commands=fast
-        types: [python]
-        require_serial: true
-        language: system

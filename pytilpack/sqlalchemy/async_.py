@@ -49,15 +49,10 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
     engine: sqlalchemy.ext.asyncio.AsyncEngine | None = None
     """DB接続。"""
 
-    sessionmaker: (
-        sqlalchemy.ext.asyncio.async_sessionmaker[sqlalchemy.ext.asyncio.AsyncSession]
-        | None
-    ) = None
+    sessionmaker: sqlalchemy.ext.asyncio.async_sessionmaker[sqlalchemy.ext.asyncio.AsyncSession] | None = None
     """セッションファクトリ。"""
 
-    session_var: contextvars.ContextVar[sqlalchemy.ext.asyncio.AsyncSession] = (
-        contextvars.ContextVar("session_var")
-    )
+    session_var: contextvars.ContextVar[sqlalchemy.ext.asyncio.AsyncSession] = contextvars.ContextVar("session_var")
     """セッション。"""
 
     @classmethod
@@ -143,9 +138,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         return cls.session_var.set(cls.sessionmaker())  # pylint: disable=not-callable
 
     @classmethod
-    async def close_session(
-        cls, token: contextvars.Token[sqlalchemy.ext.asyncio.AsyncSession]
-    ) -> None:
+    async def close_session(cls, token: contextvars.Token[sqlalchemy.ext.asyncio.AsyncSession]) -> None:
         """セッションを終了する。"""
         await asafe_close(cls.session())
         cls.session_var.reset(token)
@@ -155,10 +148,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         """セッションを取得する。"""
         sess = cls.session_var.get(None)
         if sess is None:
-            raise RuntimeError(
-                "セッションが開始されていません。"
-                f"{cls.__qualname__}.start_session()を呼び出してください。"
-            )
+            raise RuntimeError(f"セッションが開始されていません。{cls.__qualname__}.start_session()を呼び出してください。")
         return sess
 
     @classmethod
@@ -187,25 +177,16 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         """queryのレコード数を取得する。"""
         # pylint: disable=not-callable
         if isinstance(query, sqlalchemy.Select):
-            return (
-                await cls.scalar_one_or_none(
-                    query.with_only_columns(sqlalchemy.func.count()).order_by(None)
-                )
-                or 0
-            )
+            return await cls.scalar_one_or_none(query.with_only_columns(sqlalchemy.func.count()).order_by(None)) or 0
         return (
             await cls.scalar_one_or_none(
-                sqlalchemy.select(sqlalchemy.func.count()).select_from(
-                    query.order_by(None).subquery()
-                )
+                sqlalchemy.select(sqlalchemy.func.count()).select_from(query.order_by(None).subquery())
             )
             or 0
         )
 
     @classmethod
-    async def scalar_one(
-        cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]
-    ) -> T:
+    async def scalar_one(cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T:
         """queryの結果を1件取得する。
 
         Args:
@@ -222,9 +203,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         return (await cls.session().execute(query)).scalar_one()
 
     @classmethod
-    async def scalar_one_or_none(
-        cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]
-    ) -> T | None:
+    async def scalar_one_or_none(cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T | None:
         """queryの結果を0件または1件取得する。
 
         Args:
@@ -240,9 +219,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         return (await cls.session().execute(query)).scalar_one_or_none()
 
     @classmethod
-    async def scalars(
-        cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]
-    ) -> list[T]:
+    async def scalars(cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> list[T]:
         """queryの結果を全件取得する。
 
         Args:
@@ -255,9 +232,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         return list((await cls.session().execute(query)).scalars().all())
 
     @classmethod
-    async def one(
-        cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]
-    ) -> sqlalchemy.Row[TT]:
+    async def one(cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT]:
         """queryの結果を1件取得する。
 
         Args:
@@ -274,9 +249,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         return (await cls.session().execute(query)).one()
 
     @classmethod
-    async def one_or_none(
-        cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]
-    ) -> sqlalchemy.Row[TT] | None:
+    async def one_or_none(cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT] | None:
         """queryの結果を0件または1件取得する。
 
         Args:
@@ -292,9 +265,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         return (await cls.session().execute(query)).one_or_none()
 
     @classmethod
-    async def all(
-        cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]
-    ) -> list[sqlalchemy.Row[TT]]:
+    async def all(cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> list[sqlalchemy.Row[TT]]:
         """queryの結果を全件取得する。
 
         Args:
@@ -348,9 +319,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         page_query = query.offset((page - 1) * per_page).limit(per_page)
         items = await (cls.scalars(page_query) if scalar else cls.all(page_query))
         # pylint: disable=protected-access
-        return pytilpack._paginator.Paginator(
-            page=page, per_page=per_page, items=items, total=total
-        )
+        return pytilpack._paginator.Paginator(page=page, per_page=per_page, items=items, total=total)
 
     def to_dict(
         self,
@@ -450,9 +419,7 @@ async def await_for_connection(url: str, timeout: float = 60.0) -> None:
             await asyncio.sleep(1)
 
 
-async def asafe_close(
-    session: sqlalchemy.ext.asyncio.AsyncSession, log_level: int | None = logging.DEBUG
-):
+async def asafe_close(session: sqlalchemy.ext.asyncio.AsyncSession, log_level: int | None = logging.DEBUG):
     """例外を出さずにセッションをクローズ。"""
     try:
         if session.is_active:
