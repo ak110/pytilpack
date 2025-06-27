@@ -35,10 +35,10 @@ def test_retry_2():
 
 
 @pytest.mark.asyncio
-async def test_aretry_1():
+async def test_retry_1_async():
     call_count = 0
 
-    @pytilpack.functools_.aretry(2, initial_delay=0, exponential_base=0)
+    @pytilpack.functools_.retry(2, initial_delay=0, exponential_base=0)
     async def f():
         nonlocal call_count
         call_count += 1
@@ -48,10 +48,10 @@ async def test_aretry_1():
 
 
 @pytest.mark.asyncio
-async def test_aretry_2():
+async def test_retry_2_async():
     call_count = 0
 
-    @pytilpack.functools_.aretry(2, initial_delay=0, exponential_base=0)
+    @pytilpack.functools_.retry(2, initial_delay=0, exponential_base=0)
     async def f():
         nonlocal call_count
         call_count += 1

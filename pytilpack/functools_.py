@@ -7,6 +7,7 @@ import logging
 import random
 import time
 import typing
+import warnings
 
 T = typing.TypeVar("T")
 P = typing.ParamSpec("P")
@@ -22,7 +23,7 @@ def retry(
     includes: typing.Iterable[type[Exception]] | None = None,
     excludes: typing.Iterable[type[Exception]] | None = None,
     loglevel: int = logging.INFO,
-) -> typing.Callable:
+) -> typing.Callable[[typing.Callable[P, R]], typing.Callable[P, R]]:
     """リトライを行うデコレーター。
 
     - max_retriesが1の場合、待ち時間は1秒程度で2回呼ばれる。
@@ -47,11 +48,42 @@ def retry(
     if excludes is None:
         excludes = ()
 
-    def decorator(func: typing.Callable) -> typing.Callable:
+    def decorator(func: typing.Callable[P, R]) -> typing.Callable[P, R]:
         logger = logging.getLogger(func.__module__)
 
+        if inspect.iscoroutinefunction(func):
+
+            @functools.wraps(func)
+            async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+                # pylint: disable=catching-non-exception,raising-non-exception
+                retry_count = 0
+                delay = initial_delay
+                while True:
+                    try:
+                        return await func(*args, **kwargs)
+                    except tuple(excludes) as e:
+                        raise e
+                    except tuple(includes) as e:
+                        retry_count += 1
+                        if retry_count > max_retries:
+                            raise e
+                        logger.log(
+                            loglevel,
+                            "%s: %s (retry %d/%d)",
+                            func.__name__,
+                            e,
+                            retry_count,
+                            max_retries,
+                        )
+                        await asyncio.sleep(
+                            delay * random.uniform(1.0, 1.0 + max_jitter)
+                        )
+                        delay = min(delay * exponential_base, max_delay)
+
+            return async_wrapper  # type: ignore[return-value]
+
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             # pylint: disable=catching-non-exception,raising-non-exception
             retry_count = 0
             delay = initial_delay
@@ -75,7 +107,7 @@ def retry(
                     time.sleep(delay * random.uniform(1.0, 1.0 + max_jitter))
                     delay = min(delay * exponential_base, max_delay)
 
-        return wrapper
+        return sync_wrapper
 
     return decorator
 
@@ -89,7 +121,9 @@ def aretry(
     includes: typing.Iterable[type[Exception]] | None = None,
     excludes: typing.Iterable[type[Exception]] | None = None,
     loglevel: int = logging.INFO,
-) -> typing.Callable:
+) -> typing.Callable[
+    [typing.Callable[P, typing.Awaitable[R]]], typing.Callable[P, typing.Awaitable[R]]
+]:
     """非同期処理でリトライを行うデコレーター。
 
     - max_retriesが1の場合、待ち時間は1秒程度で2回呼ばれる。
@@ -114,37 +148,19 @@ def aretry(
     if excludes is None:
         excludes = ()
 
-    def decorator(func: typing.Callable) -> typing.Callable:
-        logger = logging.getLogger(func.__module__)
-
-        @functools.wraps(func)
-        async def wrapper(*args, **kwargs):
-            # pylint: disable=catching-non-exception,raising-non-exception
-            retry_count = 0
-            delay = initial_delay
-            while True:
-                try:
-                    return await func(*args, **kwargs)
-                except tuple(excludes) as e:
-                    raise e
-                except tuple(includes) as e:
-                    retry_count += 1
-                    if retry_count > max_retries:
-                        raise e
-                    logger.log(
-                        loglevel,
-                        "%s: %s (retry %d/%d)",
-                        func.__name__,
-                        e,
-                        retry_count,
-                        max_retries,
-                    )
-                    await asyncio.sleep(delay * random.uniform(1.0, 1.0 + max_jitter))
-                    delay = min(delay * exponential_base, max_delay)
-
-        return wrapper
-
-    return decorator
+    warnings.warn(
+        "aretry is deprecated. Use retry instead.", DeprecationWarning, stacklevel=2
+    )
+    return retry(
+        max_retries=max_retries,
+        initial_delay=initial_delay,
+        exponential_base=exponential_base,
+        max_delay=max_delay,
+        max_jitter=max_jitter,
+        includes=includes,
+        excludes=excludes,
+        loglevel=loglevel,
+    )
 
 
 def warn_if_slow(

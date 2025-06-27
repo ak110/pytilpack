@@ -5,6 +5,7 @@ import typing
 
 import hypercorn.typing
 import quart
+import quart_auth
 
 
 class ProxyFix:
@@ -107,6 +108,10 @@ class ProxyFix:
                 self.quartapp.config["APPLICATION_ROOT"] = prefix
                 self.quartapp.config["SESSION_COOKIE_PATH"] = prefix
                 self.quartapp.config["QUART_AUTH_COOKIE_PATH"] = prefix
+                # QuartAuthはinit_app時にコピーしてしまうので強制反映が必要…
+                for extension in self.quartapp.extensions.get("QUART_AUTH", []):
+                    if isinstance(extension, quart_auth.QuartAuth):
+                        extension.cookie_path = prefix
 
             scope["headers"] = headers
 
