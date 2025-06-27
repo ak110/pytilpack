@@ -75,7 +75,7 @@ def test_validate() -> None:
 
     # dataclassでないケースのテスト
     with pytest.raises(TypeError, match="is not a dataclass instance"):
-        pytilpack.dataclasses_.validate("not a dataclass")  # type: ignore[type-var]
+        pytilpack.dataclasses_.validate("not a dataclass")  # type: ignore[arg-type]
 
 
 def test_validate_newtype() -> None:

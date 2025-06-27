@@ -98,7 +98,7 @@ def tojson(
     )
 
 
-def validate(instance: "TDataClass") -> None:
+def validate(instance: "DataclassInstance") -> None:
     """dataclassインスタンスのフィールド型を詳細チェックする。
 
     Raises:
