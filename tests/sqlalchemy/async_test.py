@@ -37,12 +37,8 @@ class Test2(Base):
     __table_args__ = (sqlalchemy.UniqueConstraint("value1", "value2", name="uc1"),)
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
-    name = sqlalchemy.Column(
-        sqlalchemy.String(250), nullable=False, unique=True, doc="名前"
-    )
-    pass_hash = sqlalchemy.Column(
-        sqlalchemy.String(100), default=None, comment="パスハッシュ"
-    )
+    name = sqlalchemy.Column(sqlalchemy.String(250), nullable=False, unique=True, doc="名前")
+    pass_hash = sqlalchemy.Column(sqlalchemy.String(100), default=None, comment="パスハッシュ")
     # 有効フラグ
     enabled = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False, default=True)
     is_admin = sqlalchemy.Column(  # このコメントは無視されてほしい
@@ -64,9 +60,7 @@ async def _engine() -> typing.AsyncGenerator[sqlalchemy.ext.asyncio.AsyncEngine,
 
 
 @pytest_asyncio.fixture(name="session", scope="module")
-async def _session() -> (
-    typing.AsyncGenerator[sqlalchemy.ext.asyncio.AsyncSession, None]
-):
+async def _session() -> typing.AsyncGenerator[sqlalchemy.ext.asyncio.AsyncSession, None]:
     """セッション。"""
     async with Base.session_scope() as session:
         yield session
@@ -150,9 +144,7 @@ def test_to_dict() -> None:
         "value4": datetime.datetime(2021, 1, 1),
         "value5": None,
     }
-    assert test2.to_dict(includes=["name", "value3"], exclude_none=True) == {
-        "name": "test2"
-    }
+    assert test2.to_dict(includes=["name", "value3"], exclude_none=True) == {"name": "test2"}
 
 
 def test_describe() -> None:
@@ -205,15 +197,11 @@ Table: test2
 async def test_await_for_connection() -> None:
     """await_for_connectionのテスト。"""
     # 正常系
-    await pytilpack.sqlalchemy.await_for_connection(
-        "sqlite+aiosqlite:///:memory:", timeout=1.0
-    )
+    await pytilpack.sqlalchemy.await_for_connection("sqlite+aiosqlite:///:memory:", timeout=1.0)
 
     # 異常系: タイムアウト
     with pytest.raises(sqlalchemy.exc.OperationalError):
-        await pytilpack.sqlalchemy.await_for_connection(
-            "sqlite+aiosqlite:////nonexistent/path/db.sqlite3", timeout=1.0
-        )
+        await pytilpack.sqlalchemy.await_for_connection("sqlite+aiosqlite:////nonexistent/path/db.sqlite3", timeout=1.0)
 
 
 @pytest.mark.asyncio
@@ -231,11 +219,7 @@ async def test_paginate() -> None:
         await session.commit()
 
         # 1ページあたり3件、1ページ目をテスト
-        query = (
-            Test1.select()
-            .where(Test1.unique_id.like("paginate_test_%"))
-            .order_by(Test1.id)
-        )
+        query = Test1.select().where(Test1.unique_id.like("paginate_test_%")).order_by(Test1.id)
         paginator = await Test1.paginate(query, page=1, per_page=3)
 
         assert paginator.page == 1

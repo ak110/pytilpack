@@ -17,9 +17,8 @@ async def test_acquire_with_timeout():
     async with pytilpack.asyncio.acquire_with_timeout(lock, 0.001) as acquired:
         assert acquired
 
-    async with lock:
-        async with pytilpack.asyncio.acquire_with_timeout(lock, 0.001) as acquired:
-            assert not acquired
+    async with lock, pytilpack.asyncio.acquire_with_timeout(lock, 0.001) as acquired:
+        assert not acquired
 
 
 @pytest.mark.asyncio
@@ -75,9 +74,7 @@ class ErrorJob(pytilpack.asyncio.Job):
 class JobRunner(pytilpack.asyncio.JobRunner):
     """テスト用のJobRunner。"""
 
-    def __init__(
-        self, max_job_concurrency: int = 8, poll_interval: float = 0.1, **kwargs
-    ) -> None:
+    def __init__(self, max_job_concurrency: int = 8, poll_interval: float = 0.1, **kwargs) -> None:
         # テスト高速化のためpoll_intervalのデフォルトは短くする
         super().__init__(
             max_job_concurrency=max_job_concurrency,

@@ -71,9 +71,7 @@ def retry[**P, R](
                             retry_count,
                             max_retries,
                         )
-                        await asyncio.sleep(
-                            delay * random.uniform(1.0, 1.0 + max_jitter)
-                        )
+                        await asyncio.sleep(delay * random.uniform(1.0, 1.0 + max_jitter))
                         delay = min(delay * exponential_base, max_delay)
 
             return async_wrapper  # type: ignore[return-value]
@@ -117,18 +115,14 @@ def aretry[**P, R](
     includes: typing.Iterable[type[Exception]] | None = None,
     excludes: typing.Iterable[type[Exception]] | None = None,
     loglevel: int = logging.INFO,
-) -> typing.Callable[
-    [typing.Callable[P, typing.Awaitable[R]]], typing.Callable[P, typing.Awaitable[R]]
-]:
+) -> typing.Callable[[typing.Callable[P, typing.Awaitable[R]]], typing.Callable[P, typing.Awaitable[R]]]:
     """非同期処理でリトライを行うデコレーター。"""
     if includes is None:
         includes = (Exception,)
     if excludes is None:
         excludes = ()
 
-    warnings.warn(
-        "aretry is deprecated. Use retry instead.", DeprecationWarning, stacklevel=2
-    )
+    warnings.warn("aretry is deprecated. Use retry instead.", DeprecationWarning, stacklevel=2)
     return retry(
         max_retries=max_retries,
         initial_delay=initial_delay,

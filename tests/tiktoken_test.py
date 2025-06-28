@@ -73,12 +73,7 @@ def test_num_tokens_from_texts():
     """num_tokens_from_texts()のテスト。"""
     assert pytilpack.tiktoken.num_tokens_from_texts("gpt-3.5-turbo-0613", "2") == 1
 
-    assert (
-        pytilpack.tiktoken.num_tokens_from_texts(
-            "gpt-4-turbo-2024-04-09", "1+1=2です。"
-        )
-        == 7
-    )
+    assert pytilpack.tiktoken.num_tokens_from_texts("gpt-4-turbo-2024-04-09", "1+1=2です。") == 7
 
 
 @pytest.mark.parametrize(
@@ -136,9 +131,7 @@ def test_vs_litellm(model: str):
     ]
 
     # ツールなし
-    actual_tokens = pytilpack.tiktoken.num_tokens_from_messages(
-        model=model, messages=messages, tools=None
-    )
+    actual_tokens = pytilpack.tiktoken.num_tokens_from_messages(model=model, messages=messages, tools=None)
     litellm_tokens = litellm.token_counter(model=model, messages=messages, tools=None)
     assert actual_tokens == litellm_tokens, "ツールなしトークン数の不一致"
 
@@ -170,15 +163,11 @@ def test_vs_litellm(model: str):
             },
         }
     ]
-    actual_tokens = pytilpack.tiktoken.num_tokens_from_messages(
-        model=model, messages=messages, tools=tools
-    )
+    actual_tokens = pytilpack.tiktoken.num_tokens_from_messages(model=model, messages=messages, tools=tools)
     litellm_tokens = litellm.token_counter(
         model=model,
         messages=messages,
-        tools=typing.cast(
-            list[litellm.types.llms.openai.ChatCompletionToolParam], tools
-        ),
+        tools=typing.cast(list[litellm.types.llms.openai.ChatCompletionToolParam], tools),
     )
 
     # LiteLLMは現在以下のモデルがgpt-3.5-turboとかと同じ扱いになっている
@@ -197,9 +186,7 @@ def test_vs_litellm(model: str):
         litellm_tokens = litellm.token_counter(
             model="gpt-4o",
             messages=messages,
-            tools=typing.cast(
-                list[litellm.types.llms.openai.ChatCompletionToolParam], tools
-            ),
+            tools=typing.cast(list[litellm.types.llms.openai.ChatCompletionToolParam], tools),
         )
 
     assert actual_tokens == litellm_tokens, "ツールありトークン数の不一致"

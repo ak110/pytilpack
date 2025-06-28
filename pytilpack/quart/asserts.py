@@ -92,9 +92,7 @@ async def assert_html(
         # HTMLのチェック
         pytilpack.web.check_html(await response.get_data(as_text=False), strict=strict)
     except AssertionError as e:
-        tmp_file_path = pytilpack.pytest.create_temp_view(
-            tmp_path, response_body, ".html"
-        )
+        tmp_file_path = pytilpack.pytest.create_temp_view(tmp_path, response_body, ".html")
         raise AssertionError(f"{e} (HTML: {tmp_file_path} )") from e
 
     return response_body

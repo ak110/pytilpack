@@ -32,9 +32,7 @@ class Mixin:
     """テーブルクラスに色々便利機能を生やすMixin。"""
 
     @classmethod
-    def get_by_id(
-        cls: type[typing.Self], id_: int, for_update: bool = False
-    ) -> typing.Self | None:
+    def get_by_id(cls: type[typing.Self], id_: int, for_update: bool = False) -> typing.Self | None:
         """IDを元にインスタンスを取得。
 
         Args:

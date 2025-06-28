@@ -4,9 +4,7 @@ import datetime
 import zoneinfo
 
 
-def fromiso(
-    iso_str: str, tz: zoneinfo.ZoneInfo | str | None = None, remove_tz: bool = False
-) -> datetime.datetime:
+def fromiso(iso_str: str, tz: zoneinfo.ZoneInfo | str | None = None, remove_tz: bool = False) -> datetime.datetime:
     """ISO形式の文字列をdatetimeオブジェクトに変換する。
 
     Args:

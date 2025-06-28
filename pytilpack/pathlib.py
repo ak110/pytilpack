@@ -66,9 +66,7 @@ def delete_empty_dirs(path: str | pathlib.Path, keep_root: bool = True) -> None:
         logger.warning(f"ディレクトリの削除に失敗: {path}", exc_info=True)
 
 
-def sync(
-    src: str | pathlib.Path, dst: str | pathlib.Path, delete: bool = False
-) -> None:
+def sync(src: str | pathlib.Path, dst: str | pathlib.Path, delete: bool = False) -> None:
     """コピー元からコピー先へ同期する。
 
     Args:

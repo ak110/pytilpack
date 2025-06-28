@@ -33,9 +33,7 @@ class CachedFileLoader[T]:
         ```
     """
 
-    def __init__(
-        self, loader: typing.Callable[[pathlib.Path], T] | None = None
-    ) -> None:
+    def __init__(self, loader: typing.Callable[[pathlib.Path], T] | None = None) -> None:
         """デフォルトのローダー関数を設定してインスタンスを初期化。
 
         Args:
@@ -71,9 +69,7 @@ class CachedFileLoader[T]:
 
         # キャッシュが存在し最新かチェック
         if cache_entry := self._cache.get(path):
-            if cache_entry.mtime >= current_mtime and (
-                loader is None or loader is cache_entry.loader
-            ):
+            if cache_entry.mtime >= current_mtime and (loader is None or loader is cache_entry.loader):
                 return cache_entry.data
             # ファイルが更新されたかローダーが変更された場合、キャッシュを無効化
             self.remove(path)

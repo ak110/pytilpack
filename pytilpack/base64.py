@@ -14,10 +14,7 @@ def encode(s: str | bytes) -> str:
     Returns:
         Base64エンコードされた文字列。
     """
-    if isinstance(s, str):
-        b = s.encode("utf-8")
-    else:
-        b = s
+    b = s.encode("utf-8") if isinstance(s, str) else s
     return base64.b64encode(b).decode("ascii")
 
 

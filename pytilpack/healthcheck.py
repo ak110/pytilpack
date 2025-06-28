@@ -109,9 +109,7 @@ async def run(
 
     details: dict[str, HealthCheckDetail] = {}
 
-    async def run_check(
-        name: str, func: typing.Callable[[], typing.Awaitable[None]]
-    ) -> tuple[str, HealthCheckDetail]:
+    async def run_check(name: str, func: typing.Callable[[], typing.Awaitable[None]]) -> tuple[str, HealthCheckDetail]:
         start = time.perf_counter()
         try:
             await func()
@@ -139,13 +137,9 @@ async def run(
         details[name] = result
 
     uptime = now - startup_time
-    overall_status: typing.Literal["ok", "fail"] = (
-        "ok" if all(v["status"] == "ok" for v in details.values()) else "fail"
-    )
+    overall_status: typing.Literal["ok", "fail"] = "ok" if all(v["status"] == "ok" for v in details.values()) else "fail"
 
-    result = HealthCheckResult(
-        status=overall_status, checked=str(now), uptime=str(uptime)
-    )
+    result = HealthCheckResult(status=overall_status, checked=str(now), uptime=str(uptime))
     if output_details:
         result["details"] = details
     return result

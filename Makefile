@@ -7,7 +7,7 @@ update:
 	$(MAKE) test
 
 format:
-	-uv run pyfltr --exit-zero-even-if-formatted --commands=fast
+	-uv run pyfltr --exit-zero-even-if-formatted --commands=fast --no-ui
 	-uv run ruff check --fix
 
 test:

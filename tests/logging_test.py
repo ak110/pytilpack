@@ -20,9 +20,7 @@ def test_logging(tmp_path: pathlib.Path, capsys: pytest.CaptureFixture) -> None:
         logger.info("info")
         logger.warning("warning")
 
-        assert (tmp_path / "test.log").read_text(
-            encoding="utf-8"
-        ) == "[DEBUG] debug\n[INFO ] info\n[WARNING] warning\n"
+        assert (tmp_path / "test.log").read_text(encoding="utf-8") == "[DEBUG] debug\n[INFO ] info\n[WARNING] warning\n"
         assert capsys.readouterr().err == "[INFO ] info\n[WARNING] warning\n"
     finally:
         for handler in logger.handlers[:]:
@@ -30,13 +28,10 @@ def test_logging(tmp_path: pathlib.Path, capsys: pytest.CaptureFixture) -> None:
 
 
 def test_timer_done(caplog: pytest.LogCaptureFixture) -> None:
-    with caplog.at_level(logging.INFO):
-        with pytilpack.logging.timer("test"):
-            pass
+    with caplog.at_level(logging.INFO), pytilpack.logging.timer("test"):
+        pass
 
-    assert caplog.record_tuples == [
-        ("pytilpack.logging", logging.INFO, "[test] done in 0 s")
-    ]
+    assert caplog.record_tuples == [("pytilpack.logging", logging.INFO, "[test] done in 0 s")]
 
 
 def test_timer_failed(caplog: pytest.LogCaptureFixture) -> None:
@@ -47,9 +42,7 @@ def test_timer_failed(caplog: pytest.LogCaptureFixture) -> None:
         except ValueError:
             pass
 
-    assert caplog.record_tuples == [
-        ("pytilpack.logging", logging.WARNING, "[test] failed in 0 s")
-    ]
+    assert caplog.record_tuples == [("pytilpack.logging", logging.WARNING, "[test] failed in 0 s")]
 
 
 def test_exception_with_dedup(caplog: pytest.LogCaptureFixture) -> None:
@@ -67,9 +60,7 @@ def test_exception_with_dedup(caplog: pytest.LogCaptureFixture) -> None:
     # 最初の例外は WARNING レベルで出力される
     exc1 = ValueError("test error")
     with caplog.at_level(logging.INFO):
-        pytilpack.logging.exception_with_dedup(
-            logger, exc1, msg="テストエラー", dedup_window=dedup_window, now=now
-        )
+        pytilpack.logging.exception_with_dedup(logger, exc1, msg="テストエラー", dedup_window=dedup_window, now=now)
 
     assert len(caplog.records) == 1
     assert caplog.records[0].levelname == "WARNING"
@@ -81,9 +72,7 @@ def test_exception_with_dedup(caplog: pytest.LogCaptureFixture) -> None:
     # 同じ例外を dedup_window 内で再度発生させると INFO レベルで出力される
     now2 = now + datetime.timedelta(minutes=30)
     with caplog.at_level(logging.INFO):
-        pytilpack.logging.exception_with_dedup(
-            logger, exc1, msg="テストエラー", dedup_window=dedup_window, now=now2
-        )
+        pytilpack.logging.exception_with_dedup(logger, exc1, msg="テストエラー", dedup_window=dedup_window, now=now2)
 
     assert len(caplog.records) == 1
     assert caplog.records[0].levelname == "INFO"
@@ -95,9 +84,7 @@ def test_exception_with_dedup(caplog: pytest.LogCaptureFixture) -> None:
     # dedup_window を超えた後は再び WARNING レベルで出力される
     now3 = now + datetime.timedelta(hours=2)
     with caplog.at_level(logging.INFO):
-        pytilpack.logging.exception_with_dedup(
-            logger, exc1, msg="テストエラー", dedup_window=dedup_window, now=now3
-        )
+        pytilpack.logging.exception_with_dedup(logger, exc1, msg="テストエラー", dedup_window=dedup_window, now=now3)
 
     assert len(caplog.records) == 1
     assert caplog.records[0].levelname == "WARNING"
@@ -109,9 +96,7 @@ def test_exception_with_dedup(caplog: pytest.LogCaptureFixture) -> None:
     # 異なる例外クラスは別として扱われる
     exc2 = RuntimeError("test error")
     with caplog.at_level(logging.INFO):
-        pytilpack.logging.exception_with_dedup(
-            logger, exc2, msg="テストエラー", dedup_window=dedup_window, now=now3
-        )
+        pytilpack.logging.exception_with_dedup(logger, exc2, msg="テストエラー", dedup_window=dedup_window, now=now3)
 
     assert len(caplog.records) == 1
     assert caplog.records[0].levelname == "WARNING"
@@ -122,9 +107,7 @@ def test_exception_with_dedup(caplog: pytest.LogCaptureFixture) -> None:
 
     # 異なるメッセージも別として扱われる
     with caplog.at_level(logging.INFO):
-        pytilpack.logging.exception_with_dedup(
-            logger, exc1, msg="別のテストエラー", dedup_window=dedup_window, now=now3
-        )
+        pytilpack.logging.exception_with_dedup(logger, exc1, msg="別のテストエラー", dedup_window=dedup_window, now=now3)
 
     assert len(caplog.records) == 1
     assert caplog.records[0].levelname == "WARNING"

@@ -129,6 +129,9 @@ pytilpack-fetch = "pytilpack.cli.fetch:main"
 [tool.uv]
 default-groups = ["dev"]
 
+[tool.uv.sources]
+pyfltr = { git = "https://github.com/ak110/pyfltr.git" }
+
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
@@ -136,19 +139,37 @@ build-backend = "hatchling.build"
 [tool.hatch.version]
 source = "vcs"
 
+[tool.pyfltr]
+isort = false  # ruffとの競合を避けるためfalse
+black = false  # ruffとの競合を避けるためfalse
+ruff-format = true  # ruffを使用する
+ruff-check = true  # ruffを使用する
+pyupgrade-args = ["--py310-plus"]
+pylint-args = ["--jobs=4"]
+
 [tool.ruff]
 line-length = 128
 
 [tool.ruff.lint]
-select = ["F", "E", "UP", "B"]
+# https://docs.astral.sh/ruff/linter/#rule-selection
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+]
 ignore = []
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
-
-[tool.pyfltr]
-pyupgrade-args = ["--py310-plus"]
-pylint-args = ["--jobs=4"]
 
 [tool.isort]
 # https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#isort

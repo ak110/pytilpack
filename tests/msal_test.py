@@ -20,15 +20,9 @@ def test_load_pem_certificate(tmp_path: pathlib.Path) -> None:
     cert_path = tmp_path / "test.pem"
 
     # テスト用の自己署名証明書を作成
-    private_key = cryptography.hazmat.primitives.asymmetric.rsa.generate_private_key(
-        public_exponent=65537, key_size=2048
-    )
+    private_key = cryptography.hazmat.primitives.asymmetric.rsa.generate_private_key(public_exponent=65537, key_size=2048)
     subject = issuer = cryptography.x509.Name(
-        [
-            cryptography.x509.NameAttribute(
-                cryptography.x509.oid.NameOID.COMMON_NAME, "localhost"
-            )
-        ]
+        [cryptography.x509.NameAttribute(cryptography.x509.oid.NameOID.COMMON_NAME, "localhost")]
     )
     cert = (
         cryptography.x509.CertificateBuilder()
@@ -37,14 +31,10 @@ def test_load_pem_certificate(tmp_path: pathlib.Path) -> None:
         .public_key(private_key.public_key())
         .serial_number(cryptography.x509.random_serial_number())
         .not_valid_before(datetime.datetime.now(datetime.UTC))
-        .not_valid_after(
-            datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=1)
-        )
+        .not_valid_after(datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=1))
         .sign(private_key, cryptography.hazmat.primitives.hashes.SHA256())
     )
-    cert_pem = cert.public_bytes(
-        cryptography.hazmat.primitives.serialization.Encoding.PEM
-    )
+    cert_pem = cert.public_bytes(cryptography.hazmat.primitives.serialization.Encoding.PEM)
     key_pem = private_key.private_bytes(
         encoding=cryptography.hazmat.primitives.serialization.Encoding.PEM,
         format=cryptography.hazmat.primitives.serialization.PrivateFormat.PKCS8,
@@ -61,9 +51,7 @@ def test_load_pem_certificate(tmp_path: pathlib.Path) -> None:
     assert isinstance(result["private_key"], bytes)
 
 
-@pytest.mark.parametrize(
-    "access_token,expires_in", [("test_token", 3600), ("another_token", 7200)]
-)
+@pytest.mark.parametrize("access_token,expires_in", [("test_token", 3600), ("another_token", 7200)])
 def test_simple_token_credential(access_token: str, expires_in: int) -> None:
     """SimpleTokenCredentialのテスト。"""
     cred = pytilpack.msal.SimpleTokenCredential(access_token, expires_in)
@@ -84,9 +72,7 @@ def test_file_token_cache(tmp_path: pathlib.Path) -> None:
     assert not cache_path.exists()  # キャッシュファイルはまだ存在しない
 
     # キャッシュデータを追加して保存
-    test_data = {
-        "AppMetadata": {"appmetadata--": {"client_id": None, "environment": None}}
-    }
+    test_data = {"AppMetadata": {"appmetadata--": {"client_id": None, "environment": None}}}
     cache.get().add(test_data)
     assert cache.get().has_state_changed
     cache.save()

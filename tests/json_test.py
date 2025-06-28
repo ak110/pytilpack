@@ -6,6 +6,7 @@ import pytilpack.json
 
 
 def test_load_not_exist(tmp_path: pathlib.Path) -> None:
+    # pylint: disable=use-implicit-booleaness-not-comparison
     assert pytilpack.json.load(tmp_path / "not_exist.json") == {}
 
 
