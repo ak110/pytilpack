@@ -184,7 +184,7 @@ skip-magic-trailing-comma = true
 # https://pypi.org/project/flake8-tidy-imports/
 max-line-length = 128
 extend-ignore = "E203,"
-ban-relative-imports = "parents"
+ban-relative-imports = true
 
 [tool.mypy]
 allow_redefinition = true

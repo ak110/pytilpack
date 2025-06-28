@@ -7,8 +7,7 @@ update:
 	$(MAKE) test
 
 format:
-	-uv run pyfltr --exit-zero-even-if-formatted --commands=fast --no-ui
-	-uv run ruff check --fix
+	-uv run pyfltr --exit-zero-even-if-formatted --commands=fast
 
 test:
 	uv run pre-commit run --all-files

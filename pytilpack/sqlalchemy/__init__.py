@@ -1,16 +1,16 @@
 """SQLAlchemy用のユーティリティ集。"""
 
 # 非同期版
-from .async_ import AsyncMixin, AsyncUniqueIDMixin, asafe_close, await_for_connection
+from pytilpack.sqlalchemy.async_ import AsyncMixin, AsyncUniqueIDMixin, asafe_close, await_for_connection
 
 # ユーティリティ
-from .describe import describe, describe_table, get_class_by_table
+from pytilpack.sqlalchemy.describe import describe, describe_table, get_class_by_table
 
 # Flask-SQLAlchemy版
-from .flask_ import Mixin, UniqueIDMixin, register_ping
+from pytilpack.sqlalchemy.flask import Mixin, UniqueIDMixin, register_ping
 
 # 同期版
-from .sync_ import SyncMixin, SyncUniqueIDMixin, safe_close, wait_for_connection
+from pytilpack.sqlalchemy.sync import SyncMixin, SyncUniqueIDMixin, safe_close, wait_for_connection
 
 __all__ = [
     # Flask-SQLAlchemy版
