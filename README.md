@@ -55,6 +55,7 @@ xxxのところは対象ライブラリと同名になっている。`openai`と
 - [pytilpack.logging](pytilpack/logging.py)
 - [pytilpack.openai](pytilpack/openai.py)
 - [pytilpack.pathlib](pytilpack/pathlib.py)
+- [pytilpack.pycrypto](pytilpack/pycrypto.py)
 - [pytilpack.python](pytilpack/python.py)
 - [pytilpack.quart](pytilpack/quart_/__init_.py)
 - [pytilpack.sqlalchemy](pytilpack/sqlalchemy.py)
