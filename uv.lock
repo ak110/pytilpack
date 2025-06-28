@@ -1404,8 +1404,8 @@ wheels = [
 
 [[package]]
 name = "pyfltr"
-version = "1.11.2.dev1+g37f101f"
-source = { git = "https://github.com/ak110/pyfltr.git#37f101f958fb2b7da34c3b0590fed87ace89ce3a" }
+version = "1.11.3.dev1+g20100d4"
+source = { git = "https://github.com/ak110/pyfltr.git#20100d42dcd8101eb396d7c964e2814a45c48136" }
 dependencies = [
     { name = "autoflake" },
     { name = "black" },
