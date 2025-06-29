@@ -9,8 +9,14 @@
 - 日付関連の処理は`datetime`を使う
 - ファイル関連の処理は`pathlib`を使う
 - テーブルデータの処理には`polars`を使う (`pandas`は使わない)
+- パッケージ管理にはuvを使う
 - モジュール追加時は`README.md`も更新する
 - コードを書いた後は必ず`make format`で整形する
+- `make test`でmypy, pytestなどをまとめて実行できる
+― 新しいファイルを作成する場合は近い階層の代表的なファイルを確認し、スタイルを揃える
+- `git grep`コマンドを活用して影響範囲やコードスタイルを調査する
+- 関数やクラスなどの定義の順番は可能な限りトップダウンにする。
+  つまり関数Aから関数Bを呼び出す場合、関数Aを前に、関数Bを後ろに定義する。
 
 ## テストコード
 
@@ -49,4 +55,4 @@ def test_yyy(tmp_path: pathlib.Path, x: str, expected: str) -> None:
 
 ## リリース手順
 
-- DEVELOPMENT.mdを参照
+- @../DEVELOPMENT.md を参照

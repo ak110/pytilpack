@@ -15,19 +15,19 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
 ]
 dependencies = [
+    "beautifulsoup4>=4.12",
+    "httpx>=0.28.1",
     "typing-extensions>=4.0",
 ]
 
 [project.optional-dependencies]
 all = [
     "azure-identity>=1.23.0",
-    "beautifulsoup4>=4.12",
     "bleach>=6.2",
     "fastapi>=0.111",
     "flask-login>=0.6",
     "flask>=3.0",
     "html5lib",
-    "httpx",
     "markdown>=3.6",
     "msal>=1.32.3",
     "openai>=1.25",
@@ -47,22 +47,15 @@ all = [
 bleach = [
     "bleach>=6.2",
 ]
-beautifulsoup4 = [
-    "beautifulsoup4>=4.12",
-]
 fastapi = [
     "fastapi>=0.111",
     "html5lib",
-    "httpx",
 ]
 flask = [
     "flask-login>=0.6",
     "flask>=3.0",
     "html5lib",
     "pytest",
-]
-htmlrag = [
-    "beautifulsoup4",
 ]
 markdown = [
     "bleach",
@@ -87,7 +80,6 @@ sqlalchemy = [
     "tabulate[widechars]>=0.9",
 ]
 tiktoken = [
-    "httpx",
     "openai",
     "pillow",
     "tiktoken>=0.6",
@@ -121,10 +113,7 @@ dev = [
 ]
 
 [project.scripts]
-pytilpack-delete_empty_dirs = "pytilpack.cli.delete_empty_dirs:main"
-pytilpack-delete_old_files = "pytilpack.cli.delete_old_files:main"
-pytilpack-sync = "pytilpack.cli.sync:main"
-pytilpack-fetch = "pytilpack.cli.fetch:main"
+pytilpack = "pytilpack.cli.main:main"
 
 [tool.uv]
 default-groups = ["dev"]

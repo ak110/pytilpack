@@ -2,7 +2,6 @@
 
 import pathlib
 import subprocess
-import sys
 
 
 def test_delete_old_files(tmp_path: pathlib.Path) -> None:
@@ -14,9 +13,8 @@ def test_delete_old_files(tmp_path: pathlib.Path) -> None:
     # 7日前より古いファイルを削除：削除されないはず
     subprocess.run(
         [
-            sys.executable,
-            "-m",
-            "pytilpack.cli.delete_old_files",
+            "pytilpack",
+            "delete-old-files",
             "--days=7",
             str(tmp_path),
         ],
@@ -29,9 +27,8 @@ def test_delete_old_files(tmp_path: pathlib.Path) -> None:
     # 1日後より古いファイルを削除：削除される
     subprocess.run(
         [
-            sys.executable,
-            "-m",
-            "pytilpack.cli.delete_old_files",
+            "pytilpack",
+            "delete-old-files",
             "--days=-1",
             str(tmp_path),
         ],

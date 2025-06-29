@@ -2,7 +2,6 @@
 
 import pathlib
 import subprocess
-import sys
 
 
 def test_sync(tmp_path: pathlib.Path) -> None:
@@ -18,7 +17,7 @@ def test_sync(tmp_path: pathlib.Path) -> None:
     src_file.write_text("test1")
 
     # 同期実行
-    subprocess.run([sys.executable, "-m", "pytilpack.cli.sync", str(src), str(dst)], check=True)
+    subprocess.run(["pytilpack", "sync", str(src), str(dst)], check=True)
 
     # ファイルがコピーされていることを確認
     assert (dst / "test.txt").exists()
@@ -29,7 +28,7 @@ def test_sync(tmp_path: pathlib.Path) -> None:
 
     # --delete付きで同期実行
     subprocess.run(
-        [sys.executable, "-m", "pytilpack.cli.sync", "--delete", str(src), str(dst)],
+        ["pytilpack", "sync", "--delete", str(src), str(dst)],
         check=True,
     )
 

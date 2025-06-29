@@ -2,7 +2,6 @@
 
 import pathlib
 import subprocess
-import sys
 
 
 def test_delete_empty_dirs(tmp_path: pathlib.Path) -> None:
@@ -14,9 +13,8 @@ def test_delete_empty_dirs(tmp_path: pathlib.Path) -> None:
     # コマンド実行
     subprocess.run(
         [
-            sys.executable,
-            "-m",
-            "pytilpack.cli.delete_empty_dirs",
+            "pytilpack",
+            "delete-empty-dirs",
             str(empty_dir.parent),
         ],
         check=True,
@@ -28,9 +26,8 @@ def test_delete_empty_dirs(tmp_path: pathlib.Path) -> None:
     # --no-keep-root付きで実行
     subprocess.run(
         [
-            sys.executable,
-            "-m",
-            "pytilpack.cli.delete_empty_dirs",
+            "pytilpack",
+            "delete-empty-dirs",
             "--no-keep-root",
             str(empty_dir.parent),
         ],

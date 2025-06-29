@@ -13,7 +13,6 @@ pip install pytilpack
 # pip install pytilpack[all]
 # pip install pytilpack[fastapi]
 # pip install pytilpack[flask]
-# pip install pytilpack[htmlrag]
 # pip install pytilpack[markdown]
 # pip install pytilpack[openai]
 # pip install pytilpack[pyyaml]
@@ -83,7 +82,7 @@ xxxのところは対象ライブラリと同名になっている。`openai`と
 ### 空のディレクトリを削除
 
 ```bash
-python -m pytilpack.cli.delete_empty_dirs path/to/dir [--no-keep-root] [--verbose]
+pytilpack delete_empty_dirs path/to/dir [--no-keep-root] [--verbose]
 ```
 
 - 空のディレクトリを削除
@@ -92,7 +91,7 @@ python -m pytilpack.cli.delete_empty_dirs path/to/dir [--no-keep-root] [--verbos
 ### 古いファイルを削除
 
 ```bash
-python -m pytilpack.cli.delete_old_files path/to/dir --days=7 [--no-delete-empty-dirs] [--no-keep-root-empty-dir] [--verbose]
+pytilpack delete_old_files path/to/dir --days=7 [--no-delete-empty-dirs] [--no-keep-root-empty-dir] [--verbose]
 ```
 
 - 指定した日数より古いファイルを削除（`--days`オプションで指定）
@@ -102,7 +101,7 @@ python -m pytilpack.cli.delete_old_files path/to/dir --days=7 [--no-delete-empty
 ### ディレクトリを同期
 
 ```bash
-python -m pytilpack.cli.sync src dst [--delete] [--verbose]
+pytilpack sync src dst [--delete] [--verbose]
 ```
 
 - コピー元(src)からコピー先(dst)へファイル・ディレクトリを同期
@@ -112,7 +111,7 @@ python -m pytilpack.cli.sync src dst [--delete] [--verbose]
 ### URLの内容を取得
 
 ```bash
-python -m pytilpack.cli.fetch url [--no-verify] [--verbose]
+pytilpack fetch url [--no-verify] [--verbose]
 ```
 
 - URLからHTMLを取得し、簡略化して標準出力に出力

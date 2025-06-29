@@ -44,7 +44,7 @@ async def test_fetch_success(mock_server: tuple[str, int]) -> None:
     """正常なURLの取得テスト。"""
     host, port = mock_server
     result = subprocess.run(
-        ["python", "-m", "pytilpack.cli.fetch", f"http://{host}:{port}/"],
+        ["pytilpack", "fetch", f"http://{host}:{port}/"],
         capture_output=True,
         text=True,
         check=False,
@@ -60,9 +60,8 @@ async def test_fetch_with_verbose(mock_server: tuple[str, int]) -> None:
     host, port = mock_server
     result = subprocess.run(
         [
-            "python",
-            "-m",
-            "pytilpack.cli.fetch",
+            "pytilpack",
+            "fetch",
             f"http://{host}:{port}/verbose",
             "--verbose",
         ],
@@ -80,7 +79,7 @@ def test_fetch_non_existent_url() -> None:
     """存在しないURLのテスト。"""
     port = get_free_port()
     result = subprocess.run(
-        ["python", "-m", "pytilpack.cli.fetch", f"http://localhost:{port}/"],
+        ["pytilpack", "fetch", f"http://localhost:{port}/"],
         capture_output=True,
         text=True,
         check=False,
