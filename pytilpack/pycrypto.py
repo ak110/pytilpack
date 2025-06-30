@@ -6,51 +6,51 @@
 
 """
 
-import base64
 import json
 import secrets
 import typing
 
 import Crypto.Cipher.AES
-import Crypto.Util.Padding
+
+import pytilpack.base64
 
 DEFAULT_KEY_SIZE = 32
 """デフォルトのキーサイズ（バイト単位）"""
 
 
-def create_key(nbytes: int = DEFAULT_KEY_SIZE) -> str:
+def create_key(nbytes: int = DEFAULT_KEY_SIZE, url_safe: bool = False) -> str:
     """ランダムなキーを生成。デフォルトは32バイト。"""
-    return base64.b64encode(secrets.token_bytes(nbytes)).decode("utf-8")
+    return pytilpack.base64.encode(secrets.token_bytes(nbytes), url_safe=url_safe)
 
 
-def encrypt_json(obj: typing.Any, key: str | bytes) -> str:
+def encrypt_json(obj: typing.Any, key: str | bytes, url_safe: bool = False) -> str:
     """JSON化してencrypt()"""
-    return encrypt(json.dumps(obj), key)
+    return encrypt(json.dumps(obj), key, url_safe=url_safe)
 
 
-def decrypt_json(s: str, key: str | bytes) -> typing.Any:
+def decrypt_json(s: str, key: str | bytes, url_safe: bool = False) -> typing.Any:
     """decrypt()してJSON読み込み。"""
-    return json.loads(decrypt(s, key))
+    return json.loads(decrypt(s, key, url_safe=url_safe))
 
 
-def encrypt(plaintext: str, key: str | bytes) -> str:
+def encrypt(plaintext: str, key: str | bytes, url_safe: bool = False) -> str:
     """暗号化。"""
     if isinstance(key, str):
-        key = base64.b64decode(key)
+        key = pytilpack.base64.decode(key, url_safe=url_safe)
     plaintext = plaintext.encode("utf-8")
     nonce = secrets.token_bytes(12)
     cipher = Crypto.Cipher.AES.new(key, Crypto.Cipher.AES.MODE_GCM, nonce=nonce)
     ct, tag = cipher.encrypt_and_digest(plaintext)
     ciphertext = nonce + ct + tag
-    ciphertext = base64.b64encode(ciphertext).decode("utf-8")
+    ciphertext = pytilpack.base64.encode(ciphertext, url_safe=url_safe)
     return ciphertext
 
 
-def decrypt(ciphertext: str, key: str | bytes) -> str:
+def decrypt(ciphertext: str, key: str | bytes, url_safe: bool = False) -> str:
     """復号。"""
     if isinstance(key, str):
-        key = base64.b64decode(key)
-    cipherbytes = base64.b64decode(ciphertext)
+        key = pytilpack.base64.decode(key, url_safe=url_safe)
+    cipherbytes = pytilpack.base64.decode(ciphertext, url_safe=url_safe)
     nonce, ct, tag = cipherbytes[:12], cipherbytes[12:-16], cipherbytes[-16:]
     cipher = Crypto.Cipher.AES.new(key, Crypto.Cipher.AES.MODE_GCM, nonce=nonce)
     plaintext = cipher.decrypt_and_verify(ct, tag)
