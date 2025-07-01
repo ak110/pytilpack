@@ -5,6 +5,7 @@ import pytest
 import quart
 
 import pytilpack.quart
+import pytilpack.quart.misc
 
 
 @pytest.mark.asyncio
@@ -64,3 +65,82 @@ async def test_run():
         response = httpx.get("http://localhost:5000/hello")
         assert response.read() == b"Hello, World!"
         assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_get_routes() -> None:
+    """get_routesのテスト。"""
+    app = quart.Quart(__name__)
+
+    @app.route("/")
+    async def index():
+        return "Home"
+
+    @app.route("/users")
+    async def users_list():
+        return "Users"
+
+    @app.route("/users/<int:user_id>")
+    async def user_detail(user_id: int):
+        return f"User {user_id}"
+
+    @app.route("/users/<int:user_id>/posts/<post_id>")
+    async def user_post(user_id: int, post_id: str):
+        return f"User {user_id} Post {post_id}"
+
+    @app.route("/api/v1/items/<item_id>")
+    async def api_item(item_id: str):
+        return f"Item {item_id}"
+
+    async with app.test_request_context("/"):
+        routes = pytilpack.quart.misc.get_routes(app)
+
+        # 引数の多い順にソートされることを確認
+        assert len(routes[0].arg_names) >= len(routes[-1].arg_names)
+
+        # 各ルートの内容を確認
+        route_dict = {r.endpoint: r for r in routes}
+
+        # "/" ルート
+        index_route = route_dict["index"]
+        assert index_route.url_parts == ["/"]
+        assert index_route.arg_names == []
+
+        # "/users" ルート
+        users_route = route_dict["users_list"]
+        assert users_route.url_parts == ["/users"]
+        assert users_route.arg_names == []
+
+        # "/users/<int:user_id>" ルート
+        user_detail_route = route_dict["user_detail"]
+        assert user_detail_route.url_parts == ["/users/", "int:user_id", ""]
+        assert user_detail_route.arg_names == ["user_id"]
+
+        # "/users/<int:user_id>/posts/<post_id>" ルート
+        user_post_route = route_dict["user_post"]
+        assert user_post_route.url_parts == ["/users/", "int:user_id", "/posts/", "post_id", ""]
+        assert user_post_route.arg_names == ["user_id", "post_id"]
+
+        # "/api/v1/items/<item_id>" ルート
+        api_item_route = route_dict["api_item"]
+        assert api_item_route.url_parts == ["/api/v1/items/", "item_id", ""]
+        assert api_item_route.arg_names == ["item_id"]
+
+
+@pytest.mark.asyncio
+async def test_get_routes_application_root() -> None:
+    """APPLICATION_ROOTが設定されている場合のget_routesのテスト。"""
+    app = quart.Quart(__name__)
+    app.config["APPLICATION_ROOT"] = "/myapp"
+
+    @app.route("/test")
+    async def test_endpoint():
+        return "Test"
+
+    async with app.test_request_context("/"):
+        routes = pytilpack.quart.misc.get_routes(app)
+        route_dict = {r.endpoint: r for r in routes}
+
+        test_endpoint_route = route_dict["test_endpoint"]
+        assert test_endpoint_route.url_parts == ["/myapp/test"]
+        assert test_endpoint_route.arg_names == []

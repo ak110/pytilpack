@@ -4,6 +4,7 @@ import base64
 import contextlib
 import logging
 import pathlib
+import re
 import threading
 import typing
 import warnings
@@ -105,6 +106,41 @@ def get_safe_url(target: str | None, host_url: str, default_url: str) -> str:
         stacklevel=2,
     )
     return pytilpack.web.get_safe_url(target, host_url, default_url)
+
+
+class RouteInfo(typing.NamedTuple):
+    """ルーティング情報を保持するクラス。
+
+    Attributes:
+        endpoint: エンドポイント名
+        url_parts: URLのパーツのリスト
+        arg_names: URLパーツの引数名のリスト
+    """
+
+    endpoint: str
+    url_parts: list[str]
+    arg_names: list[str]
+
+
+def get_routes(app: flask.Flask) -> list[RouteInfo]:
+    """ルーティング情報を取得する。
+
+    Returns:
+        ルーティング情報のリスト。
+    """
+    arg_regex = re.compile(r"<([^>]+)>")
+    output: list[RouteInfo] = []
+    for r in app.url_map.iter_rules():
+        endpoint = str(r.endpoint)
+        rule = (
+            r.rule
+            if app.config["APPLICATION_ROOT"] == "/" or not app.config["APPLICATION_ROOT"]
+            else f"{app.config['APPLICATION_ROOT']}{r.rule}"
+        )
+        url_parts = [str(part) for part in arg_regex.split(rule)]
+        arg_names = [str(x.split(":")[-1]) for x in arg_regex.findall(rule)]
+        output.append(RouteInfo(endpoint, url_parts, arg_names))
+    return sorted(output, key=lambda x: len(x[2]), reverse=True)
 
 
 @contextlib.contextmanager
