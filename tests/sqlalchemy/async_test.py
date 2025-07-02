@@ -100,16 +100,65 @@ async def test_mixin_basic_functionality() -> None:
 
 
 @pytest.mark.asyncio
+async def test_async_mixin_context_vars() -> None:
+    """AsyncMixinのcontextvar管理をテスト。"""
+    # テーブル作成
+    async with Base.connect() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    # start_session / close_sessionのテスト
+    token = await Base.start_session()
+    try:
+        # セッションが取得できることを確認
+        session = Base.session()
+        assert session is not None
+
+        # データ操作
+        test_record = Test1(unique_id="test_context")
+        session.add(test_record)
+        await session.commit()
+
+        # select メソッドのテスト
+        query = Test1.select().where(Test1.unique_id == "test_context")
+        result = (await session.execute(query)).scalar_one()
+        assert result.unique_id == "test_context"
+
+    finally:
+        await Base.close_session(token)
+
+
+@pytest.mark.asyncio
+async def test_async_mixin_to_dict() -> None:
+    """to_dictメソッドのテスト。"""
+    test_record = Test1(id=1, unique_id="test_dict")
+    result = test_record.to_dict()
+
+    assert result == {"id": 1, "unique_id": "test_dict"}
+
+    # includes テスト
+    result_includes = test_record.to_dict(includes=["unique_id"])
+    assert result_includes == {"unique_id": "test_dict"}
+
+    # excludes テスト
+    result_excludes = test_record.to_dict(excludes=["id"])
+    assert result_excludes == {"unique_id": "test_dict"}
+
+
+@pytest.mark.asyncio
 async def test_get_by_id(session: sqlalchemy.ext.asyncio.AsyncSession) -> None:
     """get_by_idのテスト。"""
     async with Base.connect() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    session.add(Test1(id=1))
+    session.add(Test1(unique_id="test_get_by_id"))
     await session.commit()
 
-    assert (await Test1.get_by_id(1)).id == 1  # type: ignore
-    assert (await Test1.get_by_id(2)) is None
-    assert (await Test1.get_by_id(1, for_update=True)).id == 1  # type: ignore
+    # 作成されたレコードのIDを取得
+    created_record = (await session.execute(Test1.select().where(Test1.unique_id == "test_get_by_id"))).scalar_one()
+    test_id = created_record.id
+
+    assert (await Test1.get_by_id(test_id)).id == test_id  # type: ignore
+    assert (await Test1.get_by_id(test_id + 1000)) is None
+    assert (await Test1.get_by_id(test_id, for_update=True)).id == test_id  # type: ignore
 
 
 @pytest.mark.asyncio
@@ -117,80 +166,20 @@ async def test_get_by_unique_id(session: sqlalchemy.ext.asyncio.AsyncSession) ->
     """get_by_unique_idのテスト。"""
     async with Base.connect() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    test1 = Test1(id=2, unique_id=Test1.generate_unique_id())
+    test1 = Test1(unique_id=Test1.generate_unique_id())
     assert test1.unique_id is not None and len(test1.unique_id) == 43
     unique_id = test1.unique_id
     session.add(test1)
     await session.commit()
 
-    assert (await Test1.get_by_unique_id(unique_id)).id == 2  # type: ignore
-    assert (await Test1.get_by_unique_id(unique_id, allow_id=True)).id == 2  # type: ignore
-    assert (await Test1.get_by_unique_id(2)) is None
-    assert (await Test1.get_by_unique_id(2, allow_id=True)).id == 2  # type: ignore
-    assert (await Test1.get_by_unique_id("2", allow_id=True)) is None
+    # 作成されたレコードのIDを取得
+    test_id = test1.id
 
-
-def test_to_dict() -> None:
-    """to_dictのテスト。"""
-    test2 = Test2(name="test2", enabled=True, value4=datetime.datetime(2021, 1, 1))
-    assert test2.to_dict(excludes=["pass_hash"]) == {
-        "id": None,
-        "name": "test2",
-        "enabled": True,
-        "is_admin": None,
-        "value1": None,
-        "value2": None,
-        "value3": None,
-        "value4": "2021-01-01T00:00:00",
-        "value5": None,
-    }
-    assert test2.to_dict(includes=["name", "value3"], exclude_none=True) == {"name": "test2"}
-
-
-def test_describe() -> None:
-    """describe()のテスト。"""
-    desc = pytilpack.sqlalchemy.describe(Base)
-    print(f"{'=' * 64}")
-    print(desc)
-    print(f"{'=' * 64}")
-    assert (
-        desc
-        == """\
-Table: test
-+-----------+-------------+--------+-------+-----------+----------------+------------+
-| Field     | Type        | Null   | Key   | Default   | Extra          | Comment    |
-+===========+=============+========+=======+===========+================+============+
-| id        | INTEGER     | NO     | PRI   | NULL      | auto_increment |            |
-+-----------+-------------+--------+-------+-----------+----------------+------------+
-| unique_id | VARCHAR(43) | YES    | UNI   | NULL      |                | ユニークID |
-+-----------+-------------+--------+-------+-----------+----------------+------------+
-
-Table: test2
-+-----------+--------------+--------+-------+------------+----------------+--------------+
-| Field     | Type         | Null   | Key   | Default    | Extra          | Comment      |
-+===========+==============+========+=======+============+================+==============+
-| id        | INTEGER      | NO     | PRI   | NULL       | auto_increment |              |
-+-----------+--------------+--------+-------+------------+----------------+--------------+
-| name      | VARCHAR(250) | NO     | UNI   | NULL       |                | 名前         |
-+-----------+--------------+--------+-------+------------+----------------+--------------+
-| pass_hash | VARCHAR(100) | YES    |       | NULL       |                | パスハッシュ |
-+-----------+--------------+--------+-------+------------+----------------+--------------+
-| enabled   | BOOLEAN      | NO     |       | True       |                | 有効フラグ   |
-+-----------+--------------+--------+-------+------------+----------------+--------------+
-| is_admin  | BOOLEAN      | NO     |       | False      |                |              |
-+-----------+--------------+--------+-------+------------+----------------+--------------+
-| value1    | INTEGER      | YES    |       | 0          |                |              |
-+-----------+--------------+--------+-------+------------+----------------+--------------+
-| value2    | INTEGER      | NO     |       | 512        |                |              |
-+-----------+--------------+--------+-------+------------+----------------+--------------+
-| value3    | FLOAT        | NO     |       | 1.0        |                |              |
-+-----------+--------------+--------+-------+------------+----------------+--------------+
-| value4    | DATETIME     | NO     |       | NULL       |                |              |
-+-----------+--------------+--------+-------+------------+----------------+--------------+
-| value5    | TEXT         | NO     |       | (function) |                |              |
-+-----------+--------------+--------+-------+------------+----------------+--------------+
-"""
-    )
+    assert (await Test1.get_by_unique_id(unique_id)).id == test_id  # type: ignore
+    assert (await Test1.get_by_unique_id(unique_id, allow_id=True)).id == test_id  # type: ignore
+    assert (await Test1.get_by_unique_id(test_id)) is None
+    assert (await Test1.get_by_unique_id(test_id, allow_id=True)).id == test_id  # type: ignore
+    assert (await Test1.get_by_unique_id(str(test_id), allow_id=True)) is None
 
 
 @pytest.mark.asyncio
@@ -270,3 +259,66 @@ async def test_asafe_close() -> None:
     await session.close()
     await pytilpack.sqlalchemy.asafe_close(session)
     await pytilpack.sqlalchemy.asafe_close(session, log_level=None)
+
+
+def test_to_dict() -> None:
+    """to_dictのテスト。"""
+    test2 = Test2(name="test2", enabled=True, value4=datetime.datetime(2021, 1, 1))
+    assert test2.to_dict(excludes=["pass_hash"]) == {
+        "id": None,
+        "name": "test2",
+        "enabled": True,
+        "is_admin": None,
+        "value1": None,
+        "value2": None,
+        "value3": None,
+        "value4": "2021-01-01T00:00:00",
+        "value5": None,
+    }
+    assert test2.to_dict(includes=["name", "value3"], exclude_none=True) == {"name": "test2"}
+
+
+def test_describe() -> None:
+    """describe()のテスト。"""
+    desc = pytilpack.sqlalchemy.describe(Base)
+    print(f"{'=' * 64}")
+    print(desc)
+    print(f"{'=' * 64}")
+    assert (
+        desc
+        == """\
+Table: test
++-----------+-------------+--------+-------+-----------+----------------+------------+
+| Field     | Type        | Null   | Key   | Default   | Extra          | Comment    |
++===========+=============+========+=======+===========+================+============+
+| id        | INTEGER     | NO     | PRI   | NULL      | auto_increment |            |
++-----------+-------------+--------+-------+-----------+----------------+------------+
+| unique_id | VARCHAR(43) | YES    | UNI   | NULL      |                | ユニークID |
++-----------+-------------+--------+-------+-----------+----------------+------------+
+
+Table: test2
++-----------+--------------+--------+-------+------------+----------------+--------------+
+| Field     | Type         | Null   | Key   | Default    | Extra          | Comment      |
++===========+==============+========+=======+============+================+==============+
+| id        | INTEGER      | NO     | PRI   | NULL       | auto_increment |              |
++-----------+--------------+--------+-------+------------+----------------+--------------+
+| name      | VARCHAR(250) | NO     | UNI   | NULL       |                | 名前         |
++-----------+--------------+--------+-------+------------+----------------+--------------+
+| pass_hash | VARCHAR(100) | YES    |       | NULL       |                | パスハッシュ |
++-----------+--------------+--------+-------+------------+----------------+--------------+
+| enabled   | BOOLEAN      | NO     |       | True       |                | 有効フラグ   |
++-----------+--------------+--------+-------+------------+----------------+--------------+
+| is_admin  | BOOLEAN      | NO     |       | False      |                |              |
++-----------+--------------+--------+-------+------------+----------------+--------------+
+| value1    | INTEGER      | YES    |       | 0          |                |              |
++-----------+--------------+--------+-------+------------+----------------+--------------+
+| value2    | INTEGER      | NO     |       | 512        |                |              |
++-----------+--------------+--------+-------+------------+----------------+--------------+
+| value3    | FLOAT        | NO     |       | 1.0        |                |              |
++-----------+--------------+--------+-------+------------+----------------+--------------+
+| value4    | DATETIME     | NO     |       | NULL       |                |              |
++-----------+--------------+--------+-------+------------+----------------+--------------+
+| value5    | TEXT         | NO     |       | (function) |                |              |
++-----------+--------------+--------+-------+------------+----------------+--------------+
+"""
+    )
