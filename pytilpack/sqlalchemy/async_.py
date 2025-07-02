@@ -3,6 +3,7 @@
 import asyncio
 import contextlib
 import contextvars
+import datetime
 import logging
 import secrets
 import time
@@ -326,6 +327,8 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         includes: list[str] | None = None,
         excludes: list[str] | None = None,
         exclude_none: bool = False,
+        value_converter: typing.Callable[[typing.Any], typing.Any] | None = None,
+        datetime_to_iso: bool = True,
     ) -> dict[str, typing.Any]:
         """インスタンスを辞書化する。
 
@@ -333,13 +336,15 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
             includes: 辞書化するフィールド名のリスト。excludesと同時指定不可。
             excludes: 辞書化しないフィールド名のリスト。includesと同時指定不可。
             exclude_none: Noneのフィールドを除外するかどうか。
+            value_converter: 各フィールドの値を変換する関数。引数は値、戻り値は変換後の値。
+            datetime_to_iso: datetime型の値をISOフォーマットの文字列に変換するかどうか。
 
         Returns:
             辞書。
 
         """
         assert (includes is None) or (excludes is None)
-        all_columns = [column.name for column in self.__table__.columns]  # type: ignore[attr-defined]
+        all_columns = [str(column.name) for column in self.__table__.columns]  # type: ignore[attr-defined]
         if includes is None:
             includes = all_columns
             if excludes is None:
@@ -350,8 +355,17 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         else:
             assert excludes is None
             assert (set(all_columns) & set(includes)) == set(includes)
+
+        def convert_value(value: typing.Any) -> typing.Any:
+            """値を変換する関数。"""
+            if datetime_to_iso and isinstance(value, datetime.datetime | datetime.date):
+                return value.isoformat()
+            if value_converter is not None:
+                return value_converter(value)
+            return value
+
         return {
-            column_name: getattr(self, column_name)
+            column_name: convert_value(getattr(self, column_name))
             for column_name in includes
             if not exclude_none or getattr(self, column_name) is not None
         }

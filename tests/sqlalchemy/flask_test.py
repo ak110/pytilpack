@@ -105,7 +105,7 @@ def test_to_dict() -> None:
         "value1": None,
         "value2": None,
         "value3": None,
-        "value4": datetime.datetime(2021, 1, 1),
+        "value4": "2021-01-01T00:00:00",
         "value5": None,
     }
     assert test2.to_dict(includes=["name", "value3"], exclude_none=True) == {"name": "test2"}
