@@ -8,7 +8,39 @@ import logging
 import pathlib
 import typing
 
+import pytilpack.json
+
 logger = logging.getLogger(__name__)
+
+
+async def read_json(path: pathlib.Path | str) -> dict[str, typing.Any]:
+    """JSONファイルから非同期で読み取る。"""
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, pytilpack.json.load, path)
+
+
+async def write_json(
+    path: pathlib.Path | str,
+    data: dict,
+    ensure_ascii: bool = False,
+    indent: int | None = None,
+    separators: tuple[str, str] | None = None,
+    sort_keys: bool = False,
+    **kwargs,
+) -> None:
+    """JSONファイルに非同期で書き込む。"""
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(
+        None,
+        pytilpack.json.save,
+        path,
+        data,
+        ensure_ascii,
+        indent,
+        separators,
+        sort_keys,
+        **kwargs,
+    )
 
 
 async def read_text(path: pathlib.Path | str, encoding: str = "utf-8", errors: str = "strict") -> str:
@@ -18,18 +50,18 @@ async def read_text(path: pathlib.Path | str, encoding: str = "utf-8", errors: s
     return await loop.run_in_executor(None, path.read_text, encoding, errors)
 
 
-async def read_bytes(path: pathlib.Path | str) -> bytes:
-    """ファイルからバイトを非同期で読み取る。"""
-    path = pathlib.Path(path)
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(None, path.read_bytes)
-
-
 async def write_text(path: pathlib.Path | str, data: str, encoding: str = "utf-8", errors: str = "strict") -> None:
     """ファイルにテキストを非同期で書き込む。"""
     path = pathlib.Path(path)
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(None, path.write_text, data, encoding, errors)
+
+
+async def read_bytes(path: pathlib.Path | str) -> bytes:
+    """ファイルからバイトを非同期で読み取る。"""
+    path = pathlib.Path(path)
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, path.read_bytes)
 
 
 async def write_bytes(path: pathlib.Path | str, data: bytes) -> None:
