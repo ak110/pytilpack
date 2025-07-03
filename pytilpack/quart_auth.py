@@ -99,15 +99,31 @@ class QuartAuth[UserType](quart_auth.QuartAuth):
         return quart.g.quart_auth_current_user
 
 
-def login_user(auth_id: str, remember: bool = True) -> None:
+def reset_user(user: UserMixin) -> None:
+    """現在のユーザーをリセットする。DBのセッション切れ対策など用。
+
+    無理やりquart.gに設定するだけなので要注意。
+    """
+    quart.g.quart_auth_current_user = user
+
+
+def login_user(auth_id: str, remember: bool = True, set_cookie: bool = True) -> None:
     """ログイン処理。
 
     Args:
         auth_id: 認証ID
         remember: ログイン状態を保持するかどうか
+        set_cookie: 通常のCookie発行を行うか否か (APIキー認証などを自前でした場合はFalseにする)
 
     """
-    quart_auth.login_user(quart_auth.AuthUser(auth_id), remember=remember)
+    user = quart_auth.AuthUser(auth_id)
+    if set_cookie:
+        # Action.WRITE / Action.WRITE_PERMANENTで設定される
+        quart_auth.login_user(user, remember=remember)
+    else:
+        # 無理やりAction.PASSのまま設定する
+        assert user.action == quart_auth.Action.PASS
+        _find_extension().login_user(user)
 
 
 def logout_user() -> None:
@@ -122,15 +138,7 @@ def is_authenticated() -> bool:
 
 def current_user() -> UserMixin:
     """現在のユーザーを取得する。"""
-    extension = typing.cast(
-        QuartAuth | None,
-        next(
-            (extension for extension in quart.current_app.extensions["QUART_AUTH"] if extension.singleton),
-            None,
-        ),
-    )
-    assert extension is not None
-    return extension.current_user
+    return _find_extension().current_user
 
 
 def is_admin(attr_name: str = "is_admin") -> bool:
@@ -161,3 +169,18 @@ def admin_only[**P, R](func: typing.Callable[P, R]) -> typing.Callable[P, R]:
         return func(*args, **kwargs)
 
     return sync_wrapper
+
+
+def _find_extension(app: quart.Quart | None = None) -> QuartAuth:
+    """QuartAuthのインスタンスを取得する。"""
+    if app is None:
+        app = quart.current_app
+    extension = typing.cast(
+        QuartAuth | None,
+        next(
+            (extension for extension in app.extensions["QUART_AUTH"] if extension.singleton),
+            None,
+        ),
+    )
+    assert extension is not None
+    return extension

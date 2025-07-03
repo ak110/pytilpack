@@ -82,6 +82,13 @@ def _app() -> quart.Quart:
         pytilpack.quart_auth.login_user("admin1")
         return "admin logged in"
 
+    @app.route("/login_no_cookie")
+    async def login_no_cookie():
+        # Cookieなしログイン処理
+        pytilpack.quart_auth.login_user("user1", set_cookie=False)
+        assert pytilpack.quart_auth.is_authenticated(), "直後はログイン済みにはなる"
+        return "logged in without cookie"
+
     return app
 
 
@@ -231,3 +238,24 @@ async def test_admin_only(client: quart.typing.TestClientProtocol) -> None:
     # 同期関数のメタデータ確認
     assert test_sync_function.__name__ == "test_sync_function"
     assert test_sync_function.__doc__ == "同期テスト関数。"
+
+
+@pytest.mark.asyncio
+async def test_login_user_set_cookie_false(
+    client: quart.typing.TestClientProtocol,
+) -> None:
+    """set_cookie=Falseの場合は通常のCookieベースのログイン処理が行われない。"""
+    async with client.session_transaction():
+        # set_cookie=Falseでログイン
+        response = await client.get("/login_no_cookie")
+        assert response.status_code == 200
+        assert await response.get_data(as_text=True) == "logged in without cookie"
+
+        # この時点では通常のCookieベースのログイン状態になっていない
+        response = await client.get("/user")
+        text = await response.get_data(as_text=True)
+        assert text == "User: &lt;anonymous&gt;"
+
+        # 非公開ページにもアクセスできない
+        response = await client.get("/private")
+        assert response.status_code == 401
