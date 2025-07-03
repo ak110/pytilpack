@@ -1,6 +1,7 @@
 """テストコード。"""
 
 import asyncio
+import pathlib
 import queue
 import threading
 import time
@@ -9,6 +10,56 @@ import typing
 import pytest
 
 import pytilpack.asyncio
+
+
+@pytest.mark.asyncio
+async def test_file_operations(tmp_path: pathlib.Path) -> None:
+    """ファイル操作のテスト。"""
+    # テストファイルのパス
+    text_file = tmp_path / "test.txt"
+    bytes_file = tmp_path / "test.bin"
+
+    # テストデータ
+    test_text = "Hello, World!\n日本語テスト"
+    test_bytes = b"Hello, World!\x00\x01\x02"
+
+    # write_text のテスト
+    await pytilpack.asyncio.write_text(text_file, test_text)
+    assert text_file.exists()
+
+    # read_text のテスト
+    result_text = await pytilpack.asyncio.read_text(text_file)
+    assert result_text == test_text
+
+    # write_bytes のテスト
+    await pytilpack.asyncio.write_bytes(bytes_file, test_bytes)
+    assert bytes_file.exists()
+
+    # read_bytes のテスト
+    result_bytes = await pytilpack.asyncio.read_bytes(bytes_file)
+    assert result_bytes == test_bytes
+
+
+@pytest.mark.asyncio
+async def test_file_operations_with_encoding(tmp_path: pathlib.Path) -> None:
+    """エンコーディングとエラーハンドリングのテスト。"""
+    test_file = tmp_path / "test_encoding.txt"
+    test_text = "Hello, 日本語"
+
+    # UTF-8での書き込み・読み込み
+    await pytilpack.asyncio.write_text(test_file, test_text, encoding="utf-8")
+    result = await pytilpack.asyncio.read_text(test_file, encoding="utf-8")
+    assert result == test_text
+
+    # Shift_JISでの書き込み・読み込み
+    await pytilpack.asyncio.write_text(test_file, test_text, encoding="shift_jis")
+    result = await pytilpack.asyncio.read_text(test_file, encoding="shift_jis")
+    assert result == test_text
+
+    # errorsパラメータのテスト（ignore）
+    await pytilpack.asyncio.write_text(test_file, "Hello\udc80World", encoding="utf-8", errors="ignore")
+    result = await pytilpack.asyncio.read_text(test_file, encoding="utf-8")
+    assert result == "HelloWorld"
 
 
 @pytest.mark.asyncio

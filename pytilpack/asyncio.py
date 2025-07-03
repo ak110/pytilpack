@@ -5,9 +5,38 @@ import asyncio
 import concurrent.futures
 import contextlib
 import logging
+import pathlib
 import typing
 
 logger = logging.getLogger(__name__)
+
+
+async def read_text(path: pathlib.Path | str, encoding: str = "utf-8", errors: str = "strict") -> str:
+    """ファイルからテキストを非同期で読み取る。"""
+    path = pathlib.Path(path)
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, path.read_text, encoding, errors)
+
+
+async def read_bytes(path: pathlib.Path | str) -> bytes:
+    """ファイルからバイトを非同期で読み取る。"""
+    path = pathlib.Path(path)
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, path.read_bytes)
+
+
+async def write_text(path: pathlib.Path | str, data: str, encoding: str = "utf-8", errors: str = "strict") -> None:
+    """ファイルにテキストを非同期で書き込む。"""
+    path = pathlib.Path(path)
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, path.write_text, data, encoding, errors)
+
+
+async def write_bytes(path: pathlib.Path | str, data: bytes) -> None:
+    """ファイルにバイトを非同期で書き込む。"""
+    path = pathlib.Path(path)
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, path.write_bytes, data)
 
 
 @contextlib.asynccontextmanager
