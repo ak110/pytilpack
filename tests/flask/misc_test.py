@@ -93,17 +93,17 @@ def test_get_routes() -> None:
 
         # "/users/<int:user_id>" ルート
         user_detail_route = route_dict["user_detail"]
-        assert user_detail_route.url_parts == ["/users/", "int:user_id", ""]
+        assert user_detail_route.url_parts == ["/users/", ""]
         assert user_detail_route.arg_names == ["user_id"]
 
         # "/users/<int:user_id>/posts/<post_id>" ルート
         user_post_route = route_dict["user_post"]
-        assert user_post_route.url_parts == ["/users/", "int:user_id", "/posts/", "post_id", ""]
+        assert user_post_route.url_parts == ["/users/", "/posts/", ""]
         assert user_post_route.arg_names == ["user_id", "post_id"]
 
         # "/api/v1/items/<item_id>" ルート
         api_item_route = route_dict["api_item"]
-        assert api_item_route.url_parts == ["/api/v1/items/", "item_id", ""]
+        assert api_item_route.url_parts == ["/api/v1/items/", ""]
         assert api_item_route.arg_names == ["item_id"]
 
 

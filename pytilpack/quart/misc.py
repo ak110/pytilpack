@@ -153,7 +153,8 @@ def get_routes(app: quart.Quart) -> list[RouteInfo]:
     Returns:
         ルーティング情報のリスト。
     """
-    arg_regex = re.compile(r"<([^>]+)>")
+    arg_regex = re.compile(r"<([^>]+)>")  # <name> <type:name> にマッチするための正規表現
+    split_regex = re.compile(r"<[^>]+>")  # re.splitのためグループ無しにした版
     output: list[RouteInfo] = []
     for r in app.url_map.iter_rules():
         endpoint = str(r.endpoint)
@@ -162,7 +163,7 @@ def get_routes(app: quart.Quart) -> list[RouteInfo]:
             if app.config["APPLICATION_ROOT"] == "/" or not app.config["APPLICATION_ROOT"]
             else f"{app.config['APPLICATION_ROOT']}{r.rule}"
         )
-        url_parts = [str(part) for part in arg_regex.split(rule)]
+        url_parts = [str(part) for part in split_regex.split(rule)]
         arg_names = [str(x.split(":")[-1]) for x in arg_regex.findall(rule)]
         output.append(RouteInfo(endpoint, url_parts, arg_names))
     return sorted(output, key=lambda x: len(x[2]), reverse=True)
