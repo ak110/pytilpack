@@ -6,6 +6,26 @@ import pytest
 
 import pytilpack.typing
 
+type StrLiteralAlias = typing.Literal["red", "green", "blue"]
+type NumberLiteralAlias = typing.Literal[1, 2, 3]
+type MixedLiteralAlias = typing.Literal["active", "inactive", 0, 1]
+
+
+@pytest.mark.parametrize(
+    "t,expected",
+    [
+        (typing.Literal["red", "green", "blue"], ["red", "green", "blue"]),
+        (typing.Literal[1, 2, 3], [1, 2, 3]),
+        (typing.Literal["active", "inactive", 0, 1], ["active", "inactive", 0, 1]),
+        (StrLiteralAlias, ["red", "green", "blue"]),
+        (NumberLiteralAlias, [1, 2, 3]),
+        (MixedLiteralAlias, ["active", "inactive", 0, 1]),
+    ],
+)
+def test_get_literal_values(t, expected) -> None:
+    """Literalの値を取得するテスト。"""
+    assert pytilpack.typing.get_literal_values(t) == expected
+
 
 @pytest.mark.parametrize(
     "value,expected_type,expected",

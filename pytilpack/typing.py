@@ -5,6 +5,13 @@ import types
 import typing
 
 
+def get_literal_values(expected_type: typing.Any) -> list:
+    """Literalの値を取得する。"""
+    if isinstance(expected_type, typing.TypeAliasType):
+        return get_literal_values(expected_type.__value__)
+    return list(typing.get_args(expected_type))
+
+
 def is_instance_safe(value: typing.Any, expected_type: typing.Any, path: str = "") -> bool:
     """型チェックを行い、エラーの場合はFalseを返す。
 
@@ -37,9 +44,12 @@ def is_instance(value: typing.Any, expected_type: typing.Any, path: str = "") ->
         TypeError: 型が一致しない場合、詳細なエラー位置を含む。
     """
 
-    # NewType の場合は、__supertype__ を確認
+    # NewType の場合、__supertype__ を確認
     if hasattr(expected_type, "__supertype__"):
         return is_instance(value, expected_type.__supertype__, path)
+    # TypeAliasType の場合、__value__ を確認
+    if isinstance(expected_type, typing.TypeAliasType):
+        return is_instance(value, expected_type.__value__, path)
 
     origin = typing.get_origin(expected_type)
 

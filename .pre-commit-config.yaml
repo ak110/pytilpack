@@ -25,7 +25,7 @@ repos:
         exclude: ^tests/data/
 
   - repo: https://github.com/ninoseki/uv-sort
-    rev: v0.6.0
+    rev: v0.6.1
     hooks:
       - id: uv-sort
 
