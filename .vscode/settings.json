@@ -6,7 +6,7 @@
     "**/.ruff_cache": true,
     "**/.venv": true
   },
-  "flake8.enabled": true,
+  "flake8.enabled": false,
   "flake8.importStrategy": "fromEnvironment",
   "flake8.path": ["pflake8"],
   "isort.importStrategy": "fromEnvironment",

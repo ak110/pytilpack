@@ -7,10 +7,11 @@ update:
 	$(MAKE) test
 
 format:
+	SKIP=pyfltr uv run pre-commit run --all-files
 	-uv run pyfltr --exit-zero-even-if-formatted --commands=fast
 
 test:
-	uv run pre-commit run --all-files
+	SKIP=pyfltr uv run pre-commit run --all-files
 	uv run pyfltr --exit-zero-even-if-formatted
 
 .PHONY: help update test format

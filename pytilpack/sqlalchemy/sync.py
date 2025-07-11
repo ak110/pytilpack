@@ -193,8 +193,6 @@ class SyncMixin:
     def count(cls, query: sqlalchemy.Select | sqlalchemy.CompoundSelect) -> int:
         """queryのレコード数を取得する。"""
         # pylint: disable=not-callable
-        if isinstance(query, sqlalchemy.Select):
-            return cls.scalar_one_or_none(query.with_only_columns(sqlalchemy.func.count()).order_by(None)) or 0
         return (
             cls.scalar_one_or_none(sqlalchemy.select(sqlalchemy.func.count()).select_from(query.order_by(None).subquery())) or 0
         )

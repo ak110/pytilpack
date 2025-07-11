@@ -6,7 +6,15 @@ import typing
 
 
 def get_literal_values(expected_type: typing.Any) -> list:
-    """Literalの値を取得する。"""
+    """Literalの値を取得する。
+
+    XXType: typing.TypeAlias = typing.Literal[1, 2, 3] のような型アノテーションなら
+    typing.get_args(XXType) で値を取得できるが、
+    type XXType = typing.Literal[1, 2, 3] のような型エイリアス(TypeAliasType?)の場合は
+    XXType.__value__ に対して typing.get_args() を使う必要があるらしい…。
+    <https://github.com/python/cpython/issues/112472>
+
+    """
     if isinstance(expected_type, typing.TypeAliasType):
         return get_literal_values(expected_type.__value__)
     return list(typing.get_args(expected_type))
