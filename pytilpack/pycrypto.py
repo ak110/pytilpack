@@ -37,10 +37,10 @@ def encrypt(plaintext: str, key: str | bytes, url_safe: bool = False) -> str:
     """暗号化。"""
     if isinstance(key, str):
         key = pytilpack.base64.decode(key, url_safe=url_safe)
-    plaintext = plaintext.encode("utf-8")
+    plaintext_bytes = plaintext.encode("utf-8")
     nonce = secrets.token_bytes(12)
     cipher = Crypto.Cipher.AES.new(key, Crypto.Cipher.AES.MODE_GCM, nonce=nonce)
-    ct, tag = cipher.encrypt_and_digest(plaintext)
+    ct, tag = cipher.encrypt_and_digest(plaintext_bytes)
     ciphertext = nonce + ct + tag
     ciphertext = pytilpack.base64.encode(ciphertext, url_safe=url_safe)
     return ciphertext

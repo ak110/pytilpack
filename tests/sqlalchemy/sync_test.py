@@ -6,6 +6,7 @@ import typing
 import pytest
 import sqlalchemy
 import sqlalchemy.engine
+import sqlalchemy.exc
 import sqlalchemy.orm
 
 import pytilpack.sqlalchemy

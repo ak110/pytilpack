@@ -111,7 +111,7 @@ async def test_run(
             if detail["status"] == "ok":
                 assert "error" not in detail
             else:
-                assert detail["error"] is not None
+                assert detail.get("error") is not None
     else:
         assert "details" not in result
 
@@ -138,8 +138,10 @@ async def test_run_response_time() -> None:
 
     result = await pytilpack.healthcheck.run(checks)
 
-    slow_time = result["details"]["slow"]["response_time_ms"]
-    fast_time = result["details"]["fast"]["response_time_ms"]
+    details = result.get("details")
+    assert details is not None
+    slow_time = details["slow"]["response_time_ms"]
+    fast_time = details["fast"]["response_time_ms"]
 
     # 遅いチェックの方が時間がかかっているはず
     assert slow_time > fast_time
@@ -159,14 +161,18 @@ async def test_run_error_handling() -> None:
 
     assert result["status"] == "fail"
 
-    success_detail = result["details"]["success"]
-    fail_detail = result["details"]["fail"]
+    details = result.get("details")
+    assert details is not None
 
+    success_detail = details.get("success")
+    assert success_detail is not None
     assert success_detail["status"] == "ok"
     assert "error" not in success_detail
 
+    fail_detail = details.get("fail")
+    assert fail_detail is not None
     assert fail_detail["status"] == "fail"
-    assert fail_detail["error"] == "ValueError: テストエラー"
+    assert fail_detail.get("error") == "ValueError: テストエラー"
 
 
 @pytest.mark.asyncio

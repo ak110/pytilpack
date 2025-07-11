@@ -5,8 +5,8 @@ import typing
 
 import sqlalchemy
 import sqlalchemy.orm
-import sqlalchemy.schema
 import sqlalchemy.sql.elements
+import sqlalchemy.sql.schema
 
 import pytilpack.python
 
@@ -26,21 +26,18 @@ def describe(
     )
 
 
-def get_class_by_table(
-    Base: type[sqlalchemy.orm.DeclarativeBase], table: sqlalchemy.schema.Table
-) -> type[sqlalchemy.orm.DeclarativeBase]:
+def get_class_by_table[T: sqlalchemy.orm.DeclarativeBase](
+    base: type[sqlalchemy.orm.DeclarativeBase], table: sqlalchemy.sql.schema.Table
+) -> type[T]:
     """テーブルからクラスを取得する。"""
-    # https://stackoverflow.com/questions/72325242/type-object-base-has-no-attribute-decl-class-registry
-    for cls in Base.registry._class_registry.values():  # pylint: disable=protected-access
-        if hasattr(cls, "__table__") and cls.__table__ == table:
-            cls = typing.cast(type, cls)
-            assert issubclass(cls, sqlalchemy.orm.DeclarativeBase)
-            return cls
+    for mapper in base.registry.mappers:
+        if mapper.local_table is table:
+            return typing.cast(type[T], mapper.class_)
     raise ValueError(f"テーブル {table.name} に対応するクラスが見つかりませんでした。")
 
 
 def describe_table(
-    table: sqlalchemy.schema.Table,
+    table: sqlalchemy.sql.schema.Table,
     orm_class: type[sqlalchemy.orm.DeclarativeBase],
     tablefmt: "str | tabulate.TableFormat" = "grid",
 ) -> str:
@@ -68,7 +65,11 @@ def describe_table(
         if column.autoincrement and column.primary_key:
             extra = "auto_increment"
 
-        default_value = column.default.arg if column.default is not None and hasattr(column.default, "arg") else column.default
+        default_value = (
+            column.default.arg
+            if column.default is not None and isinstance(column.default, sqlalchemy.sql.schema.ColumnDefault)
+            else column.default
+        )
         default: str
         if default_value is None:
             default = "NULL"

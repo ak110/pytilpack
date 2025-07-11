@@ -3,8 +3,8 @@
 import typing
 import warnings
 
-import litellm
 import litellm.types.llms.openai
+import litellm.utils
 import openai.types.chat
 import pytest
 
@@ -132,7 +132,7 @@ def test_vs_litellm(model: str):
 
     # ツールなし
     actual_tokens = pytilpack.tiktoken.num_tokens_from_messages(model=model, messages=messages, tools=None)
-    litellm_tokens = litellm.token_counter(model=model, messages=messages, tools=None)
+    litellm_tokens = litellm.utils.token_counter(model=model, messages=messages, tools=None)
     assert actual_tokens == litellm_tokens, "ツールなしトークン数の不一致"
 
     # ツールあり
@@ -164,7 +164,7 @@ def test_vs_litellm(model: str):
         }
     ]
     actual_tokens = pytilpack.tiktoken.num_tokens_from_messages(model=model, messages=messages, tools=tools)
-    litellm_tokens = litellm.token_counter(
+    litellm_tokens = litellm.utils.token_counter(
         model=model,
         messages=messages,
         tools=typing.cast(list[litellm.types.llms.openai.ChatCompletionToolParam], tools),
@@ -183,7 +183,7 @@ def test_vs_litellm(model: str):
         "gpt-4.1-2025-04-14",
     ]:
         warnings.warn("LiteLLMのバグのため対症療法", UserWarning, stacklevel=1)
-        litellm_tokens = litellm.token_counter(
+        litellm_tokens = litellm.utils.token_counter(
             model="gpt-4o",
             messages=messages,
             tools=typing.cast(list[litellm.types.llms.openai.ChatCompletionToolParam], tools),
