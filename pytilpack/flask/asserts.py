@@ -5,7 +5,7 @@ import logging
 import pathlib
 import typing
 import warnings
-import xml.etree.ElementTree
+import xml.etree.ElementTree as ET
 
 import pytilpack.pytest
 import pytilpack.web
@@ -164,7 +164,7 @@ def assert_xml(
 
         # XMLのチェック
         try:
-            _ = xml.etree.ElementTree.fromstring(response_body)
+            _ = ET.fromstring(response_body)
         except Exception as e:
             raise AssertionError(f"XMLエラー: {e}") from e
     except AssertionError as e:

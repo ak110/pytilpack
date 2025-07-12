@@ -118,6 +118,32 @@ pytilpack fetch url [--no-verify] [--verbose]
 - `--no-verify`オプションでSSL証明書の検証を無効化
 - `--verbose`オプションで詳細なログを出力
 
+### MCPサーバーを起動
+
+```bash
+pytilpack mcp [--transport=stdio] [--host=localhost] [--port=8000] [--verbose]
+```
+
+- Model Context ProtocolサーバーとしてpytilpackのFetch機能を提供
+- `--transport`オプションで通信方式を指定（stdio/http、デフォルト: stdio）
+- `--host`オプションでサーバーのホスト名を指定（httpの場合のみ使用、デフォルト: localhost）
+- `--port`オプションでサーバーのポート番号を指定（httpの場合のみ使用、デフォルト: 8000）
+- `--verbose`オプションで詳細なログを出力
+
+#### stdioモード（推奨）
+```bash
+pytilpack mcp
+# または
+pytilpack mcp --transport=stdio
+```
+標準入力/出力を使用してMCPクライアント（Claude Desktop等）と通信します。
+
+#### httpモード
+```bash
+pytilpack mcp --transport=http --port=8000
+```
+HTTPサーバーとして起動し、指定されたポートでMCPクライアントからの接続を待ちます。
+
 ## 開発手順
 
 - [DEVELOPMENT.md](DEVELOPMENT.md) を参照

@@ -7,6 +7,7 @@ import sys
 import pytilpack.cli.delete_empty_dirs
 import pytilpack.cli.delete_old_files
 import pytilpack.cli.fetch
+import pytilpack.cli.mcp
 import pytilpack.cli.sync
 
 
@@ -21,6 +22,7 @@ def main(sys_args: list[str] | None = None) -> None:
     pytilpack.cli.delete_old_files.add_parser(subparsers)
     pytilpack.cli.sync.add_parser(subparsers)
     pytilpack.cli.fetch.add_parser(subparsers)
+    pytilpack.cli.mcp.add_parser(subparsers)
     args = parser.parse_args(sys_args)
     if args.command is None:
         parser.print_help()
@@ -41,6 +43,8 @@ def main(sys_args: list[str] | None = None) -> None:
         pytilpack.cli.sync.run(args)
     elif args.command == "fetch":
         pytilpack.cli.fetch.run(args)
+    elif args.command == "mcp":
+        pytilpack.cli.mcp.run(args)
 
 
 if __name__ == "__main__":

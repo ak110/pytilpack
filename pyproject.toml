@@ -17,6 +17,7 @@ classifiers = [
 dependencies = [
     "beautifulsoup4>=4.12",
     "httpx>=0.28.1",
+    "mcp>=1.0.0",
     "typing-extensions>=4.0",
 ]
 
@@ -29,6 +30,7 @@ all = [
     "flask>=3.0",
     "html5lib",
     "markdown>=3.6",
+    "mcp>=1.0.0",
     "msal>=1.32.3",
     "openai>=1.25",
     "pillow",
@@ -98,6 +100,9 @@ msal = [
     "azure-identity>=1.23.0",
     "msal>=1.32.3",
 ]
+mcp = [
+    "mcp>=1.0.0",
+]
 
 [dependency-groups]
 dev = [
@@ -150,6 +155,8 @@ select = [
     "B",
     # flake8-simplify
     "SIM",
+    # flake8-import-conventions
+    "ICN",
     # isort
     "I",
 ]
