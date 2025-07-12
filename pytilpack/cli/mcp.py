@@ -4,10 +4,9 @@ import argparse
 import importlib.metadata
 import logging
 
-import httpx
 from mcp.server.fastmcp import FastMCP
 
-import pytilpack.htmlrag
+import pytilpack.cli.fetch
 
 logger = logging.getLogger(__name__)
 
@@ -89,36 +88,13 @@ def _create_server(**kwargs) -> FastMCP:
         Returns:
             簡略化されたHTML内容
         """
-        if user_agent is None:
-            user_agent = f"pytilpack/{version} (+https://github.com/ak110/pytilpack)"
-
         try:
-            r = httpx.get(
-                url,
-                headers={
-                    "Accept": accept,
-                    "User-Agent": user_agent,
-                },
-                verify=not no_verify,
-                follow_redirects=True,
+            return pytilpack.cli.fetch.fetch_url(
+                url=url,
+                no_verify=no_verify,
+                accept=accept,
+                user_agent=user_agent,
             )
-
-            if r.status_code != 200:
-                return f"Error: URL {url} の取得に失敗しました。Status: {r.status_code}\n{r.text}"
-
-            content_type = r.headers.get("Content-Type", "text/html")
-            if "html" not in content_type:
-                return f"Error: URL {url} はHTMLではありません。Content-Type: {content_type}\n{r.text[:100]}..."
-
-            content = r.text
-            output = pytilpack.htmlrag.clean_html(
-                content,
-                aggressive=True,
-                keep_title=True,
-                keep_href=True,
-            )
-            return output
-
         except Exception as e:
             logger.error(f"URL {url} の取得中にエラーが発生しました: {e}")
             return f"Error: URL {url} の取得中にエラーが発生しました: {e}"
