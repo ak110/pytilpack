@@ -9,6 +9,7 @@ import pytilpack.typing
 type StrLiteralAlias = typing.Literal["red", "green", "blue"]
 type NumberLiteralAlias = typing.Literal[1, 2, 3]
 type MixedLiteralAlias = typing.Literal["active", "inactive", 0, 1]
+type StrNumberLiteralAlias = StrLiteralAlias | NumberLiteralAlias
 
 
 @pytest.mark.parametrize(
@@ -20,6 +21,9 @@ type MixedLiteralAlias = typing.Literal["active", "inactive", 0, 1]
         (StrLiteralAlias, ["red", "green", "blue"]),
         (NumberLiteralAlias, [1, 2, 3]),
         (MixedLiteralAlias, ["active", "inactive", 0, 1]),
+        (typing.Literal["red", "green", "blue"] | typing.Literal[1, 2, 3], ["red", "green", "blue", 1, 2, 3]),
+        (StrLiteralAlias | NumberLiteralAlias, ["red", "green", "blue", 1, 2, 3]),
+        (StrNumberLiteralAlias, ["red", "green", "blue", 1, 2, 3]),
     ],
 )
 def test_get_literal_values(t, expected) -> None:

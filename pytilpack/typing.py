@@ -5,7 +5,7 @@ import types
 import typing
 
 
-def get_literal_values(expected_type: typing.Any) -> list:
+def get_literal_values(literal_type: typing.Any) -> list:
     """Literalの値を取得する。
 
     XXType: typing.TypeAlias = typing.Literal[1, 2, 3] のような型アノテーションなら
@@ -14,10 +14,19 @@ def get_literal_values(expected_type: typing.Any) -> list:
     XXType.__value__ に対して typing.get_args() を使う必要があるらしい…。
     <https://github.com/python/cpython/issues/112472>
 
+    ZZType = XXType | ZZType やさらにその型エイリアスなどもいい感じに解決する。
+    ここは判定方法よくわからないのでtyping.get_argsで出てこなくなるまで再帰する形に…。
+
     """
-    if isinstance(expected_type, typing.TypeAliasType):
-        return get_literal_values(expected_type.__value__)
-    return list(typing.get_args(expected_type))
+    # 型エイリアスの解決
+    if isinstance(literal_type, typing.TypeAliasType):
+        return get_literal_values(literal_type.__value__)
+
+    # 再帰的にtyping.get_args()する
+    args = list(typing.get_args(literal_type))
+    if len(args) == 0:
+        return [literal_type]
+    return [sub_arg for arg in args for sub_arg in get_literal_values(arg)]
 
 
 def is_instance_safe(value: typing.Any, expected_type: typing.Any, path: str = "") -> bool:
