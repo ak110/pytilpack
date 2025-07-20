@@ -4,7 +4,7 @@
 [![Lint&Test](https://github.com/ak110/pytilpack/actions/workflows/python-app.yml/badge.svg)](https://github.com/ak110/pytilpack/actions/workflows/python-app.yml)
 [![PyPI version](https://badge.fury.io/py/pytilpack.svg)](https://badge.fury.io/py/pytilpack)
 
-Pythonの各種ライブラリのユーティリティ集。
+Pythonのユーティリティ集。
 
 ## インストール
 
@@ -50,6 +50,7 @@ xxxのところは対象ライブラリと同名になっている。`openai`と
 - [pytilpack.flask](pytilpack/flask_/__init_.py)
 - [pytilpack.flask_login](pytilpack/flask.py)
 - [pytilpack.functools](pytilpack/functools.py)
+- [pytilpack.importlib](pytilpack/importlib.py)
 - [pytilpack.json](pytilpack/json.py)
 - [pytilpack.logging](pytilpack/logging.py)
 - [pytilpack.openai](pytilpack/openai.py)
@@ -66,7 +67,7 @@ xxxのところは対象ライブラリと同名になっている。`openai`と
 - [pytilpack.typing](pytilpack/typing.py)
 - [pytilpack.yaml](pytilpack/yaml.py)
 
-### その他のユーティリティのモジュール一覧
+### 特定のライブラリに依存しないモジュール一覧
 
 - [pytilpack.cache](pytilpack/cache.py)  # ファイルキャッシュ関連
 - [pytilpack.data_url](pytilpack/data_url.py)  # データURL関連
@@ -130,19 +131,19 @@ pytilpack mcp [--transport=stdio] [--host=localhost] [--port=8000] [--verbose]
 - `--port`オプションでサーバーのポート番号を指定（httpの場合のみ使用、デフォルト: 8000）
 - `--verbose`オプションで詳細なログを出力
 
-#### stdioモード（推奨）
+#### stdioモード
+
 ```bash
 pytilpack mcp
 # または
 pytilpack mcp --transport=stdio
 ```
-標準入力/出力を使用してMCPクライアント（Claude Desktop等）と通信します。
 
 #### httpモード
+
 ```bash
 pytilpack mcp --transport=http --port=8000
 ```
-HTTPサーバーとして起動し、指定されたポートでMCPクライアントからの接続を待ちます。
 
 ## 開発手順
 
