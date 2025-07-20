@@ -46,7 +46,7 @@ class Test2(Base):
     )
     value1 = sqlalchemy.Column(sqlalchemy.Integer, nullable=True, default=0)
     value2 = sqlalchemy.Column(sqlalchemy.Integer, nullable=False, default=512)
-    value3 = sqlalchemy.Column(sqlalchemy.Float, nullable=False, default=1.0)
+    value3 = sqlalchemy.Column("value0", sqlalchemy.Float, nullable=False, default=1.0)
     value4 = sqlalchemy.Column(sqlalchemy.DateTime, nullable=False)
     value5 = sqlalchemy.Column(sqlalchemy.Text, nullable=False, default=lambda: "func")
 
@@ -314,7 +314,7 @@ Table: test2
 +-----------+--------------+--------+-------+------------+----------------+--------------+
 | value2    | INTEGER      | NO     |       | 512        |                |              |
 +-----------+--------------+--------+-------+------------+----------------+--------------+
-| value3    | FLOAT        | NO     |       | 1.0        |                |              |
+| value0    | FLOAT        | NO     |       | 1.0        |                |              |
 +-----------+--------------+--------+-------+------------+----------------+--------------+
 | value4    | DATETIME     | NO     |       | NULL       |                |              |
 +-----------+--------------+--------+-------+------------+----------------+--------------+

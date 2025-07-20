@@ -342,7 +342,12 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
 
         """
         assert (includes is None) or (excludes is None)
-        all_columns = [str(column.name) for column in self.__table__.columns]  # type: ignore[attr-defined]
+        mapper = sqlalchemy.inspect(self.__class__, raiseerr=True)
+        assert mapper is not None
+        all_columns = [
+            mapper.get_property_by_column(column).key
+            for column in self.__table__.columns  # type: ignore[attr-defined]
+        ]
         if includes is None:
             includes = all_columns
             if excludes is None:
