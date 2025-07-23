@@ -8,10 +8,63 @@ clean_htmlだけを使用したい場合に依存関係が色々厳しいため�
 <https://github.com/plageon/HtmlRAG/blob/main/toolkit/htmlrag/html_utils.py>
 """
 
+import importlib.metadata
 import re
 import warnings
 
 import bs4
+import httpx
+
+
+def fetch_url(
+    url: str,
+    no_verify: bool = False,
+    accept: str = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    user_agent: str | None = None,
+) -> str:
+    """URLからHTMLを取得し、簡略化して返します。
+
+    Args:
+        url: 取得するURL
+        no_verify: SSL証明書の検証を無効化するかどうか
+        accept: 受け入れるコンテンツタイプ
+        user_agent: User-Agentヘッダー（未指定時はデフォルト値を使用）
+
+    Returns:
+        簡略化されたHTML内容
+
+    Raises:
+        Exception: HTTP取得やHTMLパースでエラーが発生した場合
+    """
+    if user_agent is None:
+        version = importlib.metadata.version("pytilpack")
+        user_agent = f"pytilpack/{version} (+https://github.com/ak110/pytilpack)"
+
+    r = httpx.get(
+        url,
+        headers={
+            "Accept": accept,
+            "User-Agent": user_agent,
+        },
+        verify=not no_verify,
+        follow_redirects=True,
+    )
+
+    if r.status_code != 200:
+        raise RuntimeError(f"URL {url} の取得に失敗しました。Status: {r.status_code}\n{r.text}")
+
+    content_type = r.headers.get("Content-Type", "text/html")
+    if "html" not in content_type:
+        raise RuntimeError(f"URL {url} はHTMLではありません。Content-Type: {content_type}\n{r.text[:100]}...")
+
+    content = r.text
+    output = clean_html(
+        content,
+        aggressive=True,
+        keep_title=True,
+        keep_href=True,
+    )
+    return output
 
 
 def clean_html(
@@ -53,8 +106,15 @@ def clean_html(
 
 
 def _simplify_html(soup: bs4.BeautifulSoup, aggressive: bool, keep_title: bool, keep_href: bool) -> str:
-    for script in soup(["script", "style"]):
-        script.decompose()
+    # スクリプトタグの削除
+    for script in soup.find_all("script"):
+        # 独自拡張: <script type="application/json">は残す (github.comなど対策)
+        assert isinstance(script, bs4.Tag)
+        if script.get("type") != "application/json":
+            script.decompose()
+    # スタイルタグの削除
+    for style in soup.find_all("style"):
+        style.decompose()
     # 独自拡張: メインコンテンツじゃなさそうなタグとtitleタグを削除
     if aggressive:
         for el in soup.find_all(["nav", "header", "footer", "aside", "dialog"]):
@@ -67,8 +127,13 @@ def _simplify_html(soup: bs4.BeautifulSoup, aggressive: bool, keep_title: bool, 
         if isinstance(tag, bs4.Tag):
             # 独自拡張: hrefを残すオプションを追加
             if keep_href and tag.name == "a":
-                tag.attrs = {"href": str(tag.get("href"))}  # href属性だけ残す
+                # href属性だけ残す
+                tag.attrs = {k: v for k, v in tag.attrs.items() if k in ("href",)}
+            elif tag.name == "script":
+                # type属性だけ残す
+                tag.attrs = {k: v for k, v in tag.attrs.items() if k in ("type",)}
             else:
+                # 他のタグは全ての属性を削除
                 tag.attrs = {}
     #  remove empty tags recursively
     while True:

@@ -6,7 +6,7 @@ import logging
 
 from mcp.server.fastmcp import FastMCP
 
-import pytilpack.cli.fetch
+import pytilpack.htmlrag
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +89,7 @@ def _create_server(**kwargs) -> FastMCP:
             簡略化されたHTML内容
         """
         try:
-            return pytilpack.cli.fetch.fetch_url(
+            return pytilpack.htmlrag.fetch_url(
                 url=url,
                 no_verify=no_verify,
                 accept=accept,
