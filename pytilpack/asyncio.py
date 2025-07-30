@@ -4,6 +4,7 @@ import abc
 import asyncio
 import concurrent.futures
 import contextlib
+import functools
 import logging
 import pathlib
 import typing
@@ -69,6 +70,21 @@ async def write_bytes(path: pathlib.Path | str, data: bytes) -> None:
     path = pathlib.Path(path)
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(None, path.write_bytes, data)
+
+
+def run_sync[**P, R](
+    func: typing.Callable[P, R],
+) -> typing.Callable[P, typing.Awaitable[R]]:
+    """同期関数を非同期に実行するデコレーター。
+
+    quart.utils.run_syncのquart関係ない版。
+    """
+
+    @functools.wraps(func)
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        return await asyncio.to_thread(func, *args, **kwargs)
+
+    return wrapper
 
 
 @contextlib.asynccontextmanager

@@ -107,6 +107,17 @@ async def test_file_operations_with_encoding(tmp_path: pathlib.Path) -> None:
 
 
 @pytest.mark.asyncio
+async def test_run_sync():
+    """pytilpack.asyncio.run_syncのテスト。"""
+
+    @pytilpack.asyncio.run_sync
+    def sync_func(a: int, k: int) -> str:
+        return str(a + k)
+
+    assert await sync_func(1, k=2) == "3"
+
+
+@pytest.mark.asyncio
 async def test_acquire_with_timeout():
     lock = asyncio.Lock()
     async with pytilpack.asyncio.acquire_with_timeout(lock, 0.001) as acquired:
