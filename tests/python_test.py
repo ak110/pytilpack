@@ -181,3 +181,79 @@ def test_get_dict():
     with pytest.raises(ValueError):
         get_dict(data, "b")
     assert get_dict(data, "b", errors="ignore") == {}
+
+
+@pytest.mark.parametrize(
+    "value,target_type,expected",
+    [
+        # bool相互変換
+        (True, bool, True),
+        (False, bool, False),
+        (0, bool, False),
+        (1, bool, True),
+        (2, bool, None),
+        ("true", bool, True),
+        ("True", bool, True),
+        ("false", bool, False),
+        ("False", bool, False),
+        ("0", bool, False),
+        ("1", bool, True),
+        ("2", bool, None),
+        # int相互変換
+        (True, int, 1),
+        (False, int, 0),
+        (42, int, 42),
+        (3.14, int, 3),
+        ("42", int, 42),
+        ("-123", int, -123),
+        # float相互変換
+        (True, float, 1.0),
+        (False, float, 0.0),
+        (3.14, float, 3.14),
+        (42, float, 42.0),
+        ("3.14", float, 3.14),
+        ("-123.45", float, -123.45),
+        # str相互変換
+        (True, str, "True"),
+        (False, str, "False"),
+        (42, str, "42"),
+        (3.14, str, "3.14"),
+        ("hello", str, "hello"),
+        # None処理
+        (None, bool, None),
+        (None, int, None),
+        (None, float, None),
+        (None, str, None),
+    ],
+)
+def test_convert_success(value, target_type, expected):
+    """convertの成功パターンのテスト。"""
+    result = pytilpack.python.convert(value, target_type)
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "value,target_type,errors",
+    [
+        # bool変換エラー
+        (2, bool, "strict"),
+        (3.14, bool, "strict"),
+        ("2", bool, "strict"),
+        ([1, 2, 3], bool, "strict"),
+        ({"key": "value"}, bool, "strict"),
+        # int変換エラー
+        ("invalid", int, "strict"),
+        ("3.14abc", int, "strict"),
+        ([1, 2, 3], int, "strict"),
+        ({"key": "value"}, int, "strict"),
+        # float変換エラー
+        ("invalid", float, "strict"),
+        ("3.14abc", float, "strict"),
+        ([1, 2, 3], float, "strict"),
+        ({"key": "value"}, float, "strict"),
+    ],
+)
+def test_convert_error(value, target_type, errors):
+    """convertのエラーパターンのテスト。"""
+    with pytest.raises(ValueError):
+        pytilpack.python.convert(value, target_type, errors=errors)

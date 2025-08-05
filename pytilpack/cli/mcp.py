@@ -1,7 +1,6 @@
 """MCPサーバーコマンド。"""
 
 import argparse
-import importlib.metadata
 import logging
 
 from mcp.server.fastmcp import FastMCP
@@ -67,8 +66,7 @@ def _run_server(transport: str = "stdio", host: str = "localhost", port: int = 8
 
 def _create_server(**kwargs) -> FastMCP:
     """MCPサーバーインスタンスを作成します。"""
-    version = importlib.metadata.version("pytilpack")
-    mcp = FastMCP("pytilpack", version=version, description="pytilpackのユーティリティ機能を提供するMCPサーバー", **kwargs)
+    mcp = FastMCP("pytilpack", instructions="pytilpackのユーティリティ機能を提供するMCPサーバー", **kwargs)
 
     @mcp.tool()
     def fetch_url(
