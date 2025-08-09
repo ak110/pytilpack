@@ -228,7 +228,7 @@ def test_get_dict():
 )
 def test_convert_success(value, target_type, expected):
     """convertの成功パターンのテスト。"""
-    result = pytilpack.python.convert(value, target_type)
+    result = pytilpack.python.convert(value, target_type, None)
     assert result == expected
 
 
@@ -256,4 +256,4 @@ def test_convert_success(value, target_type, expected):
 def test_convert_error(value, target_type, errors):
     """convertのエラーパターンのテスト。"""
     with pytest.raises(ValueError):
-        pytilpack.python.convert(value, target_type, errors=errors)
+        pytilpack.python.convert(value, target_type, None, errors=errors)

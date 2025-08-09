@@ -284,17 +284,15 @@ def _stringify_key(key: str | int | list[str | int]) -> str:
 def convert[T](
     value: typing.Any,
     target_type: type[T],
-    default_value: T | None = None,
+    default_value: T,
     errors: typing.Literal["strict", "ignore"] = "ignore",
-    default_if_none: bool = True,
-) -> T | None:
+) -> T:
     """値をTの型に変換する。
 
     Args:
         value: 変換元の値。
         default_value: 取得できなかった場合のデフォルト値。
         errors: エラー時の挙動。"strict"で例外を発生させる。"ignore"でデフォルト値を返す。
-        default_if_none: 値がNoneの場合にデフォルト値を返すか否か。
 
     Returns:
         取得した値。取得できなかった場合はdefault_value。
@@ -304,7 +302,7 @@ def convert[T](
 
     """
     if value is None:
-        return default_value if default_if_none else None
+        return default_value
 
     if isinstance(value, target_type):
         return value
@@ -335,3 +333,28 @@ def convert[T](
         if errors == "ignore":
             return default_value
         raise ValueError(f"値の変換失敗: {value!r} to {target_type.__name__}") from e
+
+
+def convert_or_none[T](
+    value: typing.Any,
+    target_type: type[T],
+    default_value: T | None = None,
+    errors: typing.Literal["strict", "ignore"] = "ignore",
+) -> T | None:
+    """値をTの型に変換する。Noneの場合はデフォルト値を返す。
+
+    Args:
+        value: 変換元の値。
+        default_value: 取得できなかった場合のデフォルト値。
+        errors: エラー時の挙動。"strict"で例外を発生させる。"ignore"でデフォルト値を返す。
+
+    Returns:
+        取得した値。取得できなかった場合はdefault_value。
+
+    Raises:
+        ValueError: errors="strict"の場合で値の変換に失敗した場合に発生。
+
+    """
+    if value is None:
+        return default_value
+    return convert(value, target_type, default_value, errors)
