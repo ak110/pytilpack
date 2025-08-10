@@ -32,7 +32,7 @@ all = [
     "markdown>=3.6",
     "mcp>=1.0.0",
     "msal>=1.32.3",
-    "openai>=1.25",
+    "openai>=1.99.6",
     "pillow",
     "pycryptodome",
     "pytest",
@@ -65,7 +65,7 @@ markdown = [
     "tinycss2",
 ]
 openai = [
-    "openai>=1.25",
+    "openai>=1.99.6",
 ]
 pycryptodome = [
     "pycryptodome",
@@ -82,7 +82,7 @@ sqlalchemy = [
     "tabulate[widechars]>=0.9",
 ]
 tiktoken = [
-    "openai",
+    "openai>=1.99.6",
     "pillow",
     "tiktoken>=0.6",
 ]

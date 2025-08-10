@@ -80,9 +80,28 @@ def num_tokens_from_messages(
         if (tool_calls := message.get("tool_calls")) is not None:
             tool_call: openai.types.chat.ChatCompletionMessageToolCallParam
             for tool_call in tool_calls:  # type: ignore[attr-defined]
-                if (function := tool_call.get("function")) is not None:
-                    num_tokens += len(encoding.encode(function["name"]))
-                    num_tokens += len(encoding.encode(function["arguments"]))
+                if (
+                    tool_call.get("type") == "function"
+                    and (
+                        function := typing.cast(openai.types.chat.ChatCompletionMessageFunctionToolCallParam, tool_call).get(
+                            "function"
+                        )
+                    )
+                    is not None
+                ):
+                    num_tokens += len(encoding.encode(function.get("name", "")))
+                    num_tokens += len(encoding.encode(function.get("arguments", "")))
+                elif (
+                    tool_call.get("type") == "custom"
+                    and (
+                        custom := typing.cast(openai.types.chat.ChatCompletionMessageCustomToolCallParam, tool_call).get(
+                            "custom"
+                        )
+                    )
+                    is not None
+                ):
+                    num_tokens += len(encoding.encode(custom.get("name", "")))
+                    num_tokens += len(encoding.encode(custom.get("input", "")))
 
     num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
 
@@ -241,6 +260,25 @@ def num_tokens_for_tools(
         num_tokens += 1
     elif isinstance(tool_choice, dict):
         num_tokens += 7
-        num_tokens += len(encoding.encode(str(tool_choice.get("function", {}).get("name", ""))))
+        if tool_choice.get("type") == "function":
+            num_tokens += len(
+                encoding.encode(
+                    str(
+                        typing.cast(openai.types.chat.ChatCompletionNamedToolChoiceParam, tool_choice)
+                        .get("function", {})
+                        .get("name", "")
+                    )
+                )
+            )
+        elif tool_choice.get("type") == "custom":
+            num_tokens += len(
+                encoding.encode(
+                    str(
+                        typing.cast(openai.types.chat.ChatCompletionNamedToolChoiceCustomParam, tool_choice)
+                        .get("custom", {})
+                        .get("name", "")
+                    )
+                )
+            )
 
     return num_tokens

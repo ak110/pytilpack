@@ -7,7 +7,7 @@ import openai
 import openai.types.chat
 import openai.types.chat.chat_completion
 import openai.types.chat.chat_completion_chunk
-import openai.types.chat.chat_completion_message_tool_call
+import openai.types.chat.chat_completion_message_function_tool_call
 
 import pytilpack.flask
 import pytilpack.openai
@@ -121,9 +121,9 @@ def test_gather_chunks_claude_tools():
                     content="aaa",
                     role="assistant",
                     tool_calls=[
-                        openai.types.chat.ChatCompletionMessageToolCall(
+                        openai.types.chat.ChatCompletionMessageFunctionToolCall(
                             id="id123",
-                            function=openai.types.chat.chat_completion_message_tool_call.Function(
+                            function=openai.types.chat.chat_completion_message_function_tool_call.Function(
                                 arguments='{"expression":"1+1"}', name="funcname"
                             ),
                             type="function",
@@ -198,9 +198,9 @@ def test_gather_chunks_function1(data_dir: pathlib.Path):
                     message=openai.types.chat.ChatCompletionMessage(
                         role="assistant",
                         tool_calls=[
-                            openai.types.chat.ChatCompletionMessageToolCall(
+                            openai.types.chat.ChatCompletionMessageFunctionToolCall(
                                 id="call_flA5AHMfQwJYLsdQFXSk81YA",
-                                function=openai.types.chat.chat_completion_message_tool_call.Function(
+                                function=openai.types.chat.chat_completion_message_function_tool_call.Function(
                                     arguments='{"expression":"1+1"}', name="calculator"
                                 ),
                                 type="function",

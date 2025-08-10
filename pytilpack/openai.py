@@ -8,6 +8,7 @@ import openai.types.chat
 import openai.types.chat.chat_completion
 import openai.types.chat.chat_completion_chunk
 import openai.types.chat.chat_completion_message
+import openai.types.chat.chat_completion_message_function_tool_call
 import openai.types.chat.chat_completion_message_tool_call
 
 from pytilpack.python import coalesce, remove_none
@@ -127,7 +128,9 @@ def _make_tool_call(
         [],
     )
 
-    tool_call = openai.types.chat.chat_completion_message_tool_call.ChatCompletionMessageToolCall.model_construct()
+    tool_call = (
+        openai.types.chat.chat_completion_message_function_tool_call.ChatCompletionMessageFunctionToolCall.model_construct()
+    )
 
     if len(ids := remove_none(delta.id for delta in tool_call_list)) > 0:
         tool_call.id = _equals_all_get(strict, f"delta.tool_calls[{index}].id", ids, "")
@@ -136,7 +139,7 @@ def _make_tool_call(
         tool_call.type = _equals_all_get(strict, f"delta.tool_calls[{index}].type", types)  # type: ignore[assignment]
 
     if len(functions := remove_none(delta.function for delta in tool_call_list)) > 0:
-        tool_call.function = openai.types.chat.chat_completion_message_tool_call.Function(
+        tool_call.function = openai.types.chat.chat_completion_message_function_tool_call.Function(
             arguments="".join(remove_none(f.arguments for f in functions)),
             name=_equals_all_get(
                 strict,
