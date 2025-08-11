@@ -67,6 +67,9 @@ def _make_choice(
     if len(contents := remove_none(c.delta.content for c in choice_list)) > 0:
         message.content = "".join(contents)
 
+    if len(refusals := remove_none(c.delta.refusal for c in choice_list)) > 0:
+        message.refusal = "".join(refusals)
+
     if len(function_calls := remove_none(c.delta.function_call for c in choice_list)) > 0:
         message.function_call = _make_function_call(function_calls, strict)
 
