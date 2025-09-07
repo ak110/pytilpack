@@ -108,7 +108,7 @@ def _make_function_call(
 def _make_tool_calls(
     tool_calls_list: list[list[openai.types.chat.chat_completion_chunk.ChoiceDeltaToolCall]],
     strict: bool,
-) -> list[openai.types.chat.chat_completion_message_tool_call.ChatCompletionMessageToolCall] | None:
+) -> list[openai.types.chat.chat_completion_message_tool_call.ChatCompletionMessageToolCallUnion] | None:
     """list[ChoiceDeltaToolCall]を作成する。"""
     if len(tool_calls_list) == 0:
         return None
@@ -121,7 +121,7 @@ def _make_tool_call(
     tool_calls_list: list[list[openai.types.chat.chat_completion_chunk.ChoiceDeltaToolCall]],
     index: int,
     strict: bool,
-) -> openai.types.chat.chat_completion_message_tool_call.ChatCompletionMessageToolCall:
+) -> openai.types.chat.chat_completion_message_tool_call.ChatCompletionMessageToolCallUnion:
     """ChoiceDeltaToolCallを作成する。"""
     tool_call_list = sum(
         (

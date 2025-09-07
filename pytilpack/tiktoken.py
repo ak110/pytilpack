@@ -78,28 +78,11 @@ def num_tokens_from_messages(
                         )
 
         if (tool_calls := message.get("tool_calls")) is not None:
-            tool_call: openai.types.chat.ChatCompletionMessageToolCallParam
             for tool_call in tool_calls:  # type: ignore[attr-defined]
-                if (
-                    tool_call.get("type") == "function"
-                    and (
-                        function := typing.cast(openai.types.chat.ChatCompletionMessageFunctionToolCallParam, tool_call).get(
-                            "function"
-                        )
-                    )
-                    is not None
-                ):
+                if tool_call.get("type") == "function" and (function := tool_call.get("function")) is not None:
                     num_tokens += len(encoding.encode(function.get("name", "")))
                     num_tokens += len(encoding.encode(function.get("arguments", "")))
-                elif (
-                    tool_call.get("type") == "custom"
-                    and (
-                        custom := typing.cast(openai.types.chat.ChatCompletionMessageCustomToolCallParam, tool_call).get(
-                            "custom"
-                        )
-                    )
-                    is not None
-                ):
+                elif tool_call.get("type") == "custom" and (custom := tool_call.get("custom")) is not None:
                     num_tokens += len(encoding.encode(custom.get("name", "")))
                     num_tokens += len(encoding.encode(custom.get("input", "")))
 
