@@ -3,12 +3,15 @@
 # pylint: disable=redefined-builtin
 
 import contextlib
+import contextvars
 import datetime
 import hashlib
 import io
 import logging
 import pathlib
 import time
+import typing
+import uuid
 
 _exception_history: dict[str, datetime.datetime] = {}
 """例外フィンガープリント → 最終発生時刻。"""
@@ -97,3 +100,57 @@ def exception_with_dedup(
         logger.warning(msg, exc_info=True)
 
     _exception_history[fingerprint] = now
+
+
+_current_context_id: contextvars.ContextVar[str] = contextvars.ContextVar("_current_context_id", default="")
+
+
+@contextlib.asynccontextmanager
+async def capture_context(
+    target_logger: logging.Logger,
+    formatter: logging.Formatter,
+    level: int = logging.INFO,
+) -> typing.AsyncGenerator[typing.Callable[[], str], None]:
+    """指定ロガーに対して“この非同期コンテキストのログだけ”をStringIOへ集約する。
+
+    Args:
+        target_logger: ハンドラを一時的に取り付ける対象のロガー。
+        formatter: このキャプチャ専用のフォーマッタ。
+        level: このキャプチャハンドラのログレベル。
+
+    Yields:
+        get_value: これまでにバッファへ書かれた文字列を返す関数。
+    """
+    context_id: str = str(uuid.uuid4())
+    token = _current_context_id.set(context_id)
+    try:
+        buffer: io.StringIO = io.StringIO()
+        handler: logging.StreamHandler = logging.StreamHandler(buffer)
+        handler.setFormatter(formatter)
+        handler.setLevel(level)
+        handler.addFilter(ContextFilter(context_id))
+        target_logger.addHandler(handler)
+        try:
+
+            def get_value() -> str:
+                return buffer.getvalue()
+
+            yield get_value
+        finally:
+            target_logger.removeHandler(handler)
+            handler.close()
+            buffer.close()
+    finally:
+        _current_context_id.reset(token)
+
+
+class ContextFilter(logging.Filter):
+    """_context_idと一致するログだけを通すフィルタ。"""
+
+    def __init__(self, target_id: str) -> None:
+        super().__init__()
+        self.target_id = target_id
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        del record  # noqa
+        return _current_context_id.get("") == self.target_id

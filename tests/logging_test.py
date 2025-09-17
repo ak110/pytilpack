@@ -1,5 +1,6 @@
 """テストコード。"""
 
+import asyncio
 import datetime
 import logging
 import pathlib
@@ -124,3 +125,96 @@ def test_exception_with_dedup(caplog: pytest.LogCaptureFixture) -> None:
     assert caplog.records[0].levelname == "WARNING"
     assert caplog.records[0].message == "Unhandled exception occurred"
     assert caplog.records[0].exc_info is not None
+
+
+@pytest.mark.asyncio
+async def test_capture_context() -> None:
+    """capture_contextのテスト。"""
+    logger = logging.getLogger("test_capture_context")
+    logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter("[%(levelname)s] %(message)s")
+
+    captured_content = ""
+    async with pytilpack.logging.capture_context(logger, formatter, logging.INFO) as get_value:
+        # キャプチャ開始時は空
+        assert get_value() == ""
+
+        # ログを出力
+        logger.info("テストメッセージ1")
+        logger.debug("デバッグメッセージ")  # レベルが低いので出力されない
+        logger.warning("テストメッセージ2")
+
+        # キャプチャされた内容を確認
+        captured_content = get_value()
+        assert "[INFO] テストメッセージ1\n" in captured_content
+        assert "[WARNING] テストメッセージ2\n" in captured_content
+        assert "デバッグメッセージ" not in captured_content
+
+    # コンテキスト終了後は新しいログはキャプチャされない
+    logger.info("コンテキスト外のメッセージ")
+    # コンテキスト終了前にキャプチャした内容には、コンテキスト外のメッセージは含まれない
+    assert "コンテキスト外のメッセージ" not in captured_content
+
+
+@pytest.mark.asyncio
+async def test_capture_context_multiple_tasks() -> None:
+    """複数のタスクでのcapture_contextのテスト。"""
+    logger = logging.getLogger("test_capture_context_multi")
+    logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter("[%(levelname)s] %(message)s")
+
+    async def task1():
+        async with pytilpack.logging.capture_context(logger, formatter, logging.INFO) as get_value:
+            logger.info("タスク1のメッセージ")
+            await asyncio.sleep(0.01)
+            logger.warning("タスク1の警告")
+            return get_value()
+
+    async def task2():
+        async with pytilpack.logging.capture_context(logger, formatter, logging.INFO) as get_value:
+            await asyncio.sleep(0.005)
+            logger.info("タスク2のメッセージ")
+            logger.error("タスク2のエラー")
+            return get_value()
+
+    # 並行実行
+    result1, result2 = await asyncio.gather(task1(), task2())
+
+    # それぞれのタスクは自分のログのみキャプチャしている
+    assert "タスク1のメッセージ" in result1
+    assert "タスク1の警告" in result1
+    assert "タスク2のメッセージ" not in result1
+    assert "タスク2のエラー" not in result1
+
+    assert "タスク2のメッセージ" in result2
+    assert "タスク2のエラー" in result2
+    assert "タスク1のメッセージ" not in result2
+    assert "タスク1の警告" not in result2
+
+
+@pytest.mark.asyncio
+async def test_capture_context_nested() -> None:
+    """ネストしたcapture_contextのテスト。"""
+    logger = logging.getLogger("test_capture_context_nested")
+    logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter("[%(levelname)s] %(message)s")
+
+    async with pytilpack.logging.capture_context(logger, formatter, logging.INFO) as outer_get_value:
+        logger.info("外側のメッセージ1")
+
+        async with pytilpack.logging.capture_context(logger, formatter, logging.WARNING) as inner_get_value:
+            logger.info("内側のメッセージ（INFOレベル）")  # 内側のレベルがWARNINGなので出力されない
+            logger.warning("内側のメッセージ（WARNINGレベル）")
+
+            inner_captured = inner_get_value()
+            assert "内側のメッセージ（WARNINGレベル）" in inner_captured
+            assert "内側のメッセージ（INFOレベル）" not in inner_captured
+            assert "外側のメッセージ1" not in inner_captured
+
+        logger.info("外側のメッセージ2")
+
+        outer_captured = outer_get_value()
+        assert "外側のメッセージ1" in outer_captured
+        assert "外側のメッセージ2" in outer_captured
+        # 内側のコンテキストのログは外側のコンテキストIDとは異なるため外側にはキャプチャされない
+        assert "内側のメッセージ（WARNINGレベル）" not in outer_captured
