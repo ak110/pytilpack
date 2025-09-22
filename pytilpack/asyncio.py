@@ -27,7 +27,6 @@ async def write_json(
     indent: int | None = None,
     separators: tuple[str, str] | None = None,
     sort_keys: bool = False,
-    **kwargs,
 ) -> None:
     """JSONファイルに非同期で書き込む。"""
     loop = asyncio.get_running_loop()
@@ -40,7 +39,6 @@ async def write_json(
         indent,
         separators,
         sort_keys,
-        **kwargs,
     )
 
 

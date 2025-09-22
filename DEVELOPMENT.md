@@ -21,5 +21,3 @@
   `git fetch --tags && git tag --sort=version:refname | tail -n1`
 3. GitHubでリリースを作成:
   `gh release create --target=master --generate-notes v1.x.x`
-4. リリースアクションの確認:
-  `gh run list --commit=$(git rev-parse HEAD)`
