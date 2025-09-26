@@ -79,7 +79,7 @@ def retry[**P, R](
         @functools.wraps(func)
         def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             # pylint: disable=catching-non-exception,raising-non-exception
-            retry_count = 0
+            attempt = 0
             delay = initial_delay
             while True:
                 try:
@@ -87,15 +87,15 @@ def retry[**P, R](
                 except tuple(excludes) as e:
                     raise e
                 except tuple(includes) as e:
-                    retry_count += 1
-                    if retry_count > max_retries:
+                    attempt += 1
+                    if attempt > max_retries:
                         raise e
                     logger.log(
                         loglevel,
                         "%s: %s (retry %d/%d)",
                         func.__name__,
                         e,
-                        retry_count,
+                        attempt,
                         max_retries,
                     )
                     time.sleep(delay * random.uniform(1.0, 1.0 + max_jitter))

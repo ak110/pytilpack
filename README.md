@@ -51,6 +51,7 @@ xxxのところは対象ライブラリと同名になっている。`openai`と
 - [pytilpack.flask_login](pytilpack/flask.py)
 - [pytilpack.fnctl](pytilpack/fnctl.py)
 - [pytilpack.functools](pytilpack/functools.py)
+- [pytilpack.httpx](pytilpack/httpx.py)
 - [pytilpack.importlib](pytilpack/importlib.py)
 - [pytilpack.json](pytilpack/json.py)
 - [pytilpack.logging](pytilpack/logging.py)
