@@ -1,8 +1,6 @@
 """テストコード。"""
 
 import asyncio
-import datetime
-import email.utils
 
 import httpx
 import pytest
@@ -121,53 +119,3 @@ async def test_arequest_with_retry_direct():
         assert response.status_code == 200
         assert response.json() == {"message": "success"}
         assert request_count["count"] == 2
-
-
-@pytest.mark.parametrize(
-    "retry_after,expected_wait",
-    [
-        ("5", 5.0),  # 整数秒形式
-        ("0", 0.0),  # 0秒
-        ("not_a_number", None),  # 無効な値
-        ("", None),  # 空文字
-    ],
-)
-def test_get_retry_after_integer(retry_after: str, expected_wait: float | None):
-    """_get_retry_after関数の整数秒形式テスト。"""
-    response = httpx.Response(200, headers={"Retry-After": retry_after} if retry_after else {})
-    result = pytilpack.httpx.get_retry_after(response)
-    assert result == expected_wait
-
-
-def test_get_retry_after_datetime():
-    """_get_retry_after関数の日時形式テスト。"""
-    # 現在時刻から5秒後の日時文字列を作成
-    future_time = datetime.datetime.now(tz=datetime.UTC) + datetime.timedelta(seconds=5)
-    retry_after = email.utils.formatdate(future_time.timestamp(), usegmt=True)
-
-    response = httpx.Response(200, headers={"Retry-After": retry_after})
-    result = pytilpack.httpx.get_retry_after(response)
-
-    # 約5秒（誤差±1秒程度を許容）
-    assert result is not None
-    assert 4.0 <= result <= 6.0
-
-
-def test_get_retry_after_past_datetime():
-    """_get_retry_after関数の過去の日時形式テスト。"""
-    # 現在時刻から5秒前の日時文字列を作成
-    past_time = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(seconds=5)
-    retry_after = email.utils.formatdate(past_time.timestamp(), usegmt=True)
-
-    response = httpx.Response(200, headers={"Retry-After": retry_after})
-    result = pytilpack.httpx.get_retry_after(response)
-
-    # 過去の時刻の場合は0.0を返す
-    assert result == 0.0
-
-
-def test_get_retry_after_invalid_datetime():
-    """_get_retry_after関数の無効な日時形式テスト。"""
-    response = httpx.Response(200, headers={"Retry-After": "invalid datetime string"})
-    result = pytilpack.httpx.get_retry_after(response)
-    assert result is None

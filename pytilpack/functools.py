@@ -9,6 +9,18 @@ import time
 import typing
 import warnings
 
+import pytilpack.http
+
+try:
+    import requests
+except ImportError:
+    requests = None  # type: ignore[assignment]
+
+try:
+    import httpx
+except ImportError:
+    httpx = None  # type: ignore[assignment]
+
 
 def retry[**P, R](
     max_retries: int = 3,
@@ -27,6 +39,9 @@ def retry[**P, R](
     - max_retriesが3の場合、待ち時間は7秒程度で4回呼ばれる。
     - 計算方法: sum(min(1.0 * (2.0 ** i), 30.0) for i in range(max_retries)) + ランダムなジッター
 
+    requests/httpxのHTTPError例外にRetry-Afterヘッダーが含まれている場合、
+    そちらを優先して待機時間を決定する。
+
     Args:
         max_retries: 最大リトライ回数
         initial_delay: 初回リトライ時の待機時間
@@ -44,6 +59,9 @@ def retry[**P, R](
         includes = (Exception,)
     if excludes is None:
         excludes = ()
+    # 最大待機時間の目安
+    total_delay = sum(min(initial_delay * (exponential_base**i), max_delay) for i in range(max_retries))
+    total_delay = max(total_delay, 0.001)  # 念のため0秒は避ける
 
     def decorator(func: typing.Callable[P, R]) -> typing.Callable[P, R]:
         logger = logging.getLogger(func.__module__)
@@ -55,6 +73,7 @@ def retry[**P, R](
                 # pylint: disable=catching-non-exception,raising-non-exception
                 attempt = 0
                 delay = initial_delay
+                retry_after_total = 0.0
                 while True:
                     try:
                         return await func(*args, **kwargs)
@@ -64,6 +83,9 @@ def retry[**P, R](
                         attempt += 1
                         if attempt > max_retries:
                             raise e
+                        # Retry-Afterヘッダーがある場合、累積待機時間が本来の設定を超えるならエラーにする
+                        if retry_after_total >= total_delay:
+                            raise e
                         logger.log(
                             loglevel,
                             "%s: %s (retry %d/%d)",
@@ -72,8 +94,15 @@ def retry[**P, R](
                             attempt,
                             max_retries,
                         )
-                        await asyncio.sleep(delay * random.uniform(1.0, 1.0 + max_jitter))
-                        delay = min(delay * exponential_base, max_delay)
+                        retry_after = _get_retry_after(e)
+                        if retry_after is None:
+                            # Exponential backoff with jitter
+                            await asyncio.sleep(delay * random.uniform(1.0, 1.0 + max_jitter))
+                            delay = min(delay * exponential_base, max_delay)
+                        else:
+                            # Retry-Afterヘッダーに従い待機
+                            await asyncio.sleep(retry_after)
+                            retry_after_total += retry_after
 
             return async_wrapper  # type: ignore[return-value]
 
@@ -82,6 +111,7 @@ def retry[**P, R](
             # pylint: disable=catching-non-exception,raising-non-exception
             attempt = 0
             delay = initial_delay
+            retry_after_total = 0.0
             while True:
                 try:
                     return func(*args, **kwargs)
@@ -91,6 +121,9 @@ def retry[**P, R](
                     attempt += 1
                     if attempt > max_retries:
                         raise e
+                    # Retry-Afterヘッダーがある場合、累積待機時間が本来の設定を超えるならエラーにする
+                    if retry_after_total >= total_delay:
+                        raise e
                     logger.log(
                         loglevel,
                         "%s: %s (retry %d/%d)",
@@ -99,12 +132,28 @@ def retry[**P, R](
                         attempt,
                         max_retries,
                     )
-                    time.sleep(delay * random.uniform(1.0, 1.0 + max_jitter))
-                    delay = min(delay * exponential_base, max_delay)
+                    retry_after = _get_retry_after(e)
+                    if retry_after is None:
+                        # Exponential backoff with jitter
+                        time.sleep(delay * random.uniform(1.0, 1.0 + max_jitter))
+                        delay = min(delay * exponential_base, max_delay)
+                    else:
+                        # Retry-Afterヘッダーに従い待機
+                        time.sleep(retry_after)
+                        retry_after_total += retry_after
 
         return sync_wrapper
 
     return decorator
+
+
+def _get_retry_after(e: Exception) -> float | None:
+    """例外オブジェクトからRetry-Afterヘッダーを取得する。"""
+    if requests is not None and isinstance(e, requests.HTTPError) and e.response is not None:
+        return pytilpack.http.get_retry_after(e.response.headers.get("Retry-After"))
+    if httpx is not None and isinstance(e, httpx.HTTPStatusError) and e.response is not None:
+        return pytilpack.http.get_retry_after(e.response.headers.get("Retry-After"))
+    return None
 
 
 def aretry[**P, R](

@@ -1,13 +1,13 @@
 """httpx関連。"""
 
 import asyncio
-import datetime
-import email.utils
 import logging
 import random
 import typing
 
 import httpx
+
+import pytilpack.http
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ async def arequest_with_retry(
         last_response = resp
         if resp.status_code != 429:
             break
-        wait = get_retry_after(resp)
+        wait = pytilpack.http.get_retry_after(resp.headers.get("Retry-After"))
         if wait is None:
             # ヘッダーがなければ指数バックオフ
             wait = delay * random.uniform(1.0, 1.0 + max_jitter)
@@ -88,25 +88,3 @@ async def arequest_with_retry(
         await asyncio.sleep(wait)
     assert last_response is not None
     return last_response
-
-
-def get_retry_after(response: httpx.Response) -> float | None:
-    ra = response.headers.get("Retry-After")
-    if not ra:
-        return None
-    # 整数秒形式
-    if ra.isdigit():
-        return float(ra)
-    # 日時形式（RFC 2822 等）を解析
-    try:
-        dt = email.utils.parsedate_to_datetime(ra)
-        # parsedate_to_datetime はタイムゾーン情報付き（あるいは naive）を返す
-        # dt が naive なら UTC とみなす
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=datetime.UTC)
-        # 現在の UTC 時刻を aware で取得
-        now = datetime.datetime.now(tz=datetime.UTC)
-        delta = (dt - now).total_seconds()
-        return max(delta, 0.0)
-    except Exception:
-        return None

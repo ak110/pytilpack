@@ -6,6 +6,9 @@ update:
 	uv run pre-commit autoupdate
 	$(MAKE) test
 
+fix:
+	uv run ruff check --fix --unsafe-fixes
+
 format:
 	SKIP=pyfltr uv run pre-commit run --all-files
 	-uv run pyfltr --exit-zero-even-if-formatted --commands=fast
