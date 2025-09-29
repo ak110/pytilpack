@@ -25,6 +25,7 @@ def retry[**P, R](
     - max_retriesが1の場合、待ち時間は1秒程度で2回呼ばれる。
     - max_retriesが2の場合、待ち時間は3秒程度で3回呼ばれる。
     - max_retriesが3の場合、待ち時間は7秒程度で4回呼ばれる。
+    - 計算方法: sum(min(1.0 * (2.0 ** i), 30.0) for i in range(max_retries)) + ランダムなジッター
 
     Args:
         max_retries: 最大リトライ回数
@@ -52,7 +53,7 @@ def retry[**P, R](
             @functools.wraps(func)
             async def async_wrapper(*args: P.args, **kwargs: P.kwargs):
                 # pylint: disable=catching-non-exception,raising-non-exception
-                retry_count = 0
+                attempt = 0
                 delay = initial_delay
                 while True:
                     try:
@@ -60,15 +61,15 @@ def retry[**P, R](
                     except tuple(excludes) as e:
                         raise e
                     except tuple(includes) as e:
-                        retry_count += 1
-                        if retry_count > max_retries:
+                        attempt += 1
+                        if attempt > max_retries:
                             raise e
                         logger.log(
                             loglevel,
                             "%s: %s (retry %d/%d)",
                             func.__name__,
                             e,
-                            retry_count,
+                            attempt,
                             max_retries,
                         )
                         await asyncio.sleep(delay * random.uniform(1.0, 1.0 + max_jitter))
