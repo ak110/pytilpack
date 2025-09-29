@@ -101,6 +101,7 @@ def retry[**P, R](
                             delay = min(delay * exponential_base, max_delay)
                         else:
                             # Retry-Afterヘッダーに従い待機
+                            logger.log(loglevel, "Retry-After: %.1f", retry_after)
                             await asyncio.sleep(retry_after)
                             retry_after_total += retry_after
 
@@ -139,6 +140,7 @@ def retry[**P, R](
                         delay = min(delay * exponential_base, max_delay)
                     else:
                         # Retry-Afterヘッダーに従い待機
+                        logger.log(loglevel, "Retry-After: %.1f", retry_after)
                         time.sleep(retry_after)
                         retry_after_total += retry_after
 
