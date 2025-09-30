@@ -26,13 +26,13 @@ def describe(
     )
 
 
-def get_class_by_table[T: sqlalchemy.orm.DeclarativeBase](
+def get_class_by_table(
     base: type[sqlalchemy.orm.DeclarativeBase], table: sqlalchemy.sql.schema.Table
-) -> type[T]:
+) -> type[sqlalchemy.orm.DeclarativeBase]:
     """テーブルからクラスを取得する。"""
     for mapper in base.registry.mappers:
         if mapper.local_table is table:
-            return typing.cast(type[T], mapper.class_)
+            return typing.cast(type[sqlalchemy.orm.DeclarativeBase], mapper.class_)
     raise ValueError(f"テーブル {table.name} に対応するクラスが見つかりませんでした。")
 
 

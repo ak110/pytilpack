@@ -3,9 +3,47 @@
 import datetime
 import email.utils
 
+import httpx
 import pytest
+import quart
+import requests
 
 import pytilpack.http
+import pytilpack.quart.misc
+
+
+@pytest.mark.asyncio
+async def test_get_retry_after_from_exception():
+    """get_retry_after_from_exception関数のテスト。"""
+
+    app = quart.Quart(__name__)
+
+    @app.route("/retry_with_header")
+    async def retry_with_header_endpoint():
+        """Retry-Afterヘッダーありの429エラーエンドポイント。"""
+        return "", 429, {"Retry-After": "1"}
+
+    async with pytilpack.quart.misc.run(app, port=5003):
+        # requestsの例外のテスト
+        try:
+            r1 = requests.get("http://localhost:5003/retry_with_header", timeout=5)
+            print(f"{r1.status_code=}, {r1.headers=}")
+            r1.raise_for_status()
+            pytest.fail("Expected HTTPError was not raised")
+        except requests.HTTPError as e:
+            wait_time = pytilpack.http.get_retry_after_from_exception(e)
+            assert wait_time == 1.0
+
+        # httpxの例外のテスト
+        try:
+            async with httpx.AsyncClient() as client:
+                r2 = await client.get("http://localhost:5003/retry_with_header", timeout=5)
+                print(f"{r2.status_code=}, {r2.headers=}")
+                r2.raise_for_status()
+            pytest.fail("Expected HTTPStatusError was not raised")
+        except httpx.HTTPStatusError as e:
+            wait_time = pytilpack.http.get_retry_after_from_exception(e)
+            assert wait_time == 1.0
 
 
 @pytest.mark.parametrize(

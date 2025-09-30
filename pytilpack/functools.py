@@ -11,16 +11,6 @@ import warnings
 
 import pytilpack.http
 
-try:
-    import requests
-except ImportError:
-    requests = None  # type: ignore[assignment]
-
-try:
-    import httpx
-except ImportError:
-    httpx = None  # type: ignore[assignment]
-
 
 def retry[**P, R](
     max_retries: int = 3,
@@ -94,7 +84,7 @@ def retry[**P, R](
                             attempt,
                             max_retries,
                         )
-                        retry_after = _get_retry_after(e)
+                        retry_after = pytilpack.http.get_retry_after_from_exception(e)
                         if retry_after is None:
                             # Exponential backoff with jitter
                             await asyncio.sleep(delay * random.uniform(1.0, 1.0 + max_jitter))
@@ -133,7 +123,7 @@ def retry[**P, R](
                         attempt,
                         max_retries,
                     )
-                    retry_after = _get_retry_after(e)
+                    retry_after = pytilpack.http.get_retry_after_from_exception(e)
                     if retry_after is None:
                         # Exponential backoff with jitter
                         time.sleep(delay * random.uniform(1.0, 1.0 + max_jitter))
@@ -147,15 +137,6 @@ def retry[**P, R](
         return sync_wrapper
 
     return decorator
-
-
-def _get_retry_after(e: Exception) -> float | None:
-    """例外オブジェクトからRetry-Afterヘッダーを取得する。"""
-    if requests is not None and isinstance(e, requests.HTTPError) and e.response is not None:
-        return pytilpack.http.get_retry_after(e.response.headers.get("Retry-After"))
-    if httpx is not None and isinstance(e, httpx.HTTPStatusError) and e.response is not None:
-        return pytilpack.http.get_retry_after(e.response.headers.get("Retry-After"))
-    return None
 
 
 def aretry[**P, R](

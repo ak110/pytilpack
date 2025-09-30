@@ -35,7 +35,7 @@ async def test_retry_async_client():
         """Retry-Afterヘッダーありの429エラーエンドポイント。"""
         counters["retry_with_header"]["count"] += 1
         if counters["retry_with_header"]["count"] <= 2:
-            return "", 429, {"Retry-After": "0.1"}
+            return "", 429, {"Retry-After": "1"}
         return {"message": "success"}, 200
 
     @app.route("/retry_without_header")
@@ -75,7 +75,7 @@ async def test_retry_async_client():
         assert response.status_code == 200
         assert response.json() == {"message": "success"}
         assert counters["retry_with_header"]["count"] == 3
-        assert elapsed_time >= 0.04  # Retry-Afterヘッダーで約0.05秒の遅延（ヘッダー優先、誤差考慮）
+        assert elapsed_time >= 0.9  # Retry-Afterヘッダーで約1秒の遅延（ヘッダー優先、誤差考慮）
 
         # Retry-Afterヘッダーなしの429エラーリトライテスト（指数バックオフ）
         start_time = asyncio.get_event_loop().time()
