@@ -9,7 +9,10 @@ logger = logging.getLogger(__name__)
 
 
 def get_retry_after_from_exception(exc: Exception) -> float | None:
-    """例外から Retry-After ヘッダーを取得して解析する。"""
+    """例外から Retry-After ヘッダーを取得して解析する。
+
+    少なくともrequestsとhttpxのraise_for_status()で発生する例外に対応している。
+    """
     if (
         hasattr(exc, "response")
         and (response := exc.response) is not None  # pyright: ignore[reportAttributeAccessIssue]
