@@ -13,8 +13,8 @@ import pytilpack.quart.misc
 
 
 @pytest.mark.asyncio
-async def test_get_retry_after_from_exception():
-    """get_retry_after_from_exception関数のテスト。"""
+async def test_get_from_exception():
+    """get_status_code_from_exception / get_retry_after_from_exception関数のテスト。"""
 
     app = quart.Quart(__name__)
 
@@ -31,8 +31,8 @@ async def test_get_retry_after_from_exception():
             r1.raise_for_status()
             pytest.fail("Expected HTTPError was not raised")
         except requests.HTTPError as e:
-            wait_time = pytilpack.http.get_retry_after_from_exception(e)
-            assert wait_time == 1.0
+            assert pytilpack.http.get_status_code_from_exception(e) == 429
+            assert pytilpack.http.get_retry_after_from_exception(e) == 1.0
 
         # httpxの例外のテスト
         try:
@@ -42,8 +42,8 @@ async def test_get_retry_after_from_exception():
                 r2.raise_for_status()
             pytest.fail("Expected HTTPStatusError was not raised")
         except httpx.HTTPStatusError as e:
-            wait_time = pytilpack.http.get_retry_after_from_exception(e)
-            assert wait_time == 1.0
+            assert pytilpack.http.get_status_code_from_exception(e) == 429
+            assert pytilpack.http.get_retry_after_from_exception(e) == 1.0
 
 
 @pytest.mark.parametrize(

@@ -21,6 +21,7 @@ def retry[**P, R](
     includes: typing.Iterable[type[Exception]] | None = None,
     excludes: typing.Iterable[type[Exception]] | None = None,
     loglevel: int = logging.INFO,
+    retry_status_codes: typing.Iterable[int] | None = (408, 429, 500, 502, 503, 504),
 ) -> typing.Callable[[typing.Callable[P, R]], typing.Callable[P, R]]:
     """リトライを行うデコレーター。
 
@@ -40,6 +41,10 @@ def retry[**P, R](
         max_jitter: 待機時間のランダムな増加率
         includes: リトライする例外のリスト
         excludes: リトライしない例外のリスト
+        loglevel: ログレベル
+        retry_status_codes: 発生した例外がHTTPエラーの場合にリトライするHTTPステータスコードのリスト。
+            これにないエラーならリトライしない。
+            Noneの場合、HTTPエラーでもステータスコードを判定しない。
 
     Returns:
         リトライを行うデコレーター
@@ -73,6 +78,11 @@ def retry[**P, R](
                         attempt += 1
                         if attempt > max_retries:
                             raise e
+                        # HTTPエラーの場合、ステータスコードを確認してリトライするか判定
+                        if retry_status_codes is not None:
+                            status_code = pytilpack.http.get_status_code_from_exception(e)
+                            if status_code is not None and status_code not in retry_status_codes:
+                                raise e
                         # Retry-Afterヘッダーがある場合、累積待機時間が本来の設定を超えるならエラーにする
                         if retry_after_total >= total_delay:
                             raise e
@@ -112,6 +122,11 @@ def retry[**P, R](
                     attempt += 1
                     if attempt > max_retries:
                         raise e
+                    # HTTPエラーの場合、ステータスコードを確認してリトライするか判定
+                    if retry_status_codes is not None:
+                        status_code = pytilpack.http.get_status_code_from_exception(e)
+                        if status_code is not None and status_code not in retry_status_codes:
+                            raise e
                     # Retry-Afterヘッダーがある場合、累積待機時間が本来の設定を超えるならエラーにする
                     if retry_after_total >= total_delay:
                         raise e

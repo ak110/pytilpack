@@ -11,6 +11,7 @@ disable=
     no-else-return,
     too-few-public-methods,
     too-many-arguments,
+    too-many-boolean-expressions,
     too-many-branches,
     too-many-locals,
     too-many-nested-blocks,

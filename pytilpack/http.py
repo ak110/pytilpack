@@ -8,6 +8,29 @@ import re
 logger = logging.getLogger(__name__)
 
 
+def get_status_code_from_exception(exc: Exception) -> int | None:
+    """例外からステータスコードを取得する。
+
+    少なくともrequestsとhttpxのraise_for_status()で発生する例外に対応している。
+    """
+    if (
+        (
+            hasattr(exc, "response")
+            and (response := exc.response) is not None  # pyright: ignore[reportAttributeAccessIssue]
+            and hasattr(response, "status_code")
+            and (status_code := response.status_code) is not None  # pyright: ignore[reportAttributeAccessIssue]
+        )
+        or hasattr(exc, "status_code")
+        and (status_code := exc.status_code) is not None  # pyright: ignore[reportAttributeAccessIssue]
+    ):
+        status_code = str(status_code)
+        if status_code.isdigit():
+            int_status_code = int(status_code)
+            if 100 <= int_status_code <= 599:
+                return int_status_code
+    return None
+
+
 def get_retry_after_from_exception(exc: Exception) -> float | None:
     """例外から Retry-After ヘッダーを取得して解析する。
 
