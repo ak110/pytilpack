@@ -8,6 +8,20 @@ import shutil
 logger = logging.getLogger(__name__)
 
 
+def append_text(path: str | pathlib.Path, data: str, encoding: str = "utf-8", errors: str = "strict") -> None:
+    """ファイルにテキストを追記する。"""
+    path = pathlib.Path(path)
+    with path.open("a", encoding=encoding, errors=errors) as f:
+        f.write(data)
+
+
+def append_bytes(path: str | pathlib.Path, data: bytes) -> None:
+    """ファイルにバイトを追記する。"""
+    path = pathlib.Path(path)
+    with path.open("ab") as f:
+        f.write(data)
+
+
 def delete_file(path: str | pathlib.Path) -> None:
     """ファイル削除。"""
     path = pathlib.Path(path)

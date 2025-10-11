@@ -10,6 +10,7 @@ import pathlib
 import typing
 
 import pytilpack.json
+import pytilpack.pathlib
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,12 @@ async def write_text(path: pathlib.Path | str, data: str, encoding: str = "utf-8
     await loop.run_in_executor(None, path.write_text, data, encoding, errors)
 
 
+async def append_text(path: pathlib.Path | str, data: str, encoding: str = "utf-8", errors: str = "strict") -> None:
+    """ファイルにテキストを非同期で追記する。"""
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, pytilpack.pathlib.append_text, path, data, encoding, errors)
+
+
 async def read_bytes(path: pathlib.Path | str) -> bytes:
     """ファイルからバイトを非同期で読み取る。"""
     path = pathlib.Path(path)
@@ -68,6 +75,12 @@ async def write_bytes(path: pathlib.Path | str, data: bytes) -> None:
     path = pathlib.Path(path)
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(None, path.write_bytes, data)
+
+
+async def append_bytes(path: pathlib.Path | str, data: bytes) -> None:
+    """ファイルにバイトを非同期で追記する。"""
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, pytilpack.pathlib.append_bytes, path, data)
 
 
 def run_sync[**P, R](

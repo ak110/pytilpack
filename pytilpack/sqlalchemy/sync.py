@@ -14,6 +14,7 @@ import sqlalchemy.engine
 import sqlalchemy.orm
 
 import pytilpack._paginator
+import pytilpack.asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -332,6 +333,22 @@ class SyncMixin:
         items = cls.scalars(page_query) if scalar else cls.all(page_query)
         # pylint: disable=protected-access
         return pytilpack._paginator.Paginator(page=page, per_page=per_page, items=items, total=total)
+
+    def commit(self) -> None:
+        """セッションをコミットする。"""
+        self.session().commit()
+
+    # 非同期版
+    acount = pytilpack.asyncio.run_sync(count)
+    ascalar_one = pytilpack.asyncio.run_sync(scalar_one)
+    ascalar_one_or_none = pytilpack.asyncio.run_sync(scalar_one_or_none)
+    ascalars = pytilpack.asyncio.run_sync(scalars)
+    aone = pytilpack.asyncio.run_sync(one)
+    aone_or_none = pytilpack.asyncio.run_sync(one_or_none)
+    aall = pytilpack.asyncio.run_sync(all)
+    aget_by_id = pytilpack.asyncio.run_sync(get_by_id)
+    apaginate = pytilpack.asyncio.run_sync(paginate)
+    acommit = pytilpack.asyncio.run_sync(commit)
 
     def to_dict(
         self,
