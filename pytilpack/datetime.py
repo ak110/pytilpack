@@ -35,7 +35,7 @@ def toutc(dt: datetime.datetime) -> datetime.datetime:
 
     """
     if dt.tzinfo is None:
-        raise ValueError(f"dt must be timezone-aware, but got {dt}")
+        return dt.replace(tzinfo=zoneinfo.ZoneInfo("UTC"))
     return dt.astimezone(zoneinfo.ZoneInfo("UTC"))
 
 
