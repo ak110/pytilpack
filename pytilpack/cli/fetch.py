@@ -1,7 +1,6 @@
 """URLアクセスコマンド。"""
 
 import argparse
-import importlib.metadata
 import logging
 
 import pytilpack.htmlrag
@@ -11,8 +10,6 @@ logger = logging.getLogger(__name__)
 
 def add_parser(subparsers: argparse._SubParsersAction) -> None:
     """fetchサブコマンドのパーサーを追加します。"""
-    version = importlib.metadata.version("pytilpack")
-
     parser = subparsers.add_parser(
         "fetch",
         help="URLの内容を取得",
@@ -31,14 +28,15 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
     parser.add_argument(
         "--accept",
         type=str,
-        default="text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        help="受け入れるコンテンツタイプ（デフォルト: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8）",
+        default=pytilpack.htmlrag.DEFAULT_ACCEPT,
+        help=f"受け入れるコンテンツタイプ（デフォルト: {pytilpack.htmlrag.DEFAULT_ACCEPT!r}）",
     )
+    default_user_agent = pytilpack.htmlrag.get_default_user_agent()
     parser.add_argument(
         "--user-agent",
         type=str,
-        default=f"pytilpack/{version} (+https://github.com/ak110/pytilpack)",
-        help=f'User-Agentヘッダー（デフォルト: "pytilpack/{version} (+https://github.com/ak110/pytilpack)"）',
+        default=default_user_agent,
+        help=f"User-Agentヘッダー（デフォルト: {default_user_agent!r}）",
     )
     parser.add_argument(
         "--verbose",

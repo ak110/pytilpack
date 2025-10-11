@@ -15,11 +15,14 @@ import warnings
 import bs4
 import httpx
 
+DEFAULT_ACCEPT = "text/markdown,text/plain;q=0.9,text/html,application/xhtml+xml,application/xml;q=0.8,*/*;q=0.7"
+"""Acceptヘッダーのデフォルト値。"""
+
 
 def fetch_url(
     url: str,
     no_verify: bool = False,
-    accept: str = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    accept: str = DEFAULT_ACCEPT,
     user_agent: str | None = None,
 ) -> str:
     """URLからHTMLを取得し、簡略化して返します。
@@ -37,8 +40,7 @@ def fetch_url(
         Exception: HTTP取得やHTMLパースでエラーが発生した場合
     """
     if user_agent is None:
-        version = importlib.metadata.version("pytilpack")
-        user_agent = f"pytilpack/{version} (+https://github.com/ak110/pytilpack)"
+        user_agent = get_default_user_agent()
 
     r = httpx.get(
         url,
@@ -54,6 +56,15 @@ def fetch_url(
         raise RuntimeError(f"URL {url} の取得に失敗しました。Status: {r.status_code}\n{r.text}")
 
     content_type = r.headers.get("Content-Type", "text/html")
+    if (
+        "text/markdown" in content_type
+        or "text/plain" in content_type
+        or "text/xml" in content_type
+        or "application/xml" in content_type
+        or "application/json" in content_type
+    ):
+        return r.text
+
     if "html" not in content_type:
         raise RuntimeError(f"URL {url} はHTMLではありません。Content-Type: {content_type}\n{r.text[:100]}...")
 
@@ -65,6 +76,13 @@ def fetch_url(
         keep_href=True,
     )
     return output
+
+
+def get_default_user_agent():
+    """デフォルトのUser-Agentヘッダーを取得する。"""
+    version = importlib.metadata.version("pytilpack")
+    user_agent = f"pytilpack/{version} (+https://github.com/ak110/pytilpack)"
+    return user_agent
 
 
 def clean_html(

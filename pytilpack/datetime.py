@@ -24,6 +24,21 @@ def fromiso(iso_str: str, tz: zoneinfo.ZoneInfo | str | None = None, remove_tz: 
     return result
 
 
+def toutc(dt: datetime.datetime) -> datetime.datetime:
+    """UTCのdatetimeオブジェクトに変換する。
+
+    Args:
+        dt (datetime.datetime): 変換するdatetimeオブジェクト。
+
+    Returns:
+        datetime.datetime: UTCのdatetimeオブジェクト。
+
+    """
+    if dt.tzinfo is None:
+        raise ValueError(f"dt must be timezone-aware, but got {dt}")
+    return dt.astimezone(zoneinfo.ZoneInfo("UTC"))
+
+
 @dataclasses.dataclass(frozen=True)
 class YearMonth:
     """年月を表すクラス。"""
