@@ -83,6 +83,16 @@ async def append_bytes(path: pathlib.Path | str, data: bytes) -> None:
     await loop.run_in_executor(None, pytilpack.pathlib.append_bytes, path, data)
 
 
+def ensure_async[**P, R](
+    func: typing.Callable[P, typing.Awaitable[R] | R],
+) -> typing.Callable[P, typing.Awaitable[R]]:
+    """関数が非同期関数でない場合、非同期関数に変換するデコレーター。"""
+    if asyncio.iscoroutinefunction(func):
+        return typing.cast(typing.Callable[P, typing.Awaitable[R]], func)
+    else:
+        return run_sync(typing.cast(typing.Callable[P, R], func))
+
+
 def run_sync[**P, R](
     func: typing.Callable[P, R],
 ) -> typing.Callable[P, typing.Awaitable[R]]:
