@@ -14,6 +14,8 @@
 
 事前に`gh`コマンドをインストールして`gh auth login`でログインしておき、以下のコマンドのいずれかを実行。
 
-- `gh workflow run release.yml --field="bump=バグフィックス"`
-- `gh workflow run release.yml --field="bump=マイナーバージョンアップ"`
-- `gh workflow run release.yml --field="bump=メジャーバージョンアップ"`
+```bash
+gh workflow run release.yml --field="bump=バグフィックス"
+gh workflow run release.yml --field="bump=マイナーバージョンアップ"
+gh workflow run release.yml --field="bump=メジャーバージョンアップ"
+```
