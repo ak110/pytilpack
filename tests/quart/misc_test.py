@@ -1,5 +1,7 @@
 """Quart miscのテスト。"""
 
+import pathlib
+
 import httpx
 import pytest
 import quart
@@ -53,17 +55,35 @@ async def test_static_url_for(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_run():
-    """runのテスト。"""
-    app = quart.Quart(__name__)
+async def test_run(tmp_path: pathlib.Path) -> None:
+    """run/render_template/render_template_stringのテスト。"""
+    (tmp_path / "hello.html").write_text("<p>Hello, {{ name }}!</p>\n")
+
+    app = quart.Quart(__name__, template_folder=str(tmp_path))
 
     @app.route("/hello")
     def index():
         return "Hello, World!"
 
+    @app.route("/render_template")
+    async def render_template() -> str:
+        return await pytilpack.quart.render_template("hello.html", name="World")
+
+    @app.route("/render_template_string")
+    async def render_template_string() -> str:
+        return await pytilpack.quart.render_template_string("<p>Hello, {{ name }}!</p>", name="World")
+
     async with pytilpack.quart.run(app):
         response = httpx.get("http://localhost:5000/hello")
         assert response.read() == b"Hello, World!"
+        assert response.status_code == 200
+
+        response = httpx.get("http://localhost:5000/render_template")
+        assert response.read() == b"<p>Hello, World!</p>"
+        assert response.status_code == 200
+
+        response = httpx.get("http://localhost:5000/render_template_string")
+        assert response.read() == b"<p>Hello, World!</p>"
         assert response.status_code == 200
 
 

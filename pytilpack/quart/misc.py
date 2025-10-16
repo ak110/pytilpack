@@ -10,6 +10,7 @@ import threading
 import typing
 
 import httpx
+import jinja2
 import quart
 import quart.utils
 import uvicorn
@@ -79,16 +80,20 @@ def run_sync[**P, R](
     return wrapper
 
 
-@run_sync
-def render_template(template_name_or_list: str | list[str], **context) -> str:
-    """quart.render_templateがブロッキング処理を含んでいてつらいので丸ごとスレッド化したもの。"""
-    return asyncio.run(quart.render_template(template_name_or_list, **context), debug=False)
+async def render_template(template_name_or_list: str | jinja2.Template | list[str | jinja2.Template], **context) -> str:
+    """quart.render_templateがブロッキング処理を含んでいてつらいので対策したもの。"""
+    result = ""
+    async for chunk in await quart.stream_template(template_name_or_list, **context):
+        result += str(chunk)
+    return result
 
 
-@run_sync
-def render_template_string(source: str, **context) -> str:
-    """quart.render_template_stringがブロッキング処理を含んでいてつらいので丸ごとスレッド化したもの。"""
-    return asyncio.run(quart.render_template_string(source, **context), debug=False)
+async def render_template_string(source: str, **context) -> str:
+    """quart.render_template_stringがブロッキング処理を含んでいてつらいので対策したもの。"""
+    result = ""
+    async for chunk in await quart.stream_template_string(source, **context):
+        result += str(chunk)
+    return result
 
 
 def patch() -> None:
