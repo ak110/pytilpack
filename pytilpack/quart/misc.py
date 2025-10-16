@@ -79,6 +79,24 @@ def run_sync[**P, R](
     return wrapper
 
 
+@run_sync
+def render_template(template_name_or_list: str | list[str], **context) -> str:
+    """quart.render_templateがブロッキング処理を含んでいてつらいので丸ごとスレッド化したもの。"""
+    return asyncio.run(quart.render_template(template_name_or_list, **context), debug=False)
+
+
+@run_sync
+def render_template_string(source: str, **context) -> str:
+    """quart.render_template_stringがブロッキング処理を含んでいてつらいので丸ごとスレッド化したもの。"""
+    return asyncio.run(quart.render_template_string(source, **context), debug=False)
+
+
+def patch() -> None:
+    """Quartのrender_templateとrender_template_stringをmonkey patching。"""
+    quart.render_template = render_template  # type: ignore[assignment]
+    quart.render_template_string = render_template_string  # type: ignore[assignment]
+
+
 def get_next_url() -> str:
     """ログイン後遷移用のnextパラメータ用のURLを返す。"""
     path = quart.request.script_root + quart.request.path
