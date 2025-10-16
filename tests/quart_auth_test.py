@@ -63,7 +63,7 @@ def _app() -> quart.Quart:
 
     @app.route("/user")
     async def user():
-        return await pytilpack.quart.render_template_string(
+        return await quart.render_template_string(
             "User: {{ current_user.name if current_user.is_authenticated else '<anonymous>' }}"
         )
 

@@ -10,7 +10,6 @@ import threading
 import typing
 
 import httpx
-import jinja2
 import quart
 import quart.utils
 import uvicorn
@@ -78,28 +77,6 @@ def run_sync[**P, R](
         return typing.cast(R, result)
 
     return wrapper
-
-
-async def render_template(template_name_or_list: str | jinja2.Template | list[str | jinja2.Template], **context) -> str:
-    """quart.render_templateがブロッキング処理を含んでいてつらいので対策したもの。"""
-    chunks: list[str] = []
-    async for chunk in await quart.stream_template(template_name_or_list, **context):
-        chunks.append(str(chunk))
-    return "".join(chunks)
-
-
-async def render_template_string(source: str, **context) -> str:
-    """quart.render_template_stringがブロッキング処理を含んでいてつらいので対策したもの。"""
-    chunks: list[str] = []
-    async for chunk in await quart.stream_template_string(source, **context):
-        chunks.append(str(chunk))
-    return "".join(chunks)
-
-
-def patch() -> None:
-    """Quartのrender_templateとrender_template_stringをmonkey patching。"""
-    quart.render_template = render_template  # type: ignore[assignment]
-    quart.render_template_string = render_template_string  # type: ignore[assignment]
 
 
 def get_next_url() -> str:
