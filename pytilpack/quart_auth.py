@@ -162,11 +162,13 @@ def admin_only[**P, R](func: typing.Callable[P, R]) -> typing.Callable[P, R]:
 
         return async_wrapper  # type: ignore[return-value]
 
-    @functools.wraps(func)
-    def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-        if not is_admin():
-            quart.abort(403)
-        return func(*args, **kwargs)
+    else:
+
+        @functools.wraps(func)
+        def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            if not is_admin():
+                quart.abort(403)
+            return func(*args, **kwargs)
 
     return sync_wrapper
 

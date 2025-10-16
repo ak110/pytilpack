@@ -107,49 +107,51 @@ def retry[**P, R](
 
             return async_wrapper  # type: ignore[return-value]
 
-        @functools.wraps(func)
-        def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            # pylint: disable=catching-non-exception,raising-non-exception
-            attempt = 0
-            delay = initial_delay
-            retry_after_total = 0.0
-            while True:
-                try:
-                    return func(*args, **kwargs)
-                except tuple(excludes) as e:
-                    raise e
-                except tuple(includes) as e:
-                    attempt += 1
-                    if attempt > max_retries:
-                        raise e
-                    # HTTPエラーの場合、ステータスコードを確認してリトライするか判定
-                    if retry_status_codes is not None:
-                        status_code = pytilpack.http.get_status_code_from_exception(e)
-                        if status_code is not None and status_code not in retry_status_codes:
-                            raise e
-                    # Retry-Afterヘッダーがある場合、累積待機時間が本来の設定を超えるならエラーにする
-                    if retry_after_total >= total_delay:
-                        raise e
-                    logger.log(
-                        loglevel,
-                        "%s: %s (retry %d/%d)",
-                        func.__name__,
-                        e,
-                        attempt,
-                        max_retries,
-                    )
-                    retry_after = pytilpack.http.get_retry_after_from_exception(e)
-                    if retry_after is None:
-                        # Exponential backoff with jitter
-                        time.sleep(delay * random.uniform(1.0, 1.0 + max_jitter))
-                        delay = min(delay * exponential_base, max_delay)
-                    else:
-                        # Retry-Afterヘッダーに従い待機
-                        logger.log(loglevel, "Retry-After: %.1f", retry_after)
-                        time.sleep(retry_after)
-                        retry_after_total += retry_after
+        else:
 
-        return sync_wrapper
+            @functools.wraps(func)
+            def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+                # pylint: disable=catching-non-exception,raising-non-exception
+                attempt = 0
+                delay = initial_delay
+                retry_after_total = 0.0
+                while True:
+                    try:
+                        return func(*args, **kwargs)
+                    except tuple(excludes) as e:
+                        raise e
+                    except tuple(includes) as e:
+                        attempt += 1
+                        if attempt > max_retries:
+                            raise e
+                        # HTTPエラーの場合、ステータスコードを確認してリトライするか判定
+                        if retry_status_codes is not None:
+                            status_code = pytilpack.http.get_status_code_from_exception(e)
+                            if status_code is not None and status_code not in retry_status_codes:
+                                raise e
+                        # Retry-Afterヘッダーがある場合、累積待機時間が本来の設定を超えるならエラーにする
+                        if retry_after_total >= total_delay:
+                            raise e
+                        logger.log(
+                            loglevel,
+                            "%s: %s (retry %d/%d)",
+                            func.__name__,
+                            e,
+                            attempt,
+                            max_retries,
+                        )
+                        retry_after = pytilpack.http.get_retry_after_from_exception(e)
+                        if retry_after is None:
+                            # Exponential backoff with jitter
+                            time.sleep(delay * random.uniform(1.0, 1.0 + max_jitter))
+                            delay = min(delay * exponential_base, max_delay)
+                        else:
+                            # Retry-Afterヘッダーに従い待機
+                            logger.log(loglevel, "Retry-After: %.1f", retry_after)
+                            time.sleep(retry_after)
+                            retry_after_total += retry_after
+
+            return sync_wrapper
 
     return decorator
 
@@ -213,20 +215,22 @@ def warn_if_slow[**P, R](
 
             return async_wrapper  # type: ignore[return-value]
 
-        @functools.wraps(func)
-        def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            start = time.perf_counter()
-            result = func(*args, **kwargs)
-            duration = time.perf_counter() - start
-            if duration >= threshold_seconds:
-                logger.warning(
-                    "Function %s took %.3f s (threshold %.3f s)",
-                    func.__qualname__,
-                    duration,
-                    threshold_seconds,
-                )
-            return result
+        else:
 
-        return sync_wrapper
+            @functools.wraps(func)
+            def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+                start = time.perf_counter()
+                result = func(*args, **kwargs)
+                duration = time.perf_counter() - start
+                if duration >= threshold_seconds:
+                    logger.warning(
+                        "Function %s took %.3f s (threshold %.3f s)",
+                        func.__qualname__,
+                        duration,
+                        threshold_seconds,
+                    )
+                return result
+
+            return sync_wrapper
 
     return decorator
