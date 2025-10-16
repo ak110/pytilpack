@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: バージョン番号の更新タイプ
+        required: true
+        type: choice
+        options:
+          - バグフィックス
+          - マイナーバージョンアップ
+          - メジャーバージョンアップ
+        default: バグフィックス
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+      - name: Get latest tag
+        id: current
+        run: |
+          git fetch --tags
+          latest=$(git tag --sort=version:refname | tail -n1)
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+
+      - name: Calculate next version
+        id: next
+        run: |
+          v=${{ steps.current.outputs.latest }}
+          IFS='.' read -r major minor patch <<<"${v#v}"
+          case "${{ github.event.inputs.bump }}" in
+          バグフィックス) ((patch++));;
+          マイナーバージョンアップ) ((minor++)); patch=0;;
+          メジャーバージョンアップ) ((major++)); minor=0; patch=0;;
+          esac
+          echo "next=v${major}.${minor}.${patch}" >> "$GITHUB_OUTPUT"
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ steps.next.outputs.next }}" --target=master --generate-notes
+
+      - name: Run publish workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run publish.yml --ref=master
