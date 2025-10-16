@@ -41,11 +41,23 @@ jobs:
         id: next
         run: |
           v=${{ steps.current.outputs.latest }}
-          IFS='.' read -r major minor patch <<<"${v#v}"
+          v=${v#v}
+          major=$(echo "$v" | cut -d. -f1)
+          minor=$(echo "$v" | cut -d. -f2)
+          patch=$(echo "$v" | cut -d. -f3)
           case "${{ github.event.inputs.bump }}" in
-          バグフィックス) ((patch++));;
-          マイナーバージョンアップ) ((minor++)); patch=0;;
-          メジャーバージョンアップ) ((major++)); minor=0; patch=0;;
+            バグフィックス)
+              patch=$((patch + 1))
+              ;;
+            マイナーバージョンアップ)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            メジャーバージョンアップ)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
           esac
           echo "next=v${major}.${minor}.${patch}" >> "$GITHUB_OUTPUT"
 
