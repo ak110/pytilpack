@@ -82,18 +82,18 @@ def run_sync[**P, R](
 
 async def render_template(template_name_or_list: str | jinja2.Template | list[str | jinja2.Template], **context) -> str:
     """quart.render_templateがブロッキング処理を含んでいてつらいので対策したもの。"""
-    result = ""
+    chunks: list[str] = []
     async for chunk in await quart.stream_template(template_name_or_list, **context):
-        result += str(chunk)
-    return result
+        chunks.append(str(chunk))
+    return "".join(chunks)
 
 
 async def render_template_string(source: str, **context) -> str:
     """quart.render_template_stringがブロッキング処理を含んでいてつらいので対策したもの。"""
-    result = ""
+    chunks: list[str] = []
     async for chunk in await quart.stream_template_string(source, **context):
-        result += str(chunk)
-    return result
+        chunks.append(str(chunk))
+    return "".join(chunks)
 
 
 def patch() -> None:
