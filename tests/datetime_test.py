@@ -24,6 +24,13 @@ import pytilpack.datetime
             False,
             datetime.datetime(2023, 12, 25, 10, 30, 0, 123456),
         ),
+        # 秒無し
+        (
+            "2023-12-25T10:30",
+            None,
+            False,
+            datetime.datetime(2023, 12, 25, 10, 30, 0),
+        ),
         # UTC表記（Z）
         (
             "2023-12-25T10:30:00Z",

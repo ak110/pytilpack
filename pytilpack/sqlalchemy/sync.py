@@ -334,21 +334,23 @@ class SyncMixin:
         # pylint: disable=protected-access
         return pytilpack._paginator.Paginator(page=page, per_page=per_page, items=items, total=total)
 
-    def commit(self) -> None:
+    @classmethod
+    def commit(cls) -> None:
         """セッションをコミットする。"""
-        self.session().commit()
+        cls.session().commit()
 
     # 非同期版
-    acount = pytilpack.asyncio.run_sync(count)
-    ascalar_one = pytilpack.asyncio.run_sync(scalar_one)
-    ascalar_one_or_none = pytilpack.asyncio.run_sync(scalar_one_or_none)
-    ascalars = pytilpack.asyncio.run_sync(scalars)
-    aone = pytilpack.asyncio.run_sync(one)
-    aone_or_none = pytilpack.asyncio.run_sync(one_or_none)
-    aall = pytilpack.asyncio.run_sync(all)
-    aget_by_id = pytilpack.asyncio.run_sync(get_by_id)
-    apaginate = pytilpack.asyncio.run_sync(paginate)
-    acommit = pytilpack.asyncio.run_sync(commit)
+    # pyright: ignore[reportFunctionMemberAccess]
+    acount = classmethod(pytilpack.asyncio.run_sync(count.__func__))  # type: ignore[attr-defined]
+    ascalar_one = classmethod(pytilpack.asyncio.run_sync(scalar_one.__func__))  # type: ignore[attr-defined]
+    ascalar_one_or_none = classmethod(pytilpack.asyncio.run_sync(scalar_one_or_none.__func__))  # type: ignore[attr-defined]
+    ascalars = classmethod(pytilpack.asyncio.run_sync(scalars.__func__))  # type: ignore[attr-defined]
+    aone = classmethod(pytilpack.asyncio.run_sync(one.__func__))  # type: ignore[attr-defined]
+    aone_or_none = classmethod(pytilpack.asyncio.run_sync(one_or_none.__func__))  # type: ignore[attr-defined]
+    aall = classmethod(pytilpack.asyncio.run_sync(all.__func__))  # type: ignore[attr-defined]
+    aget_by_id = classmethod(pytilpack.asyncio.run_sync(get_by_id.__func__))  # type: ignore[attr-defined]
+    apaginate = classmethod(pytilpack.asyncio.run_sync(paginate.__func__))  # type: ignore[attr-defined]
+    acommit = classmethod(pytilpack.asyncio.run_sync(commit.__func__))  # type: ignore[attr-defined]
 
     def to_dict(
         self,

@@ -20,7 +20,7 @@ class Test1(Base, pytilpack.sqlalchemy.SyncUniqueIDMixin):
     """テストクラス。"""
 
     __test__ = False
-    __tablename__ = "test"
+    __tablename__ = "test1"
 
     id: sqlalchemy.orm.Mapped[int] = sqlalchemy.orm.mapped_column(primary_key=True)
     unique_id: sqlalchemy.orm.Mapped[str | None] = sqlalchemy.orm.mapped_column(
@@ -50,15 +50,28 @@ class Test2(Base):
     value5 = sqlalchemy.Column(sqlalchemy.Text, nullable=False, default=lambda: "func")
 
 
+class Test3(Base, pytilpack.sqlalchemy.SyncUniqueIDMixin):
+    """テストクラス。"""
+
+    __test__ = False
+    __tablename__ = "test3"
+
+    id: sqlalchemy.orm.Mapped[int] = sqlalchemy.orm.mapped_column(primary_key=True)
+    unique_id: sqlalchemy.orm.Mapped[str | None] = sqlalchemy.orm.mapped_column(
+        sqlalchemy.String(43), unique=True, nullable=True, doc="ユニークID"
+    )
+
+
 @pytest.fixture(name="engine", scope="module", autouse=True)
 def _engine() -> typing.Generator[sqlalchemy.engine.Engine, None, None]:
     """DB接続。"""
-    Base.init("sqlite:///:memory:")
+    # https://stackoverflow.com/questions/61678766/sqlalchemy-exc-operationalerror-sqlite3-operationalerror-no-such-table-items/61694048
+    Base.init("sqlite:///:memory:?check_same_thread=false", poolclass=sqlalchemy.pool.StaticPool)
     assert Base.engine is not None
     yield Base.engine
 
 
-@pytest.fixture(name="session", scope="module")
+@pytest.fixture(name="session", scope="function")
 def _session() -> typing.Generator[sqlalchemy.orm.Session, None, None]:
     """セッション。"""
     with Base.session_scope() as session:
@@ -278,7 +291,7 @@ def test_describe() -> None:
     assert (
         desc
         == """\
-Table: test
+Table: test1
 +-----------+-------------+--------+-------+-----------+----------------+------------+
 | Field     | Type        | Null   | Key   | Default   | Extra          | Comment    |
 +===========+=============+========+=======+===========+================+============+
@@ -311,5 +324,72 @@ Table: test2
 +-----------+--------------+--------+-------+------------+----------------+--------------+
 | value5    | TEXT         | NO     |       | (function) |                |              |
 +-----------+--------------+--------+-------+------------+----------------+--------------+
+
+Table: test3
++-----------+-------------+--------+-------+-----------+----------------+------------+
+| Field     | Type        | Null   | Key   | Default   | Extra          | Comment    |
++===========+=============+========+=======+===========+================+============+
+| id        | INTEGER     | NO     | PRI   | NULL      | auto_increment |            |
++-----------+-------------+--------+-------+-----------+----------------+------------+
+| unique_id | VARCHAR(43) | YES    | UNI   | NULL      |                | ユニークID |
++-----------+-------------+--------+-------+-----------+----------------+------------+
 """
     )
+
+
+@pytest.mark.asyncio
+async def test_async_methods() -> None:
+    """非同期版メソッド(acount〜acommit)のテスト。"""
+    # テーブル作成
+    with Base.connect() as conn:
+        Base.metadata.create_all(conn)
+
+    # セッションスコープ内でテスト
+    with Base.session_scope():
+        # データ挿入
+        test_records = [Test3(unique_id=f"async_test_{i}") for i in range(1, 6)]
+        for record in test_records:
+            Base.session().add(record)
+        # acommit のテスト
+        await Base.acommit()
+
+        # count のテスト
+        count = Test3.count(Test3.select().where(Test3.unique_id.like("async_test_%")))
+        assert count == 5
+
+        # acount のテスト
+        count = await Test3.acount(Test3.select().where(Test3.unique_id.like("async_test_%")))
+        assert count == 5
+
+        # ascalar_one_or_none のテスト
+        result = await Test3.ascalar_one_or_none(Test3.select().where(Test3.unique_id == "async_test_1"))
+        assert result is not None
+        assert result.unique_id == "async_test_1"
+
+        # ascalars のテスト
+        results = await Test3.ascalars(Test3.select().where(Test3.unique_id.like("async_test_%")).order_by(Test3.id))
+        assert len(results) == 5
+        assert all(r.unique_id.startswith("async_test_") for r in results)  # type: ignore
+
+        # aone_or_none のテスト
+        row = await Test3.aone_or_none(Test3.select().where(Test3.unique_id == "async_test_2"))
+        assert row is not None
+
+        # aall のテスト
+        rows = await Test3.aall(Test3.select().where(Test3.unique_id.like("async_test_%")).order_by(Test3.id))
+        assert len(rows) == 5
+
+        # aget_by_id のテスト
+        test_id = test_records[0].id
+        result_by_id = await Test3.aget_by_id(test_id)
+        assert result_by_id is not None
+        assert result_by_id.id == test_id
+
+        # apaginate のテスト
+        query = Test3.select().where(Test3.unique_id.like("async_test_%")).order_by(Test3.id)
+        paginator = await Test3.apaginate(query, page=1, per_page=3)
+        assert paginator.page == 1
+        assert paginator.per_page == 3
+        assert paginator.total_items == 5
+        assert len(paginator.items) == 3
+        assert paginator.pages == 2
