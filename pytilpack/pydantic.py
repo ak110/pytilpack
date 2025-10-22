@@ -20,14 +20,26 @@ def format_exception(exc: type[BaseException] | None, value: BaseException | Non
     return "\n".join(traceback.format_exception(exc, value, tb))
 
 
-def format_error(e: pydantic.ValidationError) -> str:
-    """Pydanticのバリデーションエラーを整形して返す。"""
+def format_error(e: pydantic.ValidationError, title: str | None = None) -> str:
+    """Pydanticのバリデーションエラーを整形して返す。
+
+    Args:
+        e: Pydanticのバリデーションエラー
+        title: タイトル。Noneの場合はe.titleを使う。
+
+    """
     errors = []
     for error in e.errors():
         loc = ".".join(map(str, error["loc"]))
-        details = {"type": error["type"], "input": error.get("input")}
-        if "ctx" in error:
-            details.update({"ctx": error["ctx"]})
-        details_str = ", ".join(f"{k}={v}" for k, v in details.items() if v is not None)
-        errors.append(f"  {loc}: {error['msg']} ({details_str})")
-    return f"{e.title}\n" + "\n".join(errors)
+        if loc == "":
+            # @pydantic.model_validatorを使った場合
+            msg = error["msg"].removeprefix("Value error, ")
+            errors.append(f"  {msg} (type={error['type']})")
+        else:
+            # 単一フィールドのエラー
+            details = {"type": error["type"], "input": error.get("input")}
+            details_str = ", ".join(f"{k}={v}" for k, v in details.items() if v is not None)
+            errors.append(f"  {loc}: {error['msg']} ({details_str})")
+    if title is None:
+        title = e.title
+    return f"{title}\n" + "\n".join(errors)
