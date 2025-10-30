@@ -119,3 +119,139 @@ async def test_warn_if_slow_async_trigger(caplog):
         assert result == "42-test"
         assert len(caplog.records) == 1
         assert "Function test_warn_if_slow_async_trigger.<locals>.slow_async_function took" in caplog.records[0].message
+
+
+def test_retry_override():
+    """Retryオーバーライドのテスト。"""
+    call_count = 0
+
+    @pytilpack.functools.retry(max_retries=5, initial_delay=0, exponential_base=0)
+    def f(retry=None):
+        del retry  # noqa
+        nonlocal call_count
+        call_count += 1
+        raise RuntimeError("test")
+
+    # デフォルト設定: max_retries=5 なので6回呼ばれる
+    with pytest.raises(RuntimeError):
+        f()
+    assert call_count == 6
+
+    # オーバーライド: max_retries=2 なので3回呼ばれる
+    call_count = 0
+    with pytest.raises(RuntimeError):
+        f(retry=pytilpack.functools.Retry(max_retries=2))
+    assert call_count == 3
+
+    # 部分的なオーバーライド
+    call_count = 0
+    with pytest.raises(RuntimeError):
+        f(retry=pytilpack.functools.Retry(max_retries=1))
+    assert call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_retry_override_async():
+    """Retryオーバーライドのテスト(async)。"""
+    call_count = 0
+
+    @pytilpack.functools.retry(max_retries=5, initial_delay=0, exponential_base=0)
+    async def f(retry=None):
+        del retry  # noqa
+        nonlocal call_count
+        call_count += 1
+        raise RuntimeError("test")
+
+    # デフォルト設定
+    with pytest.raises(RuntimeError):
+        await f()
+    assert call_count == 6
+
+    # オーバーライド
+    call_count = 0
+    with pytest.raises(RuntimeError):
+        await f(retry=pytilpack.functools.Retry(max_retries=2))
+    assert call_count == 3
+
+
+def test_retry_should_retry():
+    """should_retry引数のテスト。"""
+    call_count = 0
+
+    def should_retry_func(exc: Exception) -> bool:
+        # ValueErrorのみリトライする
+        return isinstance(exc, ValueError)
+
+    @pytilpack.functools.retry(max_retries=3, initial_delay=0, exponential_base=0, should_retry=should_retry_func)
+    def f(error_type: type[Exception]):
+        nonlocal call_count
+        call_count += 1
+        raise error_type("test")
+
+    # ValueErrorはリトライされる
+    call_count = 0
+    with pytest.raises(ValueError):
+        f(ValueError)
+    assert call_count == 4
+
+    # RuntimeErrorはリトライされない(1回のみ実行)
+    call_count = 0
+    with pytest.raises(RuntimeError):
+        f(RuntimeError)
+    assert call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_retry_should_retry_async():
+    """should_retry引数のテスト(async)。"""
+    call_count = 0
+
+    def should_retry_func(exc: Exception) -> bool:
+        return isinstance(exc, ValueError)
+
+    @pytilpack.functools.retry(max_retries=3, initial_delay=0, exponential_base=0, should_retry=should_retry_func)
+    async def f(error_type: type[Exception]):
+        nonlocal call_count
+        call_count += 1
+        raise error_type("test")
+
+    call_count = 0
+    with pytest.raises(ValueError):
+        await f(ValueError)
+    assert call_count == 4
+
+    call_count = 0
+    with pytest.raises(RuntimeError):
+        await f(RuntimeError)
+    assert call_count == 1
+
+
+def test_retry_override_should_retry():
+    """Retryオーバーライドでshould_retryを指定するテスト。"""
+    call_count = 0
+
+    @pytilpack.functools.retry(max_retries=3, initial_delay=0, exponential_base=0)
+    def f(retry=None, error_type: type[Exception] = RuntimeError):
+        del retry  # noqa
+        nonlocal call_count
+        call_count += 1
+        raise error_type("test")
+
+    # デフォルト設定: すべての例外をリトライ
+    with pytest.raises(RuntimeError):
+        f()
+    assert call_count == 4
+
+    # オーバーライドでshould_retryを指定: ValueErrorのみリトライ
+    def custom_should_retry(exc: Exception) -> bool:
+        return isinstance(exc, ValueError)
+
+    call_count = 0
+    with pytest.raises(RuntimeError):
+        f(retry=pytilpack.functools.Retry(should_retry=custom_should_retry), error_type=RuntimeError)
+    assert call_count == 1
+
+    call_count = 0
+    with pytest.raises(ValueError):
+        f(retry=pytilpack.functools.Retry(should_retry=custom_should_retry), error_type=ValueError)
+    assert call_count == 4
