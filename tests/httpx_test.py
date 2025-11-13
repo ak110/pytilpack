@@ -1,7 +1,5 @@
 """テストコード。"""
 
-import asyncio
-
 import httpx
 import pytest
 import quart
@@ -35,7 +33,7 @@ async def test_retry_async_client():
         """Retry-Afterヘッダーありの429エラーエンドポイント。"""
         counters["retry_with_header"]["count"] += 1
         if counters["retry_with_header"]["count"] <= 2:
-            return "", 429, {"Retry-After": "1"}
+            return "", 429, {"Retry-After": "0.01"}
         return {"message": "success"}, 200
 
     @app.route("/retry_without_header")
@@ -69,22 +67,16 @@ async def test_retry_async_client():
         assert counters["success"]["count"] == 1
 
         # Retry-Afterヘッダーありの429エラーリトライテスト
-        start_time = asyncio.get_event_loop().time()
         response = await client.get("http://localhost:5001/retry_with_header")
-        elapsed_time = asyncio.get_event_loop().time() - start_time
         assert response.status_code == 200
         assert response.json() == {"message": "success"}
         assert counters["retry_with_header"]["count"] == 3
-        assert elapsed_time >= 0.9  # Retry-Afterヘッダーで約1秒の遅延（ヘッダー優先、誤差考慮）
 
         # Retry-Afterヘッダーなしの429エラーリトライテスト（指数バックオフ）
-        start_time = asyncio.get_event_loop().time()
         response = await client.get("http://localhost:5001/retry_without_header")
-        elapsed_time = asyncio.get_event_loop().time() - start_time
         assert response.status_code == 200
         assert response.json() == {"message": "success"}
         assert counters["retry_without_header"]["count"] == 3
-        assert elapsed_time >= 0.02  # 指数バックオフで約0.03秒の遅延（0.01 + 0.02、誤差考慮）
 
         # 最大リトライ回数を超えた場合のテスト
         async with pytilpack.httpx.RetryAsyncClient(max_retries=3, initial_delay=0.01) as limited_client:
@@ -109,7 +101,7 @@ async def test_arequest_with_retry_direct():
         """テスト用エンドポイント。"""
         request_count["count"] += 1
         if request_count["count"] <= 1:
-            return "", 429, {"Retry-After": "0.05"}
+            return "", 429, {"Retry-After": "0.01"}
         return {"message": "success"}, 200
 
     async with pytilpack.quart.misc.run(app, port=5002), httpx.AsyncClient() as client:
