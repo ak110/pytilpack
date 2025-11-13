@@ -1,9 +1,11 @@
 """SQLAlchemy用のユーティリティ集（同期版）。"""
 
+import asyncio
 import atexit
 import contextlib
 import contextvars
 import datetime
+import functools
 import logging
 import secrets
 import time
@@ -14,12 +16,40 @@ import sqlalchemy.engine
 import sqlalchemy.orm
 
 import pytilpack._paginator
-import pytilpack.asyncio
 
 logger = logging.getLogger(__name__)
 
 T = typing.TypeVar("T")
 TT = typing.TypeVar("TT", bound=tuple)
+
+
+def run_sync_with_session[**P, R](
+    func: "typing.Callable[typing.Concatenate[type[SyncMixin], P], R]",
+) -> "typing.Callable[typing.Concatenate[type[SyncMixin], P], typing.Awaitable[R]]":
+    """同期関数を非同期に実行し、スレッド内でセッションを管理するデコレーター。
+
+    別スレッドで実行される関数内で自動的にセッションスコープを作成する。
+    各呼び出しは独立したセッション・トランザクションを持つ。
+
+    Args:
+        func: デコレート対象の同期関数
+
+    Returns:
+        非同期版の関数
+    """
+
+    @functools.wraps(func)
+    async def wrapper(cls: type[SyncMixin], *args: P.args, **kwargs: P.kwargs) -> R:
+        def _impl() -> R:
+            with cls.session_scope() as session:
+                result = func(cls, *args, **kwargs)
+                # オブジェクトがexpireされないようにcommitする（読み取り専用でも問題ない）
+                session.commit()
+                return result
+
+        return await asyncio.to_thread(_impl)
+
+    return wrapper
 
 
 class SyncMixin:
@@ -340,17 +370,63 @@ class SyncMixin:
         cls.session().commit()
 
     # 非同期版
-    # pyright: ignore[reportFunctionMemberAccess]
-    acount = classmethod(pytilpack.asyncio.run_sync(count.__func__))  # type: ignore[attr-defined]
-    ascalar_one = classmethod(pytilpack.asyncio.run_sync(scalar_one.__func__))  # type: ignore[attr-defined]
-    ascalar_one_or_none = classmethod(pytilpack.asyncio.run_sync(scalar_one_or_none.__func__))  # type: ignore[attr-defined]
-    ascalars = classmethod(pytilpack.asyncio.run_sync(scalars.__func__))  # type: ignore[attr-defined]
-    aone = classmethod(pytilpack.asyncio.run_sync(one.__func__))  # type: ignore[attr-defined]
-    aone_or_none = classmethod(pytilpack.asyncio.run_sync(one_or_none.__func__))  # type: ignore[attr-defined]
-    aall = classmethod(pytilpack.asyncio.run_sync(all.__func__))  # type: ignore[attr-defined]
-    aget_by_id = classmethod(pytilpack.asyncio.run_sync(get_by_id.__func__))  # type: ignore[attr-defined]
-    apaginate = classmethod(pytilpack.asyncio.run_sync(paginate.__func__))  # type: ignore[attr-defined]
-    acommit = classmethod(pytilpack.asyncio.run_sync(commit.__func__))  # type: ignore[attr-defined]
+    # 注意: これらのメソッドは別スレッドで独立したセッション・トランザクションを使用します。
+
+    @classmethod
+    async def acount(cls, query: sqlalchemy.Select | sqlalchemy.CompoundSelect) -> int:
+        """queryのレコード数を取得する。(非同期版)"""
+        return await run_sync_with_session(cls.count.__func__)(cls, query)  # type: ignore[attr-defined]
+
+    @classmethod
+    async def ascalar_one(cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T:
+        """queryの結果を1件取得する。(非同期版)"""
+        return await run_sync_with_session(cls.scalar_one.__func__)(cls, query)  # type: ignore[attr-defined]
+
+    @classmethod
+    async def ascalar_one_or_none(cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T | None:
+        """queryの結果を0件または1件取得する。(非同期版)"""
+        return await run_sync_with_session(cls.scalar_one_or_none.__func__)(cls, query)  # type: ignore[attr-defined]
+
+    @classmethod
+    async def ascalars(cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> list[T]:
+        """queryの結果を全件取得する。(非同期版)"""
+        return await run_sync_with_session(cls.scalars.__func__)(cls, query)  # type: ignore[attr-defined]
+
+    @classmethod
+    async def aone(cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT]:
+        """queryの結果を1件取得する。(非同期版)"""
+        return await run_sync_with_session(cls.one.__func__)(cls, query)  # type: ignore[attr-defined]
+
+    @classmethod
+    async def aone_or_none(cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT] | None:
+        """queryの結果を0件または1件取得する。(非同期版)"""
+        return await run_sync_with_session(cls.one_or_none.__func__)(cls, query)  # type: ignore[attr-defined]
+
+    @classmethod
+    async def aall(cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> list[sqlalchemy.Row[TT]]:
+        """queryの結果を全件取得する。(非同期版)"""
+        return await run_sync_with_session(cls.all.__func__)(cls, query)  # type: ignore[attr-defined]
+
+    @classmethod
+    async def aget_by_id(cls, id_: int, for_update: bool = False) -> typing.Self | None:
+        """IDを元にインスタンスを取得。(非同期版)"""
+        return await run_sync_with_session(cls.get_by_id.__func__)(cls, id_, for_update)  # type: ignore[attr-defined]
+
+    @classmethod
+    async def apaginate(
+        cls,
+        query: sqlalchemy.Select | sqlalchemy.CompoundSelect,
+        page: int,
+        per_page: int,
+        scalar: bool = True,
+    ) -> pytilpack._paginator.Paginator:
+        """Flask-SQLAlchemy風ページネーション。(非同期版)"""
+        return await run_sync_with_session(cls.paginate.__func__)(cls, query, page, per_page, scalar)  # type: ignore[attr-defined]
+
+    @classmethod
+    async def acommit(cls) -> None:
+        """セッションをコミットする。(非同期版)"""
+        await run_sync_with_session(cls.commit.__func__)(cls)  # type: ignore[attr-defined]
 
     def to_dict(
         self,

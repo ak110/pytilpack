@@ -21,7 +21,10 @@ def test_generate_secret_key(tmp_path: pathlib.Path) -> None:
 
 
 def test_generate_secret_key_concurrent(tmp_path: pathlib.Path) -> None:
-    """4プロセス×4スレッドで同時実行して同じ値が返ることを確認。"""
+    """4プロセス×4スレッドで同時実行して同じ値が返ることを確認。
+
+    重いがこのくらいしないと競合が発生しない…。
+    """
     path = tmp_path / "secret_key"
     # 4回試す
     for _ in range(4):

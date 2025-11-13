@@ -372,7 +372,7 @@ async def test_async_methods() -> None:
         assert all(r.unique_id.startswith("async_test_") for r in results)  # type: ignore
 
         # aone_or_none のテスト
-        row = await Test3.aone_or_none(Test3.select().where(Test3.unique_id == "async_test_2"))
+        row = await Test3.aone_or_none(Test3.select().where(Test3.unique_id == "async_test_1"))
         assert row is not None
 
         # aall のテスト
