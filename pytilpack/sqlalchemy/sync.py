@@ -423,11 +423,6 @@ class SyncMixin:
         """Flask-SQLAlchemy風ページネーション。(非同期版)"""
         return await run_sync_with_session(cls.paginate.__func__)(cls, query, page, per_page, scalar)  # type: ignore[attr-defined]
 
-    @classmethod
-    async def acommit(cls) -> None:
-        """セッションをコミットする。(非同期版)"""
-        await run_sync_with_session(cls.commit.__func__)(cls)  # type: ignore[attr-defined]
-
     def to_dict(
         self,
         includes: list[str] | None = None,

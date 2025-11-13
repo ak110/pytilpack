@@ -339,7 +339,7 @@ Table: test3
 
 @pytest.mark.asyncio
 async def test_async_methods() -> None:
-    """非同期版メソッド(acount〜acommit)のテスト。"""
+    """非同期版メソッド(acount〜apaginate)のテスト。"""
     # テーブル作成
     with Base.connect() as conn:
         Base.metadata.create_all(conn)
@@ -350,8 +350,7 @@ async def test_async_methods() -> None:
         test_records = [Test3(unique_id=f"async_test_{i}") for i in range(1, 6)]
         for record in test_records:
             Base.session().add(record)
-        # acommit のテスト
-        await Base.acommit()
+        Base.commit()
 
         # count のテスト
         count = Test3.count(Test3.select().where(Test3.unique_id.like("async_test_%")))
