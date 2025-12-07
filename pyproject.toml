@@ -23,6 +23,7 @@ dependencies = [
 
 [project.optional-dependencies]
 all = [
+    "anthropic>=0.75.0",
     "azure-identity>=1.23.0",
     "bleach>=6.2",
     "fastapi>=0.111",
@@ -45,6 +46,9 @@ all = [
     "tinycss2>=1.4",
     "tqdm>=4.0",
     "uvicorn>=0.34.3",
+]
+anthropic = [
+    "anthropic>=0.75.0",
 ]
 bleach = [
     "bleach>=6.2",
