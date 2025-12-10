@@ -8,6 +8,9 @@ import openai.types.chat
 import openai.types.chat.chat_completion
 import openai.types.chat.chat_completion_chunk
 import openai.types.chat.chat_completion_message_function_tool_call
+import openai.types.responses
+import openai.types.responses.response
+import openai.types.responses.response_output_item
 
 import pytilpack.flask
 import pytilpack.openai
@@ -248,3 +251,199 @@ def test_gather_chunks_function2(data_dir: pathlib.Path):
             system_fingerprint="fp_3b956da36b",
         )
         assert actual.model_dump() == expected.model_dump()
+
+
+def test_gather_events_basic():
+    """gather_eventsのテスト(基本的なテキスト出力)。"""
+    events = [
+        openai.types.responses.ResponseCreatedEvent(
+            type="response.created",
+            sequence_number=0,
+            response=openai.types.responses.Response(
+                id="resp_001",
+                created_at=1234567890.0,
+                model="gpt-4o",
+                object="response",
+                output=[],
+                parallel_tool_calls=False,
+                tool_choice="auto",
+                tools=[],
+            ),
+        ),
+        openai.types.responses.ResponseOutputItemAddedEvent(
+            type="response.output_item.added",
+            sequence_number=1,
+            output_index=0,
+            item=openai.types.responses.ResponseOutputMessage(
+                id="msg_001",
+                type="message",
+                role="assistant",
+                status="in_progress",
+                content=[],
+            ),
+        ),
+        openai.types.responses.ResponseContentPartAddedEvent(
+            type="response.content_part.added",
+            sequence_number=2,
+            output_index=0,
+            item_id="msg_001",
+            content_index=0,
+            part=openai.types.responses.ResponseOutputText(
+                type="output_text",
+                text="",
+                annotations=[],
+            ),
+        ),
+        openai.types.responses.ResponseTextDeltaEvent(
+            type="response.output_text.delta",
+            sequence_number=3,
+            output_index=0,
+            item_id="msg_001",
+            content_index=0,
+            delta="Hello",
+            logprobs=[],
+        ),
+        openai.types.responses.ResponseTextDeltaEvent(
+            type="response.output_text.delta",
+            sequence_number=4,
+            output_index=0,
+            item_id="msg_001",
+            content_index=0,
+            delta=" world",
+            logprobs=[],
+        ),
+        openai.types.responses.ResponseTextDoneEvent(
+            type="response.output_text.done",
+            sequence_number=5,
+            output_index=0,
+            item_id="msg_001",
+            content_index=0,
+            text="Hello world",
+            logprobs=[],
+        ),
+        openai.types.responses.ResponseCompletedEvent(
+            type="response.completed",
+            sequence_number=6,
+            response=openai.types.responses.Response(
+                id="resp_001",
+                created_at=1234567890.0,
+                model="gpt-4o",
+                object="response",
+                output=[
+                    openai.types.responses.ResponseOutputMessage(
+                        id="msg_001",
+                        type="message",
+                        role="assistant",
+                        status="completed",
+                        content=[
+                            openai.types.responses.ResponseOutputText(
+                                type="output_text",
+                                text="Hello world",
+                                annotations=[],
+                            )
+                        ],
+                    )
+                ],
+                parallel_tool_calls=False,
+                tool_choice="auto",
+                tools=[],
+            ),
+        ),
+    ]
+    actual = pytilpack.openai.gather_events(events, strict=True)  # type: ignore[arg-type]
+    assert actual.id == "resp_001"
+    assert actual.model == "gpt-4o"
+    assert len(actual.output) == 1
+    assert actual.output[0].type == "message"
+    assert actual.output[0].role == "assistant"
+    assert len(actual.output[0].content) == 1
+    assert actual.output[0].content[0].type == "output_text"
+    assert actual.output[0].content[0].text == "Hello world"
+
+
+def test_gather_events_function_call():
+    """gather_eventsのテスト(関数呼び出し)。"""
+    events = [
+        openai.types.responses.ResponseCreatedEvent(
+            type="response.created",
+            sequence_number=0,
+            response=openai.types.responses.Response(
+                id="resp_002",
+                created_at=1234567890.0,
+                model="gpt-4o",
+                object="response",
+                output=[],
+                parallel_tool_calls=False,
+                tool_choice="auto",
+                tools=[],
+            ),
+        ),
+        openai.types.responses.ResponseOutputItemAddedEvent(
+            type="response.output_item.added",
+            sequence_number=1,
+            output_index=0,
+            item=openai.types.responses.ResponseFunctionToolCall(
+                call_id="call_001",
+                type="function_call",
+                name="get_weather",
+                arguments="",
+            ),
+        ),
+        openai.types.responses.ResponseFunctionCallArgumentsDeltaEvent(
+            type="response.function_call_arguments.delta",
+            sequence_number=2,
+            output_index=0,
+            item_id="call_001",
+            delta='{"location":',
+        ),
+        openai.types.responses.ResponseFunctionCallArgumentsDeltaEvent(
+            type="response.function_call_arguments.delta",
+            sequence_number=3,
+            output_index=0,
+            item_id="call_001",
+            delta='"Tokyo"}',
+        ),
+        openai.types.responses.ResponseFunctionCallArgumentsDoneEvent(
+            type="response.function_call_arguments.done",
+            sequence_number=4,
+            output_index=0,
+            item_id="call_001",
+            name="get_weather",
+            arguments='{"location":"Tokyo"}',
+        ),
+        openai.types.responses.ResponseCompletedEvent(
+            type="response.completed",
+            sequence_number=5,
+            response=openai.types.responses.Response(
+                id="resp_002",
+                created_at=1234567890.0,
+                model="gpt-4o",
+                object="response",
+                output=[
+                    openai.types.responses.ResponseFunctionToolCall(
+                        call_id="call_001",
+                        type="function_call",
+                        name="get_weather",
+                        arguments='{"location":"Tokyo"}',
+                    )
+                ],
+                parallel_tool_calls=False,
+                tool_choice="auto",
+                tools=[],
+            ),
+        ),
+    ]
+    actual = pytilpack.openai.gather_events(events, strict=True)  # type: ignore[arg-type]
+    assert actual.id == "resp_002"
+    assert len(actual.output) == 1
+    assert actual.output[0].type == "function_call"
+    assert actual.output[0].name == "get_weather"
+    assert actual.output[0].arguments == '{"location":"Tokyo"}'
+
+
+def test_gather_events_empty():
+    """gather_eventsのテスト(空のイベントリスト)。"""
+    events: list[openai.types.responses.ResponseStreamEvent] = []
+    actual = pytilpack.openai.gather_events(events, strict=True)  # type: ignore[arg-type]
+    assert actual.id == ""
+    assert len(actual.output) == 0
