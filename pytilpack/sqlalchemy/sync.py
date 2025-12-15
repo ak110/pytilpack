@@ -41,11 +41,8 @@ def run_sync_with_session[**P, R](
     @functools.wraps(func)
     async def wrapper(cls: type[SyncMixin], *args: P.args, **kwargs: P.kwargs) -> R:
         def _impl() -> R:
-            with cls.session_scope() as session:
-                result = func(cls, *args, **kwargs)
-                # オブジェクトがexpireされないようにcommitする（読み取り専用でも問題ない）
-                session.commit()
-                return result
+            with cls.session_scope():
+                return func(cls, *args, **kwargs)
 
         return await asyncio.to_thread(_impl)
 
@@ -546,8 +543,6 @@ def safe_close(
 ):
     """例外を出さずにセッションをクローズ。"""
     try:
-        if session.is_active:
-            session.rollback()
         session.close()
     except Exception:
         if log_level is not None:
