@@ -447,3 +447,63 @@ def test_gather_events_empty():
     actual = pytilpack.openai.gather_events(events, strict=True)  # type: ignore[arg-type]
     assert actual.id == ""
     assert len(actual.output) == 0
+
+
+def test_gather_events_without_completed():
+    """gather_eventsのテスト(response.completedイベントが無い場合)。"""
+    events = [
+        openai.types.responses.ResponseCreatedEvent(
+            type="response.created",
+            sequence_number=0,
+            response=openai.types.responses.Response(
+                id="resp_003",
+                created_at=1234567890.0,
+                model="gpt-4o",
+                object="response",
+                output=[],
+                parallel_tool_calls=False,
+                tool_choice="auto",
+                tools=[],
+            ),
+        ),
+        openai.types.responses.ResponseOutputItemAddedEvent(
+            type="response.output_item.added",
+            sequence_number=1,
+            output_index=0,
+            item=openai.types.responses.ResponseOutputMessage(
+                id="msg_001",
+                type="message",
+                role="assistant",
+                status="in_progress",
+                content=[],
+            ),
+        ),
+        openai.types.responses.ResponseContentPartAddedEvent(
+            type="response.content_part.added",
+            sequence_number=2,
+            output_index=0,
+            item_id="msg_001",
+            content_index=0,
+            part=openai.types.responses.ResponseOutputText(
+                type="output_text",
+                text="",
+                annotations=[],
+            ),
+        ),
+        openai.types.responses.ResponseTextDeltaEvent(
+            type="response.output_text.delta",
+            sequence_number=3,
+            output_index=0,
+            item_id="msg_001",
+            content_index=0,
+            delta="Test",
+            logprobs=[],
+        ),
+    ]
+    actual = pytilpack.openai.gather_events(events, strict=True)  # type: ignore[arg-type]
+    assert actual.id == "resp_003"
+    assert len(actual.output) == 1
+    assert actual.output[0].type == "message"
+    assert len(actual.output[0].content) == 1
+    assert actual.output[0].content[0].type == "output_text"
+    assert actual.output[0].content[0].text == "Test"
