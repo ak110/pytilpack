@@ -12,7 +12,7 @@ import typing
 import sqlalchemy
 import sqlalchemy.ext.asyncio
 
-import pytilpack._paginator
+import pytilpack.paginator
 
 logger = logging.getLogger(__name__)
 
@@ -300,7 +300,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         page: int,
         per_page: int,
         scalar: bool = True,
-    ) -> pytilpack._paginator.Paginator:
+    ) -> pytilpack.paginator.Paginator:
         """Flask-SQLAlchemy風ページネーション。
 
         Args:
@@ -310,7 +310,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
             scalar: Trueの場合、スカラー値を返す。Falseの場合、全件のインスタンスを返す。
 
         Returns:
-            ページネーションされた結果を返すpytilpack._paginator.Paginatorインスタンス。
+            ページネーションされた結果を返すpytilpack.paginator.Paginatorインスタンス。
         """
         assert page > 0, "ページ番号は1以上でなければなりません。"
         assert per_page > 0, "1ページあたりのアイテム数は1以上でなければなりません。"
@@ -318,7 +318,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         page_query = query.offset((page - 1) * per_page).limit(per_page)
         items = await (cls.scalars(page_query) if scalar else cls.all(page_query))
         # pylint: disable=protected-access
-        return pytilpack._paginator.Paginator(page=page, per_page=per_page, items=items, total=total)
+        return pytilpack.paginator.Paginator(page=page, per_page=per_page, items=items, total=total)
 
     def to_dict(
         self,

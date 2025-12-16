@@ -15,7 +15,7 @@ import sqlalchemy
 import sqlalchemy.engine
 import sqlalchemy.orm
 
-import pytilpack._paginator
+import pytilpack.paginator
 
 logger = logging.getLogger(__name__)
 
@@ -341,7 +341,7 @@ class SyncMixin:
         page: int,
         per_page: int,
         scalar: bool = True,
-    ) -> pytilpack._paginator.Paginator:
+    ) -> pytilpack.paginator.Paginator:
         """Flask-SQLAlchemy風ページネーション。
 
         Args:
@@ -351,7 +351,7 @@ class SyncMixin:
             scalar: Trueの場合、スカラー値を返す。Falseの場合、全件のインスタンスを返す。
 
         Returns:
-            ページネーションされた結果を返すpytilpack._paginator.Paginatorインスタンス。
+            ページネーションされた結果を返すpytilpack.paginator.Paginatorインスタンス。
         """
         assert page > 0, "ページ番号は1以上でなければなりません。"
         assert per_page > 0, "1ページあたりのアイテム数は1以上でなければなりません。"
@@ -359,7 +359,7 @@ class SyncMixin:
         page_query = query.offset((page - 1) * per_page).limit(per_page)
         items = cls.scalars(page_query) if scalar else cls.all(page_query)
         # pylint: disable=protected-access
-        return pytilpack._paginator.Paginator(page=page, per_page=per_page, items=items, total=total)
+        return pytilpack.paginator.Paginator(page=page, per_page=per_page, items=items, total=total)
 
     @classmethod
     def commit(cls) -> None:
@@ -416,7 +416,7 @@ class SyncMixin:
         page: int,
         per_page: int,
         scalar: bool = True,
-    ) -> pytilpack._paginator.Paginator:
+    ) -> pytilpack.paginator.Paginator:
         """Flask-SQLAlchemy風ページネーション。(非同期版)"""
         return await run_sync_with_session(cls.paginate.__func__)(cls, query, page, per_page, scalar)  # type: ignore[attr-defined]
 
