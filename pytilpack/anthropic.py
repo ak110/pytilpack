@@ -9,7 +9,7 @@ import anthropic.types
 logger = logging.getLogger(__name__)
 
 
-def gather_chunks(
+def gather_events(
     chunks: typing.Iterable[anthropic.types.RawMessageStreamEvent], strict: bool = False
 ) -> anthropic.types.Message:
     """ストリーミングのチャンクを結合する。"""
@@ -122,7 +122,13 @@ def _make_content_block(
         ]
         full_text = "".join(text_deltas) if len(text_deltas) > 0 else ""
 
-        return anthropic.types.TextBlock.model_construct(type="text", text=full_text)
+        # CitationsDeltaの収集
+        citations_deltas = [
+            e.delta.citation for e in content_block_delta_events if isinstance(e.delta, anthropic.types.CitationsDelta)
+        ]
+        citations = citations_deltas if len(citations_deltas) > 0 else None
+
+        return anthropic.types.TextBlock.model_construct(type="text", text=full_text, citations=citations)
 
     # ToolUseBlockの場合
     elif hasattr(base_content_block, "type") and base_content_block.type == "tool_use":
@@ -147,7 +153,13 @@ def _make_content_block(
         ]
         full_thinking = "".join(thinking_deltas) if len(thinking_deltas) > 0 else ""
 
-        return anthropic.types.ThinkingBlock.model_construct(type="thinking", thinking=full_thinking)
+        # SignatureDeltaの収集
+        signature_deltas = [
+            e.delta.signature for e in content_block_delta_events if isinstance(e.delta, anthropic.types.SignatureDelta)
+        ]
+        full_signature = "".join(signature_deltas) if len(signature_deltas) > 0 else ""
+
+        return anthropic.types.ThinkingBlock.model_construct(type="thinking", thinking=full_thinking, signature=full_signature)
 
     # その他のブロックタイプはそのまま返す
     else:
