@@ -175,14 +175,6 @@ def gather_events(
             tools=[],
         )
 
-    response = _accumulate_events(events, strict)
-    return response
-
-
-def _accumulate_events(
-    events: list[openai.types.responses.ResponseStreamEvent], strict: bool
-) -> openai.types.responses.Response:
-    """イベントを蓄積してResponseを構築する。"""
     snapshot: openai.types.responses.Response | None = None
     completed_response: openai.types.responses.Response | None = None
 
