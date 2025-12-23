@@ -6,6 +6,7 @@
 
 import inspect
 import re
+import threading
 import typing
 
 
@@ -358,3 +359,63 @@ def convert_or_none[T](
     if value is None:
         return default_value
     return convert(value, target_type, default_value, errors)
+
+
+class SingletonMixin:
+    """シングルトンパターンを提供するMixin。
+
+    Examples:
+        使用例::
+
+            class MyConfig(SingletonMixin):
+                def __init__(self):
+                    self.value = "test"
+
+            config1 = MyConfig.get()
+            config2 = MyConfig.get()
+            assert config1 is config2  # 同じインスタンス
+
+            MyConfig.reset()
+            config3 = MyConfig.get()
+            assert config1 is not config3  # 新しいインスタンス
+
+    """
+
+    _instances: dict[type, typing.Any] = {}
+    """シングルトンインスタンスを保持する辞書。"""
+
+    _lock: threading.Lock = threading.Lock()
+    """スレッドセーフ用のロック。"""
+
+    _initialized: dict[type, bool] = {}
+    """初期化済みフラグ。"""
+
+    def __new__(cls, *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
+        """直接インスタンス化を禁止する。"""
+        del args, kwargs  # noqa
+        raise TypeError(f"{cls.__name__}() は直接インスタンス化できません。{cls.__name__}.get() を使用してください。")
+
+    @classmethod
+    def get[T](cls: type[T]) -> T:
+        """シングルトンインスタンスを取得する。"""
+        # ダブルチェックロッキングパターン
+        if cls not in SingletonMixin._instances:
+            with SingletonMixin._lock:
+                if cls not in SingletonMixin._instances:
+                    # object.__new__() を使ってインスタンスを作成
+                    instance = object.__new__(cls)
+                    SingletonMixin._instances[cls] = instance
+                    # __init__() を初回のみ実行
+                    if cls not in SingletonMixin._initialized:
+                        cls.__init__(instance)  # type: ignore[misc]
+                        SingletonMixin._initialized[cls] = True
+        return typing.cast(T, SingletonMixin._instances[cls])
+
+    @classmethod
+    def reset(cls) -> None:
+        """シングルトンインスタンスをクリアする。"""
+        with SingletonMixin._lock:
+            if cls in SingletonMixin._instances:
+                del SingletonMixin._instances[cls]
+            if cls in SingletonMixin._initialized:
+                del SingletonMixin._initialized[cls]

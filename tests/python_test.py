@@ -257,3 +257,70 @@ def test_convert_error(value, target_type, errors):
     """convertのエラーパターンのテスト。"""
     with pytest.raises(ValueError):
         pytilpack.python.convert(value, target_type, None, errors=errors)
+
+
+def test_singleton_mixin():
+    """SingletonMixinのテスト。"""
+    import threading
+    import time
+
+    # テスト用クラス
+    class MyConfig(pytilpack.python.SingletonMixin):
+        """テスト用のコンフィグクラス。"""
+
+        def __init__(self):
+            self.value = "initial"
+            self.counter = 0
+
+    class AnotherConfig(pytilpack.python.SingletonMixin):
+        """テスト用の別のコンフィグクラス。"""
+
+        def __init__(self):
+            self.value = "another"
+
+    # get()で取得できる
+    config1 = MyConfig.get()
+    assert config1.value == "initial"
+
+    # 複数回get()しても同じインスタンス
+    config2 = MyConfig.get()
+    assert config1 is config2
+
+    # インスタンスを変更すると他も変わる
+    config1.value = "modified"
+    assert config2.value == "modified"
+
+    # 異なるクラスは異なるインスタンス
+    another1 = AnotherConfig.get()
+    another2 = AnotherConfig.get()
+    assert another1 is another2
+    assert id(another1) != id(config1)  # 異なるクラスのインスタンス
+
+    # reset()後は新しいインスタンス
+    MyConfig.reset()
+    config3 = MyConfig.get()
+    assert config3 is not config1
+    assert config3.value == "initial"
+
+    # 直接インスタンス化は禁止
+    with pytest.raises(TypeError, match="は直接インスタンス化できません"):
+        MyConfig()
+
+    # スレッドセーフ性の確認（簡易）
+    MyConfig.reset()
+    instances = []
+
+    def get_instance():
+        time.sleep(0.001)  # 競合を起こしやすくする
+        instance = MyConfig.get()
+        instances.append(instance)
+
+    threads = [threading.Thread(target=get_instance) for _ in range(10)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    # すべて同じインスタンス
+    assert len(instances) == 10
+    assert all(inst is instances[0] for inst in instances)
