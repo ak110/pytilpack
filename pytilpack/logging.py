@@ -7,6 +7,7 @@ import contextvars
 import datetime
 import hashlib
 import io
+import json
 import logging
 import pathlib
 import time
@@ -154,3 +155,91 @@ class ContextFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         del record  # noqa
         return _current_context_id.get("") == self.target_id
+
+
+def jsonify(data: typing.Any, indent: int | None = None, truncate: bool = True) -> str:
+    """オブジェクトをJSON文字列に変換する。
+
+    Args:
+        obj: JSON化するオブジェクト。
+        indent: インデント幅。Noneの場合は改行なし。
+        truncate: 長い文字列/バイト列を省略するかどうか。
+
+    Returns:
+        JSON文字列。
+    """
+    data = _pydantic_to_dict(data)
+
+    if truncate:
+        data = truncate_values(data, bytes_to_str=True)
+
+    def default(o: typing.Any) -> typing.Any:
+        """JSONエンコードできないオブジェクトの変換処理。"""
+        if isinstance(o, datetime.datetime):
+            return o.isoformat(timespec="milliseconds")
+        if isinstance(o, datetime.date):
+            return o.isoformat()
+        if isinstance(o, datetime.time):
+            return o.isoformat(timespec="milliseconds")
+        if isinstance(o, pathlib.Path):
+            return str(o)
+        if hasattr(o, "__dict__"):
+            return o.__dict__
+        return str(o)
+
+    separators = None if indent is not None else (",", ":")
+    return json.dumps(data, ensure_ascii=False, indent=indent, separators=separators, default=default)
+
+
+def truncate_values(
+    data: typing.Any,
+    max_str_len: int = 100,
+    max_bytes_len: int = 100,
+    bytes_to_str: bool = False,
+) -> typing.Any:
+    """dictやlist/tuple内の長いstr/bytesを再帰的に省略する。
+
+    Args:
+        data: 処理対象のデータ。
+        max_str_len: 文字列の最大長。
+        max_bytes_len: バイト列の最大長。
+        bytes_to_str: bytesをstrに変換するかどうか。
+
+    Returns:
+        省略処理を行った新しいオブジェクト。
+    """
+    data = _pydantic_to_dict(data)
+
+    if isinstance(data, str):
+        if len(data) > max_str_len:
+            return data[:max_str_len] + "..."
+        return data
+    if isinstance(data, bytes):
+        if bytes_to_str:
+            decoded = data.decode("utf-8", errors="replace")
+            if len(decoded) > max_str_len:
+                return decoded[:max_str_len] + "..."
+            return decoded
+        else:
+            if len(data) > max_bytes_len:
+                return data[:max_bytes_len] + b"..."
+            return data
+    if isinstance(data, dict):
+        return {
+            truncate_values(k, max_str_len, max_bytes_len, bytes_to_str): truncate_values(
+                v, max_str_len, max_bytes_len, bytes_to_str
+            )
+            for k, v in data.items()
+        }
+    if isinstance(data, list):
+        return [truncate_values(item, max_str_len, max_bytes_len, bytes_to_str) for item in data]
+    if isinstance(data, tuple):
+        return tuple(truncate_values(item, max_str_len, max_bytes_len, bytes_to_str) for item in data)
+    return data
+
+
+def _pydantic_to_dict(obj):
+    """pydanticモデルの場合はmodel_dumpでdictに変換する。"""
+    if hasattr(obj, "model_dump") and any("pydantic" in base.__module__ for base in obj.__class__.__mro__):
+        obj = obj.model_dump(exclude_unset=True)
+    return obj

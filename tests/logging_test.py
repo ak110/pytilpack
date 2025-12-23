@@ -4,6 +4,7 @@ import asyncio
 import datetime
 import logging
 import pathlib
+import typing
 
 import pytest
 
@@ -218,3 +219,99 @@ async def test_capture_context_nested() -> None:
         assert "外側のメッセージ2" in outer_captured
         # 内側のコンテキストのログは外側のコンテキストIDとは異なるため外側にはキャプチャされない
         assert "内側のメッセージ（WARNINGレベル）" not in outer_captured
+
+
+@pytest.mark.parametrize(
+    "data,max_str_len,max_bytes_len,bytes_to_str,expected",
+    [
+        # 文字列の省略
+        ("short", 100, 100, False, "short"),
+        ("a" * 150, 100, 100, False, "a" * 100 + "..."),
+        # バイト列の省略
+        (b"short", 100, 100, False, b"short"),
+        (b"x" * 150, 100, 100, False, b"x" * 100 + b"..."),
+        # bytes_to_str=True の場合
+        (b"short", 100, 100, True, "short"),
+        (b"x" * 150, 100, 100, True, "x" * 100 + "..."),
+        # dictの再帰処理
+        ({"key": "a" * 150}, 100, 100, False, {"key": "a" * 100 + "..."}),
+        ({"k1": "short", "k2": "b" * 150}, 100, 100, False, {"k1": "short", "k2": "b" * 100 + "..."}),
+        ({"k1": b"short", "k2": b"x" * 150}, 100, 100, True, {"k1": "short", "k2": "x" * 100 + "..."}),
+        # listの再帰処理
+        (["short", "a" * 150], 100, 100, False, ["short", "a" * 100 + "..."]),
+        ([b"short", b"x" * 150], 100, 100, True, ["short", "x" * 100 + "..."]),
+        # tupleの再帰処理
+        (("short", "a" * 150), 100, 100, False, ("short", "a" * 100 + "...")),
+        ((b"short", b"x" * 150), 100, 100, True, ("short", "x" * 100 + "...")),
+        # ネストした構造
+        (
+            {"outer": {"inner": "a" * 150}},
+            100,
+            100,
+            False,
+            {"outer": {"inner": "a" * 100 + "..."}},
+        ),
+        (
+            {"list": ["a" * 150, b"x" * 150]},
+            100,
+            100,
+            False,
+            {"list": ["a" * 100 + "...", b"x" * 100 + b"..."]},
+        ),
+        (
+            {"list": [b"a" * 150, b"x" * 150]},
+            100,
+            100,
+            True,
+            {"list": ["a" * 100 + "...", "x" * 100 + "..."]},
+        ),
+        # その他の型はそのまま
+        (123, 100, 100, False, 123),
+        (None, 100, 100, False, None),
+        (True, 100, 100, False, True),
+    ],
+)
+def test_truncate_values(
+    data: typing.Any,
+    max_str_len: int,
+    max_bytes_len: int,
+    bytes_to_str: bool,
+    expected: typing.Any,
+) -> None:
+    """truncate_valuesのテスト。"""
+    actual = pytilpack.logging.truncate_values(data, max_str_len, max_bytes_len, bytes_to_str)
+    assert actual == expected
+
+
+@pytest.mark.parametrize(
+    "obj,indent,truncate,expected",
+    [
+        # 基本的なJSON化
+        ({"key": "value"}, None, False, '{"key":"value"}'),
+        ({"key": "値"}, None, False, '{"key":"値"}'),
+        # インデント付き
+        ({"key": "value"}, 2, False, '{\n  "key": "value"\n}'),
+        # truncate=True の場合
+        ({"key": "a" * 150}, None, True, '{"key":"' + "a" * 100 + '..."}'),
+        ({"key": b"x" * 150}, None, True, '{"key":"' + "x" * 100 + '..."}'),
+        # truncate=False の場合
+        ({"key": "a" * 150}, None, False, '{"key":"' + "a" * 150 + '"}'),
+        # リストとネスト
+        ([1, 2, 3], None, False, "[1,2,3]"),
+        ({"list": ["a" * 150, "b"]}, None, True, '{"list":["' + "a" * 100 + '...","b"]}'),
+        # datetime変換
+        ({"dt": datetime.datetime(2023, 1, 1, 12, 0, 0, 123000)}, None, False, '{"dt":"2023-01-01T12:00:00.123"}'),
+        ({"date": datetime.date(2023, 1, 1)}, None, False, '{"date":"2023-01-01"}'),
+        # pathlib.Path変換
+        ({"path": pathlib.Path("/tmp/test")}, None, False, '{"path":"/tmp/test"}'),
+    ],
+)
+def test_jsonify(
+    obj: typing.Any,
+    indent: int | None,
+    truncate: bool,
+    expected: str,
+) -> None:
+    """jsonifyのテスト。"""
+    actual = pytilpack.logging.jsonify(obj, indent, truncate)
+    assert actual == expected
