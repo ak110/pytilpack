@@ -278,12 +278,12 @@ def test_singleton_mixin():
         def __init__(self):
             self.value = "another"
 
-    # get()で取得できる
-    config1 = MyConfig.get()
+    # get_singleton()で取得できる
+    config1 = MyConfig.get_singleton()
     assert config1.value == "initial"
 
-    # 複数回get()しても同じインスタンス
-    config2 = MyConfig.get()
+    # 複数回get_singleton()しても同じインスタンス
+    config2 = MyConfig.get_singleton()
     assert config1 is config2
 
     # インスタンスを変更すると他も変わる
@@ -291,14 +291,14 @@ def test_singleton_mixin():
     assert config2.value == "modified"
 
     # 異なるクラスは異なるインスタンス
-    another1 = AnotherConfig.get()
-    another2 = AnotherConfig.get()
+    another1 = AnotherConfig.get_singleton()
+    another2 = AnotherConfig.get_singleton()
     assert another1 is another2
     assert id(another1) != id(config1)  # 異なるクラスのインスタンス
 
     # reset()後は新しいインスタンス
     MyConfig.reset()
-    config3 = MyConfig.get()
+    config3 = MyConfig.get_singleton()
     assert config3 is not config1
     assert config3.value == "initial"
 
@@ -312,7 +312,7 @@ def test_singleton_mixin():
 
     def get_instance():
         time.sleep(0.001)  # 競合を起こしやすくする
-        instance = MyConfig.get()
+        instance = MyConfig.get_singleton()
         instances.append(instance)
 
     threads = [threading.Thread(target=get_instance) for _ in range(10)]

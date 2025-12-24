@@ -371,12 +371,12 @@ class SingletonMixin:
                 def __init__(self):
                     self.value = "test"
 
-            config1 = MyConfig.get()
-            config2 = MyConfig.get()
+            config1 = MyConfig.get_singleton()
+            config2 = MyConfig.get_singleton()
             assert config1 is config2  # 同じインスタンス
 
             MyConfig.reset()
-            config3 = MyConfig.get()
+            config3 = MyConfig.get_singleton()
             assert config1 is not config3  # 新しいインスタンス
 
     """
@@ -393,10 +393,10 @@ class SingletonMixin:
     def __new__(cls, *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
         """直接インスタンス化を禁止する。"""
         del args, kwargs  # noqa
-        raise TypeError(f"{cls.__name__}() は直接インスタンス化できません。{cls.__name__}.get() を使用してください。")
+        raise TypeError(f"{cls.__name__}() は直接インスタンス化できません。{cls.__name__}.get_singleton() を使用してください。")
 
     @classmethod
-    def get[T](cls: type[T]) -> T:
+    def get_singleton[T](cls: type[T]) -> T:
         """シングルトンインスタンスを取得する。"""
         # ダブルチェックロッキングパターン
         if cls not in SingletonMixin._instances:
