@@ -63,10 +63,15 @@ async def acquire_with_timeout(lock: asyncio.Lock | asyncio.Semaphore, timeout: 
 def run[T](coro: typing.Coroutine[typing.Any, typing.Any, T]) -> T:
     """非同期関数を実行する。"""
     # https://github.com/microsoftgraph/msgraph-sdk-python/issues/366#issuecomment-1830756182
+    loop: asyncio.AbstractEventLoop | None
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
-        # 非同期環境でない場合
+        loop = None
+
+    # 非同期環境でない場合
+    # (スタックトレースをシンプルにするためexceptの外で実行)
+    if loop is None:
         return asyncio.run(coro)
 
     # 何らかの理由でイベントループは存在するが動いてない場合 (謎)
