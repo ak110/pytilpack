@@ -16,6 +16,8 @@ import uuid
 
 import pytilpack.python
 
+logger = logging.getLogger(__name__)
+
 _exception_history: dict[str, datetime.datetime] = {}
 """例外フィンガープリント → 最終発生時刻。"""
 
@@ -170,27 +172,32 @@ def jsonify(data: typing.Any, indent: int | None = None, truncate: bool = True) 
     Returns:
         JSON文字列。
     """
-    data = pytilpack.python.pydantic_to_dict(data)
+    try:
+        data = pytilpack.python.pydantic_to_dict(data)
 
-    if truncate:
-        data = truncate_values(data, bytes_to_str=True)
+        if truncate:
+            data = truncate_values(data, bytes_to_str=True)
 
-    def default(o: typing.Any) -> typing.Any:
-        """JSONエンコードできないオブジェクトの変換処理。"""
-        if isinstance(o, datetime.datetime):
-            return o.isoformat(timespec="milliseconds")
-        if isinstance(o, datetime.date):
-            return o.isoformat()
-        if isinstance(o, datetime.time):
-            return o.isoformat(timespec="milliseconds")
-        if isinstance(o, pathlib.Path):
+        def default(o: typing.Any) -> typing.Any:
+            """JSONエンコードできないオブジェクトの変換処理。"""
+            if isinstance(o, datetime.datetime):
+                return o.isoformat(timespec="milliseconds")
+            if isinstance(o, datetime.date):
+                return o.isoformat()
+            if isinstance(o, datetime.time):
+                return o.isoformat(timespec="milliseconds")
+            if isinstance(o, pathlib.Path):
+                return str(o)
+            if hasattr(o, "__dict__"):
+                return o.__dict__
             return str(o)
-        if hasattr(o, "__dict__"):
-            return o.__dict__
-        return str(o)
 
-    separators = None if indent is not None else (",", ":")
-    return json.dumps(data, ensure_ascii=False, indent=indent, separators=separators, default=default)
+        separators = None if indent is not None else (",", ":")
+        return json.dumps(data, ensure_ascii=False, indent=indent, separators=separators, default=default)
+    except Exception:
+        # この関数はログに出すのが主目的なので、失敗しても例外を投げずにreprを返す。
+        logger.warning("jsonify失敗", exc_info=True)
+        return repr(data)
 
 
 def truncate_values(
