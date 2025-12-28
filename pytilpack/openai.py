@@ -14,6 +14,7 @@ import openai.types.responses
 import openai.types.responses.response
 import openai.types.responses.response_output_item
 
+import pytilpack.logging
 from pytilpack.python import coalesce, remove_none
 
 logger = logging.getLogger(__name__)
@@ -159,7 +160,9 @@ def _make_tool_call(
 
 
 def gather_events(
-    events: typing.Iterable[openai.types.responses.ResponseStreamEvent], strict: bool = False
+    events: typing.Iterable[openai.types.responses.ResponseStreamEvent],
+    strict: bool = False,
+    check_complete_response: bool = False,
 ) -> openai.types.responses.Response:
     """gather_chunks の Responses API版。"""
     events = list(events)
@@ -175,43 +178,43 @@ def gather_events(
             tools=[],
         )
 
+    # response.completed イベントがあればそれを返す
+    completed_response: openai.types.responses.Response | None = next(
+        (event.response for event in events if event.type == "response.completed"),
+        None,
+    )
+    if completed_response is not None and not check_complete_response and len(completed_response.output) > 0:
+        return completed_response
+
     snapshot: openai.types.responses.Response | None = None
-    completed_response: openai.types.responses.Response | None = None
 
     for event in events:
         if event.type == "response.created":
-            snapshot = _create_initial_response(event)
+            snapshot = event.response
         elif event.type == "response.completed":
-            completed_response = event.response
-        elif snapshot is not None:
+            if len(event.response.output) <= 0:
+                _warn(strict, "response.completedイベントでoutputが空")
+        else:
+            if snapshot is None:
+                _warn(strict, "response.createdイベントが見つかりませんでした")
+                snapshot = openai.types.responses.Response(
+                    id="",
+                    created_at=0,
+                    model="",  # type: ignore
+                    object="response",
+                    output=[],
+                    parallel_tool_calls=False,
+                    tool_choice="auto",
+                    tools=[],
+                )
             _accumulate_event_to_snapshot(snapshot, event, strict)
 
-    if completed_response is not None:
-        return completed_response
+    assert snapshot is not None
 
-    if snapshot is None:
-        _warn(strict, "response.createdイベントが見つかりませんでした")
-        return openai.types.responses.Response(
-            id="",
-            created_at=0,
-            model="",  # type: ignore
-            object="response",
-            output=[],
-            parallel_tool_calls=False,
-            tool_choice="auto",
-            tools=[],
-        )
+    if completed_response is not None and check_complete_response:
+        assert pytilpack.logging.jsonify(snapshot) == pytilpack.logging.jsonify(completed_response)
 
     return snapshot
-
-
-def _create_initial_response(
-    event: openai.types.responses.ResponseStreamEvent,
-) -> openai.types.responses.Response:
-    """response.createdイベントから初期Responseを作成する。"""
-    if not hasattr(event, "response"):
-        raise ValueError("response.createdイベントにresponseが含まれていません")
-    return typing.cast(openai.types.responses.Response, event.response)  # type: ignore[attr-defined]
 
 
 def _accumulate_event_to_snapshot(
@@ -221,235 +224,139 @@ def _accumulate_event_to_snapshot(
 ) -> None:
     """イベントをスナップショットに蓄積する。"""
     if event.type == "response.output_item.added":
-        _accumulate_output_item_added(snapshot, event)
+        snapshot.output.append(event.item)
     elif event.type == "response.content_part.added":
-        _accumulate_content_part_added(snapshot, event)
+        output_index = event.output_index
+        if output_index >= len(snapshot.output):
+            _warn(
+                strict,
+                f"output_index {output_index} が範囲外: {pytilpack.logging.jsonify(event)}",
+            )
+            return
+        output = snapshot.output[output_index]
+        if output.type == "message":
+            output.content.append(event.part)  # type: ignore[arg-type]
+        else:
+            _warn(strict, f"output.type が message 以外: {pytilpack.logging.jsonify(event)}")
     elif event.type == "response.output_text.delta":
-        _accumulate_output_text_delta(snapshot, event, strict)
+        output_index = event.output_index
+        content_index = event.content_index
+        if output_index >= len(snapshot.output):
+            _warn(strict, f"output_index {output_index} が範囲外です")
+            return
+        output = snapshot.output[output_index]
+        if output.type == "message":
+            if content_index >= len(output.content):
+                _warn(strict, f"content_index {content_index} が範囲外です")
+                return
+            content = output.content[content_index]
+            if content.type == "output_text":
+                content.text += event.delta
+            else:
+                _warn(strict, f"content.type が output_text 以外: {pytilpack.logging.jsonify(event)}")
+        else:
+            _warn(strict, f"output.type が message 以外: {pytilpack.logging.jsonify(event)}")
     elif event.type == "response.refusal.delta":
-        _accumulate_output_refusal_delta(snapshot, event, strict)
+        output_index = event.output_index
+        content_index = event.content_index
+        if output_index >= len(snapshot.output):
+            _warn(strict, f"output_index {output_index} が範囲外です")
+            return
+        output = snapshot.output[output_index]
+        if output.type == "message":
+            if content_index >= len(output.content):
+                _warn(strict, f"content_index {content_index} が範囲外です")
+                return
+            content = output.content[content_index]
+            if content.type == "refusal":  # type: ignore[comparison-overlap]
+                content.refusal += event.delta
+            else:
+                _warn(strict, f"content.type が refusal 以外: {pytilpack.logging.jsonify(event)}")
+        else:
+            _warn(strict, f"output.type が message 以外: {pytilpack.logging.jsonify(event)}")
     elif event.type == "response.function_call_arguments.delta":
-        _accumulate_function_call_arguments_delta(snapshot, event, strict)
-    elif event.type == "response.audio.transcript.delta":
-        _accumulate_audio_transcript_delta(snapshot, event, strict)
+        output_index = event.output_index
+        if output_index >= len(snapshot.output):
+            _warn(strict, f"output_index {output_index} が範囲外です")
+            return
+        output = snapshot.output[output_index]
+        if output.type == "function_call":
+            output.arguments += event.delta
+        else:
+            _warn(strict, f"output.type が function_call 以外: {pytilpack.logging.jsonify(event)}")
+    # NOTE: response.audio.transcript.deltaイベントは現在のライブラリでは
+    # output_indexやcontent_indexフィールドを持たないため、処理できません。
+    # このイベントタイプは将来的に変更される可能性があります。
+    # elif event.type == "response.audio.transcript.delta":
+    #     # ResponseAudioTranscriptDeltaEvent には output_index, content_index がない
     elif event.type == "response.reasoning_text.delta":
-        _accumulate_reasoning_text_delta(snapshot, event, strict)
+        output_index = event.output_index
+        content_index = event.content_index
+        if output_index >= len(snapshot.output):
+            _warn(strict, f"output_index {output_index} が範囲外です")
+            return
+        output = snapshot.output[output_index]
+        if output.type == "message":
+            if content_index >= len(output.content):
+                _warn(strict, f"content_index {content_index} が範囲外です")
+                return
+            content = output.content[content_index]
+            if content.type == "reasoning_text":  # type: ignore[comparison-overlap]
+                content.text += event.delta
+            else:
+                _warn(strict, f"content.type が reasoning_text 以外: {pytilpack.logging.jsonify(event)}")
+        else:
+            _warn(strict, f"output.type が message 以外: {pytilpack.logging.jsonify(event)}")
     elif event.type == "response.reasoning_summary_text.delta":
-        _accumulate_reasoning_summary_text_delta(snapshot, event, strict)
+        output_index = event.output_index
+        summary_index = event.summary_index  # content_indexではなくsummary_indexを使用
+        if output_index >= len(snapshot.output):
+            _warn(strict, f"output_index {output_index} が範囲外です")
+            return
+        output = snapshot.output[output_index]
+        if output.type == "message":
+            if summary_index >= len(output.content):
+                _warn(strict, f"summary_index {summary_index} が範囲外です")
+                return
+            content = output.content[summary_index]
+            if content.type == "reasoning_summary" and hasattr(content, "text"):  # type: ignore[comparison-overlap]
+                content.text += event.delta
+            else:
+                _warn(strict, f"content.type が reasoning_summary 以外: {pytilpack.logging.jsonify(event)}")
+        else:
+            _warn(strict, f"output.type が message 以外: {pytilpack.logging.jsonify(event)}")
     elif event.type == "response.custom_tool_call_input.delta":
-        _accumulate_custom_tool_call_input_delta(snapshot, event, strict)
+        output_index = event.output_index
+        if output_index >= len(snapshot.output):
+            _warn(strict, f"output_index {output_index} が範囲外です")
+            return
+        output = snapshot.output[output_index]
+        if output.type == "custom_tool_call":
+            output.input += event.delta
+        else:
+            _warn(strict, f"output.type が custom_tool_call 以外: {pytilpack.logging.jsonify(event)}")
     elif event.type == "response.mcp_call_arguments.delta":
-        _accumulate_mcp_call_arguments_delta(snapshot, event, strict)
+        output_index = event.output_index
+        if output_index >= len(snapshot.output):
+            _warn(strict, f"output_index {output_index} が範囲外です")
+            return
+        output = snapshot.output[output_index]
+        if output.type == "mcp_call":
+            output.arguments += event.delta
+        else:
+            _warn(strict, f"output.type が mcp_call 以外: {pytilpack.logging.jsonify(event)}")
     elif event.type == "response.code_interpreter_call_code.delta":
-        _accumulate_code_interpreter_call_code_delta(snapshot, event, strict)
-
-
-def _accumulate_output_item_added(
-    snapshot: openai.types.responses.Response,
-    event: openai.types.responses.ResponseStreamEvent,
-) -> None:
-    """output_item.addedイベントを蓄積する。"""
-    if not hasattr(event, "item"):
-        return
-    snapshot.output.append(event.item)  # type: ignore[attr-defined]
-
-
-def _accumulate_content_part_added(
-    snapshot: openai.types.responses.Response,
-    event: openai.types.responses.ResponseStreamEvent,
-) -> None:
-    """content_part.addedイベントを蓄積する。"""
-    if not hasattr(event, "output_index") or not hasattr(event, "part"):
-        return
-    output_index = event.output_index  # type: ignore[attr-defined]
-    if output_index >= len(snapshot.output):
-        return
-    output = snapshot.output[output_index]
-    if output.type == "message":
-        output.content.append(event.part)  # type: ignore[attr-defined,arg-type]
-
-
-def _accumulate_output_text_delta(
-    snapshot: openai.types.responses.Response,
-    event: openai.types.responses.ResponseStreamEvent,
-    strict: bool,
-) -> None:
-    """output_text.deltaイベントを蓄積する。"""
-    if not hasattr(event, "output_index") or not hasattr(event, "content_index") or not hasattr(event, "delta"):
-        return
-    output_index = event.output_index  # type: ignore[attr-defined]
-    content_index = event.content_index  # type: ignore[attr-defined]
-    if output_index >= len(snapshot.output):
-        _warn(strict, f"output_index {output_index} が範囲外です")
-        return
-    output = snapshot.output[output_index]
-    if output.type == "message":
-        if content_index >= len(output.content):
-            _warn(strict, f"content_index {content_index} が範囲外です")
+        output_index = event.output_index
+        if output_index >= len(snapshot.output):
+            _warn(strict, f"output_index {output_index} が範囲外です")
             return
-        content = output.content[content_index]
-        if content.type == "output_text":
-            content.text += event.delta  # type: ignore[attr-defined]
-
-
-def _accumulate_output_refusal_delta(
-    snapshot: openai.types.responses.Response,
-    event: openai.types.responses.ResponseStreamEvent,
-    strict: bool,
-) -> None:
-    """output_refusal.deltaイベントを蓄積する。"""
-    if not hasattr(event, "output_index") or not hasattr(event, "content_index") or not hasattr(event, "delta"):
-        return
-    output_index = event.output_index  # type: ignore[attr-defined]
-    content_index = event.content_index  # type: ignore[attr-defined]
-    if output_index >= len(snapshot.output):
-        _warn(strict, f"output_index {output_index} が範囲外です")
-        return
-    output = snapshot.output[output_index]
-    if output.type == "message":
-        if content_index >= len(output.content):
-            _warn(strict, f"content_index {content_index} が範囲外です")
-            return
-        content = output.content[content_index]
-        if content.type == "refusal":  # type: ignore[comparison-overlap]
-            content.refusal += event.delta  # type: ignore[attr-defined]
-
-
-def _accumulate_function_call_arguments_delta(
-    snapshot: openai.types.responses.Response,
-    event: openai.types.responses.ResponseStreamEvent,
-    strict: bool,
-) -> None:
-    """function_call_arguments.deltaイベントを蓄積する。"""
-    if not hasattr(event, "output_index") or not hasattr(event, "delta"):
-        return
-    output_index = event.output_index  # type: ignore[attr-defined]
-    if output_index >= len(snapshot.output):
-        _warn(strict, f"output_index {output_index} が範囲外です")
-        return
-    output = snapshot.output[output_index]
-    if output.type == "function_call":
-        output.arguments += event.delta  # type: ignore[attr-defined]
-
-
-def _accumulate_audio_transcript_delta(
-    snapshot: openai.types.responses.Response,
-    event: openai.types.responses.ResponseStreamEvent,
-    strict: bool,
-) -> None:
-    """audio_transcript.deltaイベントを蓄積する。"""
-    if not hasattr(event, "output_index") or not hasattr(event, "content_index") or not hasattr(event, "delta"):
-        return
-    output_index = event.output_index  # type: ignore[attr-defined]
-    content_index = event.content_index  # type: ignore[attr-defined]
-    if output_index >= len(snapshot.output):
-        _warn(strict, f"output_index {output_index} が範囲外です")
-        return
-    output = snapshot.output[output_index]
-    if output.type == "message":
-        if content_index >= len(output.content):
-            _warn(strict, f"content_index {content_index} が範囲外です")
-            return
-        content = output.content[content_index]
-        if content.type == "output_audio" and hasattr(content, "transcript"):  # type: ignore[comparison-overlap]
-            content.transcript += event.delta  # type: ignore[attr-defined]
-
-
-def _accumulate_reasoning_text_delta(
-    snapshot: openai.types.responses.Response,
-    event: openai.types.responses.ResponseStreamEvent,
-    strict: bool,
-) -> None:
-    """reasoning_text.deltaイベントを蓄積する。"""
-    if not hasattr(event, "output_index") or not hasattr(event, "content_index") or not hasattr(event, "delta"):
-        return
-    output_index = event.output_index  # type: ignore[attr-defined]
-    content_index = event.content_index  # type: ignore[attr-defined]
-    if output_index >= len(snapshot.output):
-        _warn(strict, f"output_index {output_index} が範囲外です")
-        return
-    output = snapshot.output[output_index]
-    if output.type == "message":
-        if content_index >= len(output.content):
-            _warn(strict, f"content_index {content_index} が範囲外です")
-            return
-        content = output.content[content_index]
-        if content.type == "reasoning_text":  # type: ignore[comparison-overlap]
-            content.text += event.delta  # type: ignore[attr-defined]
-
-
-def _accumulate_reasoning_summary_text_delta(
-    snapshot: openai.types.responses.Response,
-    event: openai.types.responses.ResponseStreamEvent,
-    strict: bool,
-) -> None:
-    """reasoning_summary_text.deltaイベントを蓄積する。"""
-    if not hasattr(event, "output_index") or not hasattr(event, "content_index") or not hasattr(event, "delta"):
-        return
-    output_index = event.output_index  # type: ignore[attr-defined]
-    content_index = event.content_index  # type: ignore[attr-defined]
-    if output_index >= len(snapshot.output):
-        _warn(strict, f"output_index {output_index} が範囲外です")
-        return
-    output = snapshot.output[output_index]
-    if output.type == "message":
-        if content_index >= len(output.content):
-            _warn(strict, f"content_index {content_index} が範囲外です")
-            return
-        content = output.content[content_index]
-        if content.type == "reasoning_summary" and hasattr(content, "text"):  # type: ignore[comparison-overlap]
-            content.text += event.delta  # type: ignore[attr-defined]
-
-
-def _accumulate_custom_tool_call_input_delta(
-    snapshot: openai.types.responses.Response,
-    event: openai.types.responses.ResponseStreamEvent,
-    strict: bool,
-) -> None:
-    """custom_tool_call_input.deltaイベントを蓄積する。"""
-    if not hasattr(event, "output_index") or not hasattr(event, "delta"):
-        return
-    output_index = event.output_index  # type: ignore[attr-defined]
-    if output_index >= len(snapshot.output):
-        _warn(strict, f"output_index {output_index} が範囲外です")
-        return
-    output = snapshot.output[output_index]
-    if output.type == "custom_tool_call":
-        output.input += event.delta  # type: ignore[attr-defined]
-
-
-def _accumulate_mcp_call_arguments_delta(
-    snapshot: openai.types.responses.Response,
-    event: openai.types.responses.ResponseStreamEvent,
-    strict: bool,
-) -> None:
-    """mcp_call_arguments.deltaイベントを蓄積する。"""
-    if not hasattr(event, "output_index") or not hasattr(event, "delta"):
-        return
-    output_index = event.output_index  # type: ignore[attr-defined]
-    if output_index >= len(snapshot.output):
-        _warn(strict, f"output_index {output_index} が範囲外です")
-        return
-    output = snapshot.output[output_index]
-    if output.type == "mcp_call":
-        output.arguments += event.delta  # type: ignore[attr-defined]
-
-
-def _accumulate_code_interpreter_call_code_delta(
-    snapshot: openai.types.responses.Response,
-    event: openai.types.responses.ResponseStreamEvent,
-    strict: bool,
-) -> None:
-    """code_interpreter_call_code.deltaイベントを蓄積する。"""
-    if not hasattr(event, "output_index") or not hasattr(event, "delta"):
-        return
-    output_index = event.output_index  # type: ignore[attr-defined]
-    if output_index >= len(snapshot.output):
-        _warn(strict, f"output_index {output_index} が範囲外です")
-        return
-    output = snapshot.output[output_index]
-    if output.type == "code_interpreter_call":
-        output.code += event.delta  # type: ignore[attr-defined,operator]
+        output = snapshot.output[output_index]
+        if output.type == "code_interpreter_call":
+            output.code += event.delta  # type: ignore[attr-defined,operator]
+        else:
+            _warn(strict, f"output.type が code_interpreter_call 以外: {pytilpack.logging.jsonify(event)}")
+    else:
+        _warn(strict, f"未知のイベントタイプ: {event.type}")
 
 
 @typing.overload

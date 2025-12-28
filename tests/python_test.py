@@ -324,3 +324,38 @@ def test_singleton_mixin():
     # すべて同じインスタンス
     assert len(instances) == 10
     assert all(inst is instances[0] for inst in instances)
+
+
+@pytest.mark.parametrize(
+    "dst,src,expected",
+    [
+        # 両方がdictの場合の再帰的マージ
+        ({"a": 1}, {"b": 2}, {"a": 1, "b": 2}),
+        ({"a": 1}, {"a": 2}, {"a": 2}),
+        ({"a": {"b": 1}}, {"a": {"c": 2}}, {"a": {"b": 1, "c": 2}}),
+        ({"a": {"b": 1}}, {"a": {"b": 2, "c": 3}}, {"a": {"b": 2, "c": 3}}),
+        ({"a": 1, "b": 2}, {"a": 10}, {"a": 10, "b": 2}),
+        # 両方がリストの場合の結合
+        ([1, 2], [3, 4], [1, 2, 3, 4]),
+        ([], [1], [1]),
+        ([1], [], [1]),
+        # それ以外の場合(srcで上書き)
+        (1, 2, 2),
+        ("a", "b", "b"),
+        (1, "a", "a"),
+        ([1], {"a": 1}, {"a": 1}),
+        ({"a": 1}, [1], [1]),
+        (None, 1, 1),
+        (1, None, None),
+        # 複雑なケース
+        (
+            {"a": [1, 2], "b": {"c": 1}},
+            {"a": [3], "b": {"d": 2}},
+            {"a": [1, 2, 3], "b": {"c": 1, "d": 2}},
+        ),
+    ],
+)
+def test_merge(dst, src, expected):
+    """mergeのテスト。"""
+    actual = pytilpack.python.merge(dst, src)
+    assert actual == expected

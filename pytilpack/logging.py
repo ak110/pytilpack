@@ -14,6 +14,8 @@ import time
 import typing
 import uuid
 
+import pytilpack.python
+
 _exception_history: dict[str, datetime.datetime] = {}
 """例外フィンガープリント → 最終発生時刻。"""
 
@@ -168,7 +170,7 @@ def jsonify(data: typing.Any, indent: int | None = None, truncate: bool = True) 
     Returns:
         JSON文字列。
     """
-    data = _pydantic_to_dict(data)
+    data = pytilpack.python.pydantic_to_dict(data)
 
     if truncate:
         data = truncate_values(data, bytes_to_str=True)
@@ -208,7 +210,7 @@ def truncate_values(
     Returns:
         省略処理を行った新しいオブジェクト。
     """
-    data = _pydantic_to_dict(data)
+    data = pytilpack.python.pydantic_to_dict(data)
 
     if isinstance(data, str):
         if len(data) > max_str_len:
@@ -236,10 +238,3 @@ def truncate_values(
     if isinstance(data, tuple):
         return tuple(truncate_values(item, max_str_len, max_bytes_len, bytes_to_str) for item in data)
     return data
-
-
-def _pydantic_to_dict(obj):
-    """pydanticモデルの場合はmodel_dumpでdictに変換する。"""
-    if hasattr(obj, "model_dump") and any("pydantic" in base.__module__ for base in obj.__class__.__mro__):
-        obj = obj.model_dump(exclude_unset=True)
-    return obj

@@ -419,3 +419,43 @@ class SingletonMixin:
                 del SingletonMixin._instances[cls]
             if cls in SingletonMixin._initialized:
                 del SingletonMixin._initialized[cls]
+
+
+def merge(dst: typing.Any, src: typing.Any) -> typing.Any:
+    """2つのオブジェクトをマージする。
+
+    Args:
+        dst: マージ先のオブジェクト。
+        src: マージ元のオブジェクト。
+
+    Returns:
+        マージされたオブジェクト。
+
+    """
+    # pydanticモデルの場合はdictに変換
+    dst = pydantic_to_dict(dst)
+    src = pydantic_to_dict(src)
+
+    # 両方がdictの場合は再帰的にマージ
+    if isinstance(dst, dict) and isinstance(src, dict):
+        result = dst.copy()
+        for key, value in src.items():
+            if key in result:
+                result[key] = merge(result[key], value)
+            else:
+                result[key] = value
+        return result
+
+    # 両方がリストの場合は結合
+    if isinstance(dst, list) and isinstance(src, list):
+        return dst + src
+
+    # それ以外の場合はsrcで上書き
+    return src
+
+
+def pydantic_to_dict(obj: typing.Any) -> typing.Any:
+    """pydanticモデルの場合はmodel_dumpでdictに変換する。"""
+    if hasattr(obj, "model_dump") and any("pydantic" in base.__module__ for base in obj.__class__.__mro__):
+        obj = obj.model_dump(exclude_unset=True)
+    return obj
