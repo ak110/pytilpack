@@ -15,6 +15,7 @@ import openai.types.responses.response
 import openai.types.responses.response_output_item
 
 import pytilpack.logging
+import pytilpack.python
 from pytilpack.python import coalesce, remove_none
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,9 @@ def gather_chunks(
     )
     choices = [_make_choice(chunks, i, strict) for i in range(min_choice, max_choice + 1)]
 
+    # model_extraをマージ
+    model_extra = _merge_model_extra(chunks)
+
     response = openai.types.chat.ChatCompletion.model_construct(
         id=_equals_all_get(strict, "id", remove_none(c.id for c in chunks), ""),
         choices=choices,
@@ -50,7 +54,9 @@ def gather_chunks(
             remove_none(c.system_fingerprint for c in chunks),
         ),
         usage=_get_single(strict, "usage", remove_none(c.usage for c in chunks)),
+        **model_extra,
     )
+
     return response
 
 
@@ -63,7 +69,10 @@ def _make_choice(
         [],
     )
 
-    message = openai.types.chat.ChatCompletionMessage.model_construct()
+    # messageのmodel_extraをマージ
+    message_model_extra = _merge_model_extra(c.delta for c in choice_list)
+
+    message = openai.types.chat.ChatCompletionMessage.model_construct(**message_model_extra)
 
     if len(roles := remove_none(c.delta.role for c in choice_list)) > 0:
         message.role = _equals_all_get(strict, "role", roles, "assistant")  # type: ignore
@@ -80,7 +89,14 @@ def _make_choice(
     if len(tool_calls_list := remove_none(c.delta.tool_calls for c in choice_list)) > 0:
         message.tool_calls = _make_tool_calls(tool_calls_list, strict)
 
-    choice = openai.types.chat.chat_completion.Choice.model_construct(index=index, message=message)
+    # choiceのmodel_extraをマージ
+    choice_model_extra = _merge_model_extra(choice_list)
+
+    choice = openai.types.chat.chat_completion.Choice.model_construct(
+        index=index,
+        message=message,
+        **choice_model_extra,
+    )
 
     if len(finish_reasons := remove_none(c.finish_reason for c in choice_list)) > 0:
         choice.finish_reason = _equals_all_get(strict, "finish_reason", finish_reasons)  # type: ignore
@@ -103,9 +119,14 @@ def _make_function_call(
     """ChoiceDeltaFunctionCallを作成する。"""
     if len(deltas) == 0:
         return None
+
+    # model_extraをマージ
+    model_extra = _merge_model_extra(deltas)
+
     return openai.types.chat.chat_completion_message.FunctionCall.model_construct(
         arguments="".join(remove_none(d.arguments for d in deltas)),
         name=_equals_all_get(strict, "function.name", remove_none(d.name for d in deltas)),
+        **model_extra,
     )
 
 
@@ -135,8 +156,13 @@ def _make_tool_call(
         [],
     )
 
+    # tool_callのmodel_extraをマージ
+    tool_call_model_extra = _merge_model_extra(tool_call_list)
+
     tool_call = (
-        openai.types.chat.chat_completion_message_function_tool_call.ChatCompletionMessageFunctionToolCall.model_construct()
+        openai.types.chat.chat_completion_message_function_tool_call.ChatCompletionMessageFunctionToolCall.model_construct(
+            **tool_call_model_extra
+        )
     )
 
     if len(ids := remove_none(delta.id for delta in tool_call_list)) > 0:
@@ -146,6 +172,9 @@ def _make_tool_call(
         tool_call.type = _equals_all_get(strict, f"delta.tool_calls[{index}].type", types)  # type: ignore[assignment]
 
     if len(functions := remove_none(delta.function for delta in tool_call_list)) > 0:
+        # functionのmodel_extraをマージ
+        function_model_extra = _merge_model_extra(functions)
+
         tool_call.function = openai.types.chat.chat_completion_message_function_tool_call.Function(
             arguments="".join(remove_none(f.arguments for f in functions)),
             name=_equals_all_get(
@@ -154,6 +183,7 @@ def _make_tool_call(
                 remove_none(f.name for f in functions),
                 "",
             ),
+            **function_model_extra,
         )
 
     return tool_call
@@ -392,6 +422,15 @@ def _get_single[T](strict: bool, name: str, values: typing.Iterable[T]) -> T | N
     if len(non_empty_values) > 1:
         _warn(strict, f"{name}に複数の値が含まれています。{values=}")
     return non_empty_values[0]
+
+
+def _merge_model_extra(objects: typing.Iterable[typing.Any]) -> dict[str, typing.Any]:
+    """オブジェクトのmodel_extraをマージする。"""
+    result: dict[str, typing.Any] = {}
+    for obj in objects:
+        if hasattr(obj, "model_extra") and obj.model_extra is not None:
+            result = pytilpack.python.merge(result, obj.model_extra)
+    return result
 
 
 def _warn(strict: bool, message: str) -> None:
