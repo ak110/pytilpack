@@ -6,7 +6,7 @@ import pydantic_core
 import pytilpack.pydantic
 
 
-class TestModel(pydantic.BaseModel):
+class _TestModel(pydantic.BaseModel):
     """テスト用のPydanticモデル。"""
 
     name: str
@@ -29,7 +29,7 @@ class TestModel(pydantic.BaseModel):
 def test_format_error():
     """Pydanticのバリデーションエラーの整形テスト。"""
     try:
-        TestModel.model_validate({"name": "bob", "age": "twenty"})
+        _TestModel.model_validate({"name": "bob", "age": "twenty"})
     except pydantic.ValidationError as e:
         formatted_error = pytilpack.pydantic.format_error(e)
         assert (
@@ -39,13 +39,13 @@ def test_format_error():
         )
     # _validate_before
     try:
-        TestModel.model_validate({"before_error": True})
+        _TestModel.model_validate({"before_error": True})
     except pydantic.ValidationError as e:
         formatted_error = pytilpack.pydantic.format_error(e)
         assert formatted_error == "TestModel\n  before_error！ (type=value_error)"
     # _validate_after
     try:
-        TestModel.model_validate({"name": "after_error", "age": 30})
+        _TestModel.model_validate({"name": "after_error", "age": 30})
     except pydantic.ValidationError as e:
         formatted_error = pytilpack.pydantic.format_error(e)
         assert formatted_error == "TestModel\n  after_error！ (type=かすたむえらー)"
@@ -54,7 +54,7 @@ def test_format_error():
 def test_format_exc():
     """Pydanticのバリデーションエラーの整形テスト。"""
     try:
-        TestModel.model_validate({"age": "twenty"})
+        _TestModel.model_validate({"age": "twenty"})
     except pydantic.ValidationError:
         formatted_error = pytilpack.pydantic.format_exc()
         assert (

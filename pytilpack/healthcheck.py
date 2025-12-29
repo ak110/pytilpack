@@ -3,6 +3,7 @@
 import asyncio
 import datetime
 import functools
+import inspect
 import logging
 import time
 import typing
@@ -67,7 +68,7 @@ def make_entry(
     Returns:
         ヘルスチェックの名前と関数を持つタプル。
     """
-    if asyncio.iscoroutinefunction(func):
+    if inspect.iscoroutinefunction(func):
 
         @functools.wraps(func)
         async def async_wrapped_func() -> None:

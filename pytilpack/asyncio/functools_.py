@@ -4,6 +4,7 @@ import asyncio
 import concurrent.futures
 import contextlib
 import functools
+import inspect
 import logging
 import typing
 
@@ -14,7 +15,7 @@ def ensure_async[**P, R](
     func: typing.Callable[P, typing.Awaitable[R] | R],
 ) -> typing.Callable[P, typing.Awaitable[R]]:
     """関数が非同期関数でない場合、非同期関数に変換するデコレーター。"""
-    if asyncio.iscoroutinefunction(func):
+    if inspect.iscoroutinefunction(func):
         return typing.cast(typing.Callable[P, typing.Awaitable[R]], func)
     else:
         return run_sync(typing.cast(typing.Callable[P, R], func))
