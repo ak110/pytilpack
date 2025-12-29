@@ -2,12 +2,19 @@
 
 import pathlib
 
+import pytest
+
 import pytilpack.json
 
 
 def test_load_not_exist(tmp_path: pathlib.Path) -> None:
     # pylint: disable=use-implicit-booleaness-not-comparison
     assert pytilpack.json.load(tmp_path / "not_exist.json") == {}
+
+
+def test_load_not_exist_strict(tmp_path: pathlib.Path) -> None:
+    with pytest.raises(FileNotFoundError):
+        pytilpack.json.load(tmp_path / "not_exist.json", strict=True)
 
 
 def test_load_save(tmp_path: pathlib.Path) -> None:
