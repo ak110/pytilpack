@@ -456,8 +456,8 @@ def merge(dst: typing.Any, src: typing.Any) -> typing.Any:
     return src
 
 
-def pydantic_to_dict(obj: typing.Any) -> typing.Any:
+def pydantic_to_dict(obj: typing.Any, **kwargs) -> typing.Any:
     """pydanticモデルの場合はmodel_dumpでdictに変換する。"""
     if hasattr(obj, "model_dump") and any("pydantic" in base.__module__ for base in obj.__class__.__mro__):
-        obj = obj.model_dump(exclude_unset=True)
+        obj = obj.model_dump(**({"exclude_unset": True} | kwargs))
     return obj
