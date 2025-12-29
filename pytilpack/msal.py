@@ -38,6 +38,7 @@ class SimpleTokenCredential(azure.core.credentials.TokenCredential):
         self.expires_on: int = int(self.expires.timestamp())
 
     def get_token(self, *args, **kwargs) -> azure.core.credentials.AccessToken:
+        """アクセストークンを取得する。"""
         del args, kwargs
         return azure.core.credentials.AccessToken(self.access_token, self.expires_on)
 

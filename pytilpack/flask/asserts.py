@@ -175,7 +175,7 @@ def assert_xml(
 
 
 def check_status_code(status_code: int, valid_status_code: int) -> None:
-    """deprecated."""
+    """Deprecated."""
     warnings.warn(
         "pytilpack.flask_.check_status_code is deprecated. Use pytilpack.web.check_status_code instead.",
         DeprecationWarning,
@@ -185,7 +185,7 @@ def check_status_code(status_code: int, valid_status_code: int) -> None:
 
 
 def check_content_type(content_type: str, valid_content_types: str | typing.Iterable[str] | None) -> None:
-    """deprecated."""
+    """Deprecated."""
     warnings.warn(
         "pytilpack.flask_.check_content_type is deprecated. Use pytilpack.web.check_content_type instead.",
         DeprecationWarning,

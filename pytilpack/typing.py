@@ -60,7 +60,6 @@ def is_instance(value: typing.Any, expected_type: typing.Any, path: str = "") ->
     Raises:
         TypeError: 型が一致しない場合、詳細なエラー位置を含む。
     """
-
     # NewType の場合、__supertype__ を確認
     if hasattr(expected_type, "__supertype__"):
         return is_instance(value, expected_type.__supertype__, path)

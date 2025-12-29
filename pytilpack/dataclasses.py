@@ -64,7 +64,7 @@ def fromjson(cls: "type[TDataClass]", json_path: str | pathlib.Path) -> "TDataCl
 
     Args:
         cls: dataclassの型
-        json: json
+        json_path: jsonファイルのパス
 
     Returns:
         dataclassのインスタンス
@@ -86,6 +86,10 @@ def tojson(
     Args:
         obj: dataclassのインスタンス
         json_path: 保存先のパス
+        ensure_ascii: json.dumpの引数
+        indent: json.dumpの引数
+        separators: json.dumpの引数
+        sort_keys: json.dumpの引数
 
     """
     pytilpack.json.save(

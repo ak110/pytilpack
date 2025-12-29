@@ -21,8 +21,7 @@ _TIMESTAMP_CACHE: dict[str, int] = {}
 
 
 def set_max_concurrency(app: quart.Quart, max_concurrency: int, timeout: float | None = 3.0) -> None:
-    """
-    Quart アプリ全体の最大同時リクエスト数を制限する。
+    """Quart アプリ全体の最大同時リクエスト数を制限する。
 
     Args:
         app: 対象の Quart アプリケーション。
@@ -33,7 +32,6 @@ def set_max_concurrency(app: quart.Quart, max_concurrency: int, timeout: float |
         * Hypercorn の ``--workers`` / ``--threads`` とは独立した
         アプリレベルの制御。1 ワーカー内のコルーチン数を絞る用途で使う。
     """
-
     if max_concurrency < 1:
         raise ValueError("max_concurrency must be >= 1")
 
@@ -102,6 +100,7 @@ def static_url_for(
             - True: プロセス単位でキャッシュする。プロセスの再起動やSIGHUPなどをしない限り更新されない。
             - False: キャッシュしない。常に最新を参照する。
             - "when_not_debug": デバッグモードでないときのみキャッシュする。
+        **kwargs: その他の引数 (quart.url_forに渡される)
 
     Returns:
         静的ファイルのURL
@@ -172,7 +171,6 @@ def get_routes(app: quart.Quart) -> list[RouteInfo]:
 @contextlib.asynccontextmanager
 async def run(app: quart.Quart, host: str = "localhost", port: int = 5000):
     """Quartアプリを実行するコンテキストマネージャ。テストコードなど用。"""
-
     # ダミーエンドポイントが存在しない場合は追加
     if not any(rule.endpoint == "_pytilpack_quart_dummy" for rule in app.url_map.iter_rules()):
 

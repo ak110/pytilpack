@@ -35,8 +35,7 @@ class Job(metaclass=abc.ABCMeta):
 
 
 class JobRunner(metaclass=abc.ABCMeta):
-    """
-    非同期ジョブを最大 max_job_concurrency 並列で実行するクラス。
+    """非同期ジョブを最大 max_job_concurrency 並列で実行するクラス。
 
     Args:
         max_job_concurrency: ジョブの最大同時実行数

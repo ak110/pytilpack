@@ -23,7 +23,7 @@ _TIMESTAMP_CACHE: dict[str, int] = {}
 
 
 def generate_secret_key(cache_path: str | pathlib.Path) -> bytes:
-    """deprecated."""
+    """Deprecated."""
     warnings.warn(
         "pytilpack.flask_.generate_secret_key is deprecated. Use pytilpack.secrets_.generate_secret_key instead.",
         DeprecationWarning,
@@ -67,6 +67,7 @@ def static_url_for(
             - True: プロセス単位でキャッシュする。プロセスの再起動やSIGHUPなどをしない限り更新されない。
             - False: キャッシュしない。常に最新を参照する。
             - "when_not_debug": デバッグモードでないときのみキャッシュする。
+        **kwargs: flask.url_forに渡す追加の引数
 
     Returns:
         静的ファイルのURL
@@ -99,7 +100,7 @@ def static_url_for(
 
 
 def get_safe_url(target: str | None, host_url: str, default_url: str) -> str:
-    """deprecated."""
+    """Deprecated."""
     warnings.warn(
         "pytilpack.flask_.get_safe_url is deprecated. Use pytilpack.web.get_safe_url instead.",
         DeprecationWarning,
@@ -147,7 +148,6 @@ def get_routes(app: flask.Flask) -> list[RouteInfo]:
 @contextlib.contextmanager
 def run(app: flask.Flask, host: str = "localhost", port: int = 5000):
     """Flaskアプリを実行するコンテキストマネージャ。テストコードなど用。"""
-
     if not any(m.endpoint == "_pytilpack_flask_dummy" for m in app.url_map.iter_rules()):
 
         @app.route("/_pytilpack_flask_dummy")

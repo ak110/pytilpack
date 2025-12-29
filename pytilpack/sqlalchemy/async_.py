@@ -78,6 +78,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
             pool_pre_ping: コネクションプールのプレピン。Noneの場合はデフォルト値を使用。
             autoflush: セッションのautoflushフラグ。デフォルトはTrue。
             expire_on_commit: セッションのexpire_on_commitフラグ。デフォルトはFalse。
+            **kwargs: その他のsqlalchemy.create_engine()へのキーワード引数。
 
         """
         assert cls.engine is None, "DB接続はすでに初期化されています。"

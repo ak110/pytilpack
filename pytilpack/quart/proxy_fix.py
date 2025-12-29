@@ -46,6 +46,7 @@ class ProxyFix:
         receive: hypercorn.typing.ASGIReceiveCallable,
         send: hypercorn.typing.ASGISendCallable,
     ) -> None:
+        """ASGIアプリケーションとしての処理。"""
         if scope["type"] in ("http", "websocket"):
             scope = typing.cast(hypercorn.typing.HTTPScope, copy.deepcopy(scope))
             headers = list(scope["headers"])

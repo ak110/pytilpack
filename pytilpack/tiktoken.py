@@ -154,6 +154,7 @@ def num_tokens_from_texts(model: str, texts: list[str] | str) -> int:
 
 
 def num_tokens_from_tools(encoding: tiktoken.Encoding, tools: list[openai.types.chat.ChatCompletionToolParam]) -> int:
+    """Function calling部分のトークン数算出。（非推奨）"""
     warnings.warn(
         "num_tokens_from_tools is deprecated. Use num_tokens_for_tools instead.",
         DeprecationWarning,

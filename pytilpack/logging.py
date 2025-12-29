@@ -16,7 +16,7 @@ import uuid
 
 import pytilpack.python
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 _exception_history: dict[str, datetime.datetime] = {}
 """例外フィンガープリント → 最終発生時刻。"""
@@ -67,7 +67,7 @@ def timer(name, logger: logging.Logger | None = None):
     finally:
         elapsed = time.perf_counter() - start_time
         if logger is None:
-            logger = logging.getLogger(__name__)
+            logger = _logger
         if has_error:
             logger.warning(f"[{name}] failed in {elapsed:.0f} s")
         else:
@@ -157,6 +157,7 @@ class ContextFilter(logging.Filter):
         self.target_id = target_id
 
     def filter(self, record: logging.LogRecord) -> bool:
+        """フィルタ処理。"""
         del record  # noqa
         return _current_context_id.get("") == self.target_id
 
@@ -165,7 +166,7 @@ def jsonify(data: typing.Any, indent: int | None = None, truncate: bool = True) 
     """オブジェクトをJSON文字列に変換する。
 
     Args:
-        obj: JSON化するオブジェクト。
+        data: JSON化するオブジェクト。
         indent: インデント幅。Noneの場合は改行なし。
         truncate: 長い文字列/バイト列を省略するかどうか。
 
@@ -196,7 +197,7 @@ def jsonify(data: typing.Any, indent: int | None = None, truncate: bool = True) 
         return json.dumps(data, ensure_ascii=False, indent=indent, separators=separators, default=default)
     except Exception:
         # この関数はログに出すのが主目的なので、失敗しても例外を投げずにreprを返す。
-        logger.warning("jsonify失敗", exc_info=True)
+        _logger.warning("jsonify失敗", exc_info=True)
         return repr(data)
 
 

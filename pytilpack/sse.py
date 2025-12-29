@@ -8,7 +8,7 @@ import typing
 
 @dataclasses.dataclass
 class SSE:
-    """Server-Sent Events メッセージ。
+    r"""Server-Sent Events メッセージ。
 
     改行を含むデータは自動的に複数のdata:行に分割されます。
 

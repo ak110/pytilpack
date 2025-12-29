@@ -8,7 +8,7 @@ on:
       - "**"
 
 env:
-  PYTHONASYNCIODEBUG: "1"
+  PYTHONDEVMODE: "1"
 
 jobs:
   build:

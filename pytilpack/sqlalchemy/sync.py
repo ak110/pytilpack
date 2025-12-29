@@ -107,6 +107,7 @@ class SyncMixin:
             pool_pre_ping: コネクションプールのプレピン。Noneの場合はデフォルト値を使用。
             autoflush: セッションのautoflushフラグ。デフォルトはTrue。
             expire_on_commit: セッションのexpire_on_commitフラグ。デフォルトはFalse。
+            **kwargs: sqlalchemy.create_engineに渡す追加のキーワード引数。
 
         """
         assert cls.engine is None, "DB接続はすでに初期化されています。"

@@ -292,6 +292,7 @@ def convert[T](
 
     Args:
         value: 変換元の値。
+        target_type: 変換先の型。
         default_value: 取得できなかった場合のデフォルト値。
         errors: エラー時の挙動。"strict"で例外を発生させる。"ignore"でデフォルト値を返す。
 
@@ -346,6 +347,7 @@ def convert_or_none[T](
 
     Args:
         value: 変換元の値。
+        target_type: 変換先の型。
         default_value: 取得できなかった場合のデフォルト値。
         errors: エラー時の挙動。"strict"で例外を発生させる。"ignore"でデフォルト値を返す。
 

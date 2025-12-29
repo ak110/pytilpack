@@ -106,6 +106,7 @@ async def delete_empty_dirs(path: str | pathlib.Path, keep_root: bool = True) ->
 
 async def sync(src: str | pathlib.Path, dst: str | pathlib.Path, delete: bool = False) -> None:
     """コピー元からコピー先へ同期する。
+
     Args:
         src: コピー元のパス
         dst: コピー先のパス
