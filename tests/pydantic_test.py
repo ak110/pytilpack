@@ -34,7 +34,7 @@ def test_format_error():
         formatted_error = pytilpack.pydantic.format_error(e)
         assert (
             formatted_error
-            == "TestModel\n"
+            == "_TestModel\n"
             + "  age: Input should be a valid integer, unable to parse string as an integer (type=int_parsing, input=twenty)"
         )
     # _validate_before
@@ -42,13 +42,13 @@ def test_format_error():
         _TestModel.model_validate({"before_error": True})
     except pydantic.ValidationError as e:
         formatted_error = pytilpack.pydantic.format_error(e)
-        assert formatted_error == "TestModel\n  before_error！ (type=value_error)"
+        assert formatted_error == "_TestModel\n  before_error！ (type=value_error)"
     # _validate_after
     try:
         _TestModel.model_validate({"name": "after_error", "age": 30})
     except pydantic.ValidationError as e:
         formatted_error = pytilpack.pydantic.format_error(e)
-        assert formatted_error == "TestModel\n  after_error！ (type=かすたむえらー)"
+        assert formatted_error == "_TestModel\n  after_error！ (type=かすたむえらー)"
 
 
 def test_format_exc():
@@ -59,7 +59,7 @@ def test_format_exc():
         formatted_error = pytilpack.pydantic.format_exc()
         assert (
             formatted_error
-            == "TestModel\n"
+            == "_TestModel\n"
             + "  name: Field required (type=missing, input={'age': 'twenty'})\n"
             + "  age: Input should be a valid integer, unable to parse string as an integer (type=int_parsing, input=twenty)"
         )
