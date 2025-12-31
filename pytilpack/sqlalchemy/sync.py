@@ -161,22 +161,11 @@ class SyncMixin:
 
         """
         assert cls.sessionmaker is not None
-        token = cls._start_session()
-        session = cls.session()
-        if name is not None:
-            logger.log(
-                log_level,
-                f"セッション開始: {name} session={id(session)}, thread={threading.get_ident()},",
-            )
+        token = cls.start_session(name=name, log_level=log_level)
         try:
-            yield session
+            yield cls.session()
         finally:
-            if name is not None:
-                logger.log(
-                    log_level,
-                    f"セッション終了: {name} session={id(session)}, thread={threading.get_ident()},",
-                )
-            cls._close_session(token)
+            cls.close_session(token, name=name, log_level=log_level)
 
     @classmethod
     @contextlib.asynccontextmanager
@@ -197,8 +186,20 @@ class SyncMixin:
 
         """
         assert cls.sessionmaker is not None
-        token = cls._start_session()
-        session = cls.session()
+        token = cls.start_session(name=name, log_level=log_level)
+        try:
+            yield cls.session()
+        finally:
+            cls.close_session(token, name=name, log_level=log_level)
+
+    @classmethod
+    def start_session(
+        cls, name: str | None = None, log_level: int = logging.DEBUG
+    ) -> contextvars.Token[sqlalchemy.orm.Session]:
+        """セッションを開始する。"""
+        assert cls.sessionmaker is not None
+        session = cls.sessionmaker()  # pylint: disable=not-callable
+        token = cls.session_var.set(session)
         if name is not None:
             logger.log(
                 log_level,
@@ -207,29 +208,23 @@ class SyncMixin:
                 f" thread={threading.get_ident()},"
                 f" task={pytilpack.asyncio.get_task_id()}",
             )
-        try:
-            yield session
-        finally:
-            if name is not None:
-                logger.log(
-                    log_level,
-                    f"セッション終了: {name}"
-                    f" session={id(session)},"
-                    f" thread={threading.get_ident()},"
-                    f" task={pytilpack.asyncio.get_task_id()}",
-                )
-            cls._close_session(token)
+        return token
 
     @classmethod
-    def _start_session(cls) -> contextvars.Token[sqlalchemy.orm.Session]:
-        """セッションを開始する。"""
-        assert cls.sessionmaker is not None
-        return cls.session_var.set(cls.sessionmaker())  # pylint: disable=not-callable
-
-    @classmethod
-    def _close_session(cls, token: contextvars.Token[sqlalchemy.orm.Session]) -> None:
+    def close_session(
+        cls, token: contextvars.Token[sqlalchemy.orm.Session], name: str | None = None, log_level: int = logging.DEBUG
+    ) -> None:
         """セッションを終了する。"""
-        safe_close(cls.session())
+        session = cls.session()
+        if name is not None:
+            logger.log(
+                log_level,
+                f"セッション終了: {name}"
+                f" session={id(session)},"
+                f" thread={threading.get_ident()},"
+                f" task={pytilpack.asyncio.get_task_id()}",
+            )
+        safe_close(session)
         cls.session_var.reset(token)
 
     @classmethod

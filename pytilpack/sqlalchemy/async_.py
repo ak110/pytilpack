@@ -132,41 +132,48 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
 
         """
         assert cls.sessionmaker is not None
-        token = await cls._start_session()
-        session = cls.session()
+        token = await cls.start_session(name=name, log_level=log_level)
+        try:
+            yield cls.session()
+        finally:
+            await cls.close_session(token, name=name, log_level=log_level)
+
+    @classmethod
+    async def start_session(
+        cls, name: str | None = None, log_level: int = logging.DEBUG
+    ) -> contextvars.Token[sqlalchemy.ext.asyncio.AsyncSession]:
+        """セッションを開始する。"""
+        assert cls.sessionmaker is not None
+        session = cls.sessionmaker()  # pylint: disable=not-callable
+        token = cls.session_var.set(session)
         if name is not None:
             logger.log(
                 log_level,
-                f"セッション開始: {name},"
+                f"セッション開始: {name}"
                 f" session={id(session)},"
                 f" thread={threading.get_ident()},"
                 f" task={pytilpack.asyncio.get_task_id()}",
             )
-        try:
-            yield session
-        finally:
-            if name is not None:
-                logger.log(
-                    log_level,
-                    f"セッション終了: {name}"
-                    f" session={id(session)},"
-                    f" thread={threading.get_ident()},"
-                    f" task={pytilpack.asyncio.get_task_id()}",
-                )
-            await cls._close_session(token)
+        return token
 
     @classmethod
-    async def _start_session(
+    async def close_session(
         cls,
-    ) -> contextvars.Token[sqlalchemy.ext.asyncio.AsyncSession]:
-        """セッションを開始する。"""
-        assert cls.sessionmaker is not None
-        return cls.session_var.set(cls.sessionmaker())  # pylint: disable=not-callable
-
-    @classmethod
-    async def _close_session(cls, token: contextvars.Token[sqlalchemy.ext.asyncio.AsyncSession]) -> None:
+        token: contextvars.Token[sqlalchemy.ext.asyncio.AsyncSession],
+        name: str | None = None,
+        log_level: int = logging.DEBUG,
+    ) -> None:
         """セッションを終了する。"""
-        await asafe_close(cls.session())
+        session = cls.session()
+        if name is not None:
+            logger.log(
+                log_level,
+                f"セッション終了: {name}"
+                f" session={id(session)},"
+                f" thread={threading.get_ident()},"
+                f" task={pytilpack.asyncio.get_task_id()}",
+            )
+        await asafe_close(session)
         cls.session_var.reset(token)
 
     @classmethod
