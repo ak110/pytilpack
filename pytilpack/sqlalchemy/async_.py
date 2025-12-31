@@ -149,10 +149,9 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         if name is not None:
             logger.log(
                 log_level,
-                f"セッション開始: {name}"
-                f" session={id(session)},"
-                f" thread={threading.get_ident()},"
-                f" task={pytilpack.asyncio.get_task_id()}",
+                f"セッション開始: {name} session={id(session):x},"
+                f" thread={threading.get_ident():x},"
+                f" task={pytilpack.asyncio.get_task_id_hex()}",
             )
         return token
 
@@ -168,10 +167,9 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         if name is not None:
             logger.log(
                 log_level,
-                f"セッション終了: {name}"
-                f" session={id(session)},"
-                f" thread={threading.get_ident()},"
-                f" task={pytilpack.asyncio.get_task_id()}",
+                f"セッション終了: {name} session={id(session):x},"
+                f" thread={threading.get_ident():x},"
+                f" task={pytilpack.asyncio.get_task_id_hex()}",
             )
         await asafe_close(session)
         cls.session_var.reset(token)
