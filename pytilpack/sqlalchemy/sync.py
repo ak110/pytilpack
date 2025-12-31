@@ -8,6 +8,7 @@ import datetime
 import functools
 import logging
 import secrets
+import threading
 import time
 import typing
 
@@ -15,6 +16,7 @@ import sqlalchemy
 import sqlalchemy.engine
 import sqlalchemy.orm
 
+import pytilpack.asyncio
 import pytilpack.paginator
 
 logger = logging.getLogger(__name__)
@@ -142,48 +144,90 @@ class SyncMixin:
 
     @classmethod
     @contextlib.contextmanager
-    def session_scope(cls) -> typing.Generator[sqlalchemy.orm.Session, None, None]:
+    def session_scope(
+        cls,
+        name: str | None = None,
+        log_level: int = logging.DEBUG,
+    ) -> typing.Generator[sqlalchemy.orm.Session, None, None]:
         """セッションを開始するコンテキストマネージャ。
 
         使用例::
             with Base.session_scope() as session:
                 ...
 
+        Args:
+            name: セッション名。指定時のみログ出力する。
+            log_level: ログレベル。
+
         """
         assert cls.sessionmaker is not None
-        token = cls.start_session()
+        token = cls._start_session()
+        session = cls.session()
+        if name is not None:
+            logger.log(
+                log_level,
+                f"セッション開始: {name} session={id(session)}, thread={threading.get_ident()},",
+            )
         try:
-            yield cls.session()
+            yield session
         finally:
-            cls.close_session(token)
+            if name is not None:
+                logger.log(
+                    log_level,
+                    f"セッション終了: {name} session={id(session)}, thread={threading.get_ident()},",
+                )
+            cls._close_session(token)
 
     @classmethod
     @contextlib.asynccontextmanager
     async def asession_scope(
         cls,
+        name: str | None = None,
+        log_level: int = logging.DEBUG,
     ) -> typing.AsyncGenerator[sqlalchemy.orm.Session, None]:
         """セッションを開始するコンテキストマネージャ。
 
         使用例::
-            with Base.session_scope() as session:
+            async with Base.asession_scope() as session:
                 ...
+
+        Args:
+            name: セッション名。指定時のみログ出力する。
+            log_level: ログレベル。
 
         """
         assert cls.sessionmaker is not None
-        token = cls.start_session()
+        token = cls._start_session()
+        session = cls.session()
+        if name is not None:
+            logger.log(
+                log_level,
+                f"セッション開始: {name}"
+                f" session={id(session)},"
+                f" thread={threading.get_ident()},"
+                f" task={pytilpack.asyncio.get_task_id()}",
+            )
         try:
-            yield cls.session()
+            yield session
         finally:
-            cls.close_session(token)
+            if name is not None:
+                logger.log(
+                    log_level,
+                    f"セッション終了: {name}"
+                    f" session={id(session)},"
+                    f" thread={threading.get_ident()},"
+                    f" task={pytilpack.asyncio.get_task_id()}",
+                )
+            cls._close_session(token)
 
     @classmethod
-    def start_session(cls) -> contextvars.Token[sqlalchemy.orm.Session]:
+    def _start_session(cls) -> contextvars.Token[sqlalchemy.orm.Session]:
         """セッションを開始する。"""
         assert cls.sessionmaker is not None
         return cls.session_var.set(cls.sessionmaker())  # pylint: disable=not-callable
 
     @classmethod
-    def close_session(cls, token: contextvars.Token[sqlalchemy.orm.Session]) -> None:
+    def _close_session(cls, token: contextvars.Token[sqlalchemy.orm.Session]) -> None:
         """セッションを終了する。"""
         safe_close(cls.session())
         cls.session_var.reset(token)

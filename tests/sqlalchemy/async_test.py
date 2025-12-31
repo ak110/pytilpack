@@ -106,9 +106,7 @@ async def test_async_mixin_context_vars() -> None:
     async with Base.connect() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    # start_session / close_sessionのテスト
-    token = await Base.start_session()
-    try:
+    async with Base.session_scope():
         # セッションが取得できることを確認
         session = Base.session()
         assert session is not None
@@ -122,9 +120,6 @@ async def test_async_mixin_context_vars() -> None:
         query = Test1.select().where(Test1.unique_id == "test_context")
         result = (await session.execute(query)).scalar_one()
         assert result.unique_id == "test_context"
-
-    finally:
-        await Base.close_session(token)
 
 
 @pytest.mark.asyncio

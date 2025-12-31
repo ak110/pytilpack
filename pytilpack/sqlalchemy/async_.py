@@ -6,12 +6,14 @@ import contextvars
 import datetime
 import logging
 import secrets
+import threading
 import time
 import typing
 
 import sqlalchemy
 import sqlalchemy.ext.asyncio
 
+import pytilpack.asyncio
 import pytilpack.paginator
 
 logger = logging.getLogger(__name__)
@@ -113,23 +115,48 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
 
     @classmethod
     @contextlib.asynccontextmanager
-    async def session_scope(cls):
+    async def session_scope(
+        cls,
+        name: str | None = None,
+        log_level: int = logging.DEBUG,
+    ):
         """セッションを開始するコンテキストマネージャ。
 
         使用例::
             async with Base.session_scope() as session:
                 ...
 
+        Args:
+            name: セッション名。指定時のみログ出力する。
+            log_level: ログレベル。
+
         """
         assert cls.sessionmaker is not None
-        token = await cls.start_session()
+        token = await cls._start_session()
+        session = cls.session()
+        if name is not None:
+            logger.log(
+                log_level,
+                f"セッション開始: {name},"
+                f" session={id(session)},"
+                f" thread={threading.get_ident()},"
+                f" task={pytilpack.asyncio.get_task_id()}",
+            )
         try:
-            yield cls.session()
+            yield session
         finally:
-            await cls.close_session(token)
+            if name is not None:
+                logger.log(
+                    log_level,
+                    f"セッション終了: {name}"
+                    f" session={id(session)},"
+                    f" thread={threading.get_ident()},"
+                    f" task={pytilpack.asyncio.get_task_id()}",
+                )
+            await cls._close_session(token)
 
     @classmethod
-    async def start_session(
+    async def _start_session(
         cls,
     ) -> contextvars.Token[sqlalchemy.ext.asyncio.AsyncSession]:
         """セッションを開始する。"""
@@ -137,7 +164,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         return cls.session_var.set(cls.sessionmaker())  # pylint: disable=not-callable
 
     @classmethod
-    async def close_session(cls, token: contextvars.Token[sqlalchemy.ext.asyncio.AsyncSession]) -> None:
+    async def _close_session(cls, token: contextvars.Token[sqlalchemy.ext.asyncio.AsyncSession]) -> None:
         """セッションを終了する。"""
         await asafe_close(cls.session())
         cls.session_var.reset(token)

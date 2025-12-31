@@ -116,9 +116,7 @@ def test_sync_mixin_context_vars() -> None:
     with Base.connect() as conn:
         Base.metadata.create_all(conn)
 
-    # start_session / close_sessionのテスト
-    token = Base.start_session()
-    try:
+    with Base.session_scope():
         # セッションが取得できることを確認
         session = Base.session()
         assert session is not None
@@ -132,9 +130,6 @@ def test_sync_mixin_context_vars() -> None:
         query = Test1.select().where(Test1.unique_id == "test_context")
         result = session.execute(query).scalar_one()
         assert result.unique_id == "test_context"
-
-    finally:
-        Base.close_session(token)
 
 
 def test_sync_mixin_to_dict() -> None:
