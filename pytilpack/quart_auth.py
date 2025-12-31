@@ -29,10 +29,7 @@ class AnonymousUser(UserMixin):
         return False
 
 
-UserType = typing.TypeVar("UserType", bound=UserMixin)
-
-
-class QuartAuth[UserType](quart_auth.QuartAuth):
+class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
     """Quart-Authの独自拡張。
 
     Flask-Loginのように@auth_manager.user_loaderを定義できるようにする。

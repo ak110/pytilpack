@@ -16,9 +16,6 @@ import pytilpack.paginator
 
 logger = logging.getLogger(__name__)
 
-T = typing.TypeVar("T")
-TT = typing.TypeVar("TT", bound=tuple)
-
 
 class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
     """モデルのベースクラス。SQLAlchemy 2.0スタイル・async前提。
@@ -186,7 +183,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         )
 
     @classmethod
-    async def scalar_one(cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T:
+    async def scalar_one[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T:
         """queryの結果を1件取得する。
 
         Args:
@@ -203,7 +200,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         return (await cls.session().execute(query)).scalar_one()
 
     @classmethod
-    async def scalar_one_or_none(cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T | None:
+    async def scalar_one_or_none[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T | None:
         """queryの結果を0件または1件取得する。
 
         Args:
@@ -219,7 +216,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         return (await cls.session().execute(query)).scalar_one_or_none()
 
     @classmethod
-    async def scalars(cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> list[T]:
+    async def scalars[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> list[T]:
         """queryの結果を全件取得する。
 
         Args:
@@ -232,7 +229,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         return list((await cls.session().execute(query)).scalars().all())
 
     @classmethod
-    async def one(cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT]:
+    async def one[TT: tuple](cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT]:
         """queryの結果を1件取得する。
 
         Args:
@@ -249,7 +246,9 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         return (await cls.session().execute(query)).one()
 
     @classmethod
-    async def one_or_none(cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT] | None:
+    async def one_or_none[TT: tuple](
+        cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]
+    ) -> sqlalchemy.Row[TT] | None:
         """queryの結果を0件または1件取得する。
 
         Args:
@@ -265,7 +264,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         return (await cls.session().execute(query)).one_or_none()
 
     @classmethod
-    async def all(cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> list[sqlalchemy.Row[TT]]:
+    async def all[TT: tuple](cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> list[sqlalchemy.Row[TT]]:
         """queryの結果を全件取得する。
 
         Args:

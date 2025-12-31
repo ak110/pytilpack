@@ -19,9 +19,6 @@ import pytilpack.paginator
 
 logger = logging.getLogger(__name__)
 
-T = typing.TypeVar("T")
-TT = typing.TypeVar("TT", bound=tuple)
-
 
 def run_sync_with_session[**P, R](
     func: "typing.Callable[typing.Concatenate[type[SyncMixin], P], R]",
@@ -41,8 +38,10 @@ def run_sync_with_session[**P, R](
     @functools.wraps(func)
     async def wrapper(cls: type[SyncMixin], *args: P.args, **kwargs: P.kwargs) -> R:
         def _impl() -> R:
-            with cls.session_scope():
-                return func(cls, *args, **kwargs)
+            with cls.session_scope() as session:
+                result = func(cls, *args, **kwargs)
+                session.commit()
+                return result
 
         return await asyncio.to_thread(_impl)
 
@@ -227,7 +226,7 @@ class SyncMixin:
         )
 
     @classmethod
-    def scalar_one(cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T:
+    def scalar_one[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T:
         """queryの結果を1件取得する。
 
         Args:
@@ -244,7 +243,7 @@ class SyncMixin:
         return cls.session().execute(query).scalar_one()
 
     @classmethod
-    def scalar_one_or_none(cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T | None:
+    def scalar_one_or_none[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T | None:
         """queryの結果を0件または1件取得する。
 
         Args:
@@ -260,7 +259,7 @@ class SyncMixin:
         return cls.session().execute(query).scalar_one_or_none()
 
     @classmethod
-    def scalars(cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> list[T]:
+    def scalars[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> list[T]:
         """queryの結果を全件取得する。
 
         Args:
@@ -273,7 +272,7 @@ class SyncMixin:
         return list(cls.session().execute(query).scalars().all())
 
     @classmethod
-    def one(cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT]:
+    def one[TT: tuple](cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT]:
         """queryの結果を1件取得する。
 
         Args:
@@ -290,7 +289,7 @@ class SyncMixin:
         return cls.session().execute(query).one()
 
     @classmethod
-    def one_or_none(cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT] | None:
+    def one_or_none[TT: tuple](cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT] | None:
         """queryの結果を0件または1件取得する。
 
         Args:
@@ -306,7 +305,7 @@ class SyncMixin:
         return cls.session().execute(query).one_or_none()
 
     @classmethod
-    def all(cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> list[sqlalchemy.Row[TT]]:
+    def all[TT: tuple](cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> list[sqlalchemy.Row[TT]]:
         """queryの結果を全件取得する。
 
         Args:
@@ -376,32 +375,34 @@ class SyncMixin:
         return await run_sync_with_session(cls.count.__func__)(cls, query)  # type: ignore[attr-defined]
 
     @classmethod
-    async def ascalar_one(cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T:
+    async def ascalar_one[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T:
         """queryの結果を1件取得する。(非同期版)"""
         return await run_sync_with_session(cls.scalar_one.__func__)(cls, query)  # type: ignore[attr-defined]
 
     @classmethod
-    async def ascalar_one_or_none(cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T | None:
+    async def ascalar_one_or_none[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T | None:
         """queryの結果を0件または1件取得する。(非同期版)"""
         return await run_sync_with_session(cls.scalar_one_or_none.__func__)(cls, query)  # type: ignore[attr-defined]
 
     @classmethod
-    async def ascalars(cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> list[T]:
+    async def ascalars[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> list[T]:
         """queryの結果を全件取得する。(非同期版)"""
         return await run_sync_with_session(cls.scalars.__func__)(cls, query)  # type: ignore[attr-defined]
 
     @classmethod
-    async def aone(cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT]:
+    async def aone[TT: tuple](cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT]:
         """queryの結果を1件取得する。(非同期版)"""
         return await run_sync_with_session(cls.one.__func__)(cls, query)  # type: ignore[attr-defined]
 
     @classmethod
-    async def aone_or_none(cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT] | None:
+    async def aone_or_none[TT: tuple](
+        cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]
+    ) -> sqlalchemy.Row[TT] | None:
         """queryの結果を0件または1件取得する。(非同期版)"""
         return await run_sync_with_session(cls.one_or_none.__func__)(cls, query)  # type: ignore[attr-defined]
 
     @classmethod
-    async def aall(cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> list[sqlalchemy.Row[TT]]:
+    async def aall[TT: tuple](cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> list[sqlalchemy.Row[TT]]:
         """queryの結果を全件取得する。(非同期版)"""
         return await run_sync_with_session(cls.all.__func__)(cls, query)  # type: ignore[attr-defined]
 

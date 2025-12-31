@@ -10,9 +10,6 @@ import typing
 
 import pytilpack.logging
 
-P = typing.ParamSpec("P")
-R = typing.TypeVar("R")
-
 CheckerType = typing.Callable[[], typing.Awaitable[None]]
 """ヘルスチェック関数の型。"""
 
@@ -45,7 +42,7 @@ class HealthCheckResult(typing.TypedDict):
     details: typing.NotRequired[dict[str, HealthCheckDetail]]
 
 
-def make_entry(
+def make_entry[**P, R](
     name: str,
     func: (
         typing.Callable[P, None]

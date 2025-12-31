@@ -4,8 +4,6 @@ import dataclasses
 import pathlib
 import typing
 
-T = typing.TypeVar("T")
-
 
 @dataclasses.dataclass
 class CacheEntry[T]:

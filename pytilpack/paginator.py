@@ -2,8 +2,6 @@
 
 import typing
 
-T = typing.TypeVar("T")
-
 
 class Paginator[T]:
     """ページング用簡易ヘルパ
