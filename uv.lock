@@ -2357,7 +2357,7 @@ provides-extras = ["all", "anthropic", "bleach", "fastapi", "flask", "markdown",
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "aiosqlite", specifier = ">=0.21.0,<0.22" },
+    { name = "aiosqlite", specifier = "<0.22" },
     { name = "litellm", specifier = ">=1.72.4" },
     { name = "pre-commit", specifier = ">=4.2.0" },
     { name = "pyfltr", git = "https://github.com/ak110/pyfltr.git" },

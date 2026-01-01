@@ -110,7 +110,7 @@ mcp = [
 
 [dependency-groups]
 dev = [
-    "aiosqlite>=0.21.0,<0.22",  # 0.22系はなんかバグってる？ pytestが終わらなくなる
+    "aiosqlite<0.22",  # 0.22系はなんかバグってる？ pytestが終わらなくなる
     "litellm>=1.72.4",
     "pre-commit>=4.2.0",
     "pyfltr>=1.10.0",

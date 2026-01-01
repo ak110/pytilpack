@@ -24,6 +24,7 @@ class AnonymousUser(UserMixin):
     """未ログインの匿名ユーザー。"""
 
     @property
+    @typing.override
     def is_authenticated(self) -> bool:
         """認証済みかどうか。"""
         return False
@@ -94,6 +95,8 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
 
     async def ensure_user_loaded(self) -> None:
         """ユーザーをロードする。async版のuser_loaderを使っている場合はこれを呼び出す必要あり。"""
+        if quart.g.quart_auth_current_user is not None:
+            return
         assert quart.g.quart_auth_current_user is None
         assert self.auser_loader_func is not None
         auth_id = quart_auth.current_user.auth_id
