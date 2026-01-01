@@ -8,8 +8,6 @@ import typing
 import quart
 import quart_auth
 
-import pytilpack.asyncio
-
 logger = logging.getLogger(__name__)
 
 
@@ -94,6 +92,27 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
             self.auser_loader_func = None
         return user_loader
 
+    async def ensure_user_loaded(self) -> None:
+        """ユーザーをロードする。async版のuser_loaderを使っている場合はこれを呼び出す必要あり。"""
+        assert quart.g.quart_auth_current_user is None
+        assert self.auser_loader_func is not None
+        auth_id = quart_auth.current_user.auth_id
+        if auth_id is None:
+            # 未認証の場合はAnonymousUserにする
+            quart.g.quart_auth_current_user = AnonymousUser()
+        else:
+            # 認証済みの場合はauser_loader_funcを実行する
+            assert auth_id is not None
+            quart.g.quart_auth_current_user = await self.auser_loader_func(auth_id)
+            if quart.g.quart_auth_current_user is None:
+                # ユーザーが見つからない場合はAnonymousUserにする
+                logger.error(f"ユーザーロードエラー: {auth_id}")
+                quart.g.quart_auth_current_user = AnonymousUser()
+                quart_auth.logout_user()
+            else:
+                # ログイン状態を更新する
+                quart_auth.renew_login()
+
     @property
     def current_user(self) -> UserType | AnonymousUser:
         """現在のユーザーを取得する。"""
@@ -102,7 +121,7 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
             return quart.g.quart_auth_current_user
 
         # ユーザーの読み込みを行う
-        assert self.user_loader_func is not None or self.auser_loader_func is not None
+        assert self.user_loader_func is not None
         auth_id = quart_auth.current_user.auth_id
         if auth_id is None:
             # 未認証の場合はAnonymousUserにする
@@ -110,11 +129,7 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
         else:
             # 認証済みの場合はuser_loader_funcを実行する
             assert auth_id is not None
-            if self.auser_loader_func is not None:
-                quart.g.quart_auth_current_user = pytilpack.asyncio.run(self.auser_loader_func(auth_id))
-            else:
-                assert self.user_loader_func is not None
-                quart.g.quart_auth_current_user = self.user_loader_func(auth_id)
+            quart.g.quart_auth_current_user = self.user_loader_func(auth_id)
             if quart.g.quart_auth_current_user is None:
                 # ユーザーが見つからない場合はAnonymousUserにする
                 logger.error(f"ユーザーロードエラー: {auth_id}")
@@ -157,6 +172,11 @@ def login_user(auth_id: str, remember: bool = True, set_cookie: bool = True) -> 
 def logout_user() -> None:
     """ログアウト処理。"""
     quart_auth.logout_user()
+
+
+async def ensure_user_loaded() -> None:
+    """ユーザーをロードする。async版のuser_loaderを使っている場合はこれを呼び出す必要あり。"""
+    await _find_extension().ensure_user_loaded()
 
 
 def is_authenticated() -> bool:
