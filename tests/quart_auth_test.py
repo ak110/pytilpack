@@ -1,5 +1,6 @@
 """Quart-Auth関連のユーティリティのテスト。"""
 
+import asyncio
 import typing
 
 import pytest
@@ -260,3 +261,127 @@ async def test_login_user_set_cookie_false(
         # 非公開ページにもアクセスできない
         response = await client.get("/private")
         assert response.status_code == 401
+
+
+@pytest.fixture(name="app_async", scope="module")
+def _app_async() -> quart.Quart:
+    """非同期user_loaderを使用するテスト用アプリケーション。"""
+    app = quart.Quart(__name__)
+    app.secret_key = "secret"  # 暗号化に必要
+
+    # Quart-Authの設定
+    auth_manager = pytilpack.quart_auth.QuartAuth[User]()
+    auth_manager.init_app(app)
+
+    # ユーザーローダーの設定(非同期版)
+    users = {"user1": User("async test user"), "admin1": User("async admin user", is_admin=True)}
+
+    @auth_manager.user_loader
+    async def load_user(user_id: str) -> User | None:
+        # 非同期処理をシミュレート
+        await asyncio.sleep(0.01)
+        return users.get(user_id)
+
+    assert auth_manager.auser_loader_func is not None
+
+    # テスト用ルート
+    @app.route("/public")
+    async def public():
+        return "public page"
+
+    @app.route("/login")
+    async def login():
+        # ログイン処理
+        pytilpack.quart_auth.login_user("user1")
+        return "logged in"
+
+    @app.route("/user")
+    async def user():
+        return await quart.render_template_string(
+            "User: {{ current_user.name if current_user.is_authenticated else '<anonymous>' }}"
+        )
+
+    @app.route("/private")
+    @quart_auth.login_required
+    async def private():
+        return "private page"
+
+    @app.route("/admin")
+    @pytilpack.quart_auth.admin_only
+    async def admin():
+        return "admin page"
+
+    @app.route("/login_admin")
+    async def login_admin():
+        # 管理者ログイン処理
+        pytilpack.quart_auth.login_user("admin1")
+        return "admin logged in"
+
+    return app
+
+
+@pytest_asyncio.fixture(name="client_async", scope="function")
+async def _client_async(
+    app_async: quart.Quart,
+) -> typing.AsyncGenerator[quart.typing.TestClientProtocol, None]:
+    """非同期user_loader用テスト用クライアント。"""
+    async with app_async.test_client() as client:
+        yield client
+
+
+@pytest.mark.asyncio
+async def test_async_user_loader_anonymous(client_async: quart.typing.TestClientProtocol) -> None:
+    """非同期user_loader: 未ログイン状態ではcurrent_userが匿名ユーザーになる。"""
+    response = await client_async.get("/user")
+    text = await response.get_data(as_text=True)
+    assert text == "User: &lt;anonymous&gt;"
+
+
+@pytest.mark.asyncio
+async def test_async_user_loader_authenticated(
+    client_async: quart.typing.TestClientProtocol,
+) -> None:
+    """非同期user_loader: ログイン状態ではcurrent_userが認証済みユーザーになる。"""
+    async with client_async.session_transaction():
+        # ログイン
+        response = await client_async.get("/login")
+        assert response.status_code == 200
+        assert await response.get_data(as_text=True) == "logged in"
+
+        response = await client_async.get("/user")
+        text = await response.get_data(as_text=True)
+        assert text == "User: async test user"
+
+
+@pytest.mark.asyncio
+async def test_async_user_loader_private_access(
+    client_async: quart.typing.TestClientProtocol,
+) -> None:
+    """非同期user_loader: ログイン状態で非公開ページにアクセスできる。"""
+    async with client_async.session_transaction():
+        # ログイン
+        response = await client_async.get("/login")
+        assert response.status_code == 200
+
+        # 非公開ページにアクセス
+        response = await client_async.get("/private")
+        assert response.status_code == 200
+        assert await response.get_data(as_text=True) == "private page"
+
+
+@pytest.mark.asyncio
+async def test_async_user_loader_admin_only(client_async: quart.typing.TestClientProtocol) -> None:
+    """非同期user_loader: 管理者ユーザーでadmin_onlyデコレータ付きページにアクセスできる。"""
+    # 未認証状態では403エラー
+    response = await client_async.get("/admin")
+    assert response.status_code == 403
+
+    # 管理者ユーザーでログイン
+    async with client_async.session_transaction():
+        response = await client_async.get("/login_admin")
+        assert response.status_code == 200
+
+        # 管理者専用ページにアクセス
+        response = await client_async.get("/admin")
+        assert response.status_code == 200
+        assert await response.get_data(as_text=True) == "admin page"

@@ -8,6 +8,8 @@ import typing
 import quart
 import quart_auth
 
+import pytilpack.asyncio
+
 logger = logging.getLogger(__name__)
 
 
@@ -41,7 +43,7 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.user_loader_func: typing.Callable[[str], UserType | None] | None = None
-        self.auser_loader_func: typing.Callable[[str], typing.Awaitable[UserType | None]] | None = None
+        self.auser_loader_func: typing.Callable[[str], typing.Coroutine[typing.Any, typing.Any, UserType | None]] | None = None
 
     @typing.override
     def init_app(self, app: quart.Quart) -> None:
@@ -54,20 +56,6 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
     async def _before_request(self) -> None:
         """リクエスト前処理。"""
         quart.g.quart_auth_current_user = None
-        # 非同期ユーザーローダーが設定されている場合はここで読んでしまう
-        if self.auser_loader_func is not None:
-            auth_id = quart_auth.current_user.auth_id
-            if auth_id is None:
-                quart.g.quart_auth_current_user = AnonymousUser()
-            else:
-                user = await self.auser_loader_func(auth_id)
-                if user is None:
-                    logger.error(f"ユーザーロードエラー: {auth_id}")
-                    quart.g.quart_auth_current_user = AnonymousUser()
-                    quart_auth.logout_user()
-                else:
-                    quart.g.quart_auth_current_user = user
-                    quart_auth.renew_login()
 
     @typing.override
     def _template_context(self) -> dict[str, quart_auth.AuthUser]:
@@ -83,17 +71,24 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
 
     @typing.overload
     def user_loader(
-        self, user_loader: typing.Callable[[str], typing.Awaitable[UserType | None]]
-    ) -> typing.Callable[[str], typing.Awaitable[UserType | None]]:
+        self, user_loader: typing.Callable[[str], typing.Coroutine[typing.Any, typing.Any, UserType | None]]
+    ) -> typing.Callable[[str], typing.Coroutine[typing.Any, typing.Any, UserType | None]]:
         pass
 
     def user_loader(
-        self, user_loader: typing.Callable[[str], UserType | None] | typing.Callable[[str], typing.Awaitable[UserType | None]]
-    ) -> typing.Callable[[str], UserType | None] | typing.Callable[[str], typing.Awaitable[UserType | None]]:
+        self,
+        user_loader: typing.Callable[[str], UserType | None]
+        | typing.Callable[[str], typing.Coroutine[typing.Any, typing.Any, UserType | None]],
+    ) -> (
+        typing.Callable[[str], UserType | None]
+        | typing.Callable[[str], typing.Coroutine[typing.Any, typing.Any, UserType | None]]
+    ):
         """ユーザーローダーのデコレータ。"""
         if inspect.iscoroutinefunction(user_loader):
             self.user_loader_func = None
-            self.auser_loader_func = typing.cast(typing.Callable[[str], typing.Awaitable[UserType | None]], user_loader)
+            self.auser_loader_func = typing.cast(
+                typing.Callable[[str], typing.Coroutine[typing.Any, typing.Any, UserType | None]], user_loader
+            )
         else:
             self.user_loader_func = typing.cast(typing.Callable[[str], UserType | None], user_loader)
             self.auser_loader_func = None
@@ -107,7 +102,7 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
             return quart.g.quart_auth_current_user
 
         # ユーザーの読み込みを行う
-        assert self.user_loader_func is not None
+        assert self.user_loader_func is not None or self.auser_loader_func is not None
         auth_id = quart_auth.current_user.auth_id
         if auth_id is None:
             # 未認証の場合はAnonymousUserにする
@@ -115,7 +110,11 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
         else:
             # 認証済みの場合はuser_loader_funcを実行する
             assert auth_id is not None
-            quart.g.quart_auth_current_user = self.user_loader_func(auth_id)
+            if self.auser_loader_func is not None:
+                quart.g.quart_auth_current_user = pytilpack.asyncio.run(self.auser_loader_func(auth_id))
+            else:
+                assert self.user_loader_func is not None
+                quart.g.quart_auth_current_user = self.user_loader_func(auth_id)
             if quart.g.quart_auth_current_user is None:
                 # ユーザーが見つからない場合はAnonymousUserにする
                 logger.error(f"ユーザーロードエラー: {auth_id}")
