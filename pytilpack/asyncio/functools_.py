@@ -36,6 +36,21 @@ def run_sync[**P, R](
     return wrapper
 
 
+def run_in_thread[**P, R](
+    func: typing.Callable[P, typing.Coroutine[typing.Any, typing.Any, R]],
+) -> typing.Callable[P, typing.Awaitable[R]]:
+    """非同期関数を非同期に実行するデコレーター。
+
+    awaitも使うけどブロッキング処理も含まれるような関数を何とかするためのもの。
+    """
+
+    @functools.wraps(func)
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        return await asyncio.to_thread(asyncio.run, func(*args, **kwargs))
+
+    return wrapper
+
+
 @contextlib.asynccontextmanager
 async def acquire_with_timeout(lock: asyncio.Lock | asyncio.Semaphore, timeout: float) -> typing.AsyncGenerator[bool, None]:
     """ロックを取得し、タイムアウト時間内に取得できなかった場合はFalseを返す。

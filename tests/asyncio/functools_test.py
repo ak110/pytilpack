@@ -1,6 +1,7 @@
 """テストコード。"""
 
 import asyncio
+import time
 
 import pytest
 
@@ -48,3 +49,21 @@ def _sync_test_run():
 async def test_run_async():
     for _ in range(3):
         assert pytilpack.asyncio.run(async_func()) == "Done"
+
+
+@pytest.mark.asyncio
+async def test_run_in_thread():
+    """pytilpack.asyncio.run_in_threadのテスト。"""
+
+    @pytilpack.asyncio.run_in_thread
+    async def async_func_with_blocking(a: int, k: int) -> str:
+        # 非同期処理
+        await asyncio.sleep(0.01)
+        # ブロッキング処理
+        time.sleep(0.01)
+        result = a + k
+        return str(result)
+
+    # 位置引数とキーワード引数のテスト
+    assert await async_func_with_blocking(1, k=2) == "3"
+    assert await async_func_with_blocking(10, k=20) == "30"
