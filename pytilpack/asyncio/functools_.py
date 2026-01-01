@@ -3,6 +3,7 @@
 import asyncio
 import concurrent.futures
 import contextlib
+import contextvars
 import functools
 import inspect
 import logging
@@ -96,6 +97,7 @@ def run[T](coro: typing.Coroutine[typing.Any, typing.Any, T]) -> T:
 
     # 現在のスレッドでイベントループが実行されている場合
     # 別スレッド・別イベントループで実行する
+    ctx = contextvars.copy_context()
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-        future = pool.submit(lambda: asyncio.run(coro))
+        future = pool.submit(ctx.run, lambda: asyncio.run(coro))
         return future.result()
