@@ -284,6 +284,11 @@ def _app_async() -> quart.Quart:
 
     assert auth_manager.auser_loader_func is not None
 
+    @app.before_request
+    async def before_request() -> None:
+        # リクエスト前にユーザーをロード
+        await pytilpack.quart_auth.ensure_user_loaded()
+
     # テスト用ルート
     @app.route("/public")
     async def public():
