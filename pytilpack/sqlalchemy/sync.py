@@ -22,34 +22,6 @@ import pytilpack.paginator
 logger = logging.getLogger(__name__)
 
 
-def run_sync_with_session[**P, R](
-    func: "typing.Callable[typing.Concatenate[type[SyncMixin], P], R]",
-) -> "typing.Callable[typing.Concatenate[type[SyncMixin], P], typing.Awaitable[R]]":
-    """同期関数を非同期に実行し、スレッド内でセッションを管理するデコレーター。
-
-    別スレッドで実行される関数内で自動的にセッションスコープを作成する。
-    各呼び出しは独立したセッション・トランザクションを持つ。
-
-    Args:
-        func: デコレート対象の同期関数
-
-    Returns:
-        非同期版の関数
-    """
-
-    @functools.wraps(func)
-    async def wrapper(cls: type[SyncMixin], *args: P.args, **kwargs: P.kwargs) -> R:
-        def _impl() -> R:
-            with cls.session_scope() as session:
-                result = func(cls, *args, **kwargs)
-                session.commit()
-                return result
-
-        return await asyncio.to_thread(_impl)
-
-    return wrapper
-
-
 class SyncMixin:
     """モデルのベースクラス。SQLAlchemy 2.0スタイル・同期前提。
 
@@ -586,3 +558,31 @@ def safe_close(
     except Exception:
         if log_level is not None:
             logger.log(log_level, "セッションクローズ失敗", exc_info=True)
+
+
+def run_sync_with_session[**P, R](
+    func: "typing.Callable[typing.Concatenate[type[SyncMixin], P], R]",
+) -> "typing.Callable[typing.Concatenate[type[SyncMixin], P], typing.Awaitable[R]]":
+    """同期関数を非同期に実行し、スレッド内でセッションを管理するデコレーター。
+
+    別スレッドで実行される関数内で自動的にセッションスコープを作成する。
+    各呼び出しは独立したセッション・トランザクションを持つ。
+
+    Args:
+        func: デコレート対象の同期関数
+
+    Returns:
+        非同期版の関数
+    """
+
+    @functools.wraps(func)
+    async def wrapper(cls: type[SyncMixin], *args: P.args, **kwargs: P.kwargs) -> R:
+        def _impl() -> R:
+            with cls.session_scope() as session:
+                result = func(cls, *args, **kwargs)
+                session.commit()
+                return result
+
+        return await asyncio.to_thread(_impl)
+
+    return wrapper

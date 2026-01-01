@@ -4,6 +4,7 @@ import asyncio
 import contextlib
 import contextvars
 import datetime
+import functools
 import logging
 import secrets
 import threading
@@ -475,3 +476,26 @@ async def asafe_close(session: sqlalchemy.ext.asyncio.AsyncSession, log_level: i
     except Exception:
         if log_level is not None:
             logger.log(log_level, "セッションクローズ失敗", exc_info=True)
+
+
+def run_with_session[**P, R](
+    func: typing.Callable[P, typing.Awaitable[R]],
+) -> typing.Callable[P, R]:
+    """非同期関数をセッション付きで同期実行するデコレーター。
+
+    Args:
+        func: デコレート対象の非同期関数
+
+    Returns:
+        非同期版の関数
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        async def _impl() -> R:
+            async with AsyncMixin.session_scope():
+                return await func(*args, **kwargs)
+
+        return pytilpack.asyncio.run(_impl())
+
+    return wrapper
