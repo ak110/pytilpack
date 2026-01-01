@@ -41,6 +41,7 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.user_loader_func: typing.Callable[[str], UserType | None] | None = None
+        self.auser_loader_func: typing.Callable[[str], typing.Awaitable[UserType | None]] | None = None
 
     @typing.override
     def init_app(self, app: quart.Quart) -> None:
@@ -53,6 +54,20 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
     async def _before_request(self) -> None:
         """リクエスト前処理。"""
         quart.g.quart_auth_current_user = None
+        # 非同期ユーザーローダーが設定されている場合はここで読んでしまう
+        if self.auser_loader_func is not None:
+            auth_id = quart_auth.current_user.auth_id
+            if auth_id is None:
+                quart.g.quart_auth_current_user = AnonymousUser()
+            else:
+                user = await self.auser_loader_func(auth_id)
+                if user is None:
+                    logger.error(f"ユーザーロードエラー: {auth_id}")
+                    quart.g.quart_auth_current_user = AnonymousUser()
+                    quart_auth.logout_user()
+                else:
+                    quart.g.quart_auth_current_user = user
+                    quart_auth.renew_login()
 
     @typing.override
     def _template_context(self) -> dict[str, quart_auth.AuthUser]:
@@ -62,9 +77,26 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
         template_context["current_user"] = self.current_user  # type: ignore[assignment]
         return template_context
 
+    @typing.overload
     def user_loader(self, user_loader: typing.Callable[[str], UserType | None]) -> typing.Callable[[str], UserType | None]:
+        pass
+
+    @typing.overload
+    def user_loader(
+        self, user_loader: typing.Callable[[str], typing.Awaitable[UserType | None]]
+    ) -> typing.Callable[[str], typing.Awaitable[UserType | None]]:
+        pass
+
+    def user_loader(
+        self, user_loader: typing.Callable[[str], UserType | None] | typing.Callable[[str], typing.Awaitable[UserType | None]]
+    ) -> typing.Callable[[str], UserType | None] | typing.Callable[[str], typing.Awaitable[UserType | None]]:
         """ユーザーローダーのデコレータ。"""
-        self.user_loader_func = user_loader
+        if inspect.iscoroutinefunction(user_loader):
+            self.user_loader_func = None
+            self.auser_loader_func = typing.cast(typing.Callable[[str], typing.Awaitable[UserType | None]], user_loader)
+        else:
+            self.user_loader_func = typing.cast(typing.Callable[[str], UserType | None], user_loader)
+            self.auser_loader_func = None
         return user_loader
 
     @property
