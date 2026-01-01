@@ -1,7 +1,7 @@
 """SQLAlchemy用のユーティリティ集。"""
 
 # 非同期版
-from pytilpack.sqlalchemy.async_ import AsyncMixin, AsyncUniqueIDMixin, asafe_close, await_for_connection, run_with_session
+from pytilpack.sqlalchemy.async_ import AsyncMixin, AsyncUniqueIDMixin, asafe_close, await_for_connection
 
 # ユーティリティ
 from pytilpack.sqlalchemy.describe import describe, describe_table, get_class_by_table
@@ -24,7 +24,6 @@ __all__ = [
     "AsyncUniqueIDMixin",
     "asafe_close",
     "await_for_connection",
-    "run_with_session",
     # 同期版
     "SyncMixin",
     "SyncUniqueIDMixin",

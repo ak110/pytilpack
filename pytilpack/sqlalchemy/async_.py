@@ -4,7 +4,6 @@ import asyncio
 import contextlib
 import contextvars
 import datetime
-import functools
 import logging
 import secrets
 import threading
@@ -406,6 +405,25 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
             if not exclude_none or getattr(self, column_name) is not None
         }
 
+    @classmethod
+    def run_with_session[**P, R](cls, func: typing.Callable[P, typing.Awaitable[R]], *args: P.args, **kwargs: P.kwargs) -> R:
+        """非同期関数をセッション付きで同期実行する関数。
+
+        Args:
+            func: デコレート対象の非同期関数
+            *args: 非同期関数への引数
+            **kwargs: 非同期関数へのキーワード引数
+
+        Returns:
+            非同期関数の戻り値
+        """
+
+        async def wrapper() -> R:
+            async with cls.session_scope():
+                return await func(*args, **kwargs)
+
+        return pytilpack.asyncio.run(wrapper())
+
 
 class AsyncUniqueIDMixin:
     """self.unique_idを持つテーブルクラスに便利メソッドを生やすmixin。"""
@@ -476,26 +494,3 @@ async def asafe_close(session: sqlalchemy.ext.asyncio.AsyncSession, log_level: i
     except Exception:
         if log_level is not None:
             logger.log(log_level, "セッションクローズ失敗", exc_info=True)
-
-
-def run_with_session[**P, R](
-    func: typing.Callable[P, typing.Awaitable[R]],
-) -> typing.Callable[P, R]:
-    """非同期関数をセッション付きで同期実行するデコレーター。
-
-    Args:
-        func: デコレート対象の非同期関数
-
-    Returns:
-        非同期版の関数
-    """
-
-    @functools.wraps(func)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-        async def _impl() -> R:
-            async with AsyncMixin.session_scope():
-                return await func(*args, **kwargs)
-
-        return pytilpack.asyncio.run(_impl())
-
-    return wrapper
