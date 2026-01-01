@@ -170,6 +170,8 @@ def login_user(auth_id: str, remember: bool = True, set_cookie: bool = True) -> 
         # 無理やりAction.PASSのまま設定する
         assert user.action == quart_auth.Action.PASS
         _find_extension().login_user(user)
+    # ユーザーは再ロード要
+    quart.g.quart_auth_current_user = None
 
 
 def logout_user() -> None:
