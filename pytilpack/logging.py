@@ -9,6 +9,7 @@ import hashlib
 import io
 import json
 import logging
+import logging.handlers
 import pathlib
 import time
 import typing
@@ -42,11 +43,23 @@ def file_handler(
     encoding: str = "utf-8",
     level: int | None = logging.DEBUG,
     format: str | None = "[%(levelname)-5s] %(message)s",
+    max_bytes: int | None = None,
+    when: str | None = None,
+    backup_count: int = 5,
 ) -> logging.Handler:
     """ファイル出力用のハンドラを作成。"""
     log_path = pathlib.Path(log_path)
     log_path.parent.mkdir(parents=True, exist_ok=True)
-    handler = logging.FileHandler(log_path, mode=mode, encoding=encoding)
+    handler: logging.Handler
+    if max_bytes is not None:
+        assert when is None, "max_bytesとwhenは同時に指定できません。"
+        handler = logging.handlers.RotatingFileHandler(
+            log_path, mode=mode, encoding=encoding, maxBytes=max_bytes, backupCount=backup_count
+        )
+    elif when is not None:
+        handler = logging.handlers.TimedRotatingFileHandler(log_path, when=when, backupCount=backup_count, encoding=encoding)
+    else:
+        handler = logging.FileHandler(log_path, mode=mode, encoding=encoding)
     if level is not None:
         handler.setLevel(level)
     if format is not None:
