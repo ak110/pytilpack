@@ -42,12 +42,15 @@ def run_in_thread[**P, R](
 ) -> typing.Callable[P, typing.Awaitable[R]]:
     """非同期関数を非同期に実行するデコレーター。
 
-    awaitも使うけどブロッキング処理も含まれるような関数を何とかするためのもの。
+    awaitも使うけどブロッキング処理も含まれるような関数を雑に何とかするためのもの。
     """
 
     @functools.wraps(func)
     async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-        return await asyncio.to_thread(asyncio.run, func(*args, **kwargs))
+        ctx = contextvars.copy_context()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(ctx.run, lambda: asyncio.run(func(*args, **kwargs)))
+            return await asyncio.wrap_future(future)
 
     return wrapper
 
