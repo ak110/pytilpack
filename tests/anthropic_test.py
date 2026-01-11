@@ -1,5 +1,8 @@
 """テストコード。"""
 
+import json
+import pathlib
+
 import anthropic
 import anthropic.types
 
@@ -508,3 +511,41 @@ def test_gather_events_mixed_blocks():
     assert actual.content[2].id == "toolu_999"
     assert actual.content[2].name == "search"
     assert actual.content[2].input == {"query": "test"}
+
+
+def test_gather_events_from_files() -> None:
+    """gather_eventsのテスト（JSONLファイルとJSONファイルを使用）。"""
+    # テストデータディレクトリのパス
+    data_dir = pathlib.Path(__file__).parent / "data"
+    events_file = data_dir / "messages-events.jsonl"
+    expected_file = data_dir / "messages-events-response.json"
+
+    # JSONLファイルからイベントを読み込み
+    events: list[anthropic.types.RawMessageStreamEvent] = []
+    for line in events_file.read_text(encoding="utf-8").strip().splitlines():
+        event_dict = json.loads(line)
+        # 各イベントのtypeに応じて適切なクラスにパース
+        event_type = event_dict.get("type")
+        if event_type == "message_start":
+            events.append(anthropic.types.RawMessageStartEvent.model_validate(event_dict))
+        elif event_type == "content_block_start":
+            events.append(anthropic.types.RawContentBlockStartEvent.model_validate(event_dict))
+        elif event_type == "content_block_delta":
+            events.append(anthropic.types.RawContentBlockDeltaEvent.model_validate(event_dict))
+        elif event_type == "content_block_stop":
+            events.append(anthropic.types.RawContentBlockStopEvent.model_validate(event_dict))
+        elif event_type == "message_delta":
+            events.append(anthropic.types.RawMessageDeltaEvent.model_validate(event_dict))
+        elif event_type == "message_stop":
+            events.append(anthropic.types.RawMessageStopEvent.model_validate(event_dict))
+        else:
+            raise ValueError(f"Unknown event type: {event_dict}")
+
+    # gather_eventsを実行
+    actual = pytilpack.anthropic.gather_events(events, strict=True)
+
+    # 期待される結果を読み込み
+    expected_dict = json.loads(expected_file.read_text(encoding="utf-8"))
+
+    # 結果を比較
+    assert actual.model_dump() == expected_dict

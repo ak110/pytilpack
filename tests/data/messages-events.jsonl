@@ -1,0 +1,116 @@
+{"message":{"id":"2ec551bf-6401-418e-a2c8-7851328ad4a8","content":[],"model":"jp.anthropic.claude-sonnet-4-5-20250929-v1:0","role":"assistant","type":"message","usage":{"input_tokens":0,"output_tokens":0}},"type":"message_start"}
+{"content_block":{"text":"","type":"text"},"index":0,"type":"content_block_start"}
+{"delta":{"text":"`","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"test","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"_gather_events_from_files","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"`","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"関数を","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"確","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"認しました。現","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"在、","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"未","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"知","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"のイベントタイプの","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"時","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"に`event","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"_type`","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"だ","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"けを","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"表","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"示してい","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"ますが、`","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"event","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"_dict","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"`全","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"体を確","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"認でき","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"るように修","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"delta":{"text":"正します。","type":"text_delta"},"index":0,"type":"content_block_delta"}
+{"index":0,"type":"content_block_stop"}
+{"content_block":{"id":"tooluse_zIfNB5eBQDWlFEoT1z-jKw","input":{},"name":"Edit","type":"tool_use"},"index":1,"type":"content_block_start"}
+{"delta":{"partial_json":"{\"file_","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"path\": \"/","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"home/aki/pyt","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"ilpack/","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"te","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"sts/anthr","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"opic_","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"test.py\"","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":", \"","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"old_stri","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"ng\": \"      ","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"  el","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"if ev","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"ent_type","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":" ==","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":" \\\"mes","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"sage_","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"stop\\\"","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":":\\n ","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"    ","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"     ","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"  events.a","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"ppend","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"(anthropic.t","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"ypes.","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"RawMe","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"ssageStopEv","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"ent.mode","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"l_v","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"alid","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"ate(even","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"t_d","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"ict))\\n     ","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"   e","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"lse:\\n     ","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"       rais","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"e Valu","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"eError(f\\\"U","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"nknown eve","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"nt type: {","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"ev","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"ent_t","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"ype","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"}\\","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"\")","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"\"","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":", \"n","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"ew_strin","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"g\": \" ","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"       el","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"if eve","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"nt_","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"type ==","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":" \\\"mess","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"age_stop\\\":\\","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"n           ","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":" events.","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"appen","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"d(anthropic","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":".ty","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"pes.RawM","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"essageS","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"topEven","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"t.model_v","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"alidate(e","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"vent","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"_dict))\\n   ","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"   ","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"  else:","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"\\n     ","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"      ","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":" raise Value","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"Error","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"(f\\\"Unkn","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"own e","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"vent type: ","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"{eve","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"nt_type},","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":" event_","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"dict:","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":" {event_","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"dict}\\","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"delta":{"partial_json":"\")\"}","type":"input_json_delta"},"index":1,"type":"content_block_delta"}
+{"index":1,"type":"content_block_stop"}
+{"delta":{"stop_reason":"tool_use","stop_sequence":null},"type":"message_delta","usage":{"cache_creation_input_tokens":100,"cache_read_input_tokens":31033,"input_tokens":7967,"output_tokens":294}}
+{"type":"message_stop"}
