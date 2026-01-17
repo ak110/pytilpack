@@ -180,7 +180,7 @@ def retry[**P, R](
                             await asyncio.sleep(retry_after)
                             retry_after_total += retry_after
 
-            return async_wrapper  # type: ignore[return-value]
+            return typing.cast(typing.Callable[P, R], async_wrapper)
 
         else:
 
@@ -335,7 +335,7 @@ def warn_if_slow[**P, R](
                     )
                 return result
 
-            return async_wrapper  # type: ignore[return-value]
+            return typing.cast(typing.Callable[P, R], async_wrapper)
 
         else:
 

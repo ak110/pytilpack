@@ -359,3 +359,50 @@ def test_merge(dst, src, expected):
     """mergeのテスト。"""
     actual = pytilpack.python.merge(dst, src)
     assert actual == expected
+
+
+def test_deprecated():
+    """deprecatedのテスト。"""
+    import asyncio
+    import warnings
+
+    # sync関数のテスト
+    @pytilpack.python.deprecated()
+    def old_func(x: int) -> int:
+        return x * 2
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        result = old_func(5)
+        assert result == 10
+        assert len(w) == 1
+        assert issubclass(w[0].category, DeprecationWarning)
+        assert "old_func is deprecated." in str(w[0].message)
+
+    # reasonありのテスト
+    @pytilpack.python.deprecated(reason="Use new_func instead.")
+    def old_func2() -> str:
+        return "old"
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        result2 = old_func2()
+        assert result2 == "old"
+        assert len(w) == 1
+        assert "old_func2 is deprecated. Use new_func instead." in str(w[0].message)
+
+    # async関数のテスト
+    @pytilpack.python.deprecated()
+    async def old_async_func(x: int) -> int:
+        return x * 3
+
+    async def run_async():
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            result3 = await old_async_func(5)
+            assert result3 == 15
+            assert len(w) == 1
+            assert issubclass(w[0].category, DeprecationWarning)
+            assert "old_async_func is deprecated." in str(w[0].message)
+
+    asyncio.run(run_async())

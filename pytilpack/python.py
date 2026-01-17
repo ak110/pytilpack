@@ -4,10 +4,39 @@
 
 """
 
+import functools
 import inspect
 import re
 import threading
 import typing
+import warnings
+
+
+def deprecated[**P, R](reason: str | None = None) -> typing.Callable[[typing.Callable[P, R]], typing.Callable[P, R]]:
+    """DeprecationWarningを発生させるデコレーター。"""
+
+    def decorator(func: typing.Callable[P, R]) -> typing.Callable[P, R]:
+        message = f"{func.__name__} is deprecated."
+        if reason:
+            message += f" {reason}"
+
+        if inspect.iscoroutinefunction(func):
+
+            @functools.wraps(func)
+            async def async_wrapper(*args: P.args, **kwargs: P.kwargs):
+                warnings.warn(message, category=DeprecationWarning, stacklevel=2)
+                return await func(*args, **kwargs)
+
+            return typing.cast(typing.Callable[P, R], async_wrapper)
+
+        @functools.wraps(func)
+        def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            warnings.warn(message, category=DeprecationWarning, stacklevel=2)
+            return func(*args, **kwargs)
+
+        return sync_wrapper
+
+    return decorator
 
 
 @typing.overload

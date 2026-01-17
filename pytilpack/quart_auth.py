@@ -213,7 +213,7 @@ def admin_only[**P, R](func: typing.Callable[P, R]) -> typing.Callable[P, R]:
                 quart.abort(403)
             return await func(*args, **kwargs)
 
-        return async_wrapper  # type: ignore[return-value]
+        return typing.cast(typing.Callable[P, R], async_wrapper)
 
     else:
 
