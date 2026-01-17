@@ -3,7 +3,10 @@
 import asyncio
 import dataclasses
 import functools
+import logging
 import typing
+
+logger = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass
@@ -117,6 +120,9 @@ def generator(interval: float = 15):
                     try:
                         msg = next_task.result()
                     except StopAsyncIteration:
+                        break
+                    except asyncio.CancelledError:
+                        logger.debug("SSE切断")
                         break
                     yield str(msg)
                     last_msg_time = loop.time()
