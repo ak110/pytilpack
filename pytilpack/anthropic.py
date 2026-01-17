@@ -6,9 +6,12 @@ import typing
 
 import anthropic.types
 
+import pytilpack.python
+
 logger = logging.getLogger(__name__)
 
 
+@pytilpack.python.deprecated()
 def gather_events(
     chunks: typing.Iterable[anthropic.types.RawMessageStreamEvent], strict: bool = False
 ) -> anthropic.types.Message:

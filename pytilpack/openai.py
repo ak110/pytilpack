@@ -11,8 +11,6 @@ import openai.types.chat.chat_completion_message
 import openai.types.chat.chat_completion_message_function_tool_call
 import openai.types.chat.chat_completion_message_tool_call
 import openai.types.responses
-import openai.types.responses.response
-import openai.types.responses.response_output_item
 
 import pytilpack.logging
 import pytilpack.python
@@ -21,6 +19,7 @@ from pytilpack.python import coalesce, remove_none
 logger = logging.getLogger(__name__)
 
 
+@pytilpack.python.deprecated()
 def gather_chunks(
     chunks: typing.Iterable[openai.types.chat.ChatCompletionChunk], strict: bool = False
 ) -> openai.types.chat.ChatCompletion:
@@ -189,6 +188,7 @@ def _make_tool_call(
     return tool_call
 
 
+@pytilpack.python.deprecated()
 def gather_events(
     events: typing.Iterable[openai.types.responses.ResponseStreamEvent],
     strict: bool = False,
