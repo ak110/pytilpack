@@ -181,11 +181,11 @@ async def test_get_by_unique_id(session: sqlalchemy.ext.asyncio.AsyncSession) ->
 async def test_await_for_connection() -> None:
     """await_for_connectionのテスト。"""
     # 正常系
-    await pytilpack.sqlalchemy.await_for_connection("sqlite+aiosqlite:///:memory:", timeout=1.0)
+    await pytilpack.sqlalchemy.await_for_connection("sqlite+aiosqlite:///:memory:", timeout=0.1)
 
     # 異常系: タイムアウト
-    with pytest.raises(sqlalchemy.exc.OperationalError):
-        await pytilpack.sqlalchemy.await_for_connection("sqlite+aiosqlite:////nonexistent/path/db.sqlite3", timeout=1.0)
+    with pytest.raises(RuntimeError):
+        await pytilpack.sqlalchemy.await_for_connection("sqlite+aiosqlite:////nonexistent/path/db.sqlite3", timeout=0.1)
 
 
 @pytest.mark.asyncio

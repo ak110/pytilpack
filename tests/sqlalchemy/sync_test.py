@@ -187,11 +187,11 @@ def test_get_by_unique_id(session: sqlalchemy.orm.Session) -> None:
 def test_wait_for_connection() -> None:
     """wait_for_connectionのテスト。"""
     # 正常系
-    pytilpack.sqlalchemy.wait_for_connection("sqlite:///:memory:", timeout=1.0)
+    pytilpack.sqlalchemy.wait_for_connection("sqlite:///:memory:", timeout=0.1)
 
     # 異常系: タイムアウト
-    with pytest.raises(sqlalchemy.exc.OperationalError):
-        pytilpack.sqlalchemy.wait_for_connection("sqlite:////nonexistent/path/db.sqlite3", timeout=1.0)
+    with pytest.raises(RuntimeError):
+        pytilpack.sqlalchemy.wait_for_connection("sqlite:////nonexistent/path/db.sqlite3", timeout=0.1)
 
 
 def test_paginate() -> None:

@@ -543,9 +543,10 @@ def wait_for_connection(url: str, timeout: float = 180.0) -> None:
             if not failed:
                 failed = True
                 logger.info(f"DB接続待機中 . . . (URL: {url})")
-            if time.time() - start_time >= timeout:
+            remain_time = timeout - (time.time() - start_time)
+            if remain_time <= 0:
                 raise RuntimeError(f"DB接続タイムアウト (URL: {url})") from e
-            time.sleep(1)
+            time.sleep(min(1, remain_time))
 
 
 def safe_close(
