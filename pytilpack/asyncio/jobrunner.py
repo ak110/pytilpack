@@ -33,6 +33,10 @@ class Job(metaclass=abc.ABCMeta):
         """ジョブがエラー終了した場合に呼ばれる処理。必要に応じてサブクラスで追加の処理をしてください。"""
         self.status = "errored"
 
+    async def on_finally(self) -> None:
+        """ジョブの終了時に必ず呼ばれる処理。必要に応じてサブクラスで追加の処理をしてください。"""
+        del self  # noqa
+
 
 class JobRunner(metaclass=abc.ABCMeta):
     """非同期ジョブを最大 max_job_concurrency 並列で実行するクラス。
@@ -93,6 +97,10 @@ class JobRunner(metaclass=abc.ABCMeta):
             except Exception:
                 logger.warning("ジョブエラー処理エラー", exc_info=True)
         finally:
+            try:
+                await asyncio.shield(job.on_finally())
+            except Exception:
+                logger.warning("ジョブ終了処理エラー", exc_info=True)
             self.semaphore.release()
 
     def shutdown(self) -> None:
