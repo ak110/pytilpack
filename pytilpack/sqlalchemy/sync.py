@@ -521,7 +521,7 @@ class SyncUniqueIDMixin:
         return cls.scalar_one_or_none(q)
 
 
-def wait_for_connection(url: str, timeout: float = 60.0) -> None:
+def wait_for_connection(url: str, timeout: float = 180.0) -> None:
     """DBに接続可能になるまで待機する。"""
     failed = False
     start_time = time.time()
@@ -538,13 +538,13 @@ def wait_for_connection(url: str, timeout: float = 60.0) -> None:
             if failed:  # 過去に接続失敗していた場合だけログを出す
                 logger.info("DB接続成功")
             break
-        except Exception:
+        except Exception as e:
             # 接続失敗
             if not failed:
                 failed = True
                 logger.info(f"DB接続待機中 . . . (URL: {url})")
             if time.time() - start_time >= timeout:
-                raise
+                raise RuntimeError(f"DB接続タイムアウト (URL: {url})") from e
             time.sleep(1)
 
 

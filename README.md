@@ -149,6 +149,17 @@ pytilpack mcp --transport=stdio
 pytilpack mcp --transport=http --port=8000
 ```
 
+### DB接続待機
+
+```bash
+pytilpack wait-for-db-connection SQLALCHEMY_DATABASE_URI [--timeout=180] [--verbose]
+```
+
+- 指定されたSQLALCHEMY_DATABASE_URIでDBに接続可能になるまで待機
+- URLに非同期ドライバ（`+asyncpg`, `+aiosqlite`, `+aiomysql`等）が含まれる場合は自動で非同期処理を使用
+- `--timeout`オプションでタイムアウト秒数を指定（デフォルト: 180）
+- `--verbose`オプションで詳細なログを出力
+
 ## 開発手順
 
 - [DEVELOPMENT.md](DEVELOPMENT.md) を参照

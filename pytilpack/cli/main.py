@@ -9,6 +9,7 @@ import pytilpack.cli.delete_old_files
 import pytilpack.cli.fetch
 import pytilpack.cli.mcp
 import pytilpack.cli.sync
+import pytilpack.cli.wait_for_db_connection
 
 
 def main(sys_args: list[str] | None = None) -> None:
@@ -23,6 +24,7 @@ def main(sys_args: list[str] | None = None) -> None:
     pytilpack.cli.sync.add_parser(subparsers)
     pytilpack.cli.fetch.add_parser(subparsers)
     pytilpack.cli.mcp.add_parser(subparsers)
+    pytilpack.cli.wait_for_db_connection.add_parser(subparsers)
     args = parser.parse_args(sys_args)
     if args.command is None:
         parser.print_help()
@@ -45,6 +47,8 @@ def main(sys_args: list[str] | None = None) -> None:
         pytilpack.cli.fetch.run(args)
     elif args.command == "mcp":
         pytilpack.cli.mcp.run(args)
+    elif args.command == "wait-for-db-connection":
+        pytilpack.cli.wait_for_db_connection.run(args)
 
 
 if __name__ == "__main__":

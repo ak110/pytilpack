@@ -28,5 +28,6 @@ async def test_all_cli_commands() -> None:
         _run_help("sync", "ディレクトリを同期"),
         _run_help("fetch", "URL"),
         _run_help("mcp", "Model Context Protocol"),
+        _run_help("wait-for-db-connection", "SQLALCHEMY_DATABASE_URI"),
         _run_help("--help", "usage:"),
     )
