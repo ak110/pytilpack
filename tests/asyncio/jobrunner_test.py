@@ -112,16 +112,16 @@ async def test_job_runner_cancel() -> None:
     thread.start()
     time.sleep(0.0)
 
-    # JobRunnerを実行（0.5秒後にシャットダウン）
+    # JobRunnerを実行（1.0秒後にシャットダウン）
     async def shutdown_after() -> None:
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(1.0)
         runner.shutdown()
 
     start_time = time.perf_counter()
     await asyncio.gather(runner.run(), shutdown_after())
     thread.join()
     elapsed_time = time.perf_counter() - start_time
-    assert 0.5 <= elapsed_time < 1.0
+    assert 0.75 <= elapsed_time < 1.25
 
     # 各ジョブの実行結果を確認
     assert jobs[0].status == "finished" and jobs[0].count == 1
@@ -144,13 +144,13 @@ async def test_job_runner_errors() -> None:
     thread.start()
     time.sleep(0.0)
 
-    # JobRunnerを実行（0.5秒後にシャットダウン）
+    # JobRunnerを実行（0.75秒後にシャットダウン）
     async def shutdown_after_and_add_job() -> CountingJob:
         # 早めにshutdownを実施
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.75)
         runner.shutdown()
         # シャットダウン後に少し待ってからジョブを追加
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.25)
         post_job = CountingJob()
         runner.queue.put(post_job)
         return post_job
