@@ -31,7 +31,7 @@ async def test_generator_str():
     """文字列のキープアライブ。"""
 
     @pytilpack.sse.generator(interval=0.15)
-    async def generate() -> typing.AsyncGenerator[str]:
+    async def generate() -> typing.AsyncGenerator[str, None]:
         yield "data: msg1\n\n"
         await asyncio.sleep(0.1)  # 短い間隔
         yield "data: msg2\n\n"
@@ -55,7 +55,7 @@ async def test_generator_sse():
     """SSEオブジェクトのキープアライブ。"""
 
     @pytilpack.sse.generator(interval=0.15)
-    async def generate() -> typing.AsyncGenerator[pytilpack.sse.SSE]:
+    async def generate() -> typing.AsyncGenerator[pytilpack.sse.SSE, None]:
         yield pytilpack.sse.SSE("msg1")
         await asyncio.sleep(0.1)  # 短い間隔
         yield pytilpack.sse.SSE("msg2", event="update")
@@ -78,7 +78,7 @@ async def test_generator_mixed():
     """文字列とSSEオブジェクトの混合。"""
 
     @pytilpack.sse.generator(interval=0.15)
-    async def generate() -> typing.AsyncGenerator[str | pytilpack.sse.SSE]:
+    async def generate() -> typing.AsyncGenerator[str | pytilpack.sse.SSE, None]:
         yield "data: raw1\n\n"
         await asyncio.sleep(0.1)
         yield pytilpack.sse.SSE("msg1", event="update")
@@ -102,7 +102,7 @@ async def test_generator_cancel():
     cleanup_called = False
 
     @pytilpack.sse.generator(interval=0.15)
-    async def generate() -> typing.AsyncGenerator[str]:
+    async def generate() -> typing.AsyncGenerator[str, None]:
         nonlocal cleanup_called
         try:
             yield "data: msg1\n\n"

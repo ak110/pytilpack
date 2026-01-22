@@ -97,14 +97,14 @@ def generator(interval: float = 15):
     """
 
     def decorator[**P, T: str | SSE](
-        func: typing.Callable[P, typing.AsyncGenerator[T]],
-    ) -> typing.Callable[P, typing.AsyncGenerator[str]]:
+        func: typing.Callable[P, typing.AsyncGenerator[T, None]],
+    ) -> typing.Callable[P, typing.AsyncGenerator[str, None]]:
         # Awaitable -> Coroutine 用ユーティリティ
         async def _anext(it: typing.AsyncIterator[T]) -> T:
             return await anext(it)
 
         @functools.wraps(func)
-        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> typing.AsyncGenerator[str]:
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> typing.AsyncGenerator[str, None]:
             loop = asyncio.get_running_loop()
             last_msg_time = loop.time()
             generator_ = func(*args, **kwargs)
