@@ -30,10 +30,10 @@ class SSE:
         async def events():
             async def generate():
                 # 複数行のデータも自動的に処理
-                yield pytilpack.sse.SSE(
+                yield str(pytilpack.sse.SSE(
                     data="line 1\\nline 2\\nline 3",
                     event="update"
-                ).serialize()
+                ))
                 await asyncio.sleep(1)
 
             return quart.Response(
@@ -78,7 +78,7 @@ class SSE:
             lines.append(f"retry: {self.retry}")
 
         # dataフィールドの各行をdata:プレフィックス付きで追加
-        for line in self.data.split("\n"):
+        for line in self.data.splitlines():
             lines.append(f"data: {line}")
 
         # 最後に空行を追加して終端
@@ -147,7 +147,7 @@ def generator(interval: float = 15):
                         except StopAsyncIteration:
                             # ループ正常終了
                             break
-                except (asyncio.CancelledError, GeneratorExit):
+                except asyncio.CancelledError:
                     logger.info("SSE切断")
                     raise
                 finally:
