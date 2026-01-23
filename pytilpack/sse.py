@@ -1,6 +1,7 @@
 """Server-Sent Events メッセージを生成するユーティリティ"""
 
 import asyncio
+import contextlib
 import dataclasses
 import functools
 import logging
@@ -99,6 +100,15 @@ def generator(interval: float = 15):
     def decorator[**P, T: str | SSE](
         func: typing.Callable[P, typing.AsyncGenerator[T, None]],
     ) -> typing.Callable[P, typing.AsyncGenerator[str, None]]:
+        """デコレーター本体。
+
+        Args:
+            func: SSEメッセージを生成する非同期ジェネレーター関数。
+
+        Returns:
+            キープアライブが追加されたSSEメッセージストリームを生成する非同期ジェネレーター関数。
+        """
+
         # Awaitable -> Coroutine 用ユーティリティ
         async def _anext(it: typing.AsyncIterator[T]) -> T:
             return await anext(it)
@@ -108,41 +118,46 @@ def generator(interval: float = 15):
             loop = asyncio.get_running_loop()
             last_msg_time = loop.time()
             generator_ = func(*args, **kwargs)
-            next_task: asyncio.Task[T] | None = None
             try:
-                iterator = aiter(generator_)
-                next_task = loop.create_task(_anext(iterator))
+                next_task: asyncio.Task[T] | None = None
+                try:
+                    iterator = aiter(generator_)
+                    next_task = loop.create_task(_anext(iterator))
 
-                while True:
-                    # 次メッセージ取得タスク完了 or タイムアウト待ち
-                    delay = interval - (loop.time() - last_msg_time)
-                    done, _ = await asyncio.wait(
-                        [next_task],
-                        timeout=max(0.0, delay),
-                        return_when=asyncio.FIRST_COMPLETED,
-                    )
-
-                    if next_task in done:
-                        # メッセージ到着
+                    while True:
+                        # 次メッセージ取得タスク完了 or タイムアウト待ち
+                        delay = interval - (loop.time() - last_msg_time)
                         try:
-                            msg = next_task.result()
+                            msg = await asyncio.wait_for(
+                                asyncio.shield(next_task),
+                                timeout=max(0.0, delay),
+                            )
+                            # メッセージ到着
+                            if isinstance(msg, SSE):
+                                yield str(msg)
+                            else:
+                                # strの場合は念のため末尾の改行を保証
+                                yield msg.rstrip("\n") + "\n\n"
+                            last_msg_time = loop.time()
+                            next_task = loop.create_task(_anext(iterator))
+                        except TimeoutError:
+                            # タイムアウト → キープアライブ送信
+                            yield ": ping\n\n"
+                            last_msg_time = loop.time()
                         except StopAsyncIteration:
                             # ループ正常終了
                             break
-                        yield str(msg)
-                        last_msg_time = loop.time()
-                        next_task = loop.create_task(_anext(iterator))
-                    else:
-                        # タイムアウト → キープアライブ送信
-                        yield ": ping\n\n"
-                        last_msg_time = loop.time()
-            except (asyncio.CancelledError, GeneratorExit):
-                logger.info("SSE切断")
+                except (asyncio.CancelledError, GeneratorExit):
+                    logger.info("SSE切断")
+                    raise
+                finally:
+                    if next_task is not None:
+                        next_task.cancel()
+                        with contextlib.suppress(StopAsyncIteration):
+                            await asyncio.shield(next_task)
+            finally:
                 # ジェネレーターをクリーンアップ
                 await asyncio.shield(generator_.aclose())
-            finally:
-                if next_task is not None:
-                    next_task.cancel()
 
         return wrapper
 
