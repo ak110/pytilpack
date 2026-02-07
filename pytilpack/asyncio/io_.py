@@ -16,7 +16,7 @@ async def read_json(
     path: pathlib.Path | str,
     errors: str | None = None,
     strict: bool = False,
-) -> dict[str, typing.Any]:
+) -> typing.Any:
     """JSONファイルから非同期で読み取る。"""
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, pytilpack.json.load, path, errors, strict)
@@ -24,7 +24,7 @@ async def read_json(
 
 async def write_json(
     path: pathlib.Path | str,
-    data: dict,
+    data: typing.Any,
     ensure_ascii: bool = False,
     indent: int | None = None,
     separators: tuple[str, str] | None = None,

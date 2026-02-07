@@ -32,7 +32,7 @@ def load(
     path: str | pathlib.Path,
     errors: str | None = None,
     strict: bool = False,
-) -> dict[str, typing.Any]:
+) -> typing.Any:
     """JSONファイルの読み込み。"""
     path = pathlib.Path(path)
     if path.exists():
@@ -46,7 +46,7 @@ def load(
 
 def save(
     path: str | pathlib.Path,
-    data: dict,
+    data: typing.Any,
     ensure_ascii=False,
     indent=None,
     separators=None,
