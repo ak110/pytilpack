@@ -28,11 +28,15 @@ def converter(o: typing.Any, _default: typing.Callable[[typing.Any], typing.Any]
     return o if _default is None else _default(o)
 
 
-def load(path: str | pathlib.Path, strict: bool = False) -> dict[str, typing.Any]:
+def load(
+    path: str | pathlib.Path,
+    errors: str | None = None,
+    strict: bool = False,
+) -> dict[str, typing.Any]:
     """JSONファイルの読み込み。"""
     path = pathlib.Path(path)
     if path.exists():
-        data = json.loads(path.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8", errors=errors))
     else:
         if strict:
             raise FileNotFoundError(f"File not found: {path}")

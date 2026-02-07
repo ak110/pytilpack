@@ -12,10 +12,14 @@ import pytilpack.pathlib
 logger = logging.getLogger(__name__)
 
 
-async def read_json(path: pathlib.Path | str) -> dict[str, typing.Any]:
+async def read_json(
+    path: pathlib.Path | str,
+    errors: str | None = None,
+    strict: bool = False,
+) -> dict[str, typing.Any]:
     """JSONファイルから非同期で読み取る。"""
     loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(None, pytilpack.json.load, path)
+    return await loop.run_in_executor(None, pytilpack.json.load, path, errors, strict)
 
 
 async def write_json(
