@@ -72,7 +72,7 @@ def _create_server(**kwargs) -> FastMCP:
     def fetch_url(
         url: str,
         no_verify: bool = False,
-        accept: str = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        accept: str = pytilpack.htmlrag.DEFAULT_ACCEPT,
         user_agent: str | None = None,
     ) -> str:
         """URLからHTMLを取得し、簡略化して返します。

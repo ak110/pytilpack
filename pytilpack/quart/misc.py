@@ -85,6 +85,23 @@ def get_next_url() -> str:
     return next_
 
 
+def prefer_markdown() -> bool:
+    """AcceptヘッダーでmarkdownがHTMLより優先されているかを返す。
+
+    参考: <https://vercel.com/blog/making-agent-friendly-pages-with-content-negotiation>
+
+    (CDNやプロキシがAcceptヘッダーを書き換える場合があるという話もあるが…。)
+
+    Returns:
+        markdownがHTMLより優先されている場合True、そうでなければFalse
+
+    """
+    accept = quart.request.accept_mimetypes
+    q_md = max(accept.quality("text/markdown"), accept.quality("text/plain"))
+    q_html = accept.quality("text/html")
+    return q_md > q_html
+
+
 def static_url_for(
     filename: str,
     cache_busting: bool = True,

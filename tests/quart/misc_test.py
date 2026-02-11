@@ -148,3 +148,33 @@ async def test_get_routes_application_root() -> None:
         test_endpoint_route = route_dict["test_endpoint"]
         assert test_endpoint_route.url_parts == ["/myapp/test"]
         assert test_endpoint_route.arg_names == []
+
+
+@pytest.mark.asyncio
+async def test_prefer_markdown() -> None:
+    """prefer_markdownのテスト。"""
+    app = quart.Quart(__name__)
+
+    async with app.test_request_context(
+        "/",
+        headers={"Accept": "text/markdown;q=0.9, text/html;q=0.8, */*;q=0.7"},
+    ):
+        assert pytilpack.quart.prefer_markdown() is True
+
+    async with app.test_request_context(
+        "/",
+        headers={"Accept": "text/html;q=0.9, */*;q=0.8"},
+    ):
+        assert pytilpack.quart.prefer_markdown() is False
+
+    async with app.test_request_context(
+        "/",
+        headers={"Accept": "text/html;q=0.8, */*;q=0.8"},
+    ):
+        assert pytilpack.quart.prefer_markdown() is False
+
+    async with app.test_request_context(
+        "/",
+        headers={"Accept": "text/plain;q=0.7, */*;q=0.6"},
+    ):
+        assert pytilpack.quart.prefer_markdown() is True

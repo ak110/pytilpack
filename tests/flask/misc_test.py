@@ -123,3 +123,32 @@ def test_get_routes_application_root() -> None:
         test_endpoint_route = route_dict["test_endpoint"]
         assert test_endpoint_route.url_parts == ["/myapp/test"]
         assert test_endpoint_route.arg_names == []
+
+
+def test_prefer_markdown() -> None:
+    """prefer_markdownのテスト。"""
+    app = flask.Flask(__name__)
+
+    with app.test_request_context(
+        "/",
+        headers={"Accept": "text/markdown;q=0.9, text/html;q=0.8, */*;q=0.7"},
+    ):
+        assert pytilpack.flask.prefer_markdown() is True
+
+    with app.test_request_context(
+        "/",
+        headers={"Accept": "text/html;q=0.9, */*;q=0.8"},
+    ):
+        assert pytilpack.flask.prefer_markdown() is False
+
+    with app.test_request_context(
+        "/",
+        headers={"Accept": "text/html;q=0.8, */*;q=0.8"},
+    ):
+        assert pytilpack.flask.prefer_markdown() is False
+
+    with app.test_request_context(
+        "/",
+        headers={"Accept": "text/plain;q=0.7, */*;q=0.6"},
+    ):
+        assert pytilpack.flask.prefer_markdown() is True
