@@ -61,9 +61,9 @@ xxxのところは対象ライブラリと同名になっている。`openai`と
 - [pytilpack.python](pytilpack/python.py)
 - [pytilpack.quart](pytilpack/quart/__init__.py)
 - [pytilpack.sqlalchemy](pytilpack/sqlalchemy.py)
-- [pytilpack.sqlalchemya](pytilpack/sqlalchemya.py)  # asyncio版
+- [pytilpack.sqlalchemya](pytilpack/sqlalchemya.py): asyncio版
 - [pytilpack.threading](pytilpack/threading.py)
-- [pytilpack.threadinga](pytilpack/threadinga.py)  # asyncio版
+- [pytilpack.threadinga](pytilpack/threadinga.py): asyncio版
 - [pytilpack.tiktoken](pytilpack/tiktoken.py)
 - [pytilpack.tqdm](pytilpack/tqdm.py)
 - [pytilpack.typing](pytilpack/typing.py)
@@ -71,14 +71,14 @@ xxxのところは対象ライブラリと同名になっている。`openai`と
 
 ### 特定のライブラリに依存しないモジュール一覧
 
-- [pytilpack.cache](pytilpack/cache.py)  # ファイルキャッシュ関連
-- [pytilpack.data_url](pytilpack/data_url.py)  # データURL関連
-- [pytilpack.healthcheck](pytilpack/healthcheck.py)  # ヘルスチェック処理関連
-- [pytilpack.htmlrag](pytilpack/htmlrag.py)  # HtmlRAG関連
-- [pytilpack.http](pytilpack/http.py)  # HTTP関連
-- [pytilpack.paginator](pytilpack/paginator.py)  # ページネーション関連
-- [pytilpack.sse](pytilpack/sse.py)  # Server-Sent Events関連
-- [pytilpack.web](pytilpack/web.py)  # Web関連
+- [pytilpack.cache](pytilpack/cache.py): ファイルキャッシュ関連
+- [pytilpack.data_url](pytilpack/data_url.py): データURL関連
+- [pytilpack.healthcheck](pytilpack/healthcheck.py): ヘルスチェック処理関連
+- [pytilpack.htmlrag](pytilpack/htmlrag.py): HtmlRAG関連
+- [pytilpack.http](pytilpack/http.py): HTTP関連
+- [pytilpack.paginator](pytilpack/paginator.py): ページネーション関連
+- [pytilpack.sse](pytilpack/sse.py): Server-Sent Events関連
+- [pytilpack.web](pytilpack/web.py): Web関連
 
 ## CLIコマンド
 
