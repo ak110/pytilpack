@@ -3,6 +3,7 @@
 import json
 import typing
 
+import fastapi.encoders
 import starlette.responses
 
 
@@ -11,11 +12,16 @@ class JSONResponse(starlette.responses.Response):
 
     デフォルトのJSONResponseはインデントなしでJSONを返すが、
     このクラスはindent=2のインデント付きで返す。
+    Pydanticモデルやdatetime等もfastapi.encoders.jsonable_encoderで変換する。
 
     Usage:
-        @app.get("/pretty", response_class=JSONResponse)
+        @app.get("/pretty", response_class=pytilpack.fastapi.JSONResponse)
         def pretty():
             return {"message": "indented JSON"}
+
+        @app.get("/model", response_model=MyModel, response_class=pytilpack.fastapi.JSONResponse)
+        def model():
+            return MyModel(field="value")
 
     """
 
@@ -23,4 +29,5 @@ class JSONResponse(starlette.responses.Response):
 
     def render(self, content: typing.Any) -> bytes:
         """コンテンツをインデント付きJSONのバイト列に変換する。"""
-        return json.dumps(content, ensure_ascii=False, indent=2, separators=(", ", ": ")).encode("utf-8")
+        encoded = fastapi.encoders.jsonable_encoder(content)
+        return json.dumps(encoded, ensure_ascii=False, indent=2, separators=(", ", ": ")).encode("utf-8")

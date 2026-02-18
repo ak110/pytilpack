@@ -4,9 +4,15 @@ import json
 
 import fastapi
 import fastapi.testclient
+import pydantic
 import pytest
 
 import pytilpack.fastapi
+
+
+class _Item(pydantic.BaseModel):
+    name: str
+    value: int
 
 
 @pytest.fixture(name="app")
@@ -20,6 +26,10 @@ def _app() -> fastapi.FastAPI:
     @app.get("/pretty-japanese", response_class=pytilpack.fastapi.JSONResponse)
     def japanese():
         return {"メッセージ": "こんにちは"}
+
+    @app.get("/model", response_class=pytilpack.fastapi.JSONResponse, response_model=_Item)
+    def model():
+        return _Item(name="test", value=123)
 
     return app
 
@@ -53,3 +63,17 @@ def test_json_response_ensure_ascii(client: fastapi.testclient.TestClient) -> No
     assert response.status_code == 200
     assert "メッセージ" in response.text
     assert "こんにちは" in response.text
+
+
+def test_json_response_pydantic_model(client: fastapi.testclient.TestClient) -> None:
+    """response_modelにPydanticモデルを指定した場合のテスト。"""
+    response = client.get("/model")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/json"
+
+    text = response.text
+    assert "\n" in text
+
+    data = json.loads(text)
+    assert data == {"name": "test", "value": 123}
