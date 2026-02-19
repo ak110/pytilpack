@@ -3,6 +3,7 @@
 import asyncio
 import contextlib
 import contextvars
+import dataclasses
 import datetime
 import logging
 import secrets
@@ -17,6 +18,16 @@ import pytilpack.asyncio
 import pytilpack.paginator
 
 logger = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass
+class _InitArgs:
+    """init()の引数。"""
+
+    url: str | sqlalchemy.engine.URL
+    autoflush: bool
+    expire_on_commit: bool
+    engine_kwargs: dict
 
 
 class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
@@ -46,11 +57,11 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
 
     """
 
-    engine: sqlalchemy.ext.asyncio.AsyncEngine | None = None
-    """DB接続。"""
+    _init_args: _InitArgs | None = None
+    """初期化引数。init()呼び出し後に設定される。"""
 
-    sessionmaker: sqlalchemy.ext.asyncio.async_sessionmaker[sqlalchemy.ext.asyncio.AsyncSession] | None = None
-    """セッションファクトリ。"""
+    _thread_local: threading.local | None = None
+    """スレッドローカルストレージ。init()呼び出し後に設定される。"""
 
     session_var: contextvars.ContextVar[sqlalchemy.ext.asyncio.AsyncSession] = contextvars.ContextVar("session_var")
     """セッション。"""
@@ -65,9 +76,13 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         pool_pre_ping: bool = True,
         autoflush: bool = True,
         expire_on_commit: bool = False,
+        eagerly_init: bool = True,
         **kwargs,
     ):
         """DB接続を初期化する。(デフォルトである程度おすすめの設定をしちゃう。)
+
+        engineとsessionmakerはスレッドローカルで遅延初期化される。
+        各スレッドが初めてDB操作を行う際にそのスレッド専用のengineとsessionmakerが生成される。
 
         Args:
             url: DB接続URL。
@@ -77,29 +92,85 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
             pool_pre_ping: コネクションプールのプレピン。Noneの場合はデフォルト値を使用。
             autoflush: セッションのautoflushフラグ。デフォルトはTrue。
             expire_on_commit: セッションのexpire_on_commitフラグ。デフォルトはFalse。
-            **kwargs: その他のsqlalchemy.create_engine()へのキーワード引数。
+            eagerly_init: Trueの場合（デフォルト）、呼び出し元スレッドのengineとsessionmakerをすぐに生成する。
+            **kwargs: その他のsqlalchemy.create_async_engine()へのキーワード引数。
 
         """
-        assert cls.engine is None, "DB接続はすでに初期化されています。"
+        assert cls._init_args is None, "DB接続はすでに初期化されています。"
 
         if pool_size is not None and max_overflow is None:
             max_overflow = pool_size * 1  # デフォルトで倍まで許可
-        kwargs = kwargs.copy()
+        engine_kwargs = kwargs.copy()
         if pool_size is not None:
-            kwargs["pool_size"] = pool_size
+            engine_kwargs["pool_size"] = pool_size
         if max_overflow is not None:
-            kwargs["max_overflow"] = max_overflow
+            engine_kwargs["max_overflow"] = max_overflow
         if pool_recycle is not None:
-            kwargs["pool_recycle"] = pool_recycle
+            engine_kwargs["pool_recycle"] = pool_recycle
         if pool_pre_ping is not None:
-            kwargs["pool_pre_ping"] = pool_pre_ping
+            engine_kwargs["pool_pre_ping"] = pool_pre_ping
 
-        cls.engine = sqlalchemy.ext.asyncio.create_async_engine(url, **kwargs)
-        # atexit.register(cls.engine.dispose)
-
-        cls.sessionmaker = sqlalchemy.ext.asyncio.async_sessionmaker(
-            cls.engine, autoflush=autoflush, expire_on_commit=expire_on_commit
+        cls._init_args = _InitArgs(
+            url=url,
+            autoflush=autoflush,
+            expire_on_commit=expire_on_commit,
+            engine_kwargs=engine_kwargs,
         )
+        cls._thread_local = threading.local()
+
+        if eagerly_init:
+            cls._get_engine_and_sessionmaker()
+
+    @classmethod
+    async def term(cls) -> None:
+        """現在のスレッドのDB接続を終了する。
+
+        スレッドローカルなengineをdisposeして解放する。
+        スレッド終了時やテスト後の後始末に使用する。
+
+        """
+        if cls._init_args is None:
+            logger.warning("未初期化時のterm()呼び出し")
+            return
+        if cls._thread_local is None:
+            return
+        if hasattr(cls._thread_local, "engine") and cls._thread_local.engine is not None:
+            await cls._thread_local.engine.dispose()
+            cls._thread_local.engine = None
+            cls._thread_local.sessionmaker = None
+
+    @classmethod
+    def _get_engine_and_sessionmaker(
+        cls,
+    ) -> tuple[
+        sqlalchemy.ext.asyncio.AsyncEngine,
+        sqlalchemy.ext.asyncio.async_sessionmaker[sqlalchemy.ext.asyncio.AsyncSession],
+    ]:
+        """現在のスレッドのengineとsessionmakerを取得する（なければ遅延生成）。"""
+        assert cls._init_args is not None, "init()が呼ばれていません。"
+        assert cls._thread_local is not None
+        if not hasattr(cls._thread_local, "engine") or cls._thread_local.engine is None:
+            cls._thread_local.engine = sqlalchemy.ext.asyncio.create_async_engine(
+                cls._init_args.url, **cls._init_args.engine_kwargs
+            )
+            cls._thread_local.sessionmaker = sqlalchemy.ext.asyncio.async_sessionmaker(
+                cls._thread_local.engine,
+                autoflush=cls._init_args.autoflush,
+                expire_on_commit=cls._init_args.expire_on_commit,
+            )
+        return cls._thread_local.engine, cls._thread_local.sessionmaker
+
+    @classmethod
+    def engine(cls) -> sqlalchemy.ext.asyncio.AsyncEngine:
+        """現在のスレッドのDB接続を返す。init()後に初めて呼ばれた時点で遅延生成される。"""
+        return cls._get_engine_and_sessionmaker()[0]
+
+    @classmethod
+    def sessionmaker(
+        cls,
+    ) -> sqlalchemy.ext.asyncio.async_sessionmaker[sqlalchemy.ext.asyncio.AsyncSession]:
+        """現在のスレッドのセッションファクトリを返す。init()後に初めて呼ばれた時点で遅延生成される。"""
+        return cls._get_engine_and_sessionmaker()[1]
 
     @classmethod
     def connect(cls) -> sqlalchemy.ext.asyncio.AsyncConnection:
@@ -110,8 +181,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
                 await conn.run_sync(Base.metadata.create_all)
 
         """
-        assert cls.engine is not None
-        return cls.engine.connect()
+        return cls.engine().connect()
 
     @classmethod
     @contextlib.asynccontextmanager
@@ -131,7 +201,6 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
             log_level: ログレベル。
 
         """
-        assert cls.sessionmaker is not None
         token = await cls.start_session(name=name, log_level=log_level)
         try:
             yield cls.session()
@@ -143,8 +212,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         cls, name: str | None = None, log_level: int = logging.DEBUG
     ) -> contextvars.Token[sqlalchemy.ext.asyncio.AsyncSession]:
         """セッションを開始する。"""
-        assert cls.sessionmaker is not None
-        session = cls.sessionmaker()  # pylint: disable=not-callable
+        session = cls.sessionmaker()()  # pylint: disable=not-callable
         token = cls.session_var.set(session)
         if name is not None:
             logger.log(

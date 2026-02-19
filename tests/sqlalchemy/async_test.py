@@ -6,7 +6,6 @@ import typing
 import pytest
 import pytest_asyncio
 import sqlalchemy
-import sqlalchemy.exc
 import sqlalchemy.ext.asyncio
 import sqlalchemy.orm
 
@@ -55,8 +54,10 @@ class Test2(Base):
 async def _engine() -> typing.AsyncGenerator[sqlalchemy.ext.asyncio.AsyncEngine, None]:
     """DB接続。"""
     Base.init("sqlite+aiosqlite:///:memory:")
-    assert Base.engine is not None
-    yield Base.engine
+    try:
+        yield Base.engine()
+    finally:
+        await Base.term()
 
 
 @pytest_asyncio.fixture(name="session", scope="module")
