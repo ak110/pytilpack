@@ -30,7 +30,7 @@ async def assert_bytes(
         content_type: 期待するContent-Type
 
     Raises:
-        AssertionError: ステータスコードが異なる場合
+        AssertionError: ステータスコードが異なる場合など
 
     Returns:
         レスポンスボディ
@@ -46,7 +46,7 @@ async def assert_bytes(
         # Content-Typeチェック
         pytilpack.web.check_content_type(response.content_type, content_type)
     except AssertionError as e:
-        logger.info(f"{e}\n\n{response_body!r}")
+        logger.info(f"{e}\n\n{response_body[:1024]=!r}")
         raise e
 
     return response_body
@@ -71,7 +71,7 @@ async def assert_html(
         tmp_path: 一時ファイルを保存するディレクトリ
 
     Raises:
-        AssertionError: ステータスコードが異なる場合
+        AssertionError: ステータスコードが異なる場合など
 
     Returns:
         レスポンスボディ (bs4.BeautifulSoup)
@@ -111,7 +111,7 @@ async def assert_json(
         content_type: 期待するContent-Type
 
     Raises:
-        AssertionError: ステータスコードが異なる場合
+        AssertionError: ステータスコードが異なる場合など
 
     Returns:
         レスポンスのjson
@@ -133,7 +133,7 @@ async def assert_json(
         except Exception as e:
             raise AssertionError(f"JSONエラー: {e}") from e
     except AssertionError as e:
-        logger.info(f"{e}\n\n{response_body!r}")
+        logger.info(f"{e}\n{response_body[:1024]=!r}")
         raise e
 
     return data
@@ -152,7 +152,7 @@ async def assert_xml(
         content_type: 期待するContent-Type
 
     Raises:
-        AssertionError: ステータスコードが異なる場合
+        AssertionError: ステータスコードが異なる場合など
 
     Returns:
         レスポンスのxml

@@ -7,7 +7,31 @@ import pathlib
 import typing
 
 
-def converter(o: typing.Any, _default: typing.Callable[[typing.Any], typing.Any] | None = None):
+def load(
+    path: str | pathlib.Path,
+    errors: str | None = None,
+    strict: bool = False,
+    **kwargs,
+) -> typing.Any:
+    """JSONファイルの読み込み。"""
+    path = pathlib.Path(path)
+    if path.exists():
+        data = loads(path.read_text(encoding="utf-8", errors=errors), **kwargs)
+    else:
+        if strict:
+            raise FileNotFoundError(f"File not found: {path}")
+        data = {}
+    return data
+
+
+loads = json.loads
+"""JSONの文字列解析。標準ライブラリと同じだけど一応エイリアスを用意しておく。"""
+
+
+def converter(
+    o: typing.Any,
+    _default: typing.Callable[[typing.Any], typing.Any] | None = None,
+) -> typing.Any:
     """JSONエンコード時の変換処理。
 
     日付はJavaScriptで対応できるようにISO8601形式に変換する。
@@ -28,43 +52,61 @@ def converter(o: typing.Any, _default: typing.Callable[[typing.Any], typing.Any]
     return o if _default is None else _default(o)
 
 
-def load(
-    path: str | pathlib.Path,
-    errors: str | None = None,
-    strict: bool = False,
-) -> typing.Any:
-    """JSONファイルの読み込み。"""
-    path = pathlib.Path(path)
-    if path.exists():
-        data = json.loads(path.read_text(encoding="utf-8", errors=errors))
-    else:
-        if strict:
-            raise FileNotFoundError(f"File not found: {path}")
-        data = {}
-    return data
-
-
 def save(
     path: str | pathlib.Path,
     data: typing.Any,
-    ensure_ascii=False,
-    indent=None,
-    separators=None,
-    sort_keys=False,
+    ensure_ascii: bool = False,
+    indent: int | str | None = None,
+    separators: tuple[str, str] | None = None,
+    sort_keys: bool = False,
+    default: typing.Callable[[typing.Any], typing.Any] = converter,
     **kwargs,
-):
-    """JSONのファイル保存。"""
+) -> None:
+    """JSONのファイル保存。
+
+    標準ライブラリと異なりデフォルトでensure_ascii=False、UTF-8で保存する。
+
+    """
     path = pathlib.Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
+        dumps(
+            data,
+            ensure_ascii=ensure_ascii,
+            indent=indent,
+            separators=separators,
+            sort_keys=sort_keys,
+            default=default,
+            **kwargs,
+        ),
+        encoding="utf-8",
+    )
+
+
+def dumps(
+    data: typing.Any,
+    ensure_ascii: bool = False,
+    indent: int | str | None = None,
+    separators: tuple[str, str] | None = None,
+    sort_keys: bool = False,
+    default: typing.Callable[[typing.Any], typing.Any] = converter,
+    **kwargs,
+) -> str:
+    """JSONの文字列化。
+
+    標準ライブラリと異なりデフォルトでensure_ascii=False、UTF-8で保存する。
+    また、日付やbytesを変換するためのconverter関数をdefault引数に指定している。
+
+    """
+    return (
         json.dumps(
             data,
             ensure_ascii=ensure_ascii,
             indent=indent,
             separators=separators,
             sort_keys=sort_keys,
+            default=default,
             **kwargs,
         )
-        + "\n",
-        encoding="utf-8",
+        + "\n"
     )

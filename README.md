@@ -76,6 +76,7 @@ xxxのところは対象ライブラリと同名になっている。`openai`と
 - [pytilpack.healthcheck](pytilpack/healthcheck.py): ヘルスチェック処理関連
 - [pytilpack.htmlrag](pytilpack/htmlrag.py): HtmlRAG関連
 - [pytilpack.http](pytilpack/http.py): HTTP関連
+- [pytilpack.jsonc](pytilpack/jsonc.py): JSON with Comments関連
 - [pytilpack.paginator](pytilpack/paginator.py): ページネーション関連
 - [pytilpack.sse](pytilpack/sse.py): Server-Sent Events関連
 - [pytilpack.web](pytilpack/web.py): Web関連
