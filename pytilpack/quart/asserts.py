@@ -1,7 +1,6 @@
 """Quartのテストコード用アサーション関数。"""
 
 import json
-import logging
 import pathlib
 import typing
 import xml.etree.ElementTree as ET
@@ -10,8 +9,6 @@ import quart
 
 import pytilpack.pytest
 import pytilpack.web
-
-logger = logging.getLogger(__name__)
 
 ResponseType = quart.Response | typing.Awaitable[quart.Response]
 """レスポンスの型。"""
@@ -39,15 +36,12 @@ async def assert_bytes(
     response = await _get_response(response)
     response_body = await response.get_data(as_text=False)
 
-    try:
+    async with pytilpack.pytest.AssertBlock(response_body, suffix=".txt"):  # binでは開けないのでとりあえずtxt
         # ステータスコードチェック
         pytilpack.web.check_status_code(response.status_code, status_code)
 
         # Content-Typeチェック
         pytilpack.web.check_content_type(response.content_type, content_type)
-    except AssertionError as e:
-        logger.info(f"{e}\n\n{response_body[:1024]=!r}")
-        raise e
 
     return response_body
 
@@ -79,21 +73,20 @@ async def assert_html(
     """
     response = await _get_response(response)
     response_body = await response.get_data(as_text=True)
+    response_bytes = await response.get_data(as_text=False)
 
-    try:
+    if content_type == "__default__":
+        content_type = ["text/html", "application/xhtml+xml"]
+
+    async with pytilpack.pytest.AssertBlock(response_body, suffix=".html", tmp_path=tmp_path):
         # ステータスコードチェック
         pytilpack.web.check_status_code(response.status_code, status_code)
 
         # Content-Typeチェック
-        if content_type == "__default__":
-            content_type = ["text/html", "application/xhtml+xml"]
         pytilpack.web.check_content_type(response.content_type, content_type)
 
         # HTMLのチェック
-        pytilpack.web.check_html(await response.get_data(as_text=False), strict=strict)
-    except AssertionError as e:
-        tmp_file_path = pytilpack.pytest.create_temp_view(tmp_path, response_body, ".html")
-        raise AssertionError(f"{e} (HTML: {tmp_file_path} )") from e
+        pytilpack.web.check_html(response_bytes, strict=strict)
 
     return response_body
 
@@ -119,8 +112,9 @@ async def assert_json(
     """
     response = await _get_response(response)
     response_body = await response.get_data(as_text=True)
+    data: dict[str, typing.Any]
 
-    try:
+    async with pytilpack.pytest.AssertBlock(response_body, suffix=".json"):
         # ステータスコードチェック
         pytilpack.web.check_status_code(response.status_code, status_code)
 
@@ -132,9 +126,6 @@ async def assert_json(
             data = json.loads(response_body)
         except Exception as e:
             raise AssertionError(f"JSONエラー: {e}") from e
-    except AssertionError as e:
-        logger.info(f"{e}\n{response_body[:1024]=!r}")
-        raise e
 
     return data
 
@@ -161,13 +152,14 @@ async def assert_xml(
     response = await _get_response(response)
     response_body = await response.get_data(as_text=True)
 
-    try:
+    if content_type == "__default__":
+        content_type = ["text/xml", "application/xml"]
+
+    async with pytilpack.pytest.AssertBlock(response_body, suffix=".xml"):
         # ステータスコードチェック
         pytilpack.web.check_status_code(response.status_code, status_code)
 
         # Content-Typeチェック
-        if content_type == "__default__":
-            content_type = ["text/xml", "application/xml"]
         pytilpack.web.check_content_type(response.content_type, content_type)
 
         # XMLのチェック
@@ -175,9 +167,6 @@ async def assert_xml(
             _ = ET.fromstring(response_body)
         except Exception as e:
             raise AssertionError(f"XMLエラー: {e}") from e
-    except AssertionError as e:
-        logger.info(f"{e}\n\n{response_body!r}")
-        raise e
 
     return response_body
 
