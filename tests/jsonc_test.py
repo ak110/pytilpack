@@ -21,6 +21,14 @@ import pytilpack.jsonc
         ('{"a": "/* not a comment */"}', {"a": "/* not a comment */"}),
         # コメントなし
         ('{"a": 1, "b": "hello"}', {"a": 1, "b": "hello"}),
+        # trailing comma (object)
+        ('{"a": 1,}', {"a": 1}),
+        # trailing comma (array)
+        ('{"a": [1, 2,]}', {"a": [1, 2]}),
+        # trailing comma + コメント間
+        ('{"a": 1, // last\n}', {"a": 1}),
+        # 文字列内の ",}" はそのまま
+        ('{"a": ",}"}', {"a": ",}"}),
     ],
 )
 def test_loads(text: str, expected: dict) -> None:
