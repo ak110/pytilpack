@@ -144,23 +144,23 @@ def retry[**P, R](
                 while True:
                     try:
                         return await func(*args, **kwargs)
-                    except tuple(_excludes) as e:
-                        raise e
+                    except tuple(_excludes):
+                        raise
                     except tuple(_includes) as e:
                         attempt += 1
                         if attempt > _max_retries:
-                            raise e
+                            raise
                         # should_retryが指定されている場合はそれを使用
                         if _should_retry is not None and not _should_retry(e):
-                            raise e
+                            raise
                         # HTTPエラーの場合、ステータスコードを確認してリトライするか判定
                         if _retry_status_codes is not None:
                             status_code = pytilpack.http.get_status_code_from_exception(e)
                             if status_code is not None and status_code not in _retry_status_codes:
-                                raise e
+                                raise
                         # Retry-Afterヘッダーがある場合、累積待機時間が本来の設定を超えるならエラーにする
                         if retry_after_total >= _total_delay:
-                            raise e
+                            raise
                         logger.log(
                             _loglevel,
                             "%s: %s (retry %d/%d)",
@@ -237,23 +237,23 @@ def retry[**P, R](
                 while True:
                     try:
                         return func(*args, **kwargs)
-                    except tuple(_excludes) as e:
-                        raise e
+                    except tuple(_excludes):
+                        raise
                     except tuple(_includes) as e:
                         attempt += 1
                         if attempt > _max_retries:
-                            raise e
+                            raise
                         # should_retryが指定されている場合はそれを使用
                         if _should_retry is not None and not _should_retry(e):
-                            raise e
+                            raise
                         # HTTPエラーの場合、ステータスコードを確認してリトライするか判定
                         if _retry_status_codes is not None:
                             status_code = pytilpack.http.get_status_code_from_exception(e)
                             if status_code is not None and status_code not in _retry_status_codes:
-                                raise e
+                                raise
                         # Retry-Afterヘッダーがある場合、累積待機時間が本来の設定を超えるならエラーにする
                         if retry_after_total >= _total_delay:
-                            raise e
+                            raise
                         logger.log(
                             _loglevel,
                             "%s: %s (retry %d/%d)",

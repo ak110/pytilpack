@@ -74,9 +74,9 @@ def timer(name, logger: logging.Logger | None = None):
     has_error = False
     try:
         yield
-    except Exception as e:
+    except Exception:
         has_error = True
-        raise e
+        raise
     finally:
         elapsed = time.perf_counter() - start_time
         if logger is None:

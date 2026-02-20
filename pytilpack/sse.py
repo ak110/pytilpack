@@ -147,8 +147,11 @@ def generator(interval: float = 15):
                         except StopAsyncIteration:
                             # ループ正常終了
                             break
+                except GeneratorExit:
+                    logger.info("SSE切断[1]")
+                    raise
                 except asyncio.CancelledError:
-                    logger.info("SSE切断")
+                    logger.info("SSE切断[2]")
                     raise
                 finally:
                     if next_task is not None:
