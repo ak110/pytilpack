@@ -51,7 +51,12 @@ class AssertBlock:
             logger.error(f"アサーションエラー: {exc_val}, <{path}>")
             msg = str(exc_val)
             if len(msg) > 24:
-                msg = msg[:24] + "..."
+                matches = [(i, p) for p in ("' in '", "' in b'") if (i := msg.find(p)) != -1]
+                if matches:
+                    i, p = min(matches)
+                    msg = msg[: i + len(p)] + "..."
+                else:
+                    msg = msg[:24] + "..."
             raise AssertionError(f"{msg}, <{path}>") from exc_val
 
     async def __aenter__(self) -> None:
@@ -74,8 +79,8 @@ def create_temp_view(
     output_path = tmp_file_path(tmp_path=tmp_path, suffix=suffix)
     if isinstance(data, str):
         data = data.encode(encoding=encoding, errors=errors)
-    elif not isinstance(data, bytes):
-        raise TypeError(f"data must be str or bytes, not {type(data)}")
+    else:
+        assert isinstance(data, bytes)
     output_path.write_bytes(data)
     logger.info(f"view: {output_path}")
     return output_path
