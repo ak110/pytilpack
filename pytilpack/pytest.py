@@ -17,7 +17,7 @@ class AssertBlock:
 
         def test_something():
             data = ... # 画面のHTMLなどの大きいデータ
-            with pytilpack.pytest.AssertBlock(data, suffix=".html"):
+            with pytilpack.pytest.AssertBlock(data, ".html"):
                 assert "expected string" in data
 
     """
@@ -25,7 +25,7 @@ class AssertBlock:
     def __init__(
         self,
         data: str | bytes,
-        suffix: str = "*.html",
+        suffix: str = ".html",
         encoding: str = "utf-8",
         errors: str = "replace",
         tmp_path: pathlib.Path | None = None,

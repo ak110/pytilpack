@@ -35,6 +35,6 @@ repos:
         name: pyfltr
         entry: uv run pyfltr --exit-zero-even-if-formatted --commands=fast
         types: [python]
-        pass_filenames: true
+        pass_filenames: false
         require_serial: true
         language: system
