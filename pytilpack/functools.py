@@ -144,9 +144,9 @@ def retry[**P, R](
                 while True:
                     try:
                         return await func(*args, **kwargs)
-                    except tuple(_excludes):
-                        raise
                     except tuple(_includes) as e:
+                        if isinstance(e, tuple(_excludes)):
+                            raise
                         attempt += 1
                         if attempt > _max_retries:
                             raise
@@ -237,9 +237,9 @@ def retry[**P, R](
                 while True:
                     try:
                         return func(*args, **kwargs)
-                    except tuple(_excludes):
-                        raise
                     except tuple(_includes) as e:
+                        if isinstance(e, tuple(_excludes)):
+                            raise
                         attempt += 1
                         if attempt > _max_retries:
                             raise
