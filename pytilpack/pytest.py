@@ -49,7 +49,10 @@ class AssertBlock:
                 tmp_path=self.tmp_path, data=self.data, suffix=self.suffix, encoding=self.encoding, errors=self.errors
             )
             logger.error(f"アサーションエラー: {exc_val}, <{path}>")
-            raise AssertionError(f"{exc_val}, <{path}>") from exc_val
+            msg = str(exc_val)
+            if len(msg) > 24:
+                msg = msg[:24] + "..."
+            raise AssertionError(f"{msg}, <{path}>") from exc_val
 
     async def __aenter__(self) -> None:
         """非同期コンテキストマネージャーのenter。"""
