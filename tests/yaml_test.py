@@ -65,6 +65,11 @@ def test_block_scalar() -> None:
     """ブロックスカラーのテスト。"""
     # 改行を含む文字列はブロックスカラー (|) で出力される
     assert pytilpack.yaml.dumps({"key": "line1\nline2\n"}) == "key: |\n  line1\n  line2\n"
+    # タブ、末尾スペース、\r\n、ヌル文字などがあればブロックスカラーにならない
+    assert pytilpack.yaml.dumps({"key": "line1\ttab\nline2\n"}) == 'key: "line1\\ttab\\nline2\\n"\n'
+    assert pytilpack.yaml.dumps({"key": "line1 \nline2\n"}) == 'key: "line1 \\nline2\\n"\n'
+    assert pytilpack.yaml.dumps({"key": "line1\r\nline2\n"}) == 'key: "line1\\r\\nline2\\n"\n'
+    assert pytilpack.yaml.dumps({"key": "line1\nline2\0null\n"}) == 'key: "line1\\nline2\\0null\\n"\n'
     # 末尾のみ改行は通常の形式で出力される
     assert pytilpack.yaml.dumps({"key": "only at end\n"}) == "key: 'only at end\n\n  '\n"
     # 改行を含まない文字列は通常の形式で出力される
