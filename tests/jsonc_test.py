@@ -1,5 +1,6 @@
 """pytilpack.jsonc のテスト。"""
 
+import io
 import pathlib
 
 import pytest
@@ -48,3 +49,16 @@ def test_load(tmp_path: pathlib.Path) -> None:
     # ファイルなし (strict=True)
     with pytest.raises(FileNotFoundError):
         pytilpack.jsonc.load(tmp_path / "missing.jsonc", strict=True)
+
+
+def test_load_io() -> None:
+    """IO[str] / IO[bytes] での load のテスト。"""
+    text = '{\n  // comment\n  "key": "value"\n}\n'
+
+    # StringIO
+    buf = io.StringIO(text)
+    assert pytilpack.jsonc.load(buf) == {"key": "value"}
+
+    # BytesIO
+    buf_b = io.BytesIO(text.encode("utf-8"))
+    assert pytilpack.jsonc.load(buf_b) == {"key": "value"}

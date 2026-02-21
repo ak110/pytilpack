@@ -1,34 +1,41 @@
 """YAML関連。"""
 
-import pathlib
 import typing
 
 import yaml
 
+import pytilpack.io
 
-def load(path: str | pathlib.Path, errors: str | None = None, strict: bool = False, Loader=yaml.SafeLoader) -> typing.Any:
+
+def load(
+    source: pytilpack.io.PathOrIO,
+    encoding: str = "utf-8",
+    errors: str = "replace",
+    strict: bool = False,
+    Loader=yaml.SafeLoader,
+) -> typing.Any:
     """YAMLファイルの読み込み。"""
-    path = pathlib.Path(path)
-    if path.exists():
-        with path.open(encoding="utf-8", errors=errors) as f:
-            return yaml.load(f, Loader=Loader)
-    else:
+    try:
+        return yaml.load(pytilpack.io.read_text(source, encoding=encoding, errors=errors), Loader=Loader)
+    except FileNotFoundError:
         if strict:
-            raise FileNotFoundError(f"File not found: {path}")
+            raise
         return {}
 
 
 def load_all(
-    path: str | pathlib.Path, errors: str | None = None, strict: bool = False, Loader=yaml.SafeLoader
+    source: pytilpack.io.PathOrIO,
+    encoding: str = "utf-8",
+    errors: str = "replace",
+    strict: bool = False,
+    Loader=yaml.SafeLoader,
 ) -> list[typing.Any]:
     """YAMLファイルの読み込み。"""
-    path = pathlib.Path(path)
-    if path.exists():
-        with path.open(encoding="utf-8", errors=errors) as f:
-            return list(yaml.load_all(f, Loader=Loader))
-    else:
+    try:
+        return list(yaml.load_all(pytilpack.io.read_text(source, encoding=encoding, errors=errors), Loader=Loader))
+    except FileNotFoundError:
         if strict:
-            raise FileNotFoundError(f"File not found: {path}")
+            raise
         return []
 
 
@@ -63,7 +70,7 @@ class IndentDumper(yaml.SafeDumper):
 
 
 def save(
-    path: str | pathlib.Path,
+    dest: pytilpack.io.PathOrIO,
     data: typing.Any,
     allow_unicode: bool | None = True,
     width: int = 99,
@@ -71,12 +78,12 @@ def save(
     default_flow_style: bool | None = False,
     sort_keys: bool = False,
     Dumper=IndentDumper,
+    encoding: str = "utf-8",
     **kwargs,
-):
+) -> None:
     """YAMLのファイル保存。"""
-    path = pathlib.Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
+    pytilpack.io.write_text(
+        dest,
         dumps(
             data,
             allow_unicode=allow_unicode,
@@ -87,12 +94,12 @@ def save(
             Dumper=Dumper,
             **kwargs,
         ),
-        encoding="utf-8",
+        encoding=encoding,
     )
 
 
 def save_all(
-    path: str | pathlib.Path,
+    dest: pytilpack.io.PathOrIO,
     data: list[typing.Any],
     allow_unicode: bool | None = True,
     width: int = 99,
@@ -100,12 +107,12 @@ def save_all(
     default_flow_style: bool | None = False,
     sort_keys: bool = False,
     Dumper=IndentDumper,
+    encoding: str = "utf-8",
     **kwargs,
-):
+) -> None:
     """YAMLのファイル保存。"""
-    path = pathlib.Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
+    pytilpack.io.write_text(
+        dest,
         dumps_all(
             data,
             allow_unicode=allow_unicode,
@@ -116,7 +123,7 @@ def save_all(
             Dumper=Dumper,
             **kwargs,
         ),
-        encoding="utf-8",
+        encoding=encoding,
     )
 
 

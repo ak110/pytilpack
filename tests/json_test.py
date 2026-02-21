@@ -1,5 +1,6 @@
 """テストコード。"""
 
+import io
 import pathlib
 
 import pytest
@@ -27,3 +28,22 @@ def test_load_save(tmp_path: pathlib.Path) -> None:
     assert data["a"] == data2["a"]
     assert data["c"] == data2["c"]
     assert tuple(sorted(data)) == tuple(sorted(data2))
+
+
+def test_load_save_io() -> None:
+    """IO[str] / IO[bytes] での load/save のテスト。"""
+    data = {"a": "💯", "c": 1}
+
+    # StringIO で save → load
+    buf = io.StringIO()
+    pytilpack.json.save(buf, data)
+    buf.seek(0)
+    data2 = pytilpack.json.load(buf)
+    assert data == data2
+
+    # BytesIO で save → load
+    buf_b = io.BytesIO()
+    pytilpack.json.save(buf_b, data)
+    buf_b.seek(0)
+    data3 = pytilpack.json.load(buf_b)
+    assert data == data3

@@ -1,23 +1,25 @@
 """JSONC(JSON with Comments)関連。"""
 
 import json
-import pathlib
 import re
 import typing
 
+import pytilpack.io
+
 
 def load(
-    path: str | pathlib.Path,
-    errors: str | None = None,
+    source: pytilpack.io.PathOrIO,
+    encoding: str = "utf-8",
+    errors: str = "replace",
     strict: bool = False,
+    **kwargs,
 ) -> typing.Any:
     """JSONCファイルの読み込み。"""
-    path = pathlib.Path(path)
-    if path.exists():
-        return loads(path.read_text(encoding="utf-8", errors=errors))
-    else:
+    try:
+        return loads(pytilpack.io.read_text(source, encoding=encoding, errors=errors), **kwargs)
+    except FileNotFoundError:
         if strict:
-            raise FileNotFoundError(f"File not found: {path}")
+            raise
         return {}
 
 

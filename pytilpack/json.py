@@ -3,23 +3,24 @@
 import base64
 import datetime
 import json
-import pathlib
 import typing
+
+import pytilpack.io
 
 
 def load(
-    path: str | pathlib.Path,
-    errors: str | None = None,
+    source: pytilpack.io.PathOrIO,
+    encoding: str = "utf-8",
+    errors: str = "replace",
     strict: bool = False,
     **kwargs,
 ) -> typing.Any:
     """JSONファイルの読み込み。"""
-    path = pathlib.Path(path)
-    if path.exists():
-        return loads(path.read_text(encoding="utf-8", errors=errors), **kwargs)
-    else:
+    try:
+        return loads(pytilpack.io.read_text(source, encoding=encoding, errors=errors), **kwargs)
+    except FileNotFoundError:
         if strict:
-            raise FileNotFoundError(f"File not found: {path}")
+            raise
         return {}
 
 
@@ -52,13 +53,14 @@ def converter(
 
 
 def save(
-    path: str | pathlib.Path,
+    dest: pytilpack.io.PathOrIO,
     data: typing.Any,
     ensure_ascii: bool = False,
     indent: int | str | None = None,
     separators: tuple[str, str] | None = None,
     sort_keys: bool = False,
     default: typing.Callable[[typing.Any], typing.Any] = converter,
+    encoding: str = "utf-8",
     **kwargs,
 ) -> None:
     """JSONのファイル保存。
@@ -66,9 +68,8 @@ def save(
     標準ライブラリと異なりデフォルトでensure_ascii=False、UTF-8で保存する。
 
     """
-    path = pathlib.Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
+    pytilpack.io.write_text(
+        dest,
         dumps(
             data,
             ensure_ascii=ensure_ascii,
@@ -78,7 +79,7 @@ def save(
             default=default,
             **kwargs,
         ),
-        encoding="utf-8",
+        encoding=encoding,
     )
 
 
