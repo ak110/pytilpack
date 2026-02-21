@@ -144,7 +144,7 @@ async def write_yaml(
     default_style: str | None = None,
     default_flow_style: bool | None = False,
     sort_keys: bool = False,
-    Dumper=pytilpack.yaml.IndentDumper,
+    Dumper=pytilpack.yaml.CustomDumper,
     encoding: str = "utf-8",
     **kwargs,
 ) -> None:
@@ -176,7 +176,7 @@ async def write_yaml_all(
     default_style: str | None = None,
     default_flow_style: bool | None = False,
     sort_keys: bool = False,
-    Dumper=pytilpack.yaml.IndentDumper,
+    Dumper=pytilpack.yaml.CustomDumper,
     encoding: str = "utf-8",
     **kwargs,
 ) -> None:

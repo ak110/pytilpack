@@ -39,8 +39,10 @@ def load_all(
         return []
 
 
-class IndentDumper(yaml.SafeDumper):
-    """dictの中にlistがあるときのインデントを増やすDumper。
+class CustomDumper(yaml.SafeDumper):
+    """書式をカスタマイズしたDumper。
+
+    インデントのカスタマイズ:
 
     PyYAMLのデフォルトでは
 
@@ -60,6 +62,10 @@ class IndentDumper(yaml.SafeDumper):
 
     とする。
 
+    文字列のカスタマイズ:
+
+    2行以上の文字列はブロックスカラーで出力する。
+
     """
 
     @typing.override
@@ -67,6 +73,18 @@ class IndentDumper(yaml.SafeDumper):
         """インデント増加時の処理。"""
         del indentless
         return super().increase_indent(flow, False)
+
+    @staticmethod
+    def str_representer(dumper, value):
+        """改行を含む文字列を検出し、style='|' で出力する representer。"""
+        if "\n" in value.rstrip():
+            # 改行を含む場合はリテラルスタイル '|'
+            return dumper.represent_scalar("tag:yaml.org,2002:str", value, style="|")
+        # 改行を含まない場合は既定動作
+        return dumper.represent_scalar("tag:yaml.org,2002:str", value)
+
+
+CustomDumper.add_representer(str, CustomDumper.str_representer)
 
 
 def save(
@@ -77,7 +95,7 @@ def save(
     default_style: str | None = None,
     default_flow_style: bool | None = False,
     sort_keys: bool = False,
-    Dumper=IndentDumper,
+    Dumper=CustomDumper,
     encoding: str = "utf-8",
     **kwargs,
 ) -> None:
@@ -106,7 +124,7 @@ def save_all(
     default_style: str | None = None,
     default_flow_style: bool | None = False,
     sort_keys: bool = False,
-    Dumper=IndentDumper,
+    Dumper=CustomDumper,
     encoding: str = "utf-8",
     **kwargs,
 ) -> None:
@@ -134,7 +152,7 @@ def dumps(
     default_style: str | None = None,
     default_flow_style: bool | None = False,
     sort_keys: bool = False,
-    Dumper=IndentDumper,
+    Dumper=CustomDumper,
     **kwargs,
 ) -> str:
     """YAMLの文字列化。"""
@@ -157,7 +175,7 @@ def dumps_all(
     default_style: str | None = None,
     default_flow_style: bool | None = False,
     sort_keys: bool = False,
-    Dumper=IndentDumper,
+    Dumper=CustomDumper,
     **kwargs,
 ) -> str:
     """YAMLの文字列化。"""

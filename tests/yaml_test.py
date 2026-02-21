@@ -22,7 +22,7 @@ def test_load_save(tmp_path: pathlib.Path) -> None:
     assert tuple(sorted(data)) == tuple(sorted(data2))
 
     s = pathlib.Path(path).read_text("utf-8")
-    assert s == "c: '💯\n\n  あいうえお\n\n\n  '\na: 1\n"
+    assert s == "c: |+\n  💯\n  あいうえお\n\na: 1\n"
 
 
 def test_load_all_not_exist(tmp_path: pathlib.Path) -> None:
@@ -59,6 +59,16 @@ def test_load_save_io() -> None:
     buf_b.seek(0)
     data3 = pytilpack.yaml.load(buf_b)
     assert data == data3
+
+
+def test_block_scalar() -> None:
+    """ブロックスカラーのテスト。"""
+    # 改行を含む文字列はブロックスカラー (|) で出力される
+    assert pytilpack.yaml.dumps({"key": "line1\nline2\n"}) == "key: |\n  line1\n  line2\n"
+    # 末尾のみ改行は通常の形式で出力される
+    assert pytilpack.yaml.dumps({"key": "only at end\n"}) == "key: 'only at end\n\n  '\n"
+    # 改行を含まない文字列は通常の形式で出力される
+    assert pytilpack.yaml.dumps({"key": "no newline"}) == "key: no newline\n"
 
 
 def test_load_all_save_all_io() -> None:
