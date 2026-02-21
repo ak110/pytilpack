@@ -14,12 +14,11 @@ def load(
     """JSONCファイルの読み込み。"""
     path = pathlib.Path(path)
     if path.exists():
-        data = loads(path.read_text(encoding="utf-8", errors=errors))
+        return loads(path.read_text(encoding="utf-8", errors=errors))
     else:
         if strict:
             raise FileNotFoundError(f"File not found: {path}")
-        data = {}
-    return data
+        return {}
 
 
 def loads(text: str, **kwargs) -> typing.Any:

@@ -16,12 +16,11 @@ def load(
     """JSONファイルの読み込み。"""
     path = pathlib.Path(path)
     if path.exists():
-        data = loads(path.read_text(encoding="utf-8", errors=errors), **kwargs)
+        return loads(path.read_text(encoding="utf-8", errors=errors), **kwargs)
     else:
         if strict:
             raise FileNotFoundError(f"File not found: {path}")
-        data = {}
-    return data
+        return {}
 
 
 loads = json.loads
