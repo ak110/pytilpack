@@ -48,7 +48,7 @@ def _app() -> typing.Generator[flask.Flask, None, None]:
 
     @app.route("/sse")
     def sse():
-        return flask.Response("data: hello\n\n", content_type="text/event-stream")
+        return flask.Response(iter(["data: hello\n\n"]), content_type="text/event-stream")
 
     yield app
 

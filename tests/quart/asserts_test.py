@@ -9,6 +9,7 @@ import quart
 import quart.typing
 
 import pytilpack.quart
+import pytilpack.sse
 
 
 @pytest.fixture(name="app")
@@ -49,7 +50,18 @@ def _app() -> typing.Generator[quart.Quart, None, None]:
 
     @app.route("/sse")
     async def sse():
-        return "data: hello\n\n", 200, {"Content-Type": "text/event-stream"}
+        @pytilpack.sse.generator()
+        async def generator():
+            yield "data: hello\n\n"
+
+        return quart.Response(
+            generator(),
+            content_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+            },
+        )
 
     yield app
 

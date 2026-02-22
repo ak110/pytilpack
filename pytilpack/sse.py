@@ -28,6 +28,7 @@ class SSE:
 
         @app.route("/events")
         async def events():
+            @pytilpack.sse.generator()
             async def generate():
                 # 複数行のデータも自動的に処理
                 yield str(pytilpack.sse.SSE(
@@ -37,7 +38,7 @@ class SSE:
                 await asyncio.sleep(1)
 
             return quart.Response(
-                pytilpack.sse.add_keepalive(generate()),
+                generate(),
                 content_type="text/event-stream",
                 headers={
                     "Cache-Control": "no-cache",
