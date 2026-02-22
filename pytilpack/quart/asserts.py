@@ -171,6 +171,51 @@ async def assert_xml(
     return response_body
 
 
+async def assert_sse(
+    response: ResponseType,
+    status_code: int = 200,
+) -> quart.Response:
+    """テストコード用。
+
+    Args:
+        response: レスポンス
+        status_code: 期待するステータスコード
+
+    Raises:
+        AssertionError: ステータスコードが異なる場合、またはContent-Typeが異なる場合
+
+    Returns:
+        レスポンス
+
+    """
+    response = await _get_response(response)
+    pytilpack.web.check_status_code(response.status_code, status_code)
+    pytilpack.web.check_content_type(response.content_type, "text/event-stream")
+    return response
+
+
+async def assert_response(
+    response: ResponseType,
+    status_code: int = 200,
+) -> quart.Response:
+    """テストコード用。
+
+    Args:
+        response: レスポンス
+        status_code: 期待するステータスコード
+
+    Raises:
+        AssertionError: ステータスコードが異なる場合
+
+    Returns:
+        レスポンス
+
+    """
+    response = await _get_response(response)
+    pytilpack.web.check_status_code(response.status_code, status_code)
+    return response
+
+
 async def _get_response(response: ResponseType) -> quart.Response:
     if isinstance(response, typing.Awaitable):
         return await response

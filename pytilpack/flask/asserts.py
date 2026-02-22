@@ -162,6 +162,49 @@ def assert_xml(
     return response_body
 
 
+def assert_sse(
+    response,
+    status_code: int = 200,
+):
+    """テストコード用。
+
+    Args:
+        response: レスポンス
+        status_code: 期待するステータスコード
+
+    Raises:
+        AssertionError: ステータスコードが異なる場合、またはContent-Typeが異なる場合
+
+    Returns:
+        レスポンス
+
+    """
+    pytilpack.web.check_status_code(response.status_code, status_code)
+    pytilpack.web.check_content_type(response.content_type, "text/event-stream")
+    return response
+
+
+def assert_response(
+    response,
+    status_code: int = 200,
+):
+    """テストコード用。
+
+    Args:
+        response: レスポンス
+        status_code: 期待するステータスコード
+
+    Raises:
+        AssertionError: ステータスコードが異なる場合
+
+    Returns:
+        レスポンス
+
+    """
+    pytilpack.web.check_status_code(response.status_code, status_code)
+    return response
+
+
 def check_status_code(status_code: int, valid_status_code: int) -> None:
     """Deprecated."""
     warnings.warn(

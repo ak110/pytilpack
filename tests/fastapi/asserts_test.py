@@ -46,6 +46,10 @@ def _app() -> fastapi.FastAPI:
     def xml_invalid():
         return fastapi.responses.Response("<root>hello & world</root>", status_code=200, media_type="application/xml")
 
+    @app.get("/sse")
+    def sse():
+        return fastapi.responses.StreamingResponse(iter(["data: hello\n\n"]), media_type="text/event-stream")
+
     return app
 
 
@@ -111,3 +115,27 @@ def test_assert_xml(client: fastapi.testclient.TestClient) -> None:
     response = client.get("/html")
     with pytest.raises(AssertionError):
         _ = pytilpack.fastapi.assert_xml(response)
+
+
+def test_assert_sse(client: fastapi.testclient.TestClient) -> None:
+    """SSEアサーションのテスト。"""
+    response = client.get("/sse")
+    _ = pytilpack.fastapi.assert_sse(response)
+
+    response = client.get("/403")
+    with pytest.raises(AssertionError):
+        _ = pytilpack.fastapi.assert_sse(response)
+
+    response = client.get("/html")
+    with pytest.raises(AssertionError):
+        _ = pytilpack.fastapi.assert_sse(response)
+
+
+def test_assert_response(client: fastapi.testclient.TestClient) -> None:
+    """レスポンスアサーションのテスト。"""
+    response = client.get("/html")
+    _ = pytilpack.fastapi.assert_response(response)
+
+    response = client.get("/403")
+    with pytest.raises(AssertionError):
+        _ = pytilpack.fastapi.assert_response(response)

@@ -46,6 +46,10 @@ def _app() -> typing.Generator[flask.Flask, None, None]:
     def xml_invalid():
         return "<root>hello & world</root>", 200, {"Content-Type": "application/xml"}
 
+    @app.route("/sse")
+    def sse():
+        return flask.Response("data: hello\n\n", content_type="text/event-stream")
+
     yield app
 
 
@@ -114,3 +118,27 @@ def test_assert_xml(client: flask.testing.FlaskClient) -> None:
     response = client.get("/html")
     with pytest.raises(AssertionError):
         _ = pytilpack.flask.assert_xml(response)
+
+
+def test_assert_sse(client: flask.testing.FlaskClient) -> None:
+    """SSEアサーションのテスト。"""
+    response = client.get("/sse")
+    _ = pytilpack.flask.assert_sse(response)
+
+    response = client.get("/403")
+    with pytest.raises(AssertionError):
+        _ = pytilpack.flask.assert_sse(response)
+
+    response = client.get("/html")
+    with pytest.raises(AssertionError):
+        _ = pytilpack.flask.assert_sse(response)
+
+
+def test_assert_response(client: flask.testing.FlaskClient) -> None:
+    """レスポンスアサーションのテスト。"""
+    response = client.get("/html")
+    _ = pytilpack.flask.assert_response(response)
+
+    response = client.get("/403")
+    with pytest.raises(AssertionError):
+        _ = pytilpack.flask.assert_response(response)

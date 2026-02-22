@@ -47,6 +47,10 @@ def _app() -> typing.Generator[quart.Quart, None, None]:
     async def xml_invalid():
         return "<root>hello & world</root>", 200, {"Content-Type": "application/xml"}
 
+    @app.route("/sse")
+    async def sse():
+        return "data: hello\n\n", 200, {"Content-Type": "text/event-stream"}
+
     yield app
 
 
@@ -121,3 +125,29 @@ async def test_assert_xml(client: quart.typing.TestClientProtocol) -> None:
     response = await client.get("/html")
     with pytest.raises(AssertionError):
         _ = await pytilpack.quart.assert_xml(response)
+
+
+@pytest.mark.asyncio
+async def test_assert_sse(client: quart.typing.TestClientProtocol) -> None:
+    """SSEアサーションのテスト。"""
+    response = await client.get("/sse")
+    _ = await pytilpack.quart.assert_sse(response)
+
+    response = await client.get("/403")
+    with pytest.raises(AssertionError):
+        _ = await pytilpack.quart.assert_sse(response)
+
+    response = await client.get("/html")
+    with pytest.raises(AssertionError):
+        _ = await pytilpack.quart.assert_sse(response)
+
+
+@pytest.mark.asyncio
+async def test_assert_response(client: quart.typing.TestClientProtocol) -> None:
+    """レスポンスアサーションのテスト。"""
+    response = await client.get("/html")
+    _ = await pytilpack.quart.assert_response(response)
+
+    response = await client.get("/403")
+    with pytest.raises(AssertionError):
+        _ = await pytilpack.quart.assert_response(response)

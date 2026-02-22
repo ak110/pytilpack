@@ -40,6 +40,7 @@ def check_content_type(content_type: str, valid_content_types: str | typing.Iter
         return None
     if isinstance(valid_content_types, str):
         valid_content_types = [valid_content_types]
+    # ; charset=utf-8などが付いている場合があるため、簡易的にstartswithでチェックする
     if not any(content_type.startswith(c) for c in valid_content_types):
         raise AssertionError(f"Content-Typeエラー: {content_type} != {valid_content_types}")
     return None

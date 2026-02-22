@@ -165,3 +165,47 @@ def assert_xml(
             raise AssertionError(f"XMLエラー: {e}") from e
 
     return response_body
+
+
+def assert_sse(
+    response: httpx.Response,
+    status_code: int = 200,
+) -> httpx.Response:
+    """テストコード用。
+
+    Args:
+        response: レスポンス
+        status_code: 期待するステータスコード
+
+    Raises:
+        AssertionError: ステータスコードが異なる場合、またはContent-Typeが異なる場合
+
+    Returns:
+        レスポンス
+
+    """
+    pytilpack.web.check_status_code(response.status_code, status_code)
+    content_type_value = response.headers.get("content-type")
+    pytilpack.web.check_content_type(content_type_value, "text/event-stream")
+    return response
+
+
+def assert_response(
+    response: httpx.Response,
+    status_code: int = 200,
+) -> httpx.Response:
+    """テストコード用。
+
+    Args:
+        response: レスポンス
+        status_code: 期待するステータスコード
+
+    Raises:
+        AssertionError: ステータスコードが異なる場合
+
+    Returns:
+        レスポンス
+
+    """
+    pytilpack.web.check_status_code(response.status_code, status_code)
+    return response

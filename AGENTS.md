@@ -49,7 +49,9 @@
 ### Pythonテストコード
 
 - テストコードは`pytest`で書く
-- テストコードは`pytilpack/xxx_.py`に対して`tests/xxx_test.py`として配置する
+- テストコードは`pytilpack/xxx.py`に対して`tests/xxx_test.py`として配置する
+  - `pytilpack/xxx/yyy.py`に対して`tests/xxx/yyy_test.py`
+  - `xxx`がpythonキーワードなどの場合は`xxx_.py`になっているが、その場合は`xxx_test.py` (アンダースコアは無視)
 - テストコードは速度と簡潔さを重視する。
   - テスト関数を細かく分け過ぎず、一連の流れをまとめて1つの関数にする。
     - 例えば、saveとloadならまとめてtest_save_loadのようにする。(こういう関係ある関数以外はまとめず別々に。)
