@@ -9,6 +9,7 @@ import sqlalchemy
 import sqlalchemy.event
 import sqlalchemy.exc
 import sqlalchemy.pool
+import sqlalchemy.sql.base
 
 logger = logging.getLogger(__name__)
 
@@ -33,18 +34,44 @@ class Mixin:
     """テーブルクラスに色々便利機能を生やすMixin。"""
 
     @classmethod
-    def get_by_id(cls: type[typing.Self], id_: int, for_update: bool = False) -> typing.Self | None:
+    async def get_by_id_not_null(
+        cls, id_: int, for_update: bool = False, options: sqlalchemy.sql.base.ExecutableOption | None = None
+    ) -> typing.Self:
+        """IDを元にインスタンスを取得。見つからない場合は例外を出す。
+
+        Args:
+            id_: ID。
+            for_update: 更新ロックを取得するか否か。
+            options: クエリオプション。eager loadingなどに使用する。
+
+        Returns:
+            インスタンス。
+        Raises:
+            ValueError: 見つからない場合。
+        """
+        instance = cls.get_by_id(id_, for_update=for_update, options=options)
+        if instance is None:
+            raise ValueError(f"{cls.__qualname__}が見つかりませんでした。id={id_}")
+        return instance
+
+    @classmethod
+    def get_by_id(
+        cls: type[typing.Self], id_: int, for_update: bool = False, options: sqlalchemy.sql.base.ExecutableOption | None = None
+    ) -> typing.Self | None:
         """IDを元にインスタンスを取得。
 
         Args:
             id_: ID。
             for_update: 更新ロックを取得するか否か。
+            options: クエリオプション。eager loadingなどに使用。
 
         Returns:
             インスタンス。
 
         """
         q = cls.query.filter(cls.id == id_)  # type: ignore
+        if options is not None:
+            q = q.options(options)
         if for_update:
             q = q.with_for_update()
         return q.one_or_none()

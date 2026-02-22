@@ -13,6 +13,7 @@ import typing
 
 import sqlalchemy
 import sqlalchemy.ext.asyncio
+import sqlalchemy.sql.base
 
 import pytilpack.asyncio
 import pytilpack.paginator
@@ -377,18 +378,44 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         return list((await cls.session().execute(query)).all())
 
     @classmethod
-    async def get_by_id(cls, id_: int, for_update: bool = False) -> typing.Self | None:
+    async def get_by_id_not_null(
+        cls, id_: int, for_update: bool = False, options: sqlalchemy.sql.base.ExecutableOption | None = None
+    ) -> typing.Self:
+        """IDを元にインスタンスを取得。見つからない場合は例外を出す。
+
+        Args:
+            id_: ID。
+            for_update: 更新ロックを取得するか否か。
+            options: クエリオプション。eager loadingなどに使用する。
+
+        Returns:
+            インスタンス。
+        Raises:
+            ValueError: 見つからない場合。
+        """
+        instance = await cls.get_by_id(id_, for_update=for_update, options=options)
+        if instance is None:
+            raise ValueError(f"{cls.__qualname__}が見つかりませんでした。id={id_}")
+        return instance
+
+    @classmethod
+    async def get_by_id(
+        cls, id_: int, for_update: bool = False, options: sqlalchemy.sql.base.ExecutableOption | None = None
+    ) -> typing.Self | None:
         """IDを元にインスタンスを取得。
 
         Args:
             id_: ID。
             for_update: 更新ロックを取得するか否か。
+            options: クエリオプション。eager loadingなどに使用する。
 
         Returns:
             インスタンス。
 
         """
         q = cls.select().where(cls.id == id_)  # type: ignore  # pylint: disable=no-member
+        if options is not None:
+            q = q.options(options)
         if for_update:
             q = q.with_for_update()
         return await cls.scalar_one_or_none(q)  # type: ignore[arg-type]
