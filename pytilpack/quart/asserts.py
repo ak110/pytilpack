@@ -95,7 +95,7 @@ async def assert_json(
     response: ResponseType,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "application/json",
-) -> dict[str, typing.Any]:
+) -> typing.Any:
     """テストコード用。
 
     Args:
@@ -112,7 +112,7 @@ async def assert_json(
     """
     response = await _get_response(response)
     response_body = await response.get_data(as_text=True)
-    data: dict[str, typing.Any]
+    data: typing.Any
 
     async with pytilpack.pytest.AssertBlock(response_body, suffix=".json"):
         # ステータスコードチェック

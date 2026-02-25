@@ -225,6 +225,7 @@ def truncate_values(
     max_bytes_len: int = 100,
     bytes_to_str: bool = False,
     model_dump_kwargs: dict[str, typing.Any] | None = None,
+    max_num_list_len: int = 3,
 ) -> typing.Any:
     """dictやlist/tuple内の長いstr/bytesを再帰的に省略する。
 
@@ -234,6 +235,7 @@ def truncate_values(
         max_bytes_len: バイト列の最大長。
         bytes_to_str: bytesをstrに変換するかどうか。
         model_dump_kwargs: pydanticモデルをdictに変換する際の追加引数。
+        max_num_list_len: 全要素が数値型(int/float)のlistの最大表示件数。超えた場合は先頭n件+"..."に省略。
 
     Returns:
         省略処理を行った新しいオブジェクト。
@@ -258,13 +260,21 @@ def truncate_values(
             return data
     if isinstance(data, dict):
         return {
-            truncate_values(k, max_str_len, max_bytes_len, bytes_to_str, model_dump_kwargs): truncate_values(
-                v, max_str_len, max_bytes_len, bytes_to_str, model_dump_kwargs
+            truncate_values(k, max_str_len, max_bytes_len, bytes_to_str, model_dump_kwargs, max_num_list_len): truncate_values(
+                v, max_str_len, max_bytes_len, bytes_to_str, model_dump_kwargs, max_num_list_len
             )
             for k, v in data.items()
         }
     if isinstance(data, list):
-        return [truncate_values(item, max_str_len, max_bytes_len, bytes_to_str, model_dump_kwargs) for item in data]
+        if len(data) > max_num_list_len and all(isinstance(item, (int, float)) and not isinstance(item, bool) for item in data):
+            return [*data[:max_num_list_len], "..."]
+        return [
+            truncate_values(item, max_str_len, max_bytes_len, bytes_to_str, model_dump_kwargs, max_num_list_len)
+            for item in data
+        ]
     if isinstance(data, tuple):
-        return tuple(truncate_values(item, max_str_len, max_bytes_len, bytes_to_str, model_dump_kwargs) for item in data)
+        return tuple(
+            truncate_values(item, max_str_len, max_bytes_len, bytes_to_str, model_dump_kwargs, max_num_list_len)
+            for item in data
+        )
     return data

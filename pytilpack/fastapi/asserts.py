@@ -91,7 +91,7 @@ def assert_json(
     response: httpx.Response,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "application/json",
-) -> dict[str, typing.Any]:
+) -> typing.Any:
     """テストコード用。
 
     Args:
@@ -107,7 +107,7 @@ def assert_json(
 
     """
     response_body = response.text
-    data: dict[str, typing.Any]
+    data: typing.Any
 
     with pytilpack.pytest.AssertBlock(response_body, suffix=".json"):
         # ステータスコードチェック
