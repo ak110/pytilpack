@@ -1,5 +1,6 @@
 """markdown関連。"""
 
+import re
 import typing
 
 import bleach
@@ -141,6 +142,26 @@ ALLOWED_ATTRIBUTES = {
 
 ALLOWED_PROTOCOLS = {"http", "https", "mailto"}
 """許可するプロトコル。"""
+
+_MARKDOWN_ESCAPE_PATTERN = re.compile(r"([-<#+*_`\.!{}\[\]()])")
+"""Markdown特殊文字のエスケープ用パターン。"""
+
+
+def escape(text: str) -> str:
+    """Markdown文字列をエスケープ。"""
+    text = text.replace("\\", "\\\\")
+    return _MARKDOWN_ESCAPE_PATTERN.sub(r"\\\1", text)
+
+
+def inline_code(text: str) -> str:
+    """テキストをMarkdownのインラインコードブロックに変換。"""
+    # 最大連続バッククォート数 + 1 個のバッククォートをデリミタとして使用
+    max_backticks = max((len(m.group()) for m in re.finditer(r"`+", text)), default=0)
+    delimiter = "`" * (max_backticks + 1)
+    # テキストがバッククォートで始まる・終わる場合はスペースを追加
+    if text.startswith("`") or text.endswith("`"):
+        return f"{delimiter} {text} {delimiter}"
+    return f"{delimiter}{text}{delimiter}"
 
 
 def markdownfy(

@@ -62,3 +62,24 @@ def test_markdownfy_with_malicious_content():
     text = "[click me](javascript:alert('test'))"
     result = pytilpack.markdown.markdownfy(text)
     assert "javascript:" not in result
+
+
+def test_escape() -> None:
+    """escapeのテスト。"""
+    assert pytilpack.markdown.escape("Hello *world*") == r"Hello \*world\*"
+    assert pytilpack.markdown.escape("a\\b") == r"a\\b"
+    assert pytilpack.markdown.escape("[link](url)") == r"\[link\]\(url\)"
+
+
+def test_inline_code() -> None:
+    """inline_codeのテスト。"""
+    # 通常テキスト → シングルバッククォート
+    assert pytilpack.markdown.inline_code("foo") == "`foo`"
+    # バッククォートを含む → ダブルバッククォート
+    assert pytilpack.markdown.inline_code("foo`bar") == "``foo`bar``"
+    # 先頭がバッククォート → スペース追加
+    assert pytilpack.markdown.inline_code("`foo") == "`` `foo ``"
+    # 末尾がバッククォート → スペース追加
+    assert pytilpack.markdown.inline_code("foo`") == "`` foo` ``"
+    # 複数連続バッククォートを含む → 最大連続数+1
+    assert pytilpack.markdown.inline_code("foo``bar") == "```foo``bar```"
