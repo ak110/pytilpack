@@ -87,7 +87,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
 
         Args:
             url: DB接続URL。
-            pool_size: コネクションプールのサイズ。スレッド数に応じて調整要。
+            pool_size: コネクションプールのサイズ。スレッド数に応じて調整要。負数の場合はプーリングを無効化する。
             max_overflow: コネクションプールの最大オーバーフロー数。Noneの場合はデフォルト値を使用。
             pool_recycle: コネクションプールのリサイクル時間。Noneの場合はデフォルト値を使用。
             pool_pre_ping: コネクションプールのプレピン。Noneの場合はデフォルト値を使用。
@@ -99,13 +99,17 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
         """
         assert cls._init_args is None, "DB接続はすでに初期化されています。"
 
-        if pool_size is not None and max_overflow is None:
-            max_overflow = pool_size * 1  # デフォルトで倍まで許可
-        engine_kwargs = kwargs.copy()
-        if pool_size is not None:
-            engine_kwargs["pool_size"] = pool_size
-        if max_overflow is not None:
-            engine_kwargs["max_overflow"] = max_overflow
+        if pool_size is not None and pool_size < 0:
+            engine_kwargs = kwargs.copy()
+            engine_kwargs["poolclass"] = sqlalchemy.pool.NullPool
+        else:
+            if pool_size is not None and max_overflow is None:
+                max_overflow = pool_size * 1  # デフォルトで倍まで許可
+            engine_kwargs = kwargs.copy()
+            if pool_size is not None:
+                engine_kwargs["pool_size"] = pool_size
+            if max_overflow is not None:
+                engine_kwargs["max_overflow"] = max_overflow
         if pool_recycle is not None:
             engine_kwargs["pool_recycle"] = pool_recycle
         if pool_pre_ping is not None:

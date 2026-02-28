@@ -112,6 +112,19 @@ async def test_init_args_stored_globally(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_init_with_negative_pool_size_disables_pooling(tmp_path):
+    """pool_sizeが負数ならNullPoolで初期化されることを確認する。"""
+    Base, _ = _make_base()
+    url = f"sqlite+aiosqlite:///{tmp_path / 'test.db'}"
+    Base.init(url, pool_size=-1)
+    try:
+        engine = Base.engine()
+        assert isinstance(engine.sync_engine.pool, sqlalchemy.pool.NullPool)
+    finally:
+        await Base.term()
+
+
+@pytest.mark.asyncio
 async def test_same_thread_reuses_engine(tmp_path):
     """同じスレッド内では同じengineが再利用されることを確認する。"""
     Base, _ = _make_base()
