@@ -590,7 +590,7 @@ async def await_for_connection(url: str, timeout: float = 180.0) -> None:
 async def asafe_close(session: sqlalchemy.ext.asyncio.AsyncSession, log_level: int | None = logging.DEBUG):
     """例外を出さずにセッションをクローズ。"""
     try:
-        await session.close()
+        await asyncio.shield(session.close())
     except Exception:
         if log_level is not None:
             logger.log(log_level, "セッションクローズ失敗", exc_info=True)
