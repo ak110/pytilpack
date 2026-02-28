@@ -1,0 +1,80 @@
+# CLIコマンド
+
+一部機能は CLI から利用できます。
+
+## 空のディレクトリを削除
+
+```bash
+pytilpack delete_empty_dirs path/to/dir [--no-keep-root] [--verbose]
+```
+
+- 空のディレクトリを削除
+- デフォルトでルートディレクトリを保持（`--no-keep-root`で削除可能）
+
+## 古いファイルを削除
+
+```bash
+pytilpack delete_old_files path/to/dir --days=7 \
+  [--no-delete-empty-dirs] [--no-keep-root-empty-dir] [--verbose]
+```
+
+- 指定した日数より古いファイルを削除（`--days`オプションで指定）
+- デフォルトで空ディレクトリを削除（`--no-delete-empty-dirs`で無効化）
+- デフォルトでルートディレクトリを保持（`--no-keep-root-empty-dir`で削除可能）
+
+## ディレクトリを同期
+
+```bash
+pytilpack sync src dst [--delete] [--verbose]
+```
+
+- コピー元(src)からコピー先(dst)へファイル・ディレクトリを同期
+- 日付が異なるファイルをコピー
+- `--delete`オプションでコピー元に存在しないコピー先のファイル・ディレクトリを削除
+
+## URLの内容を取得
+
+```bash
+pytilpack fetch url [--no-verify] [--verbose]
+```
+
+- URLからHTMLを取得し、簡略化して標準出力に出力
+- `--no-verify`オプションでSSL証明書の検証を無効化
+- `--verbose`オプションで詳細なログを出力
+
+## MCPサーバーを起動
+
+```bash
+pytilpack mcp [--transport=stdio] [--host=localhost] [--port=8000] [--verbose]
+```
+
+- Model Context ProtocolサーバーとしてpytilpackのFetch機能を提供
+- `--transport`オプションで通信方式を指定（stdio/http、デフォルト: stdio）
+- `--host`オプションでサーバーのホスト名を指定（httpの場合のみ使用、デフォルト: localhost）
+- `--port`オプションでサーバーのポート番号を指定（httpの場合のみ使用、デフォルト: 8000）
+- `--verbose`オプションで詳細なログを出力
+
+### stdioモード
+
+```bash
+pytilpack mcp
+# または
+pytilpack mcp --transport=stdio
+```
+
+### httpモード
+
+```bash
+pytilpack mcp --transport=http --port=8000
+```
+
+## DB接続待機
+
+```bash
+pytilpack wait-for-db-connection SQLALCHEMY_DATABASE_URI [--timeout=180] [--verbose]
+```
+
+- 指定されたSQLALCHEMY_DATABASE_URIで、DB接続が可能になるまで待機
+- URLに非同期ドライバ（`+asyncpg`, `+aiosqlite`, `+aiomysql`等）が含まれる場合は自動で非同期処理を使用
+- `--timeout`オプションでタイムアウト秒数を指定（デフォルト: 180）
+- `--verbose`オプションで詳細なログを出力

@@ -22,146 +22,64 @@ pip install pytilpack
 # pip install pytilpack[tqdm]
 ```
 
-## 使い方
+## 主な使い方
 
-### import
-
-各モジュールを個別にimportして利用する。
+各モジュールを個別に import して利用する。
 
 ```python
 import pytilpack.xxx
 ```
 
-xxxのところは対象ライブラリと同名になっている。`openai`とか`pathlib`とか。
-それぞれのモジュールに関連するユーティリティ関数などが入っている。
+`xxx` には対象ライブラリ名（`openai` や `pathlib` など）が入る。
 
-特定のライブラリに依存しないものもある。
+一部は CLI もある。詳細は [docs/cli.md](docs/cli.md) を参照。
 
-### モジュール一覧
+## 各種ライブラリ用ユーティリティ
 
-### 各種ライブラリ用のユーティリティのモジュール一覧
+- [pytilpack.asyncio](../pytilpack/asyncio.py)
+- [pytilpack.base64](../pytilpack/base64.py)
+- [pytilpack.csv](../pytilpack/csv.py)
+- [pytilpack.dataclasses](../pytilpack/dataclasses.py)
+- [pytilpack.datetime](../pytilpack/datetime.py)
+- [pytilpack.fastapi](../pytilpack/fastapi/__init__.py)
+- [pytilpack.flask](../pytilpack/flask/__init__.py)
+- [pytilpack.flask_login](../pytilpack/flask.py)
+- [pytilpack.fnctl](../pytilpack/fnctl.py)
+- [pytilpack.functools](../pytilpack/functools.py)
+- [pytilpack.httpx](../pytilpack/httpx.py)
+- [pytilpack.importlib](../pytilpack/importlib.py)
+- [pytilpack.json](../pytilpack/json.py)
+- [pytilpack.logging](../pytilpack/logging.py)
+- [pytilpack.openai](../pytilpack/openai.py)
+- [pytilpack.pathlib](../pytilpack/pathlib.py)
+- [pytilpack.pycrypto](../pytilpack/pycrypto.py)
+- [pytilpack.python](../pytilpack/python.py)
+- [pytilpack.quart](../pytilpack/quart/__init__.py)
+- [pytilpack.sqlalchemy](../pytilpack/sqlalchemy.py)
+- [pytilpack.sqlalchemya](../pytilpack/sqlalchemya.py): asyncio版
+- [pytilpack.threading](../pytilpack/threading.py)
+- [pytilpack.threadinga](../pytilpack/threadinga.py): asyncio版
+- [pytilpack.tiktoken](../pytilpack/tiktoken.py)
+- [pytilpack.tqdm](../pytilpack/tqdm.py)
+- [pytilpack.typing](../pytilpack/typing.py)
+- [pytilpack.yaml](../pytilpack/yaml.py)
 
-- [pytilpack.asyncio](pytilpack/asyncio.py)
-- [pytilpack.base64](pytilpack/base64.py)
-- [pytilpack.csv](pytilpack/csv.py)
-- [pytilpack.dataclasses](pytilpack/dataclasses.py)
-- [pytilpack.datetime](pytilpack/datetime.py)
-- [pytilpack.fastapi](pytilpack/fastapi/__init__.py)
-- [pytilpack.flask](pytilpack/flask/__init__.py)
-- [pytilpack.flask_login](pytilpack/flask.py)
-- [pytilpack.fnctl](pytilpack/fnctl.py)
-- [pytilpack.functools](pytilpack/functools.py)
-- [pytilpack.httpx](pytilpack/httpx.py)
-- [pytilpack.importlib](pytilpack/importlib.py)
-- [pytilpack.json](pytilpack/json.py)
-- [pytilpack.logging](pytilpack/logging.py)
-- [pytilpack.openai](pytilpack/openai.py)
-- [pytilpack.pathlib](pytilpack/pathlib.py)
-- [pytilpack.pycrypto](pytilpack/pycrypto.py)
-- [pytilpack.python](pytilpack/python.py)
-- [pytilpack.quart](pytilpack/quart/__init__.py)
-- [pytilpack.sqlalchemy](pytilpack/sqlalchemy.py)
-- [pytilpack.sqlalchemya](pytilpack/sqlalchemya.py): asyncio版
-- [pytilpack.threading](pytilpack/threading.py)
-- [pytilpack.threadinga](pytilpack/threadinga.py): asyncio版
-- [pytilpack.tiktoken](pytilpack/tiktoken.py)
-- [pytilpack.tqdm](pytilpack/tqdm.py)
-- [pytilpack.typing](pytilpack/typing.py)
-- [pytilpack.yaml](pytilpack/yaml.py)
+## 特定ライブラリに依存しないモジュール
 
-### 特定のライブラリに依存しないモジュール一覧
+- [pytilpack.cache](../pytilpack/cache.py): ファイルキャッシュ関連
+- [pytilpack.data_url](../pytilpack/data_url.py): データURL関連
+- [pytilpack.healthcheck](../pytilpack/healthcheck.py): ヘルスチェック処理関連
+- [pytilpack.htmlrag](../pytilpack/htmlrag.py): HtmlRAG関連
+- [pytilpack.http](../pytilpack/http.py): HTTP関連
+- [pytilpack.io](../pytilpack/io.py): IO関連のユーティリティ
+- [pytilpack.jsonc](../pytilpack/jsonc.py): JSON with Comments関連
+- [pytilpack.paginator](../pytilpack/paginator.py): ページネーション関連
+- [pytilpack.sse](../pytilpack/sse.py): Server-Sent Events関連
+- [pytilpack.web](../pytilpack/web.py): Web関連
 
-- [pytilpack.cache](pytilpack/cache.py): ファイルキャッシュ関連
-- [pytilpack.data_url](pytilpack/data_url.py): データURL関連
-- [pytilpack.healthcheck](pytilpack/healthcheck.py): ヘルスチェック処理関連
-- [pytilpack.htmlrag](pytilpack/htmlrag.py): HtmlRAG関連
-- [pytilpack.http](pytilpack/http.py): HTTP関連
-- [pytilpack.io](pytilpack/io.py): IO関連のユーティリティ
-- [pytilpack.jsonc](pytilpack/jsonc.py): JSON with Comments関連
-- [pytilpack.paginator](pytilpack/paginator.py): ページネーション関連
-- [pytilpack.sse](pytilpack/sse.py): Server-Sent Events関連
-- [pytilpack.web](pytilpack/web.py): Web関連
+## ドキュメント
 
-## CLIコマンド
-
-一部の機能はCLIコマンドとしても利用可能。
-
-### 空のディレクトリを削除
-
-```bash
-pytilpack delete_empty_dirs path/to/dir [--no-keep-root] [--verbose]
-```
-
-- 空のディレクトリを削除
-- デフォルトでルートディレクトリを保持（`--no-keep-root`で削除可能）
-
-### 古いファイルを削除
-
-```bash
-pytilpack delete_old_files path/to/dir --days=7 [--no-delete-empty-dirs] [--no-keep-root-empty-dir] [--verbose]
-```
-
-- 指定した日数より古いファイルを削除（`--days`オプションで指定）
-- デフォルトで空ディレクトリを削除（`--no-delete-empty-dirs`で無効化）
-- デフォルトでルートディレクトリを保持（`--no-keep-root-empty-dir`で削除可能）
-
-### ディレクトリを同期
-
-```bash
-pytilpack sync src dst [--delete] [--verbose]
-```
-
-- コピー元(src)からコピー先(dst)へファイル・ディレクトリを同期
-- 日付が異なるファイルをコピー
-- `--delete`オプションでコピー元に存在しないコピー先のファイル・ディレクトリを削除
-
-### URLの内容を取得
-
-```bash
-pytilpack fetch url [--no-verify] [--verbose]
-```
-
-- URLからHTMLを取得し、簡略化して標準出力に出力
-- `--no-verify`オプションでSSL証明書の検証を無効化
-- `--verbose`オプションで詳細なログを出力
-
-### MCPサーバーを起動
-
-```bash
-pytilpack mcp [--transport=stdio] [--host=localhost] [--port=8000] [--verbose]
-```
-
-- Model Context ProtocolサーバーとしてpytilpackのFetch機能を提供
-- `--transport`オプションで通信方式を指定（stdio/http、デフォルト: stdio）
-- `--host`オプションでサーバーのホスト名を指定（httpの場合のみ使用、デフォルト: localhost）
-- `--port`オプションでサーバーのポート番号を指定（httpの場合のみ使用、デフォルト: 8000）
-- `--verbose`オプションで詳細なログを出力
-
-#### stdioモード
-
-```bash
-pytilpack mcp
-# または
-pytilpack mcp --transport=stdio
-```
-
-#### httpモード
-
-```bash
-pytilpack mcp --transport=http --port=8000
-```
-
-### DB接続待機
-
-```bash
-pytilpack wait-for-db-connection SQLALCHEMY_DATABASE_URI [--timeout=180] [--verbose]
-```
-
-- 指定されたSQLALCHEMY_DATABASE_URIでDBに接続可能になるまで待機
-- URLに非同期ドライバ（`+asyncpg`, `+aiosqlite`, `+aiomysql`等）が含まれる場合は自動で非同期処理を使用
-- `--timeout`オプションでタイムアウト秒数を指定（デフォルト: 180）
-- `--verbose`オプションで詳細なログを出力
-
-## 開発手順
-
-- [DEVELOPMENT.md](DEVELOPMENT.md) を参照
+- [ドキュメント一覧](docs/README.md)
+- [モジュール一覧](docs/modules.md)
+- [CLIコマンド](docs/cli.md)
+- [開発手順](docs/development.md)

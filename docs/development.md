@@ -1,6 +1,6 @@
 # 開発手順
 
-## 開発環境構築手順
+## 開発環境の構築手順
 
 1. 本リポジトリをcloneする。
 2. [uvをインストール](https://docs.astral.sh/uv/getting-started/installation/)する。
