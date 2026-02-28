@@ -5,7 +5,7 @@
 ## 空のディレクトリを削除
 
 ```bash
-pytilpack delete_empty_dirs path/to/dir [--no-keep-root] [--verbose]
+pytilpack delete-empty-dirs path/to/dir [--no-keep-root] [--verbose]
 ```
 
 - 空のディレクトリを削除
@@ -14,7 +14,7 @@ pytilpack delete_empty_dirs path/to/dir [--no-keep-root] [--verbose]
 ## 古いファイルを削除
 
 ```bash
-pytilpack delete_old_files path/to/dir --days=7 \
+pytilpack delete-old-files path/to/dir --days=7 \
   [--no-delete-empty-dirs] [--no-keep-root-empty-dir] [--verbose]
 ```
 
@@ -35,11 +35,14 @@ pytilpack sync src dst [--delete] [--verbose]
 ## URLの内容を取得
 
 ```bash
-pytilpack fetch url [--no-verify] [--verbose]
+pytilpack fetch url [--no-verify] [--accept=CONTENT_TYPE] \
+  [--user-agent=USER_AGENT] [--verbose]
 ```
 
 - URLからHTMLを取得し、簡略化して標準出力に出力
 - `--no-verify`オプションでSSL証明書の検証を無効化
+- `--accept`オプションで受け入れるコンテンツタイプを指定
+- `--user-agent`オプションでUser-Agentヘッダーを指定
 - `--verbose`オプションで詳細なログを出力
 
 ## MCPサーバーを起動
