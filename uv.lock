@@ -2038,6 +2038,31 @@ wheels = [
 ]
 
 [[package]]
+name = "pylint-plugin-utils"
+version = "0.9.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pylint" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/73/85/24eaf5d0d078fc8799ae6d89faf326d6e4d27d862fc9a710a52ab07b7bb5/pylint_plugin_utils-0.9.0.tar.gz", hash = "sha256:5468d763878a18d5cc4db46eaffdda14313b043c962a263a7d78151b90132055", size = 10474, upload-time = "2025-06-24T07:14:00.534Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5e/c9/a3b871b0b590c49e38884af6dab58ab9711053bd5c39b8899b72e367b9f6/pylint_plugin_utils-0.9.0-py3-none-any.whl", hash = "sha256:16e9b84e5326ba893a319a0323fcc8b4bcc9c71fc654fcabba0605596c673818", size = 11129, upload-time = "2025-06-24T07:13:58.993Z" },
+]
+
+[[package]]
+name = "pylint-pydantic"
+version = "0.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "pylint" },
+    { name = "pylint-plugin-utils" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2d/ac/5de3c91c7f9354444af251f053cc9953c89cce1defa74b907f67be4f770a/pylint_pydantic-0.4.1-py3-none-any.whl", hash = "sha256:d1b937abe5c346d38de69ee1ada80c93d38ee2356addbabb687e2eb44036ac93", size = 16161, upload-time = "2025-10-27T08:03:33.641Z" },
+]
+
+[[package]]
 name = "pyproject-flake8"
 version = "7.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2134,6 +2159,7 @@ dependencies = [
     { name = "beautifulsoup4" },
     { name = "httpx" },
     { name = "mcp" },
+    { name = "pylint-pydantic" },
     { name = "typing-extensions" },
 ]
 
@@ -2274,6 +2300,7 @@ requires-dist = [
     { name = "pillow", marker = "extra == 'tiktoken'" },
     { name = "pycryptodome", marker = "extra == 'all'" },
     { name = "pycryptodome", marker = "extra == 'pycryptodome'" },
+    { name = "pylint-pydantic", specifier = ">=0.4.1" },
     { name = "pytest", marker = "extra == 'all'" },
     { name = "pytest", marker = "extra == 'flask'" },
     { name = "pytest", marker = "extra == 'pytest'" },
