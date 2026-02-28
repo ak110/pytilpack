@@ -56,9 +56,14 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
         """リクエスト前処理。"""
         quart.g.quart_auth_current_user = None
 
+    # pylint: disable=invalid-overridden-method
+    # pyright: ignore[reportIncompatibleMethodOverride]
     @typing.override
-    def _template_context(self) -> dict[str, quart_auth.AuthUser]:
+    async def _template_context(self) -> dict[str, quart_auth.AuthUser]:  # type: ignore[override]
         """テンプレートでcurrent_userがquart.g.quart_auth_current_userになるようにする。"""
+        if self.auser_loader_func is not None:
+            await self.ensure_user_loaded()
+
         template_context = super()._template_context()
         assert "current_user" in template_context
         template_context["current_user"] = self.current_user  # type: ignore[assignment]
@@ -93,11 +98,12 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
             self.auser_loader_func = None
         return user_loader
 
-    async def ensure_user_loaded(self) -> None:
-        """ユーザーをロードする。async版のuser_loaderを使っている場合はこれを呼び出す必要あり。"""
+    async def ensure_user_loaded(self) -> UserType | AnonymousUser:
+        """ユーザーをロードする。current_userのasync版。"""
         if quart.g.quart_auth_current_user is not None:
-            return
-        assert quart.g.quart_auth_current_user is None
+            return quart.g.quart_auth_current_user
+
+        # ユーザーの読み込みを行う
         assert self.auser_loader_func is not None
         auth_id = quart_auth.current_user.auth_id
         if auth_id is None:
@@ -115,6 +121,8 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
             else:
                 # ログイン状態を更新する
                 quart_auth.renew_login()
+
+        return quart.g.quart_auth_current_user
 
     @property
     def current_user(self) -> UserType | AnonymousUser:
