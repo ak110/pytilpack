@@ -11,6 +11,8 @@ import sqlalchemy.exc
 import sqlalchemy.pool
 import sqlalchemy.sql.base
 
+from pytilpack.sqlalchemy._base import _ReprMixin
+
 logger = logging.getLogger(__name__)
 
 
@@ -30,7 +32,7 @@ def register_ping():
             cursor.close()
 
 
-class Mixin:
+class Mixin(_ReprMixin):
     """テーブルクラスに色々便利機能を生やすMixin。"""
 
     @classmethod

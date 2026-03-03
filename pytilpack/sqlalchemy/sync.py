@@ -19,11 +19,12 @@ import sqlalchemy.sql.base
 
 import pytilpack.asyncio
 import pytilpack.paginator
+from pytilpack.sqlalchemy._base import _ReprMixin
 
 logger = logging.getLogger(__name__)
 
 
-class SyncMixin:
+class SyncMixin(_ReprMixin):
     """モデルのベースクラス。SQLAlchemy 2.0スタイル・同期前提。
 
     Examples:

@@ -78,6 +78,33 @@ def _session() -> typing.Generator[sqlalchemy.orm.Session, None, None]:
         yield session
 
 
+def test_repr() -> None:
+    """__repr__のテスト。"""
+    # デフォルト: idを表示
+    test1 = Test1(id=1)
+    r = repr(test1)
+    assert r == f"<{Test1.__module__}.{Test1.__qualname__}(id=1)>"
+    assert str(test1) == r
+
+    # idがNoneの場合
+    test1_no_id = Test1()
+    assert repr(test1_no_id) == f"<{Test1.__module__}.{Test1.__qualname__}(id=None)>"
+
+    # _repr_attrsをオーバーライドしたケース
+    class CustomRepr(Test1):  # pylint: disable=too-many-ancestors
+        """カスタムreprのテスト用クラス。"""
+
+        __test__ = False
+
+        @typing.override
+        def _repr_attrs(self):
+            return {"id": self.id, "unique_id": self.unique_id}
+
+    custom = CustomRepr(id=42, unique_id="abc")
+    assert "id=42" in repr(custom)
+    assert "unique_id='abc'" in repr(custom)
+
+
 def test_mixin_basic_functionality() -> None:
     """SyncMixinの基本機能をテスト。"""
     # テーブル作成

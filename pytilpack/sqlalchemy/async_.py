@@ -17,6 +17,7 @@ import sqlalchemy.sql.base
 
 import pytilpack.asyncio
 import pytilpack.paginator
+from pytilpack.sqlalchemy._base import _ReprMixin
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ class _InitArgs:
     engine_kwargs: dict
 
 
-class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs):
+class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin):
     """モデルのベースクラス。SQLAlchemy 2.0スタイル・async前提。
 
     Examples:
