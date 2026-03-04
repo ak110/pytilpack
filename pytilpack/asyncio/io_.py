@@ -293,6 +293,19 @@ async def delete_file(path: pathlib.Path | str) -> None:
     )
 
 
+async def rmtree(path: pathlib.Path | str, ignore_errors: bool = False) -> None:
+    """ディレクトリを非同期で再帰的に削除する。"""
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(
+        None,
+        functools.partial(
+            pytilpack.pathlib.rmtree,
+            path,
+            ignore_errors,
+        ),
+    )
+
+
 async def get_size(path: pathlib.Path | str) -> int:
     """ファイル・ディレクトリのサイズを非同期で取得する。"""
     loop = asyncio.get_running_loop()
