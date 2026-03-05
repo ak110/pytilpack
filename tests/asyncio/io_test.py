@@ -181,3 +181,37 @@ async def test_asyncio_io_helpers(tmp_path: pathlib.Path) -> None:
     await pytilpack.asyncio.write_text(dst_dir / "extra.txt", "extra")
     await pytilpack.asyncio.sync(src_dir, dst_dir, delete=True)
     assert not (dst_dir / "extra.txt").exists()
+
+    # copy2
+    copy_src = tmp_path / "copy_src.txt"
+    await pytilpack.asyncio.write_text(copy_src, "copy_test")
+    copy_dst = tmp_path / "copy_dst.txt"
+    await pytilpack.asyncio.copy2(copy_src, copy_dst)
+    assert copy_dst.read_text() == "copy_test"
+
+    # copytree
+    tree_src = tmp_path / "tree_src"
+    tree_src.mkdir()
+    await pytilpack.asyncio.write_text(tree_src / "a.txt", "aaa")
+    tree_dst = tmp_path / "tree_dst"
+    await pytilpack.asyncio.copytree(tree_src, tree_dst)
+    assert (tree_dst / "a.txt").read_text() == "aaa"
+
+    # move
+    move_src = tmp_path / "move_src.txt"
+    await pytilpack.asyncio.write_text(move_src, "move_test")
+    move_dst = tmp_path / "move_dst.txt"
+    await pytilpack.asyncio.move(move_src, move_dst)
+    assert not move_src.exists()
+    assert move_dst.read_text() == "move_test"
+
+    # rmtree
+    rmtree_dir = tmp_path / "rmtree_dir"
+    rmtree_dir.mkdir()
+    await pytilpack.asyncio.write_text(rmtree_dir / "x.txt", "x")
+    await pytilpack.asyncio.rmtree(rmtree_dir)
+    assert not rmtree_dir.exists()
+
+    # disk_usage
+    usage = await pytilpack.asyncio.disk_usage(tmp_path)
+    assert usage.total > 0

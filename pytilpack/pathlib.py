@@ -29,11 +29,6 @@ def delete_file(path: str | pathlib.Path) -> None:
         path.unlink()
 
 
-def rmtree(path: str | pathlib.Path, ignore_errors: bool = False) -> None:
-    """ディレクトリを再帰的に削除する。"""
-    shutil.rmtree(path, ignore_errors=ignore_errors)
-
-
 def get_size(path: str | pathlib.Path) -> int:
     """ファイル・ディレクトリのサイズを返す。"""
     try:

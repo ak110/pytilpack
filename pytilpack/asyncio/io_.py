@@ -5,6 +5,7 @@ import datetime
 import functools
 import logging
 import pathlib
+import shutil
 import typing
 
 import yaml
@@ -280,6 +281,50 @@ async def append_bytes(path: pathlib.Path | str, data: bytes) -> None:
     )
 
 
+async def copy2(src: pathlib.Path | str, dst: pathlib.Path | str) -> None:
+    """ファイルを非同期でメタデータごとコピーする。"""
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(
+        None,
+        functools.partial(
+            shutil.copy2,
+            src,
+            dst,
+        ),
+    )
+
+
+async def copytree(
+    src: pathlib.Path | str,
+    dst: pathlib.Path | str,
+    dirs_exist_ok: bool = False,
+) -> None:
+    """ディレクトリツリーを非同期で再帰的にコピーする。"""
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(
+        None,
+        functools.partial(
+            shutil.copytree,
+            src,
+            dst,
+            dirs_exist_ok=dirs_exist_ok,
+        ),
+    )
+
+
+async def move(src: pathlib.Path | str, dst: pathlib.Path | str) -> None:
+    """ファイルまたはディレクトリを非同期で移動する。"""
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(
+        None,
+        functools.partial(
+            shutil.move,
+            src,
+            dst,
+        ),
+    )
+
+
 async def delete_file(path: pathlib.Path | str) -> None:
     """ファイルを非同期で削除する。"""
     path = pathlib.Path(path)
@@ -299,9 +344,21 @@ async def rmtree(path: pathlib.Path | str, ignore_errors: bool = False) -> None:
     await loop.run_in_executor(
         None,
         functools.partial(
-            pytilpack.pathlib.rmtree,
+            shutil.rmtree,
             path,
             ignore_errors,
+        ),
+    )
+
+
+async def disk_usage(path: pathlib.Path | str) -> shutil._ntuple_diskusage:
+    """ディスク使用量を非同期で取得する。"""
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(
+        None,
+        functools.partial(
+            shutil.disk_usage,
+            path,
         ),
     )
 
