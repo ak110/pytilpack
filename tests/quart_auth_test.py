@@ -86,9 +86,10 @@ def _app() -> quart.Quart:
 
     @app.route("/login_no_cookie")
     async def login_no_cookie():
-        # Cookieなしログイン処理
+        # Cookieなしログイン処理（current_user経路を通す）
         pytilpack.quart_auth.login_user("user1", set_cookie=False)
         assert pytilpack.quart_auth.is_authenticated(), "直後はログイン済みにはなる"
+        _ = pytilpack.quart_auth.current_user()
         return "logged in without cookie"
 
     return app
@@ -248,10 +249,12 @@ async def test_login_user_set_cookie_false(
 ) -> None:
     """set_cookie=Falseの場合は通常のCookieベースのログイン処理が行われない。"""
     async with client.session_transaction():
-        # set_cookie=Falseでログイン
+        # set_cookie=Falseでログイン（current_user経路を通す）
         response = await client.get("/login_no_cookie")
         assert response.status_code == 200
         assert await response.get_data(as_text=True) == "logged in without cookie"
+        # renew_loginによるCookie上書きが起きないことを確認
+        assert "Set-Cookie" not in response.headers
 
         # この時点では通常のCookieベースのログイン状態になっていない
         response = await client.get("/user")
@@ -322,6 +325,13 @@ def _app_async() -> quart.Quart:
         pytilpack.quart_auth.login_user("admin1")
         return "admin logged in"
 
+    @app.route("/login_no_cookie")
+    async def login_no_cookie():
+        # Cookieなしログイン処理（ensure_user_loaded経路を通す）
+        pytilpack.quart_auth.login_user("user1", set_cookie=False)
+        await pytilpack.quart_auth.ensure_user_loaded()
+        return "logged in without cookie"
+
     return app
 
 
@@ -372,6 +382,16 @@ async def test_async_user_loader_private_access(
         response = await client_async.get("/private")
         assert response.status_code == 200
         assert await response.get_data(as_text=True) == "private page"
+
+
+@pytest.mark.asyncio
+async def test_async_login_no_cookie_no_set_cookie(client_async: quart.typing.TestClientProtocol) -> None:
+    """非同期user_loader: set_cookie=Falseでensure_user_loaded経路を通してもCookieが発行されない。"""
+    response = await client_async.get("/login_no_cookie")
+    assert response.status_code == 200
+    assert await response.get_data(as_text=True) == "logged in without cookie"
+    # renew_loginによるCookie上書きが起きないことを確認
+    assert "Set-Cookie" not in response.headers
 
 
 @pytest.mark.asyncio

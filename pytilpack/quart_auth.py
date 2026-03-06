@@ -120,7 +120,8 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
                 quart_auth.logout_user()
             else:
                 # ログイン状態を更新する
-                quart_auth.renew_login()
+                if getattr(quart.g, "quart_auth_set_cookie", True):
+                    quart_auth.renew_login()
 
         return quart.g.quart_auth_current_user
 
@@ -148,7 +149,8 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
                 quart_auth.logout_user()
             else:
                 # ログイン状態を更新する
-                quart_auth.renew_login()
+                if getattr(quart.g, "quart_auth_set_cookie", True):
+                    quart_auth.renew_login()
 
         return quart.g.quart_auth_current_user
 
@@ -171,6 +173,7 @@ def login_user(auth_id: str, remember: bool = True, set_cookie: bool = True) -> 
 
     """
     user = quart_auth.AuthUser(auth_id)
+    quart.g.quart_auth_set_cookie = set_cookie
     if set_cookie:
         # Action.WRITE / Action.WRITE_PERMANENTで設定される
         quart_auth.login_user(user, remember=remember)
