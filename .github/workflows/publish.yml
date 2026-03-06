@@ -1,8 +1,9 @@
 name: Publish
 
 on:
-  release:
-    types: [published]
+  # ↓release.yml経由だと効かないので消しておく
+  # release:
+  #   types: [published]
   workflow_dispatch: {}
 
 jobs:
