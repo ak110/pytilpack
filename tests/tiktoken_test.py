@@ -173,6 +173,10 @@ def test_vs_litellm(model: str):
     # LiteLLMは現在以下のモデルがgpt-3.5-turboとかと同じ扱いになっている
     # (おそらくバグっている)
     if actual_tokens != litellm_tokens and model in [
+        "o1-mini",
+        "o1-mini-2024-09-12",
+        "o1-preview",
+        "o1-preview-2024-09-12",
         "o4-mini",
         "o4-mini-2025-04-16",
         "gpt-4.1-nano",

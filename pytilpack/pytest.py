@@ -2,6 +2,7 @@
 
 import getpass
 import logging
+import os
 import pathlib
 import tempfile
 
@@ -102,4 +103,10 @@ def get_tmp_path() -> pathlib.Path:
     """
     username = getpass.getuser()
     path = pathlib.Path(tempfile.gettempdir()) / f"pytest-of-{username}" / "pytest-current"
-    return path.resolve()
+    path = path.resolve()
+    # pytest-xdist環境ではワーカーごとのサブディレクトリが使われる
+    worker_id = os.environ.get("PYTEST_XDIST_WORKER")
+    if worker_id is not None:
+        path = path / f"popen-{worker_id}"
+    path.mkdir(parents=True, exist_ok=True)
+    return path

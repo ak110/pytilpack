@@ -206,20 +206,17 @@ def num_tokens_for_tools(
         function = tool["function"]
         try:
             num_tokens += func_init
-            print(f"{num_tokens=} func_init")
 
             func_name = function["name"]
             func_desc = function.get("description", "")
             if func_desc.endswith("."):
                 func_desc = func_desc[:-1]
             num_tokens += len(encoding.encode(f"{func_name}:{func_desc}"))
-            print(f"{num_tokens=} func")
 
             parameters = function.get("parameters", {})
             properties = typing.cast(dict[str, dict[str, typing.Any]], parameters.get("properties", {}))
             if len(properties) > 0:
                 num_tokens += prop_init
-                print(f"{num_tokens=} prop_init")
                 for prop_name, fields in properties.items():
                     num_tokens += prop_key
 
