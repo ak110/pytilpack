@@ -61,13 +61,16 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
     @typing.override
     async def _template_context(self) -> dict[str, quart_auth.AuthUser]:  # type: ignore[override]
         """テンプレートでcurrent_userがquart.g.quart_auth_current_userになるようにする。"""
-        if self.auser_loader_func is not None:
-            await self.ensure_user_loaded()
-
-        template_context = super()._template_context()
-        assert "current_user" in template_context
-        template_context["current_user"] = self.current_user  # type: ignore[assignment]
-        return template_context
+        try:
+            if self.auser_loader_func is not None:
+                await self.ensure_user_loaded()
+            template_context = super()._template_context()
+            assert "current_user" in template_context
+            template_context["current_user"] = self.current_user  # type: ignore[assignment]
+            return template_context
+        except Exception:
+            logger.warning("テンプレートコンテキストのユーザーロードに失敗", exc_info=True)
+            return {"current_user": AnonymousUser()}  # type: ignore[dict-item]
 
     @typing.overload
     def user_loader(self, user_loader: typing.Callable[[str], UserType | None]) -> typing.Callable[[str], UserType | None]:
@@ -100,7 +103,7 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
 
     async def ensure_user_loaded(self) -> UserType | AnonymousUser:
         """ユーザーをロードする。current_userのasync版。"""
-        if quart.g.quart_auth_current_user is not None:
+        if getattr(quart.g, "quart_auth_current_user", None) is not None:
             return quart.g.quart_auth_current_user
 
         # ユーザーの読み込みを行う
@@ -129,7 +132,7 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
     def current_user(self) -> UserType | AnonymousUser:
         """現在のユーザーを取得する。"""
         # ユーザーがロード済みの場合はそれを返す
-        if quart.g.quart_auth_current_user is not None:
+        if getattr(quart.g, "quart_auth_current_user", None) is not None:
             return quart.g.quart_auth_current_user
 
         # ユーザーの読み込みを行う

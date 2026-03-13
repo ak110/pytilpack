@@ -410,3 +410,40 @@ async def test_async_user_loader_admin_only(client_async: quart.typing.TestClien
         response = await client_async.get("/admin")
         assert response.status_code == 200
         assert await response.get_data(as_text=True) == "admin page"
+
+
+@pytest.mark.asyncio
+async def test_template_context_fallback_without_before_request() -> None:
+    """_before_requestが実行されずquart.g.quart_auth_current_userが未設定でも500にならない。
+
+    set_max_concurrencyのタイムアウト等で_before_requestがスキップされた場合、
+    quart.g.quart_auth_current_userが存在しない状態でエラーハンドラーが
+    テンプレートを描画しようとするシナリオを再現する。
+    """
+    app = quart.Quart(__name__)
+    app.secret_key = "secret"
+
+    auth_manager = pytilpack.quart_auth.QuartAuth[User]()
+    auth_manager.init_app(app)
+
+    @auth_manager.user_loader
+    async def load_user(user_id: str) -> User | None:
+        del user_id  # noqa
+        return None
+
+    @app.route("/test")
+    async def test_page():
+        # quart.g.quart_auth_current_userが未設定の状態をシミュレート
+        # (_before_requestがスキップされたケース)
+        if hasattr(quart.g, "quart_auth_current_user"):
+            delattr(quart.g, "quart_auth_current_user")
+        return await quart.render_template_string(
+            "User: {{ current_user.name if current_user.is_authenticated else '<anonymous>' }}"
+        )
+
+    async with app.test_client() as client:
+        response = await client.get("/test")
+        assert response.status_code == 200
+        text = await response.get_data(as_text=True)
+        # AnonymousUserにフォールバックされること
+        assert text == "User: &lt;anonymous&gt;"
