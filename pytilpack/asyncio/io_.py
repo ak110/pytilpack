@@ -339,12 +339,15 @@ async def delete_file(path: pathlib.Path | str) -> None:
 
 
 async def rmtree(path: pathlib.Path | str, ignore_errors: bool = False) -> None:
-    """ディレクトリを非同期で再帰的に削除する。"""
+    """ディレクトリを非同期で再帰的に削除する。読み取り専用ファイルも削除する。
+
+    パスが存在しない場合は何もしない。
+    """
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(
         None,
         functools.partial(
-            shutil.rmtree,
+            pytilpack.pathlib.rmtree,
             path,
             ignore_errors,
         ),

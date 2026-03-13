@@ -2,8 +2,11 @@
 
 import datetime
 import logging
+import os
 import pathlib
 import shutil
+import stat
+import typing
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +30,28 @@ def delete_file(path: str | pathlib.Path) -> None:
     path = pathlib.Path(path)
     if path.is_file():
         path.unlink()
+
+
+def rmtree(path: str | pathlib.Path, ignore_errors: bool = False) -> None:
+    """ディレクトリを再帰的に削除する。読み取り専用ファイルも削除する。
+
+    パスが存在しない場合は何もしない。
+    """
+    path = pathlib.Path(path)
+    if not path.exists():
+        return
+    shutil.rmtree(path, ignore_errors=ignore_errors, onexc=_rmtree_onexc)
+
+
+def _rmtree_onexc(
+    func: typing.Callable,
+    path: str,
+    exc: BaseException,  # noqa
+) -> None:
+    """読み取り専用属性をクリアしてリトライする。"""
+    del exc  # noqa
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
 
 
 def get_size(path: str | pathlib.Path) -> int:
@@ -116,7 +141,7 @@ def sync(src: str | pathlib.Path, dst: str | pathlib.Path, delete: bool = False)
             if dst.exists():
                 if dst.is_dir():
                     logger.info(f"削除: {dst}")
-                    shutil.rmtree(dst)
+                    rmtree(dst)
                 else:
                     logger.info(f"削除: {dst}")
                     dst.unlink()
@@ -130,7 +155,7 @@ def sync(src: str | pathlib.Path, dst: str | pathlib.Path, delete: bool = False)
             if dst.exists():
                 logger.info(f"削除: {dst}")
                 if dst.is_dir():
-                    shutil.rmtree(dst)
+                    rmtree(dst)
                 else:
                     dst.unlink()
             logger.info(f"作成: {dst}")
@@ -148,7 +173,7 @@ def sync(src: str | pathlib.Path, dst: str | pathlib.Path, delete: bool = False)
                 if not src_child.exists():
                     logger.info(f"削除: {dst_child}")
                     if dst_child.is_dir():
-                        shutil.rmtree(dst_child)
+                        rmtree(dst_child)
                     else:
                         dst_child.unlink()
 

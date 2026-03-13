@@ -17,6 +17,21 @@ def test_delete_file(tmp_path: pathlib.Path) -> None:
     assert not path.exists()
 
 
+def test_rmtree(tmp_path: pathlib.Path) -> None:
+    """rmtree()のテスト。"""
+    # 読み取り専用ファイルを含むディレクトリの削除
+    d = tmp_path / "dir"
+    d.mkdir()
+    f = d / "readonly.txt"
+    f.write_text("test")
+    f.chmod(0o444)
+    pytilpack.pathlib.rmtree(d)
+    assert not d.exists()
+
+    # 存在しないパスを渡してもエラーにならない
+    pytilpack.pathlib.rmtree(tmp_path / "nonexistent")
+
+
 def test_get_size(tmp_path: pathlib.Path) -> None:
     """get_size()のテスト。"""
     (tmp_path / "test").mkdir()
