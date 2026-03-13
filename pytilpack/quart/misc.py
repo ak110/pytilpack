@@ -2,6 +2,7 @@
 
 import asyncio
 import contextlib
+import dataclasses
 import functools
 import logging
 import pathlib
@@ -20,6 +21,15 @@ _TIMESTAMP_CACHE: dict[str, int] = {}
 """静的ファイルの最終更新日時をキャッシュするための辞書。プロセス単位でキャッシュされる。"""
 
 
+@dataclasses.dataclass
+class ConcurrencyState:
+    """set_max_concurrency の内部状態。exhaust_concurrency から参照される。"""
+
+    semaphore: asyncio.Semaphore
+    max_concurrency: int
+    timeout: float | None
+
+
 def set_max_concurrency(app: quart.Quart, max_concurrency: int, timeout: float | None = 3.0) -> None:
     """Quart アプリ全体の最大同時リクエスト数を制限する。
 
@@ -36,13 +46,22 @@ def set_max_concurrency(app: quart.Quart, max_concurrency: int, timeout: float |
         raise ValueError("max_concurrency must be >= 1")
 
     semaphore = asyncio.Semaphore(max_concurrency)
+    state = ConcurrencyState(
+        semaphore=semaphore,
+        max_concurrency=max_concurrency,
+        timeout=timeout,
+    )
+    app.extensions["pytilpack_concurrency"] = state
 
     async def _acquire() -> None:  # before_request
         try:
-            if timeout is None:
-                await semaphore.acquire()
+            # テスト時にセマフォ/timeoutを一時変更できるようstateから読む
+            sem = state.semaphore
+            to = state.timeout
+            if to is None:
+                await sem.acquire()
             else:
-                await asyncio.wait_for(semaphore.acquire(), timeout=timeout)
+                await asyncio.wait_for(sem.acquire(), timeout=to)
             quart.g.quart__concurrency_token = True
         except TimeoutError:
             logger.warning(f"Concurrency limit reached, aborting request: {quart.request.path}")
@@ -53,11 +72,36 @@ def set_max_concurrency(app: quart.Quart, max_concurrency: int, timeout: float |
 
     async def _release(_: typing.Any) -> None:
         if hasattr(quart.g, "quart__concurrency_token"):
-            semaphore.release()
+            state.semaphore.release()
             del quart.g.quart__concurrency_token
 
     app.before_request(_acquire)
     app.teardown_request(_release)
+
+
+@contextlib.asynccontextmanager
+async def exhaust_concurrency(app: quart.Quart):
+    """テスト用: セマフォを枯渇させて503を発生させるコンテキストマネージャ。
+
+    使用例::
+
+        async with pytilpack.quart.exhaust_concurrency(app):
+            response = await client.get("/any-endpoint")
+            assert response.status_code == 503
+    """
+    state: ConcurrencyState = app.extensions["pytilpack_concurrency"]
+    original_semaphore = state.semaphore
+    original_timeout = state.timeout
+
+    # スロット0のセマフォに差し替えて即座にタイムアウト→503を返すようにする
+    state.semaphore = asyncio.Semaphore(0)
+    state.timeout = 0.01
+
+    try:
+        yield
+    finally:
+        state.semaphore = original_semaphore
+        state.timeout = original_timeout
 
 
 def run_sync[**P, R](

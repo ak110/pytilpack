@@ -151,6 +151,70 @@ async def test_get_routes_application_root() -> None:
 
 
 @pytest.mark.asyncio
+async def test_set_max_concurrency() -> None:
+    """set_max_concurrencyのテスト。"""
+    # max_concurrency < 1 で ValueError
+    with pytest.raises(ValueError):
+        pytilpack.quart.set_max_concurrency(quart.Quart(__name__), 0)
+
+    # 通常リクエストが通ること
+    app = quart.Quart(__name__)
+
+    @app.route("/test")
+    async def test_endpoint():
+        return "OK"
+
+    pytilpack.quart.set_max_concurrency(app, 2, timeout=0.01)
+
+    async with app.test_client() as client:
+        assert (await client.get("/test")).status_code == 200
+
+    # ConcurrencyStateがextensionsに保存されていること
+    state = app.extensions["pytilpack_concurrency"]
+    assert isinstance(state, pytilpack.quart.misc.ConcurrencyState)
+    assert state.max_concurrency == 2
+    assert state.timeout == 0.01
+
+
+@pytest.mark.asyncio
+async def test_set_max_concurrency_no_timeout() -> None:
+    """set_max_concurrency(timeout=None)のテスト。"""
+    app = quart.Quart(__name__)
+
+    @app.route("/test")
+    async def test_endpoint():
+        return "OK"
+
+    pytilpack.quart.set_max_concurrency(app, 1, timeout=None)
+
+    async with app.test_client() as client:
+        assert (await client.get("/test")).status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_exhaust_concurrency() -> None:
+    """exhaust_concurrencyのテスト。"""
+    app = quart.Quart(__name__)
+
+    @app.route("/test")
+    async def test_endpoint():
+        return "OK"
+
+    pytilpack.quart.set_max_concurrency(app, 2, timeout=1.0)
+
+    async with app.test_client() as client:
+        # 通常は通る
+        assert (await client.get("/test")).status_code == 200
+
+        # exhaust中は503
+        async with pytilpack.quart.exhaust_concurrency(app):
+            assert (await client.get("/test")).status_code == 503
+
+        # exhaust後は復帰
+        assert (await client.get("/test")).status_code == 200
+
+
+@pytest.mark.asyncio
 async def test_prefer_markdown() -> None:
     """prefer_markdownのテスト。"""
     app = quart.Quart(__name__)
