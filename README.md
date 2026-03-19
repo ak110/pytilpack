@@ -1,6 +1,6 @@
 # pytilpack
 
-[![Lint&Test](https://github.com/ak110/pytilpack/actions/workflows/test.yml/badge.svg)](https://github.com/ak110/pytilpack/actions/workflows/test.yml)
+[![Lint&Test](https://github.com/ak110/pytilpack/actions/workflows/test.yaml/badge.svg)](https://github.com/ak110/pytilpack/actions/workflows/test.yaml)
 [![PyPI version](https://badge.fury.io/py/pytilpack.svg)](https://badge.fury.io/py/pytilpack)
 
 Pythonのユーティリティ集。

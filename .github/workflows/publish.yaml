@@ -1,7 +1,7 @@
 name: Publish
 
 on:
-  # ↓release.yml経由だと効かないので消しておく
+  # ↓release.yaml経由だと効かないので消しておく
   # release:
   #   types: [published]
   workflow_dispatch: {}
