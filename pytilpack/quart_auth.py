@@ -4,6 +4,7 @@ import functools
 import inspect
 import logging
 import typing
+import warnings
 
 import quart
 import quart_auth
@@ -62,8 +63,7 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
     async def _template_context(self) -> dict[str, quart_auth.AuthUser]:  # type: ignore[override]
         """テンプレートでcurrent_userがquart.g.quart_auth_current_userになるようにする。"""
         try:
-            if self.auser_loader_func is not None:
-                await self.ensure_user_loaded()
+            await self.ensure_user_loaded()
             template_context = super()._template_context()
             assert "current_user" in template_context
             template_context["current_user"] = self.current_user  # type: ignore[assignment]
@@ -102,31 +102,36 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
         return user_loader
 
     async def ensure_user_loaded(self) -> UserType | AnonymousUser:
-        """ユーザーをロードする。current_userのasync版。"""
+        """ユーザーをロードする。sync/async両方のuser_loaderに対応。"""
         if getattr(quart.g, "quart_auth_current_user", None) is not None:
             return quart.g.quart_auth_current_user
 
         # ユーザーの読み込みを行う
-        assert self.auser_loader_func is not None
         auth_id = quart_auth.current_user.auth_id
         if auth_id is None:
             # 未認証の場合はAnonymousUserにする
             quart.g.quart_auth_current_user = AnonymousUser()
-        else:
-            # 認証済みの場合はauser_loader_funcを実行する
-            assert auth_id is not None
+        elif self.auser_loader_func is not None:
+            # async版loaderで読み込む
             quart.g.quart_auth_current_user = await self.auser_loader_func(auth_id)
-            if quart.g.quart_auth_current_user is None:
-                # ユーザーが見つからない場合はAnonymousUserにする
-                logger.error(f"ユーザーロードエラー: {auth_id}")
-                quart.g.quart_auth_current_user = AnonymousUser()
-                quart_auth.logout_user()
-            else:
-                # ログイン状態を更新する
-                if getattr(quart.g, "quart_auth_set_cookie", True):
-                    quart_auth.renew_login()
+        elif self.user_loader_func is not None:
+            # sync版loaderで読み込む
+            quart.g.quart_auth_current_user = self.user_loader_func(auth_id)
+        else:
+            raise RuntimeError("user_loaderが未設定")
 
-        return quart.g.quart_auth_current_user
+        if auth_id is not None and quart.g.quart_auth_current_user is None:
+            # ユーザーが見つからない場合はAnonymousUserにする
+            logger.error(f"ユーザーロードエラー: {auth_id}")
+            quart.g.quart_auth_current_user = AnonymousUser()
+            quart_auth.logout_user()
+        elif auth_id is not None:
+            # ログイン状態を更新する
+            if getattr(quart.g, "quart_auth_set_cookie", True):
+                quart_auth.renew_login()
+
+        # ロジック上、ここでNoneになることはない (未認証→AnonymousUser, ロード失敗→AnonymousUser)
+        return quart.g.quart_auth_current_user  # pyright: ignore[reportReturnType]
 
     @property
     def current_user(self) -> UserType | AnonymousUser:
@@ -204,17 +209,47 @@ def is_authenticated() -> bool:
 
 
 def current_user() -> UserMixin:
-    """現在のユーザーを取得する。"""
+    """現在のユーザーを取得する。
+
+    .. deprecated:: acurrent_user() を使用してください。
+    """
+    warnings.warn(
+        "current_user()は非推奨です。acurrent_user()を使用してください。",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     return _find_extension().current_user
+
+
+async def acurrent_user() -> UserMixin:
+    """現在のユーザーを取得する。async版。"""
+    return await _find_extension().ensure_user_loaded()
 
 
 def is_admin(attr_name: str = "is_admin") -> bool:
     """現在のユーザーが認証済みかつ管理者であるか否かを取得する。
 
+    .. deprecated:: ais_admin() を使用してください。
+
     Args:
         attr_name: 管理者かどうかを判定する属性名。デフォルトは "is_admin"。
     """
-    return is_authenticated() and getattr(current_user(), attr_name)
+    warnings.warn(
+        "is_admin()は非推奨です。ais_admin()を使用してください。",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return is_authenticated() and getattr(_find_extension().current_user, attr_name)
+
+
+async def ais_admin(attr_name: str = "is_admin") -> bool:
+    """現在のユーザーが認証済みかつ管理者であるか否かを取得する。async版。
+
+    Args:
+        attr_name: 管理者かどうかを判定する属性名。デフォルトは "is_admin"。
+    """
+    user = await acurrent_user()
+    return user.is_authenticated and getattr(user, attr_name)
 
 
 def admin_only[**P, R](func: typing.Callable[P, R]) -> typing.Callable[P, R]:
@@ -223,7 +258,7 @@ def admin_only[**P, R](func: typing.Callable[P, R]) -> typing.Callable[P, R]:
 
         @functools.wraps(func)
         async def async_wrapper(*args: P.args, **kwargs: P.kwargs):
-            if not is_admin():
+            if not await ais_admin():
                 quart.abort(403)
             return await func(*args, **kwargs)
 
@@ -233,7 +268,8 @@ def admin_only[**P, R](func: typing.Callable[P, R]) -> typing.Callable[P, R]:
 
         @functools.wraps(func)
         def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            if not is_admin():
+            ext = _find_extension()
+            if not (is_authenticated() and getattr(ext.current_user, "is_admin", False)):
                 quart.abort(403)
             return func(*args, **kwargs)
 

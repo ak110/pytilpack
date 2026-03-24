@@ -86,11 +86,26 @@ def _app() -> quart.Quart:
 
     @app.route("/login_no_cookie")
     async def login_no_cookie():
-        # Cookieなしログイン処理（current_user経路を通す）
+        # Cookieなしログイン処理（acurrent_user経路を通す）
         pytilpack.quart_auth.login_user("user1", set_cookie=False)
         assert pytilpack.quart_auth.is_authenticated(), "直後はログイン済みにはなる"
-        _ = pytilpack.quart_auth.current_user()
+        _ = await pytilpack.quart_auth.acurrent_user()
         return "logged in without cookie"
+
+    @app.route("/auser")
+    async def auser():
+        # acurrent_userのテスト用
+        user = await pytilpack.quart_auth.acurrent_user()
+        if user.is_authenticated:
+            assert isinstance(user, User)
+            return f"async user: {user.name}"
+        return "async user: anonymous"
+
+    @app.route("/ais_admin")
+    async def ais_admin_route():
+        # ais_adminのテスト用
+        result = await pytilpack.quart_auth.ais_admin()
+        return f"is_admin: {result}"
 
     return app
 
@@ -266,6 +281,51 @@ async def test_login_user_set_cookie_false(
         assert response.status_code == 401
 
 
+@pytest.mark.asyncio
+async def test_acurrent_user(client: quart.typing.TestClientProtocol) -> None:
+    """sync loader環境でもacurrent_user()が動作する。"""
+    # 未ログイン状態
+    response = await client.get("/auser")
+    assert response.status_code == 200
+    assert await response.get_data(as_text=True) == "async user: anonymous"
+
+    # ログイン状態
+    async with client.session_transaction():
+        response = await client.get("/login")
+        assert response.status_code == 200
+
+        response = await client.get("/auser")
+        assert response.status_code == 200
+        assert await response.get_data(as_text=True) == "async user: test user"
+
+
+@pytest.mark.asyncio
+async def test_ais_admin(client: quart.typing.TestClientProtocol) -> None:
+    """sync loader環境でもais_admin()が動作する。admin_onlyの自動ロード回帰テストを兼ねる。"""
+    # 未認証
+    response = await client.get("/ais_admin")
+    assert await response.get_data(as_text=True) == "is_admin: False"
+
+    # 一般ユーザー
+    async with client.session_transaction():
+        await client.get("/login")
+        response = await client.get("/ais_admin")
+        assert await response.get_data(as_text=True) == "is_admin: False"
+
+    # 管理者ユーザー
+    async with client.session_transaction():
+        await client.get("/login_admin")
+        response = await client.get("/ais_admin")
+        assert await response.get_data(as_text=True) == "is_admin: True"
+
+    # admin_onlyデコレータ (before_requestなしでの自動ロード)
+    async with client.session_transaction():
+        await client.get("/login_admin")
+        response = await client.get("/admin")
+        assert response.status_code == 200
+        assert await response.get_data(as_text=True) == "admin page"
+
+
 @pytest.fixture(name="app_async", scope="module")
 def _app_async() -> quart.Quart:
     """非同期user_loaderを使用するテスト用アプリケーション。"""
@@ -331,6 +391,21 @@ def _app_async() -> quart.Quart:
         pytilpack.quart_auth.login_user("user1", set_cookie=False)
         await pytilpack.quart_auth.ensure_user_loaded()
         return "logged in without cookie"
+
+    @app.route("/auser")
+    async def auser():
+        # acurrent_userのテスト用
+        user = await pytilpack.quart_auth.acurrent_user()
+        if user.is_authenticated:
+            assert isinstance(user, User)
+            return f"async user: {user.name}"
+        return "async user: anonymous"
+
+    @app.route("/ais_admin")
+    async def ais_admin_route():
+        # ais_adminのテスト用
+        result = await pytilpack.quart_auth.ais_admin()
+        return f"is_admin: {result}"
 
     return app
 
@@ -410,6 +485,36 @@ async def test_async_user_loader_admin_only(client_async: quart.typing.TestClien
         response = await client_async.get("/admin")
         assert response.status_code == 200
         assert await response.get_data(as_text=True) == "admin page"
+
+
+@pytest.mark.asyncio
+async def test_async_acurrent_user(client_async: quart.typing.TestClientProtocol) -> None:
+    """async loader環境でacurrent_user()が動作する。"""
+    # 未ログイン状態
+    response = await client_async.get("/auser")
+    assert response.status_code == 200
+    assert await response.get_data(as_text=True) == "async user: anonymous"
+
+    # ログイン状態
+    async with client_async.session_transaction():
+        await client_async.get("/login")
+        response = await client_async.get("/auser")
+        assert response.status_code == 200
+        assert await response.get_data(as_text=True) == "async user: async test user"
+
+
+@pytest.mark.asyncio
+async def test_async_ais_admin(client_async: quart.typing.TestClientProtocol) -> None:
+    """async loader環境でais_admin()が動作する。"""
+    # 未認証
+    response = await client_async.get("/ais_admin")
+    assert await response.get_data(as_text=True) == "is_admin: False"
+
+    # 管理者ユーザー
+    async with client_async.session_transaction():
+        await client_async.get("/login_admin")
+        response = await client_async.get("/ais_admin")
+        assert await response.get_data(as_text=True) == "is_admin: True"
 
 
 @pytest.mark.asyncio
