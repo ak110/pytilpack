@@ -90,3 +90,35 @@ def test_get_retry_after_invalid_datetime():
     """_get_retry_after関数の無効な日時形式テスト。"""
     result = pytilpack.http.get_retry_after("invalid datetime string")
     assert result is None
+
+
+@pytest.mark.parametrize(
+    "accept_header,candidates,expected",
+    [
+        (
+            "text/html;q=0.9, application/json;q=1.0",
+            ["text/html", "application/json"],
+            "application/json",
+        ),
+        ("text/html, */*;q=0.5", ["application/json"], "application/json"),
+        (
+            "text/*;q=0.8, application/json;q=0.5",
+            ["text/plain", "application/json"],
+            "text/plain",
+        ),
+        ("text/html", ["application/json"], None),
+        ("", ["text/html"], "text/html"),  # 空 = 何でも受け入れる
+        (
+            "text/*;q=0.8, text/html;q=0.8",
+            ["text/plain", "text/html"],
+            "text/html",  # specificity考慮
+        ),
+    ],
+)
+def test_select_accept(
+    accept_header: str,
+    candidates: list[str],
+    expected: str | None,
+) -> None:
+    """select_acceptのテスト。"""
+    assert pytilpack.http.select_accept(accept_header, candidates) == expected

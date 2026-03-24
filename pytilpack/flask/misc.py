@@ -13,6 +13,7 @@ import flask
 import httpx
 import werkzeug.serving
 
+import pytilpack.http
 import pytilpack.secrets
 import pytilpack.web
 
@@ -63,10 +64,10 @@ def prefer_markdown() -> bool:
         markdownがHTMLより優先されている場合True、そうでなければFalse
 
     """
-    accept = flask.request.accept_mimetypes
-    q_md = max(accept.quality("text/markdown"), accept.quality("text/plain"))
-    q_html = accept.quality("text/html")
-    return q_md > q_html
+    accept_header = flask.request.headers.get("Accept", "")
+    # text/htmlを先頭にすることで、同一quality時はHTMLを優先する（従来と同じ挙動）
+    result = pytilpack.http.select_accept(accept_header, ["text/html", "text/markdown", "text/plain"])
+    return result in ("text/markdown", "text/plain")
 
 
 def static_url_for(

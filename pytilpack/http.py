@@ -1,11 +1,53 @@
 """HTTP関連。"""
 
+import collections.abc
 import datetime
 import email.utils
 import logging
 import re
+import typing
 
 logger = logging.getLogger(__name__)
+
+
+def select_accept(accept_header: str, candidates: collections.abc.Sequence[str]) -> str | None:
+    """Acceptヘッダーに基づいて候補MIMEタイプからベストマッチを返す。
+
+    specificity・quality値を考慮して最適な候補を選択する。
+    全候補が品質値0（拒否）の場合はNoneを返す。
+
+    Acceptヘッダーが空の場合はRFC 7231に従い「何でも受け入れる」として扱い、
+    candidatesの先頭を返す。
+
+    内部でwerkzeugを使用するため、werkzeugのインストールが必要。
+
+    Args:
+        accept_header: Acceptヘッダーの値（生文字列）
+        candidates: 候補MIMEタイプのリスト（サーバー側の優先順）
+
+    Returns:
+        最も優先されるMIMEタイプ。マッチするものがなければNone。
+
+    """
+    if not candidates:
+        return None
+    # Acceptヘッダーが空 = 何でも受け入れる → サーバー優先順で先頭を返す
+    if not accept_header:
+        return candidates[0]
+    accept = _parse_mime_accept(accept_header)
+    return accept.best_match(candidates)
+
+
+def _parse_mime_accept(accept_header: str) -> typing.Any:
+    """Acceptヘッダー文字列をwerkzeugのMIMEAcceptオブジェクトに変換する。"""
+    try:
+        import werkzeug.datastructures
+        import werkzeug.http
+    except ImportError:
+        raise ImportError(
+            "werkzeugが必要です。pip install pytilpack[flask] または pip install pytilpack[quart] でインストールしてください。"
+        ) from None
+    return werkzeug.http.parse_accept_header(accept_header, werkzeug.datastructures.MIMEAccept)
 
 
 def get_status_code_from_exception(exc: Exception) -> int | None:

@@ -15,6 +15,8 @@ import quart
 import quart.utils
 import uvicorn
 
+import pytilpack.http
+
 logger = logging.getLogger(__name__)
 
 _TIMESTAMP_CACHE: dict[str, int] = {}
@@ -140,10 +142,10 @@ def prefer_markdown() -> bool:
         markdownがHTMLより優先されている場合True、そうでなければFalse
 
     """
-    accept = quart.request.accept_mimetypes
-    q_md = max(accept.quality("text/markdown"), accept.quality("text/plain"))
-    q_html = accept.quality("text/html")
-    return q_md > q_html
+    accept_header = quart.request.headers.get("Accept", "")
+    # text/htmlを先頭にすることで、同一quality時はHTMLを優先する（従来と同じ挙動）
+    result = pytilpack.http.select_accept(accept_header, ["text/html", "text/markdown", "text/plain"])
+    return result in ("text/markdown", "text/plain")
 
 
 def static_url_for(
