@@ -1,9 +1,12 @@
 # ドキュメント
 
-pytilpack のドキュメント一覧です。
+このディレクトリにはドキュメントのソースファイルが含まれています。
 
-オンラインドキュメント: <https://ak110.github.io/pytilpack/>
+ビルド済みドキュメント: <https://ak110.github.io/pytilpack/>
 
-- [CLIコマンド](cli.md)
-- [開発手順](development.md)
-- [スタイルガイド](style-guide.md)
+## ローカルでの確認
+
+```bash
+make docs-serve   # http://127.0.0.1:8000/
+make docs-build   # site/ に出力
+```

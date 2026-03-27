@@ -8,5 +8,5 @@
 - @docs/README.md
 - @docs/development.md
 - @docs/style-guide.md
-- モジュール追加時は `README.md` の更新要
-- ドキュメント追加時は `docs/README.md` の更新要
+- モジュール追加時は `docs/index.md` と `docs/api/xxx.md` の更新要
+- ドキュメント追加時は `mkdocs.yml` の `nav` 更新要
