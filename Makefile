@@ -1,3 +1,5 @@
+UV_RUN := uv run --frozen --all-extras --all-groups
+
 help:
 	@cat Makefile
 
@@ -10,21 +12,17 @@ fix:
 	uv run ruff check --fix --unsafe-fixes
 
 format:
-	uv sync --frozen --all-extras --all-groups
-	SKIP=pyfltr uv run pre-commit run --all-files
-	-uv run pyfltr --exit-zero-even-if-formatted --commands=fast
+	SKIP=pyfltr $(UV_RUN) pre-commit run --all-files
+	-$(UV_RUN) pyfltr --exit-zero-even-if-formatted --commands=fast
 
 test:
-	uv sync --frozen --all-extras --all-groups
-	SKIP=pyfltr uv run pre-commit run --all-files
-	uv run pyfltr --exit-zero-even-if-formatted
+	SKIP=pyfltr $(UV_RUN) pre-commit run --all-files
+	$(UV_RUN) pyfltr --exit-zero-even-if-formatted
 
 docs-serve:
-	uv sync --frozen --group docs --all-extras
-	uv run mkdocs serve
+	$(UV_RUN) --group docs mkdocs serve
 
 docs-build:
-	uv sync --frozen --group docs --all-extras
-	uv run mkdocs build
+	$(UV_RUN) --group docs mkdocs build
 
 .PHONY: help update test format docs-serve docs-build
