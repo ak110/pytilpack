@@ -1,0 +1,3 @@
+# pytilpack.pydantic
+
+::: pytilpack.pydantic

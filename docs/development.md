@@ -10,6 +10,48 @@
     uv run pre-commit install
     ```
 
+## ドキュメント
+
+MkDocs + mkdocstrings + mkdocs-llmstxtでAPIリファレンスとllms.txtを自動生成し、GitHub Pagesにデプロイしている。
+
+### ローカルでの確認
+
+```bash
+make docs-serve   # ローカルプレビュー (http://127.0.0.1:8000/)
+make docs-build   # ビルドのみ (site/ に出力)
+```
+
+### GitHub Pages の初期設定
+
+masterへのプッシュ時に`.github/workflows/docs.yaml`が自動実行されるが、初回のみGitHub側の設定が必要。
+
+1. リポジトリの Settings > Pages を開く
+2. Build and deployment の Source を **GitHub Actions** に変更する
+
+設定後、masterにプッシュすれば <https://ak110.github.io/pytilpack/> に自動デプロイされる。
+
+### モジュール追加時
+
+新しいモジュール `pytilpack/xxx.py` を追加した場合、対応する `docs/api/xxx.md` も作成する必要がある。
+
+```markdown
+# pytilpack.xxx
+
+::: pytilpack.xxx
+```
+
+サブパッケージの場合:
+
+```markdown
+# pytilpack.xxx
+
+::: pytilpack.xxx
+    options:
+      show_submodules: true
+```
+
+作成を忘れた場合はpre-commitおよびCIで検出される。
+
 ## リリース手順
 
 事前に`gh`コマンドをインストールして`gh auth login`でログインしておき、以下のコマンドのいずれかを実行。

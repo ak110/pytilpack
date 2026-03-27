@@ -1,0 +1,3 @@
+# pytilpack.paginator
+
+::: pytilpack.paginator

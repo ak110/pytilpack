@@ -19,4 +19,12 @@ test:
 	SKIP=pyfltr uv run pre-commit run --all-files
 	uv run pyfltr --exit-zero-even-if-formatted
 
-.PHONY: help update test format
+docs-serve:
+	uv sync --frozen --group docs --all-extras
+	uv run mkdocs serve
+
+docs-build:
+	uv sync --frozen --group docs --all-extras
+	uv run mkdocs build
+
+.PHONY: help update test format docs-serve docs-build

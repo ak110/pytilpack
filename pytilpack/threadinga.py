@@ -16,9 +16,7 @@ async def parallel[T](
     Args:
         funcs: 実行する関数のリスト。
         max_workers: 同時実行するスレッド数。Noneの場合はCPUのコア数。
-        thread_name_prefix: スレッド名のプレフィックス。
         timeout: タイムアウト時間。
-        chunksize: 一度に実行する関数の数。
 
     Returns:
         各関数の戻り値のリスト。

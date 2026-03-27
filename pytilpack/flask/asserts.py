@@ -6,12 +6,18 @@ import typing
 import warnings
 import xml.etree.ElementTree as ET
 
+import flask
+import werkzeug.test
+
 import pytilpack.pytest
 import pytilpack.web
 
+ResponseType = flask.Response | werkzeug.test.TestResponse
+"""レスポンスの型。"""
+
 
 def assert_bytes(
-    response,
+    response: ResponseType,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = None,
 ) -> bytes:
@@ -42,7 +48,7 @@ def assert_bytes(
 
 
 def assert_html(
-    response,
+    response: ResponseType,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "__default__",
     strict: bool = False,
@@ -85,7 +91,7 @@ def assert_html(
 
 
 def assert_json(
-    response,
+    response: ResponseType,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "application/json",
 ) -> typing.Any:
@@ -123,7 +129,7 @@ def assert_json(
 
 
 def assert_xml(
-    response,
+    response: ResponseType,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "__default__",
 ) -> str:
@@ -163,9 +169,9 @@ def assert_xml(
 
 
 def assert_sse(
-    response,
+    response: ResponseType,
     status_code: int = 200,
-):
+) -> ResponseType:
     """テストコード用。
 
     Args:
@@ -185,9 +191,9 @@ def assert_sse(
 
 
 def assert_response(
-    response,
+    response: ResponseType,
     status_code: int = 200,
-):
+) -> ResponseType:
     """テストコード用。
 
     Args:

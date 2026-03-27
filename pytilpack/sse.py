@@ -86,7 +86,7 @@ class SSE:
         return "\n".join(lines) + "\n\n"
 
 
-def generator(interval: float = 15):
+def generator(interval: float = 15) -> typing.Callable:
     """SSEジェネレーターのデコレーター。
 
     15秒以上メッセージが送信されない場合、コメント行を送信してコネクションを維持します。

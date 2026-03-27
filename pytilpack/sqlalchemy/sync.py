@@ -70,8 +70,8 @@ class SyncMixin(_ReprMixin):
         pool_pre_ping: bool = True,
         autoflush: bool = True,
         expire_on_commit: bool = False,
-        **kwargs,
-    ):
+        **kwargs: typing.Any,
+    ) -> None:
         """DB接続を初期化する。(デフォルトである程度おすすめの設定をしちゃう。)
 
         Args:

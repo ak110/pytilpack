@@ -44,8 +44,6 @@ def parallel[T](
         funcs: 実行する関数のリスト。
         max_workers: 同時実行するスレッド数。Noneの場合はCPUのコア数。
         thread_name_prefix: スレッド名のプレフィックス。
-        initializer: スレッドの初期化関数。
-        initargs: 初期化関数の引数。
         timeout: タイムアウト時間。
         chunksize: 一度に実行する関数の数。
 

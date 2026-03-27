@@ -1,0 +1,118 @@
+site_name: pytilpack
+site_description: Pythonのユーティリティ集
+site_url: https://ak110.github.io/pytilpack/
+repo_url: https://github.com/ak110/pytilpack
+repo_name: ak110/pytilpack
+
+theme:
+  name: material
+  language: ja
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: ダークモードに切り替え
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: ライトモードに切り替え
+  features:
+    - content.code.copy
+    - navigation.sections
+    - navigation.expand
+    - search.suggest
+    - search.highlight
+
+exclude_docs: |
+  README.md
+
+plugins:
+  - search:
+      lang: ja
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: true
+            members_order: source
+            merge_init_into_class: true
+            show_if_no_docstring: false
+  - llmstxt:
+      full_output: llms-full.txt
+      sections:
+        ドキュメント:
+          - index.md: トップページ
+          - cli.md: CLIコマンド
+        APIリファレンス:
+          - api/*.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - toc:
+      permalink: true
+
+nav:
+  - ホーム: index.md
+  - CLIコマンド: cli.md
+  - APIリファレンス:
+      - 概要: api/index.md
+      - ライブラリ用ユーティリティ:
+          - pytilpack.anthropic: api/anthropic.md
+          - pytilpack.asyncio: api/asyncio.md
+          - pytilpack.base64: api/base64.md
+          - pytilpack.csv: api/csv.md
+          - pytilpack.dataclasses: api/dataclasses.md
+          - pytilpack.datetime: api/datetime.md
+          - pytilpack.fastapi: api/fastapi.md
+          - pytilpack.flask: api/flask.md
+          - pytilpack.flask_login: api/flask_login.md
+          - pytilpack.fnctl: api/fnctl.md
+          - pytilpack.functools: api/functools.md
+          - pytilpack.httpx: api/httpx.md
+          - pytilpack.importlib: api/importlib.md
+          - pytilpack.json: api/json.md
+          - pytilpack.logging: api/logging.md
+          - pytilpack.markdown: api/markdown.md
+          - pytilpack.msal: api/msal.md
+          - pytilpack.openai: api/openai.md
+          - pytilpack.pathlib: api/pathlib.md
+          - pytilpack.pycrypto: api/pycrypto.md
+          - pytilpack.pydantic: api/pydantic.md
+          - pytilpack.pytest: api/pytest.md
+          - pytilpack.python: api/python.md
+          - pytilpack.quart: api/quart.md
+          - pytilpack.quart_auth: api/quart_auth.md
+          - pytilpack.sqlalchemy: api/sqlalchemy.md
+          - pytilpack.threading: api/threading.md
+          - pytilpack.threadinga: api/threadinga.md
+          - pytilpack.tiktoken: api/tiktoken.md
+          - pytilpack.tqdm: api/tqdm.md
+          - pytilpack.typing: api/typing.md
+          - pytilpack.yaml: api/yaml.md
+      - 汎用モジュール:
+          - pytilpack.cache: api/cache.md
+          - pytilpack.data_url: api/data_url.md
+          - pytilpack.healthcheck: api/healthcheck.md
+          - pytilpack.htmlrag: api/htmlrag.md
+          - pytilpack.http: api/http.md
+          - pytilpack.io: api/io.md
+          - pytilpack.jsonc: api/jsonc.md
+          - pytilpack.paginator: api/paginator.md
+          - pytilpack.random: api/random.md
+          - pytilpack.secrets: api/secrets.md
+          - pytilpack.sse: api/sse.md
+          - pytilpack.web: api/web.md
+  - 開発:
+      - 開発手順: development.md
+      - スタイルガイド: style-guide.md
