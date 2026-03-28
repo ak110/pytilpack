@@ -1,0 +1,5 @@
+# MkDocs Material (Python-Markdown) のため4スペースインデントが必要
+config:
+  MD007:
+    indent: 4
+  MD013: false
