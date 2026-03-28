@@ -33,7 +33,7 @@ jobs:
           enable-cache: true
 
       - name: Install dependencies
-        run: uv sync --group docs --all-extras
+        run: uv sync --all-extras
 
       - name: Check docs/api/ consistency
         run: uv run python scripts/check_docs_api.py

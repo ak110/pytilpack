@@ -2539,6 +2539,10 @@ tqdm = [
 dev = [
     { name = "aiosqlite" },
     { name = "litellm" },
+    { name = "mkdocs" },
+    { name = "mkdocs-llmstxt" },
+    { name = "mkdocs-material" },
+    { name = "mkdocstrings", extra = ["python"] },
     { name = "pre-commit" },
     { name = "pyfltr" },
     { name = "pyright", extra = ["nodejs"] },
@@ -2549,12 +2553,6 @@ dev = [
     { name = "types-requests" },
     { name = "types-tabulate" },
     { name = "uv-sort" },
-]
-docs = [
-    { name = "mkdocs" },
-    { name = "mkdocs-llmstxt" },
-    { name = "mkdocs-material" },
-    { name = "mkdocstrings", extra = ["python"] },
 ]
 
 [package.metadata]
@@ -2626,6 +2624,10 @@ provides-extras = ["all", "anthropic", "bleach", "dotenv", "fastapi", "flask", "
 dev = [
     { name = "aiosqlite", specifier = "<0.22" },
     { name = "litellm", specifier = ">=1.72.4" },
+    { name = "mkdocs", specifier = ">=1.6" },
+    { name = "mkdocs-llmstxt", specifier = ">=0.2" },
+    { name = "mkdocs-material", specifier = ">=9.6" },
+    { name = "mkdocstrings", extras = ["python"], specifier = ">=0.29" },
     { name = "pre-commit", specifier = ">=4.2.0" },
     { name = "pyfltr", git = "https://github.com/ak110/pyfltr.git" },
     { name = "pyright", extras = ["nodejs"], specifier = ">=1.1.403" },
@@ -2636,12 +2638,6 @@ dev = [
     { name = "types-requests", specifier = ">=2.32.4.20250913" },
     { name = "types-tabulate", specifier = ">=0.9.0.20241207" },
     { name = "uv-sort", specifier = ">=0.6.0" },
-]
-docs = [
-    { name = "mkdocs", specifier = ">=1.6" },
-    { name = "mkdocs-llmstxt", specifier = ">=0.2" },
-    { name = "mkdocs-material", specifier = ">=9.6" },
-    { name = "mkdocstrings", extras = ["python"], specifier = ">=0.29" },
 ]
 
 [[package]]

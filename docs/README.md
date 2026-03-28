@@ -7,6 +7,5 @@
 ## ローカルでの確認
 
 ```bash
-make docs-serve   # http://127.0.0.1:8000/
-make docs-build   # site/ に出力
+make docs   # http://127.0.0.1:8000/
 ```

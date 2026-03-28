@@ -114,15 +114,13 @@ mcp = [
 ]
 
 [dependency-groups]
-docs = [
+dev = [
+    "aiosqlite<0.22",  # 0.22系はなんかバグってる？ pytestが終わらなくなる
+    "litellm>=1.72.4",
     "mkdocs-llmstxt>=0.2",
     "mkdocs-material>=9.6",
     "mkdocs>=1.6",
     "mkdocstrings[python]>=0.29",
-]
-dev = [
-    "aiosqlite<0.22",  # 0.22系はなんかバグってる？ pytestが終わらなくなる
-    "litellm>=1.72.4",
     "pre-commit>=4.2.0",
     "pyfltr>=1.10.0",
     "pyright[nodejs]>=1.1.403",
