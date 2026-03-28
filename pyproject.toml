@@ -39,6 +39,7 @@ all = [
     "pycryptodome",
     "pytest",
     "pytest-asyncio",
+    "python-dotenv>=1.0",
     "pyyaml>=6.0",
     "quart>=0.20.0",
     "sqlalchemy>=2.0",
@@ -53,6 +54,9 @@ anthropic = [
 ]
 bleach = [
     "bleach>=6.2",
+]
+dotenv = [
+    "python-dotenv>=1.0",
 ]
 fastapi = [
     "fastapi>=0.111",

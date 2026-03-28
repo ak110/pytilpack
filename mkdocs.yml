@@ -101,7 +101,9 @@ nav:
           - pytilpack.yaml: api/yaml.md
       - 汎用モジュール:
           - pytilpack.cache: api/cache.md
+          - pytilpack.crypto: api/crypto.md
           - pytilpack.data_url: api/data_url.md
+          - pytilpack.environ: api/environ.md
           - pytilpack.healthcheck: api/healthcheck.md
           - pytilpack.htmlrag: api/htmlrag.md
           - pytilpack.http: api/http.md
@@ -109,8 +111,10 @@ nav:
           - pytilpack.jsonc: api/jsonc.md
           - pytilpack.paginator: api/paginator.md
           - pytilpack.random: api/random.md
+          - pytilpack.ratelimit: api/ratelimit.md
           - pytilpack.secrets: api/secrets.md
           - pytilpack.sse: api/sse.md
+          - pytilpack.validator: api/validator.md
           - pytilpack.web: api/web.md
   - 開発:
       - 開発手順: development.md

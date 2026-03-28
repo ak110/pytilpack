@@ -75,7 +75,9 @@ import pytilpack.xxx
 ## 特定ライブラリに依存しないモジュール
 
 - [pytilpack.cache](api/cache.md): ファイルキャッシュ関連
+- [pytilpack.crypto](api/crypto.md): 署名・トークン関連
 - [pytilpack.data_url](api/data_url.md): データURL関連
+- [pytilpack.environ](api/environ.md): 環境変数関連
 - [pytilpack.healthcheck](api/healthcheck.md): ヘルスチェック処理関連
 - [pytilpack.htmlrag](api/htmlrag.md): HtmlRAG関連
 - [pytilpack.http](api/http.md): HTTP関連
@@ -83,6 +85,7 @@ import pytilpack.xxx
 - [pytilpack.jsonc](api/jsonc.md): JSON with Comments関連
 - [pytilpack.paginator](api/paginator.md): ページネーション関連
 - [pytilpack.random](api/random.md): 疑似乱数関連
+- [pytilpack.ratelimit](api/ratelimit.md): レートリミッター
 - [pytilpack.secrets](api/secrets.md): シークレットキー関連
 - [pytilpack.sse](api/sse.md): Server-Sent Events関連
 - [pytilpack.web](api/web.md): Web関連

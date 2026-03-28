@@ -14,6 +14,7 @@ Pythonのユーティリティ集。
 pip install pytilpack
 # pip install pytilpack[all]
 # pip install pytilpack[anthropic]
+# pip install pytilpack[dotenv]
 # pip install pytilpack[fastapi]
 # pip install pytilpack[flask]
 # pip install pytilpack[markdown]
