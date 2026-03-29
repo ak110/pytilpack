@@ -45,12 +45,78 @@ plugins:
             show_if_no_docstring: false
   - llmstxt:
       full_output: llms-full.txt
+      markdown_description: |
+        ## インストール
+
+        ```bash
+        pip install pytilpack
+        ```
+
+        オプション依存: `pytilpack[all]`, `pytilpack[anthropic]`, `pytilpack[fastapi]`, `pytilpack[flask]`, `pytilpack[markdown]`, `pytilpack[msal]`, `pytilpack[openai]`, `pytilpack[pycryptodome]`, `pytilpack[pytest]`, `pytilpack[pyyaml]`, `pytilpack[quart]`, `pytilpack[sqlalchemy]`, `pytilpack[tiktoken]`, `pytilpack[tqdm]`
+
+        ## 主な使い方
+
+        各モジュールを個別に import して利用する。
+
+        ```python
+        import pytilpack.xxx
+        ```
+
+        `xxx` には対象ライブラリ名（`openai` や `pathlib` など）が入る。
       sections:
         ドキュメント:
           - index.md: トップページ
           - cli.md: CLIコマンド
-        APIリファレンス:
-          - api/*.md
+        ライブラリ用ユーティリティ:
+          - api/anthropic.md
+          - api/asyncio.md
+          - api/base64.md
+          - api/csv.md
+          - api/dataclasses.md
+          - api/datetime.md
+          - api/fastapi.md
+          - api/flask.md
+          - api/flask_login.md
+          - api/fnctl.md
+          - api/functools.md
+          - api/httpx.md
+          - api/importlib.md
+          - api/json.md
+          - api/logging.md
+          - api/markdown.md
+          - api/msal.md
+          - api/openai.md
+          - api/pathlib.md
+          - api/pycrypto.md
+          - api/pydantic.md
+          - api/pytest.md
+          - api/python.md
+          - api/quart.md
+          - api/quart_auth.md
+          - api/sqlalchemy.md
+          - api/threading.md
+          - api/threadinga.md: asyncio版
+          - api/tiktoken.md
+          - api/tqdm.md
+          - api/typing.md
+          - api/yaml.md
+        汎用モジュール:
+          - api/cache.md: ファイルキャッシュ関連
+          - api/crypto.md: 署名・トークン関連
+          - api/data_url.md: データURL関連
+          - api/environ.md: 環境変数関連
+          - api/healthcheck.md: ヘルスチェック処理関連
+          - api/htmlrag.md: HtmlRAG関連
+          - api/http.md: HTTP関連
+          - api/io.md: IO関連のユーティリティ
+          - api/jsonc.md: JSON with Comments関連
+          - api/paginator.md: ページネーション関連
+          - api/random.md: 疑似乱数関連
+          - api/ratelimit.md: レートリミッター
+          - api/secrets.md: シークレットキー関連
+          - api/sse.md: Server-Sent Events関連
+          - api/validator.md: バリデーション関連
+          - api/web.md: Web関連
 
 markdown_extensions:
   - admonition

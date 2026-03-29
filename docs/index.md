@@ -88,4 +88,5 @@ import pytilpack.xxx
 - [pytilpack.ratelimit](api/ratelimit.md): レートリミッター
 - [pytilpack.secrets](api/secrets.md): シークレットキー関連
 - [pytilpack.sse](api/sse.md): Server-Sent Events関連
+- [pytilpack.validator](api/validator.md): バリデーション関連
 - [pytilpack.web](api/web.md): Web関連
