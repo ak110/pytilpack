@@ -3,7 +3,6 @@ disable=
     broad-exception-caught,
     duplicate-code,
     fixme,
-    import-outside-toplevel,
     invalid-name,
     line-too-long,
     logging-fstring-interpolation,

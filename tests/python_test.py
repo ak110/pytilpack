@@ -1,8 +1,25 @@
 """テストコード。"""
 
+import asyncio
+import threading
+import time
+import warnings
+
 import pytest
 
 import pytilpack.python
+from pytilpack.python import (
+    default,
+    doc_summary,
+    empty,
+    get,
+    get_bool,
+    get_dict,
+    get_float,
+    get_int,
+    get_list,
+    get_str,
+)
 
 
 def test_coalesce():
@@ -20,8 +37,6 @@ def test_remove_none():
 
 
 def test_empty():
-    from pytilpack.python import empty
-
     assert empty(None)
     assert empty("")
     assert empty([])
@@ -31,8 +46,6 @@ def test_empty():
 
 
 def test_default():
-    from pytilpack.python import default
-
     assert default(None, 123) == 123
     assert default("", "123") == "123"
     assert default([], [123]) == [123]
@@ -42,8 +55,6 @@ def test_default():
 
 
 def test_doc_summary():
-    from pytilpack.python import doc_summary
-
     assert doc_summary(None) == ""
     assert doc_summary(0) == "int([x]) -> integer"
     assert doc_summary(doc_summary) == "docstringの先頭1行分を取得する。"
@@ -70,8 +81,6 @@ def test_class_field_comments():
 
 
 def test_get():
-    from pytilpack.python import get
-
     data = {"a": [{"b": 1}], "none": None}
 
     # 正常系
@@ -100,8 +109,6 @@ def test_get():
 
 
 def test_get_float():
-    from pytilpack.python import get_float
-
     data = {"a": 1.1, "b": "string", "c": None}
 
     assert get_float(data, "a") == 1.1
@@ -114,8 +121,6 @@ def test_get_float():
 
 
 def test_get_bool():
-    from pytilpack.python import get_bool
-
     data = {"a": True, "b": "string", "c": None}
 
     assert get_bool(data, "a") is True
@@ -128,8 +133,6 @@ def test_get_bool():
 
 
 def test_get_int():
-    from pytilpack.python import get_int
-
     data = {"a": 1, "b": "string", "c": None}
 
     assert get_int(data, "a") == 1
@@ -142,8 +145,6 @@ def test_get_int():
 
 
 def test_get_str():
-    from pytilpack.python import get_str
-
     data = {"a": "string", "b": 1, "c": None}
 
     assert get_str(data, "a") == "string"
@@ -156,8 +157,6 @@ def test_get_str():
 
 
 def test_get_list():
-    from pytilpack.python import get_list
-
     data = {"a": [1, 2, 3], "b": "string", "c": None}
 
     assert get_list(data, "a") == [1, 2, 3]
@@ -170,8 +169,6 @@ def test_get_list():
 
 
 def test_get_dict():
-    from pytilpack.python import get_dict
-
     data = {"a": {"key": "value"}, "b": "string", "c": None}
 
     assert get_dict(data, "a") == {"key": "value"}
@@ -261,8 +258,6 @@ def test_convert_error(value, target_type, errors):
 
 def test_singleton_mixin():
     """SingletonMixinのテスト。"""
-    import threading
-    import time
 
     # テスト用クラス
     class MyConfig(pytilpack.python.SingletonMixin):
@@ -363,8 +358,6 @@ def test_merge(dst, src, expected):
 
 def test_deprecated():
     """deprecatedのテスト。"""
-    import asyncio
-    import warnings
 
     # sync関数のテスト
     @pytilpack.python.deprecated()

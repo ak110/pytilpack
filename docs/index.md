@@ -7,23 +7,46 @@ Pythonのユーティリティ集。
 
 ## インストール
 
+ベースパッケージ（stdlib系ユーティリティ + httpx/werkzeug）:
+
 ```bash
 pip install pytilpack
-# pip install pytilpack[all]
-# pip install pytilpack[anthropic]
-# pip install pytilpack[fastapi]
-# pip install pytilpack[flask]
-# pip install pytilpack[markdown]
-# pip install pytilpack[msal]
-# pip install pytilpack[openai]
-# pip install pytilpack[pycryptodome]
-# pip install pytilpack[pytest]
-# pip install pytilpack[pyyaml]
-# pip install pytilpack[quart]
-# pip install pytilpack[sqlalchemy]
-# pip install pytilpack[tiktoken]
-# pip install pytilpack[tqdm]
 ```
+
+各モジュールが必要とするライブラリは extras で追加インストールする:
+
+```bash
+pip install pytilpack[all]       # 全モジュール
+pip install pytilpack[fastapi]   # pytilpack.fastapi 用
+pip install pytilpack[flask]     # pytilpack.flask 用
+# ...
+```
+
+### extras 一覧
+
+| Extra | 対象モジュール | 主な依存パッケージ |
+| ----- | -------------- | ------------------ |
+| `all` | 全モジュール | (全依存) |
+| `anthropic` | `pytilpack.anthropic` | anthropic |
+| `babel` | `pytilpack.babel`, `pytilpack.i18n` | babel |
+| `bleach` | (markdown extraに含まれる) | bleach |
+| `environ` | `pytilpack.environ` | python-dotenv |
+| `fastapi` | `pytilpack.fastapi` | fastapi, html5lib |
+| `flask` | `pytilpack.flask`, `pytilpack.flask_login` | flask, flask-login, html5lib |
+| `htmlrag` | `pytilpack.htmlrag` | beautifulsoup4 |
+| `markdown` | `pytilpack.markdown` | bleach, markdown, tinycss2 |
+| `mcp` | CLI: `pytilpack mcp` | mcp, beautifulsoup4 |
+| `msal` | `pytilpack.msal` | azure-identity, cryptography, msal |
+| `openai` | `pytilpack.openai` | openai |
+| `pycryptodome` | `pytilpack.pycrypto` | pycryptodome |
+| `pydantic` | `pytilpack.pydantic` | pydantic |
+| `pytest` | `pytilpack.pytest` | pytest, pytest-asyncio |
+| `pyyaml` | `pytilpack.yaml` | pyyaml |
+| `quart` | `pytilpack.quart`, `pytilpack.quart_auth` | quart, quart-auth, hypercorn, uvicorn |
+| `sqlalchemy` | `pytilpack.sqlalchemy` | sqlalchemy, tabulate |
+| `tiktoken` | `pytilpack.tiktoken` | tiktoken, openai, pillow |
+| `tqdm` | `pytilpack.tqdm` | tqdm |
+| `web` | `pytilpack.web` (check_html) | html5lib |
 
 ## 主な使い方
 

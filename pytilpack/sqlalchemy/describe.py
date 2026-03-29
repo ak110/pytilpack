@@ -7,11 +7,9 @@ import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.sql.elements
 import sqlalchemy.sql.schema
+import tabulate
 
 import pytilpack.python
-
-if typing.TYPE_CHECKING:
-    import tabulate
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +40,6 @@ def describe_table(
     tablefmt: "str | tabulate.TableFormat" = "grid",
 ) -> str:
     """テーブル構造を文字列化する。"""
-    import tabulate
-
     try:
         class_field_comments = pytilpack.python.class_field_comments(orm_class)
     except Exception as e:

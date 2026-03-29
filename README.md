@@ -10,23 +10,51 @@ Pythonのユーティリティ集。
 
 ## インストール
 
+ベースパッケージ（stdlib系ユーティリティ + httpx/werkzeug）:
+
 ```bash
 pip install pytilpack
-# pip install pytilpack[all]
-# pip install pytilpack[anthropic]
-# pip install pytilpack[fastapi]
-# pip install pytilpack[flask]
-# pip install pytilpack[markdown]
-# pip install pytilpack[msal]
-# pip install pytilpack[openai]
-# pip install pytilpack[pycryptodome]
-# pip install pytilpack[pytest]
-# pip install pytilpack[pyyaml]
-# pip install pytilpack[quart]
-# pip install pytilpack[sqlalchemy]
-# pip install pytilpack[tiktoken]
-# pip install pytilpack[tqdm]
 ```
+
+各モジュールが必要とするライブラリは extras で追加インストールする:
+
+```bash
+pip install pytilpack[all]       # 全モジュール
+pip install pytilpack[fastapi]   # pytilpack.fastapi 用
+pip install pytilpack[flask]     # pytilpack.flask 用
+# ...
+```
+
+### extras 一覧
+
+| Extra | 対象モジュール | 依存パッケージ |
+| ----- | -------------- | -------------- |
+| `all` | 全モジュール | (全依存) |
+| `anthropic` | `.anthropic` | anthropic |
+| `babel` | `.babel` `.i18n` | babel |
+| `environ` | `.environ` | python-dotenv |
+| `fastapi` | `.fastapi` | fastapi等 |
+| `flask` | `.flask` `.flask_login` | flask等 |
+| `htmlrag` | `.htmlrag` | beautifulsoup4 |
+| `markdown` | `.markdown` | bleach等 |
+| `mcp` | CLI: `pytilpack mcp` | mcp等 |
+| `msal` | `.msal` | msal等 |
+| `openai` | `.openai` | openai |
+| `pycryptodome` | `.pycrypto` | pycryptodome |
+| `pydantic` | `.pydantic` | pydantic |
+| `pytest` | `.pytest` | pytest等 |
+| `pyyaml` | `.yaml` | pyyaml |
+| `quart` | `.quart` `.quart_auth` | quart等 |
+| `sqlalchemy` | `.sqlalchemy` | sqlalchemy等 |
+| `tiktoken` | `.tiktoken` | tiktoken等 |
+| `tqdm` | `.tqdm` | tqdm |
+| `web` | `.web` (check_html) | html5lib |
+
+extras不要のモジュール（ベースパッケージに含まれる）:
+`.cache` `.crypto` `.data_url` `.functools`
+`.healthcheck` `.http` `.httpx` `.io`
+`.json` `.jsonc` `.paginator` `.random`
+`.ratelimit` `.secrets` `.sse` `.validator` 等
 
 ## 主な使い方
 

@@ -15,12 +15,7 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
 ]
 dependencies = [
-    "babel>=2.18.0",
-    "beautifulsoup4>=4.12",
     "httpx>=0.28.1",
-    "mcp>=1.0.0",
-    "pylint-pydantic>=0.4.1",
-    "python-dotenv>=1.2.2",
     "typing-extensions>=4.0",
     "werkzeug>=3.1.7",
 ]
@@ -29,20 +24,27 @@ dependencies = [
 all = [
     "anthropic>=0.75.0",
     "azure-identity>=1.23.0",
+    "babel>=2.18.0",
+    "beautifulsoup4>=4.12",
     "bleach>=6.2",
+    "cryptography>=46.0.6",
     "fastapi>=0.111",
     "flask-login>=0.6",
     "flask>=3.0",
     "html5lib",
+    "hypercorn>=0.18.0",
     "markdown>=3.6",
     "mcp>=1.0.0",
     "msal>=1.32.3",
     "openai>=1.99.6",
     "pillow",
     "pycryptodome",
+    "pydantic>=2.12.5",
     "pytest",
     "pytest-asyncio",
+    "python-dotenv>=1.2.2",
     "pyyaml>=6.0",
+    "quart-auth>=0.11.0",
     "quart>=0.20.0",
     "sqlalchemy>=2.0",
     "tabulate[widechars]>=0.9",
@@ -99,6 +101,7 @@ tqdm = [
 ]
 quart = [
     "html5lib",
+    "hypercorn>=0.18.0",
     "pytest",
     "quart-auth>=0.11.0",
     "quart>=0.20.0",
@@ -106,15 +109,32 @@ quart = [
 ]
 msal = [
     "azure-identity>=1.23.0",
+    "cryptography>=46.0.6",
     "msal>=1.32.3",
 ]
 mcp = [
+    "beautifulsoup4>=4.12",
     "mcp>=1.0.0",
+]
+babel = [
+    "babel>=2.18.0",
+]
+environ = [
+    "python-dotenv>=1.2.2",
+]
+htmlrag = [
+    "beautifulsoup4>=4.12",
+]
+pydantic = [
+    "pydantic>=2.12.5",
+]
+web = [
+    "html5lib>=1.1",
 ]
 
 [dependency-groups]
 dev = [
-    "aiosqlite<0.22",  # 0.22系はなんかバグってる？ pytestが終わらなくなる
+    "aiosqlite<0.22", # 0.22系はなんかバグってる？ pytestが終わらなくなる
     "litellm>=1.72.4",
     "mkdocs-llmstxt>=0.2",
     "mkdocs-material>=9.6",
@@ -122,6 +142,7 @@ dev = [
     "mkdocstrings[python]>=0.29",
     "pre-commit>=4.2.0",
     "pyfltr>=1.10.0",
+    "pylint-pydantic>=0.4.1",
     "pyright[nodejs]>=1.1.403",
     "pytest-xdist>=3.5",
     "types-bleach>=6.2.0.20241123",

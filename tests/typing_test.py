@@ -1,5 +1,6 @@
 """テストコード。"""
 
+import dataclasses
 import typing
 
 import pytest
@@ -140,7 +141,6 @@ def test_literal() -> None:
 
 def test_dataclass() -> None:
     """dataclassのテスト。"""
-    import dataclasses
 
     @dataclasses.dataclass
     class Person:

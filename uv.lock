@@ -2453,12 +2453,7 @@ wheels = [
 name = "pytilpack"
 source = { editable = "." }
 dependencies = [
-    { name = "babel" },
-    { name = "beautifulsoup4" },
     { name = "httpx" },
-    { name = "mcp" },
-    { name = "pylint-pydantic" },
-    { name = "python-dotenv" },
     { name = "typing-extensions" },
     { name = "werkzeug" },
 ]
@@ -2467,21 +2462,28 @@ dependencies = [
 all = [
     { name = "anthropic" },
     { name = "azure-identity" },
+    { name = "babel" },
+    { name = "beautifulsoup4" },
     { name = "bleach" },
+    { name = "cryptography" },
     { name = "fastapi" },
     { name = "flask" },
     { name = "flask-login" },
     { name = "html5lib" },
+    { name = "hypercorn" },
     { name = "markdown" },
     { name = "mcp" },
     { name = "msal" },
     { name = "openai" },
     { name = "pillow" },
     { name = "pycryptodome" },
+    { name = "pydantic" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
+    { name = "python-dotenv" },
     { name = "pyyaml" },
     { name = "quart" },
+    { name = "quart-auth" },
     { name = "sqlalchemy" },
     { name = "tabulate", extra = ["widechars"] },
     { name = "tiktoken" },
@@ -2492,8 +2494,14 @@ all = [
 anthropic = [
     { name = "anthropic" },
 ]
+babel = [
+    { name = "babel" },
+]
 bleach = [
     { name = "bleach" },
+]
+environ = [
+    { name = "python-dotenv" },
 ]
 fastapi = [
     { name = "fastapi" },
@@ -2505,16 +2513,21 @@ flask = [
     { name = "html5lib" },
     { name = "pytest" },
 ]
+htmlrag = [
+    { name = "beautifulsoup4" },
+]
 markdown = [
     { name = "bleach" },
     { name = "markdown" },
     { name = "tinycss2" },
 ]
 mcp = [
+    { name = "beautifulsoup4" },
     { name = "mcp" },
 ]
 msal = [
     { name = "azure-identity" },
+    { name = "cryptography" },
     { name = "msal" },
 ]
 openai = [
@@ -2522,6 +2535,9 @@ openai = [
 ]
 pycryptodome = [
     { name = "pycryptodome" },
+]
+pydantic = [
+    { name = "pydantic" },
 ]
 pytest = [
     { name = "pytest" },
@@ -2532,6 +2548,7 @@ pyyaml = [
 ]
 quart = [
     { name = "html5lib" },
+    { name = "hypercorn" },
     { name = "pytest" },
     { name = "quart" },
     { name = "quart-auth" },
@@ -2549,6 +2566,9 @@ tiktoken = [
 tqdm = [
     { name = "tqdm" },
 ]
+web = [
+    { name = "html5lib" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -2560,6 +2580,7 @@ dev = [
     { name = "mkdocstrings", extra = ["python"] },
     { name = "pre-commit" },
     { name = "pyfltr" },
+    { name = "pylint-pydantic" },
     { name = "pyright", extra = ["nodejs"] },
     { name = "pytest-xdist" },
     { name = "types-bleach" },
@@ -2576,11 +2597,16 @@ requires-dist = [
     { name = "anthropic", marker = "extra == 'anthropic'", specifier = ">=0.75.0" },
     { name = "azure-identity", marker = "extra == 'all'", specifier = ">=1.23.0" },
     { name = "azure-identity", marker = "extra == 'msal'", specifier = ">=1.23.0" },
-    { name = "babel", specifier = ">=2.18.0" },
-    { name = "beautifulsoup4", specifier = ">=4.12" },
+    { name = "babel", marker = "extra == 'all'", specifier = ">=2.18.0" },
+    { name = "babel", marker = "extra == 'babel'", specifier = ">=2.18.0" },
+    { name = "beautifulsoup4", marker = "extra == 'all'", specifier = ">=4.12" },
+    { name = "beautifulsoup4", marker = "extra == 'htmlrag'", specifier = ">=4.12" },
+    { name = "beautifulsoup4", marker = "extra == 'mcp'", specifier = ">=4.12" },
     { name = "bleach", marker = "extra == 'all'", specifier = ">=6.2" },
     { name = "bleach", marker = "extra == 'bleach'", specifier = ">=6.2" },
     { name = "bleach", marker = "extra == 'markdown'" },
+    { name = "cryptography", marker = "extra == 'all'", specifier = ">=46.0.6" },
+    { name = "cryptography", marker = "extra == 'msal'", specifier = ">=46.0.6" },
     { name = "fastapi", marker = "extra == 'all'", specifier = ">=0.111" },
     { name = "fastapi", marker = "extra == 'fastapi'", specifier = ">=0.111" },
     { name = "flask", marker = "extra == 'all'", specifier = ">=3.0" },
@@ -2591,10 +2617,12 @@ requires-dist = [
     { name = "html5lib", marker = "extra == 'fastapi'" },
     { name = "html5lib", marker = "extra == 'flask'" },
     { name = "html5lib", marker = "extra == 'quart'" },
+    { name = "html5lib", marker = "extra == 'web'", specifier = ">=1.1" },
     { name = "httpx", specifier = ">=0.28.1" },
+    { name = "hypercorn", marker = "extra == 'all'", specifier = ">=0.18.0" },
+    { name = "hypercorn", marker = "extra == 'quart'", specifier = ">=0.18.0" },
     { name = "markdown", marker = "extra == 'all'", specifier = ">=3.6" },
     { name = "markdown", marker = "extra == 'markdown'", specifier = ">=3.6" },
-    { name = "mcp", specifier = ">=1.0.0" },
     { name = "mcp", marker = "extra == 'all'", specifier = ">=1.0.0" },
     { name = "mcp", marker = "extra == 'mcp'", specifier = ">=1.0.0" },
     { name = "msal", marker = "extra == 'all'", specifier = ">=1.32.3" },
@@ -2606,18 +2634,21 @@ requires-dist = [
     { name = "pillow", marker = "extra == 'tiktoken'" },
     { name = "pycryptodome", marker = "extra == 'all'" },
     { name = "pycryptodome", marker = "extra == 'pycryptodome'" },
-    { name = "pylint-pydantic", specifier = ">=0.4.1" },
+    { name = "pydantic", marker = "extra == 'all'", specifier = ">=2.12.5" },
+    { name = "pydantic", marker = "extra == 'pydantic'", specifier = ">=2.12.5" },
     { name = "pytest", marker = "extra == 'all'" },
     { name = "pytest", marker = "extra == 'flask'" },
     { name = "pytest", marker = "extra == 'pytest'" },
     { name = "pytest", marker = "extra == 'quart'" },
     { name = "pytest-asyncio", marker = "extra == 'all'" },
     { name = "pytest-asyncio", marker = "extra == 'pytest'" },
-    { name = "python-dotenv", specifier = ">=1.2.2" },
+    { name = "python-dotenv", marker = "extra == 'all'", specifier = ">=1.2.2" },
+    { name = "python-dotenv", marker = "extra == 'environ'", specifier = ">=1.2.2" },
     { name = "pyyaml", marker = "extra == 'all'", specifier = ">=6.0" },
     { name = "pyyaml", marker = "extra == 'pyyaml'", specifier = ">=6.0" },
     { name = "quart", marker = "extra == 'all'", specifier = ">=0.20.0" },
     { name = "quart", marker = "extra == 'quart'", specifier = ">=0.20.0" },
+    { name = "quart-auth", marker = "extra == 'all'", specifier = ">=0.11.0" },
     { name = "quart-auth", marker = "extra == 'quart'", specifier = ">=0.11.0" },
     { name = "sqlalchemy", marker = "extra == 'all'", specifier = ">=2.0" },
     { name = "sqlalchemy", marker = "extra == 'sqlalchemy'", specifier = ">=2.0" },
@@ -2634,7 +2665,7 @@ requires-dist = [
     { name = "uvicorn", marker = "extra == 'quart'", specifier = ">=0.34.3" },
     { name = "werkzeug", specifier = ">=3.1.7" },
 ]
-provides-extras = ["all", "anthropic", "bleach", "fastapi", "flask", "markdown", "mcp", "msal", "openai", "pycryptodome", "pytest", "pyyaml", "quart", "sqlalchemy", "tiktoken", "tqdm"]
+provides-extras = ["all", "anthropic", "babel", "bleach", "environ", "fastapi", "flask", "htmlrag", "markdown", "mcp", "msal", "openai", "pycryptodome", "pydantic", "pytest", "pyyaml", "quart", "sqlalchemy", "tiktoken", "tqdm", "web"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -2646,6 +2677,7 @@ dev = [
     { name = "mkdocstrings", extras = ["python"], specifier = ">=0.29" },
     { name = "pre-commit", specifier = ">=4.2.0" },
     { name = "pyfltr", git = "https://github.com/ak110/pyfltr.git" },
+    { name = "pylint-pydantic", specifier = ">=0.4.1" },
     { name = "pyright", extras = ["nodejs"], specifier = ">=1.1.403" },
     { name = "pytest-xdist", specifier = ">=3.5" },
     { name = "types-bleach", specifier = ">=6.2.0.20241123" },

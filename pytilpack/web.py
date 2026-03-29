@@ -4,6 +4,9 @@ import logging
 import typing
 import urllib.parse
 
+import html5lib
+import html5lib.constants
+
 logger = logging.getLogger(__name__)
 
 
@@ -47,10 +50,7 @@ def check_content_type(content_type: str, valid_content_types: str | typing.Iter
 
 
 def check_html(input_stream: typing.Any, strict: bool = False) -> None:
-    """HTMLのチェック。html5libが必要なので注意。"""
-    import html5lib
-    import html5lib.constants
-
+    """HTMLのチェック。"""
     parser = html5lib.HTMLParser(debug=True)
     _ = parser.parse(input_stream)
     if len(parser.errors) > 0:
