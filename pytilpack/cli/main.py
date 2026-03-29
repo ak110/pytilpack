@@ -4,6 +4,7 @@ import argparse
 import logging
 import sys
 
+import pytilpack.cli.babel
 import pytilpack.cli.delete_empty_dirs
 import pytilpack.cli.delete_old_files
 import pytilpack.cli.fetch
@@ -19,6 +20,7 @@ def main(sys_args: list[str] | None = None) -> None:
         description="pytilpackコマンドラインツール",
     )
     subparsers = parser.add_subparsers(dest="command", help="コマンド")
+    pytilpack.cli.babel.add_parser(subparsers)
     pytilpack.cli.delete_empty_dirs.add_parser(subparsers)
     pytilpack.cli.delete_old_files.add_parser(subparsers)
     pytilpack.cli.sync.add_parser(subparsers)
@@ -37,7 +39,9 @@ def main(sys_args: list[str] | None = None) -> None:
     )
 
     # 各サブコマンドの実行
-    if args.command == "delete-empty-dirs":
+    if args.command == "babel":
+        pytilpack.cli.babel.run(args)
+    elif args.command == "delete-empty-dirs":
         pytilpack.cli.delete_empty_dirs.run(args)
     elif args.command == "delete-old-files":
         pytilpack.cli.delete_old_files.run(args)

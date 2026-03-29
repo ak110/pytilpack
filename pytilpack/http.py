@@ -5,7 +5,9 @@ import datetime
 import email.utils
 import logging
 import re
-import typing
+
+import werkzeug.datastructures
+import werkzeug.http
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +20,6 @@ def select_accept(accept_header: str, candidates: collections.abc.Sequence[str])
 
     Acceptヘッダーが空の場合はRFC 7231に従い「何でも受け入れる」として扱い、
     candidatesの先頭を返す。
-
-    内部でwerkzeugを使用するため、werkzeugのインストールが必要。
 
     Args:
         accept_header: Acceptヘッダーの値（生文字列）
@@ -34,20 +34,35 @@ def select_accept(accept_header: str, candidates: collections.abc.Sequence[str])
     # Acceptヘッダーが空 = 何でも受け入れる → サーバー優先順で先頭を返す
     if not accept_header:
         return candidates[0]
-    accept = _parse_mime_accept(accept_header)
+    accept = werkzeug.http.parse_accept_header(accept_header, werkzeug.datastructures.MIMEAccept)
     return accept.best_match(candidates)
 
 
-def _parse_mime_accept(accept_header: str) -> typing.Any:
-    """Acceptヘッダー文字列をwerkzeugのMIMEAcceptオブジェクトに変換する。"""
-    try:
-        import werkzeug.datastructures
-        import werkzeug.http
-    except ImportError:
-        raise ImportError(
-            "werkzeugが必要です。pip install pytilpack[flask] または pip install pytilpack[quart] でインストールしてください。"
-        ) from None
-    return werkzeug.http.parse_accept_header(accept_header, werkzeug.datastructures.MIMEAccept)
+def select_accept_language(
+    header: str,
+    supported: collections.abc.Sequence[str],
+    default: str | None = None,
+) -> str | None:
+    """Accept-Languageヘッダーからサポート済みロケールのベストマッチを返す。
+
+    quality値を考慮して最適なロケールを選択する。
+
+    Args:
+        header: Accept-Languageヘッダーの値（生文字列）
+        supported: サポートするロケールのリスト（例: ["en", "ja", "ko"]）
+        default: マッチしない場合のデフォルト値
+
+    Returns:
+        最も優先されるロケール。マッチするものがなければdefault。
+
+    """
+    if not supported:
+        return default
+    if not header:
+        return default
+    accept = werkzeug.http.parse_accept_header(header, werkzeug.datastructures.LanguageAccept)
+    result = accept.best_match(supported)
+    return result if result is not None else default
 
 
 def get_status_code_from_exception(exc: Exception) -> int | None:

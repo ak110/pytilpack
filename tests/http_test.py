@@ -122,3 +122,30 @@ def test_select_accept(
 ) -> None:
     """select_acceptのテスト。"""
     assert pytilpack.http.select_accept(accept_header, candidates) == expected
+
+
+@pytest.mark.parametrize(
+    "header,supported,default,expected",
+    [
+        # 基本的なマッチング
+        ("ja,en;q=0.9", ["en", "ja"], None, "ja"),
+        ("en-US,en;q=0.9,ja;q=0.8", ["ja", "en"], None, "en"),
+        # マッチなし → default
+        ("fr,de;q=0.9", ["en", "ja"], "en", "en"),
+        ("fr", ["en", "ja"], None, None),
+        # 空ヘッダー → default
+        ("", ["en", "ja"], "en", "en"),
+        # 空サポートリスト → default
+        ("ja", [], "en", "en"),
+        # q=0（拒否）のみ
+        ("ja;q=0", ["ja"], "en", "en"),
+    ],
+)
+def test_select_accept_language(
+    header: str,
+    supported: list[str],
+    default: str | None,
+    expected: str | None,
+) -> None:
+    """select_accept_languageのテスト。"""
+    assert pytilpack.http.select_accept_language(header, supported, default) == expected

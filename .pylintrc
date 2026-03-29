@@ -10,6 +10,7 @@ disable=
     logging-not-lazy,
     missing-function-docstring,
     no-else-return,
+    redefined-builtin,
     too-few-public-methods,
     too-many-arguments,
     too-many-boolean-expressions,

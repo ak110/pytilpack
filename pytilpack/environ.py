@@ -5,6 +5,8 @@ import os
 import pathlib
 import typing
 
+import dotenv
+
 import pytilpack.python
 
 
@@ -17,9 +19,6 @@ _UNSET = _Unset()
 
 def load_dotenv(path: str | pathlib.Path | None = None, override: bool = False) -> None:
     """python-dotenvを使用して.envファイルを読み込む。"""
-    # python-dotenvはオプショナル依存
-    import dotenv  # pylint: disable=import-outside-toplevel
-
     dotenv.load_dotenv(dotenv_path=path, override=override)
 
 

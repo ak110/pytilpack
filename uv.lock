@@ -2453,11 +2453,14 @@ wheels = [
 name = "pytilpack"
 source = { editable = "." }
 dependencies = [
+    { name = "babel" },
     { name = "beautifulsoup4" },
     { name = "httpx" },
     { name = "mcp" },
     { name = "pylint-pydantic" },
+    { name = "python-dotenv" },
     { name = "typing-extensions" },
+    { name = "werkzeug" },
 ]
 
 [package.optional-dependencies]
@@ -2477,7 +2480,6 @@ all = [
     { name = "pycryptodome" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
-    { name = "python-dotenv" },
     { name = "pyyaml" },
     { name = "quart" },
     { name = "sqlalchemy" },
@@ -2492,9 +2494,6 @@ anthropic = [
 ]
 bleach = [
     { name = "bleach" },
-]
-dotenv = [
-    { name = "python-dotenv" },
 ]
 fastapi = [
     { name = "fastapi" },
@@ -2577,6 +2576,7 @@ requires-dist = [
     { name = "anthropic", marker = "extra == 'anthropic'", specifier = ">=0.75.0" },
     { name = "azure-identity", marker = "extra == 'all'", specifier = ">=1.23.0" },
     { name = "azure-identity", marker = "extra == 'msal'", specifier = ">=1.23.0" },
+    { name = "babel", specifier = ">=2.18.0" },
     { name = "beautifulsoup4", specifier = ">=4.12" },
     { name = "bleach", marker = "extra == 'all'", specifier = ">=6.2" },
     { name = "bleach", marker = "extra == 'bleach'", specifier = ">=6.2" },
@@ -2613,8 +2613,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'quart'" },
     { name = "pytest-asyncio", marker = "extra == 'all'" },
     { name = "pytest-asyncio", marker = "extra == 'pytest'" },
-    { name = "python-dotenv", marker = "extra == 'all'", specifier = ">=1.0" },
-    { name = "python-dotenv", marker = "extra == 'dotenv'", specifier = ">=1.0" },
+    { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "pyyaml", marker = "extra == 'all'", specifier = ">=6.0" },
     { name = "pyyaml", marker = "extra == 'pyyaml'", specifier = ">=6.0" },
     { name = "quart", marker = "extra == 'all'", specifier = ">=0.20.0" },
@@ -2633,8 +2632,9 @@ requires-dist = [
     { name = "typing-extensions", specifier = ">=4.0" },
     { name = "uvicorn", marker = "extra == 'all'", specifier = ">=0.34.3" },
     { name = "uvicorn", marker = "extra == 'quart'", specifier = ">=0.34.3" },
+    { name = "werkzeug", specifier = ">=3.1.7" },
 ]
-provides-extras = ["all", "anthropic", "bleach", "dotenv", "fastapi", "flask", "markdown", "mcp", "msal", "openai", "pycryptodome", "pytest", "pyyaml", "quart", "sqlalchemy", "tiktoken", "tqdm"]
+provides-extras = ["all", "anthropic", "bleach", "fastapi", "flask", "markdown", "mcp", "msal", "openai", "pycryptodome", "pytest", "pyyaml", "quart", "sqlalchemy", "tiktoken", "tqdm"]
 
 [package.metadata.requires-dev]
 dev = [

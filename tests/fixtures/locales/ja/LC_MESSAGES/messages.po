@@ -1,0 +1,24 @@
+# Japanese translations for testing.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: ja\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "Hello"
+msgstr "こんにちは"
+
+msgid "Goodbye"
+msgstr "さようなら"
+
+msgid "Hello, %(name)s!"
+msgstr "こんにちは、%(name)sさん！"
+
+msgid "%(num)d item"
+msgid_plural "%(num)d items"
+msgstr[0] "%(num)d個のアイテム"
+
+msgctxt "greeting"
+msgid "Hello"
+msgstr "ご挨拶"

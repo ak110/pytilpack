@@ -41,6 +41,7 @@ import pytilpack.xxx
 
 - [pytilpack.anthropic](api/anthropic.md)
 - [pytilpack.asyncio](api/asyncio.md)
+- [pytilpack.babel](api/babel.md)
 - [pytilpack.base64](api/base64.md)
 - [pytilpack.csv](api/csv.md)
 - [pytilpack.dataclasses](api/dataclasses.md)
@@ -81,6 +82,7 @@ import pytilpack.xxx
 - [pytilpack.healthcheck](api/healthcheck.md): ヘルスチェック処理関連
 - [pytilpack.htmlrag](api/htmlrag.md): HtmlRAG関連
 - [pytilpack.http](api/http.md): HTTP関連
+- [pytilpack.i18n](api/i18n.md): 国際化(i18n)関連
 - [pytilpack.io](api/io.md): IO関連のユーティリティ
 - [pytilpack.jsonc](api/jsonc.md): JSON with Comments関連
 - [pytilpack.paginator](api/paginator.md): ページネーション関連

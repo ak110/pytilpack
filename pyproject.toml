@@ -15,11 +15,14 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
 ]
 dependencies = [
+    "babel>=2.18.0",
     "beautifulsoup4>=4.12",
     "httpx>=0.28.1",
     "mcp>=1.0.0",
     "pylint-pydantic>=0.4.1",
+    "python-dotenv>=1.2.2",
     "typing-extensions>=4.0",
+    "werkzeug>=3.1.7",
 ]
 
 [project.optional-dependencies]
@@ -39,7 +42,6 @@ all = [
     "pycryptodome",
     "pytest",
     "pytest-asyncio",
-    "python-dotenv>=1.0",
     "pyyaml>=6.0",
     "quart>=0.20.0",
     "sqlalchemy>=2.0",
@@ -54,9 +56,6 @@ anthropic = [
 ]
 bleach = [
     "bleach>=6.2",
-]
-dotenv = [
-    "python-dotenv>=1.0",
 ]
 fastapi = [
     "fastapi>=0.111",
