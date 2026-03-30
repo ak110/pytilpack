@@ -1,7 +1,5 @@
 # カスタム指示 (プロジェクト固有)
 
-@CLAUDE.base.md
-
 - `pyproject.toml` の依存関係編集は極力 `uv` コマンドを使う (`uv add`, `uv remove` など)
   - 手動編集は `uv` コマンドでは対応できない箇所に限る
 
