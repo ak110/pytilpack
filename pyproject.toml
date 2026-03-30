@@ -173,12 +173,6 @@ source = "vcs"
 preset = "latest"
 pylint-args = ["--jobs=4", "--load-plugins=pylint_pydantic"]
 mypy-args = ["--enable-error-code=unused-awaitable"]
-textlint-args = [
-    "--package", "textlint",
-    "--package", "textlint-rule-preset-ja-technical-writing",
-    "--package", "textlint-rule-preset-japanese",
-    "textlint", "--format", "compact",
-]
 extend-exclude = ["docs/api"]
 
 [tool.ruff]
