@@ -176,6 +176,7 @@ mypy-args = ["--enable-error-code=unused-awaitable"]
 extend-exclude = ["docs/api"]
 
 [tool.ruff]
+# https://docs.astral.sh/ruff/configuration/
 line-length = 128
 
 [tool.ruff.lint]
@@ -211,6 +212,7 @@ convention = "google"
 "**/__init__.py" = ["D104"]  # Missing docstring in public package
 
 [tool.mypy]
+# https://mypy.readthedocs.io/en/stable/config_file.html
 allow_redefinition = true
 check_untyped_defs = true
 ignore_missing_imports = true
@@ -222,12 +224,10 @@ warn_unused_configs = true
 show_error_codes = true
 
 [tool.pytest.ini_options]
+# https://docs.pytest.org/en/latest/reference/reference.html#ini-options-ref
 addopts = "--showlocals -p no:cacheprovider --maxfail=5 --durations=30 --durations-min=0.5 -n 4"
 log_level = "DEBUG"
 xfail_strict = true
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "session"
 asyncio_default_test_loop_scope = "session"
-filterwarnings = [
-    "ignore:Secure cookies will be ignored on insecure requests:UserWarning",
-]
