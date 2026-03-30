@@ -188,4 +188,3 @@ nav:
           - pytilpack.web: api/web.md
   - 開発:
       - 開発手順: development.md
-      - スタイルガイド: style-guide.md
