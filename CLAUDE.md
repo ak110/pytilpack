@@ -3,6 +3,11 @@
 - `pyproject.toml` の依存関係編集は極力 `uv` コマンドを使う (`uv add`, `uv remove` など)
   - 手動編集は `uv` コマンドでは対応できない箇所に限る
 
+## 開発コマンド
+
+- `make update`: 依存更新 + pre-commit autoupdate + 全テスト実行
+- pyfltr は git ソースなので更新時は `uv lock --upgrade-package pyfltr && uv sync` が必要
+
 ## 依存関係の方針
 
 - コア依存 (`[project.dependencies]`) は最小限に保つ (現在: httpx, typing-extensions, werkzeug)
