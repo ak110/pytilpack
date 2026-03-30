@@ -5,8 +5,18 @@
 
 ## 開発コマンド
 
+- .venvの更新には`make update`を使う
+- コードを書いた後は必ず`make format`で整形する
+  - 新しいファイルを作成する場合は近い階層の代表的なファイルを確認し、可能な限りスタイルを揃える
+- `make test`でmypy, pytestなどをまとめて実行できる
 - `make update`: 依存更新 + pre-commit autoupdate + 全テスト実行
 - pyfltr は git ソースなので更新時は `uv lock --upgrade-package pyfltr && uv sync` が必要
+- テストコードは`pytilpack/xxx.py`に対して`tests/xxx_test.py`として配置する
+  - `pytilpack/xxx/yyy.py`に対して`tests/xxx/yyy_test.py`
+  - `xxx`がpythonキーワードなどの場合、`xxx_.py`になる。そのときは`xxx_test.py`とする (アンダースコアは無視)
+- テストコードの実行は `uv run pyfltr <path>` を使う (pytestを直接呼び出さない)
+  - `-vv`などが必要な場合に限り `uv run pyfltr -vv <path>` のようにする
+- Markdownファイルのformat/lintの実行方法: `uv run pre-commit run --files <file>`
 
 ## 依存関係の方針
 
