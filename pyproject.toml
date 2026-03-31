@@ -158,6 +158,7 @@ pytilpack = "pytilpack.cli.main:main"
 
 [tool.uv]
 default-groups = ["dev"]
+exclude-newer = "1 day"
 
 [tool.uv.sources]
 pyfltr = { git = "https://github.com/ak110/pyfltr.git" }

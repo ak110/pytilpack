@@ -10,6 +10,13 @@
     uv run pre-commit install
     ```
 
+4. サプライチェーン攻撃対策として、`uvx`/`pnpx`用のグローバル設定をする。
+
+    ```bash
+    mkdir -p ~/.config/uv && echo 'exclude-newer = "1 day"' >> ~/.config/uv/uv.toml
+    pnpm config set minimum-release-age 1440 --global
+    ```
+
 ## ドキュメント
 
 MkDocs + mkdocstrings + mkdocs-llmstxtでAPIリファレンスとllms.txtを自動生成し、GitHub Pagesにデプロイしている。
