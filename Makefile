@@ -6,7 +6,13 @@ help:
 update:
 	uv sync --upgrade --all-extras --all-groups
 	uv run pre-commit autoupdate
+	$(MAKE) update-actions
 	$(MAKE) test
+
+# GitHub Actionsのアクションをハッシュピンで最新化（mise未導入時はスキップ）
+update-actions:
+	@command -v mise >/dev/null 2>&1 || { echo "mise未検出、スキップ"; exit 0; }; \
+	GITHUB_TOKEN=$$(gh auth token) mise exec -- pinact run --update --min-age 1
 
 fix:
 	uv run ruff check --fix --unsafe-fixes
@@ -22,4 +28,4 @@ test:
 docs:
 	$(UV_RUN) mkdocs serve
 
-.PHONY: help update test format docs
+.PHONY: help update update-actions test format docs
