@@ -5,6 +5,7 @@ import contextlib
 import dataclasses
 import functools
 import logging
+import re
 import typing
 
 logger = logging.getLogger(__name__)
@@ -79,7 +80,8 @@ class SSE:
             lines.append(f"retry: {self.retry}")
 
         # dataフィールドの各行をdata:プレフィックス付きで追加
-        for line in self.data.splitlines():
+        # SSE仕様の行区切りは \n, \r\n, \r の3種のみ (splitlines()は対象が広すぎる)
+        for line in re.split(r"\r\n|\r|\n", self.data):
             lines.append(f"data: {line}")
 
         # 最後に空行を追加して終端

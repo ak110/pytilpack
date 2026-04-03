@@ -20,6 +20,29 @@ def test_sse_multiline():
     assert msg.to_str() == "data: line 1\ndata: line 2\ndata: line 3\n\n"
 
 
+def test_sse_multiline_crlf():
+    """CRLFでの分割。"""
+    msg = pytilpack.sse.SSE("line 1\r\nline 2\r\nline 3")
+    assert msg.to_str() == "data: line 1\ndata: line 2\ndata: line 3\n\n"
+
+
+def test_sse_multiline_cr():
+    """CRでの分割。"""
+    msg = pytilpack.sse.SSE("line 1\rline 2\rline 3")
+    assert msg.to_str() == "data: line 1\ndata: line 2\ndata: line 3\n\n"
+
+
+@pytest.mark.parametrize(
+    "sep",
+    ["\x0b", "\x0c", "\x1c", "\x1d", "\x1e", "\x85", "\u2028", "\u2029"],
+)
+def test_sse_non_sse_line_separators_not_split(sep: str):
+    """SSE仕様外の行区切り文字で分割されないことを確認。"""
+    data = f"before{sep}after"
+    msg = pytilpack.sse.SSE(data)
+    assert msg.to_str() == f"data: before{sep}after\n\n"
+
+
 def test_sse_all_fields():
     """全フィールドを使用したケース。"""
     msg = pytilpack.sse.SSE(data="test data", event="update", id="123", retry=3000)
