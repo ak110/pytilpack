@@ -85,6 +85,7 @@ async def run(
     output_details: bool = True,
     dedup_window: datetime.timedelta | None = None,
     now: datetime.datetime | None = None,
+    start_time: datetime.datetime | None = None,
 ) -> HealthCheckResult:
     """ヘルスチェックを実行し、結果を返す。
 
@@ -93,6 +94,7 @@ async def run(
         output_details: 詳細を出力するかどうか。デフォルトはTrue。
         dedup_window: ログの重複を防ぐための時間ウィンドウ。デフォルトは1日。
         now: 現在の日時。デフォルトは現在の日時を使用。
+        start_time: 起動時刻。デフォルトはモジュール変数startup_timeを使用。
 
     Returns:
         ヘルスチェックの結果。
@@ -101,6 +103,8 @@ async def run(
         dedup_window = datetime.timedelta(days=1)
     if now is None:
         now = datetime.datetime.now()
+    if start_time is None:
+        start_time = startup_time
     # 名前の重複はAssertionError
     check_names = [name for name, _ in checks]
     assert len(checks) == len(set(check_names)), f"名前の重複: {check_names}"
@@ -134,7 +138,7 @@ async def run(
     for name, result in done:
         details[name] = result
 
-    uptime = now - startup_time
+    uptime = now - start_time
     overall_status: typing.Literal["ok", "fail"] = "ok" if all(v["status"] == "ok" for v in details.values()) else "fail"
 
     result = HealthCheckResult(status=overall_status, checked=str(now), uptime=str(uptime))

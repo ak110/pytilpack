@@ -11,6 +11,14 @@ import pytest
 import pytilpack.logging
 
 
+@pytest.fixture(autouse=True)
+def _clear_exception_history() -> typing.Generator[None, None, None]:
+    """テストごとに例外重複排除の履歴をクリアする。"""
+    pytilpack.logging.clear_exception_history()
+    yield
+    pytilpack.logging.clear_exception_history()
+
+
 def test_logging(tmp_path: pathlib.Path, capsys: pytest.CaptureFixture) -> None:
     logger = logging.getLogger(__name__)
     try:
@@ -29,21 +37,22 @@ def test_logging(tmp_path: pathlib.Path, capsys: pytest.CaptureFixture) -> None:
             logger.removeHandler(handler)
 
 
-def test_timer_done(caplog: pytest.LogCaptureFixture) -> None:
+def test_timer(caplog: pytest.LogCaptureFixture) -> None:
+    """timerコンテキストマネージャの成功・失敗テスト。"""
+    # 成功時: INFOレベルで "done" と出力
     with caplog.at_level(logging.INFO), pytilpack.logging.timer("test"):
         pass
-
     assert caplog.record_tuples == [("pytilpack.logging", logging.INFO, "[test] done in 0 s")]
 
+    caplog.clear()
 
-def test_timer_failed(caplog: pytest.LogCaptureFixture) -> None:
+    # 失敗時: WARNINGレベルで "failed" と出力
     with caplog.at_level(logging.INFO):
         try:
             with pytilpack.logging.timer("test"):
                 raise ValueError()
         except ValueError:
             pass
-
     assert caplog.record_tuples == [("pytilpack.logging", logging.WARNING, "[test] failed in 0 s")]
 
 
@@ -51,9 +60,6 @@ def test_exception_with_dedup(caplog: pytest.LogCaptureFixture) -> None:
     """exception_with_dedupのテスト。"""
     logger = logging.getLogger("test_logger")
     logger.setLevel(logging.DEBUG)
-
-    # ログ履歴をクリア
-    pytilpack.logging._exception_history.clear()  # pylint: disable=protected-access
 
     # 固定時刻を設定
     now = datetime.datetime(2023, 1, 1, 12, 0, 0)

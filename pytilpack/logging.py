@@ -23,6 +23,11 @@ _exception_history: dict[str, datetime.datetime] = {}
 """例外フィンガープリント → 最終発生時刻。"""
 
 
+def clear_exception_history() -> None:
+    """例外重複排除の履歴をクリアする。"""
+    _exception_history.clear()
+
+
 def stream_handler(
     stream: io.TextIOBase | None = None,
     level: int | None = logging.INFO,

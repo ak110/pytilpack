@@ -8,64 +8,63 @@ import pytest
 import pytilpack.functools
 
 
-def test_retry_1():
+@pytest.mark.asyncio
+async def test_retry() -> None:
+    """retryデコレーターの同期・非同期テスト。"""
+    # 同期: 成功ケース
     call_count = 0
 
     @pytilpack.functools.retry(2, initial_delay=0, exponential_base=0)
-    def f():
+    def f_sync():
         nonlocal call_count
         call_count += 1
 
-    f()
+    f_sync()
     assert call_count == 1
 
-
-def test_retry_2():
+    # 同期: エラーケース（リトライ後も失敗）
     call_count = 0
 
     @pytilpack.functools.retry(2, initial_delay=0, exponential_base=0)
-    def f():
+    def f_sync_err():
         nonlocal call_count
         call_count += 1
         raise RuntimeError("test")
 
     with pytest.raises(RuntimeError):
-        f()
+        f_sync_err()
     assert call_count == 3
 
-
-@pytest.mark.asyncio
-async def test_retry_1_async():
+    # 非同期: 成功ケース
     call_count = 0
 
     @pytilpack.functools.retry(2, initial_delay=0, exponential_base=0)
-    async def f():
+    async def f_async():
         nonlocal call_count
         call_count += 1
 
-    await f()
+    await f_async()
     assert call_count == 1
 
-
-@pytest.mark.asyncio
-async def test_retry_2_async():
+    # 非同期: エラーケース
     call_count = 0
 
     @pytilpack.functools.retry(2, initial_delay=0, exponential_base=0)
-    async def f():
+    async def f_async_err():
         nonlocal call_count
         call_count += 1
         raise RuntimeError("test")
 
     with pytest.raises(RuntimeError):
-        await f()
+        await f_async_err()
     assert call_count == 3
 
 
-def test_warn_if_slow_not_trigger(caplog):
-    """閾値以下の時間では警告が出ないことを確認。"""
+@pytest.mark.asyncio
+async def test_warn_if_slow(caplog: pytest.LogCaptureFixture) -> None:
+    """warn_if_slowデコレーターの同期・非同期テスト。"""
     with caplog.at_level(logging.WARNING):
-
+        # 同期: 閾値以下（警告なし）
         @pytilpack.functools.warn_if_slow()
         def fast_function(x: int, y: str = "default"):
             return f"{x}-{y}"
@@ -74,11 +73,7 @@ def test_warn_if_slow_not_trigger(caplog):
         assert result == "42-test"
         assert len(caplog.records) == 0
 
-
-def test_warn_if_slow_trigger(caplog):
-    """閾値を超える時間で警告が出ることを確認。"""
-    with caplog.at_level(logging.WARNING):
-
+        # 同期: 閾値超過（警告あり）
         @pytilpack.functools.warn_if_slow()
         def slow_function(x: int, y: str = "default"):
             time.sleep(0.01)
@@ -87,15 +82,12 @@ def test_warn_if_slow_trigger(caplog):
         result = slow_function(42, y="test")
         assert result == "42-test"
         assert len(caplog.records) == 1
-        assert "Function test_warn_if_slow_trigger.<locals>.slow_function took" in caplog.records[0].message
+        assert "slow_function took" in caplog.records[0].message
         assert "threshold 0.001 s" in caplog.records[0].message
 
+        caplog.clear()
 
-@pytest.mark.asyncio
-async def test_warn_if_slow_async_not_trigger(caplog):
-    """非同期関数で閾値以下の時間では警告が出ないことを確認。"""
-    with caplog.at_level(logging.WARNING):
-
+        # 非同期: 閾値以下（警告なし）
         @pytilpack.functools.warn_if_slow()
         async def fast_async_function(x: int, y: str = "default"):
             return f"{x}-{y}"
@@ -104,25 +96,22 @@ async def test_warn_if_slow_async_not_trigger(caplog):
         assert result == "42-test"
         assert len(caplog.records) == 0
 
-
-@pytest.mark.asyncio
-async def test_warn_if_slow_async_trigger(caplog):
-    """非同期関数で閾値を超える時間で警告が出ることを確認。"""
-    with caplog.at_level(logging.WARNING):
-
+        # 非同期: 閾値超過（警告あり）
         @pytilpack.functools.warn_if_slow()
-        def slow_async_function(x: int, y: str = "default"):
+        async def slow_async_function(x: int, y: str = "default"):
             time.sleep(0.01)
             return f"{x}-{y}"
 
-        result = slow_async_function(42, y="test")
+        result = await slow_async_function(42, y="test")
         assert result == "42-test"
         assert len(caplog.records) == 1
-        assert "Function test_warn_if_slow_async_trigger.<locals>.slow_async_function took" in caplog.records[0].message
+        assert "slow_async_function took" in caplog.records[0].message
 
 
-def test_retry_override():
-    """Retryオーバーライドのテスト。"""
+@pytest.mark.asyncio
+async def test_retry_override() -> None:
+    """Retryオーバーライドのテスト（同期・非同期）。"""
+    # 同期版
     call_count = 0
 
     @pytilpack.functools.retry(max_retries=5, initial_delay=0, exponential_base=0)
@@ -149,38 +138,35 @@ def test_retry_override():
         f(retry=pytilpack.functools.Retry(max_retries=1))
     assert call_count == 2
 
-
-@pytest.mark.asyncio
-async def test_retry_override_async():
-    """Retryオーバーライドのテスト(async)。"""
+    # 非同期版
     call_count = 0
 
     @pytilpack.functools.retry(max_retries=5, initial_delay=0, exponential_base=0)
-    async def f(retry=None):
+    async def f_async(retry=None):
         del retry  # noqa
         nonlocal call_count
         call_count += 1
         raise RuntimeError("test")
 
-    # デフォルト設定
     with pytest.raises(RuntimeError):
-        await f()
+        await f_async()
     assert call_count == 6
 
-    # オーバーライド
     call_count = 0
     with pytest.raises(RuntimeError):
-        await f(retry=pytilpack.functools.Retry(max_retries=2))
+        await f_async(retry=pytilpack.functools.Retry(max_retries=2))
     assert call_count == 3
 
 
-def test_retry_should_retry():
-    """should_retry引数のテスト。"""
-    call_count = 0
+@pytest.mark.asyncio
+async def test_retry_should_retry() -> None:
+    """should_retry引数のテスト（同期・非同期）。"""
 
     def should_retry_func(exc: Exception) -> bool:
-        # ValueErrorのみリトライする
         return isinstance(exc, ValueError)
+
+    # 同期版
+    call_count = 0
 
     @pytilpack.functools.retry(max_retries=3, initial_delay=0, exponential_base=0, should_retry=should_retry_func)
     def f(error_type: type[Exception]):
@@ -194,39 +180,31 @@ def test_retry_should_retry():
         f(ValueError)
     assert call_count == 4
 
-    # RuntimeErrorはリトライされない(1回のみ実行)
+    # RuntimeErrorはリトライされない
     call_count = 0
     with pytest.raises(RuntimeError):
         f(RuntimeError)
     assert call_count == 1
 
-
-@pytest.mark.asyncio
-async def test_retry_should_retry_async():
-    """should_retry引数のテスト(async)。"""
-    call_count = 0
-
-    def should_retry_func(exc: Exception) -> bool:
-        return isinstance(exc, ValueError)
-
+    # 非同期版
     @pytilpack.functools.retry(max_retries=3, initial_delay=0, exponential_base=0, should_retry=should_retry_func)
-    async def f(error_type: type[Exception]):
+    async def f_async(error_type: type[Exception]):
         nonlocal call_count
         call_count += 1
         raise error_type("test")
 
     call_count = 0
     with pytest.raises(ValueError):
-        await f(ValueError)
+        await f_async(ValueError)
     assert call_count == 4
 
     call_count = 0
     with pytest.raises(RuntimeError):
-        await f(RuntimeError)
+        await f_async(RuntimeError)
     assert call_count == 1
 
 
-def test_retry_override_should_retry():
+def test_retry_override_should_retry() -> None:
     """Retryオーバーライドでshould_retryを指定するテスト。"""
     call_count = 0
 

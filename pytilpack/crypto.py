@@ -22,16 +22,23 @@ _HMAC_SIZE = 32  # SHA-256
 class TimestampSigner:
     """タイムスタンプ付き署名トークンの生成・検証。"""
 
-    def __init__(self, key: str | bytes, purpose: str = "") -> None:
+    def __init__(
+        self,
+        key: str | bytes,
+        purpose: str = "",
+        get_time: typing.Callable[[], float] = time.time,
+    ) -> None:
         """初期化。
 
         Args:
             key: 署名鍵。
             purpose: 用途識別子。同じ鍵でも異なるpurposeのトークンは互換性がない。
+            get_time: 現在時刻を返す関数。テスト用。
         """
         key_bytes = key.encode() if isinstance(key, str) else key
         # purposeごとに鍵を導出し、用途間の分離を保証
-        self._derived_key = hmac.new(key_bytes, purpose.encode(), hashlib.sha256).digest()
+        self.derived_key = hmac.new(key_bytes, purpose.encode(), hashlib.sha256).digest()
+        self.get_time = get_time
 
     def sign(self, data: str | bytes | dict) -> str:
         """データに署名してトークンを生成する。
@@ -42,11 +49,11 @@ class TimestampSigner:
         type_byte, payload = _encode_payload(data)
 
         # ヘッダ + ペイロードを構築
-        header = struct.pack(">B", _VERSION) + struct.pack(">d", time.time())
+        header = struct.pack(">B", _VERSION) + struct.pack(">d", self.get_time())
         message = header + struct.pack(">B", type_byte) + payload
 
         # HMAC署名を付加
-        sig = hmac.new(self._derived_key, message, hashlib.sha256).digest()
+        sig = hmac.new(self.derived_key, message, hashlib.sha256).digest()
         return _b64url_encode(message + sig)
 
     def unsign(self, token: str, max_age: float | None = None) -> str | bytes | dict:
@@ -64,7 +71,7 @@ class TimestampSigner:
         # 署名を分離して検証
         message = raw[:-_HMAC_SIZE]
         sig = raw[-_HMAC_SIZE:]
-        expected = hmac.new(self._derived_key, message, hashlib.sha256).digest()
+        expected = hmac.new(self.derived_key, message, hashlib.sha256).digest()
         if not hmac.compare_digest(sig, expected):
             raise ValueError("署名が一致しません")
 
@@ -79,7 +86,7 @@ class TimestampSigner:
 
         # 有効期限チェック
         if max_age is not None:
-            age = time.time() - timestamp
+            age = self.get_time() - timestamp
             if age > max_age:
                 raise ValueError(f"トークンが期限切れです (経過: {age:.1f}秒)")
 

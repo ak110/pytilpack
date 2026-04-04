@@ -1,7 +1,6 @@
 """テストコード。"""
 
 import base64
-import unittest.mock
 
 import pytest
 
@@ -28,63 +27,43 @@ def test_hmac_sign_verify() -> None:
 
 
 def test_timestamp_signer() -> None:
-    """TimestampSignerの署名・検証ラウンドトリップテスト。"""
+    """TimestampSignerの署名・検証・purpose分離・有効期限・改ざん検知のテスト。"""
+    # ラウンドトリップ: str / bytes / dict
     signer = pytilpack.crypto.TimestampSigner("my-key")
 
-    # str
     token_str = signer.sign("hello world")
     assert signer.unsign(token_str) == "hello world"
 
-    # bytes
     token_bytes = signer.sign(b"\x00\x01\x02\xff")
     assert signer.unsign(token_bytes) == b"\x00\x01\x02\xff"
 
-    # dict
     data = {"key": "value", "number": 42, "日本語": "テスト"}
     token_dict = signer.sign(data)
     assert signer.unsign(token_dict) == data
 
-
-def test_timestamp_signer_purpose() -> None:
-    """purpose分離のテスト。"""
+    # purpose分離: 異なるpurposeでは検証失敗
     signer_a = pytilpack.crypto.TimestampSigner("same-key", purpose="a")
     signer_b = pytilpack.crypto.TimestampSigner("same-key", purpose="b")
 
     token = signer_a.sign("data")
-    # 同じpurposeでは検証成功
     assert signer_a.unsign(token) == "data"
-    # 異なるpurposeでは検証失敗
     with pytest.raises(ValueError):
         signer_b.unsign(token)
 
+    # 有効期限: _get_timeで時刻を注入してテスト
+    current_time = 1000.0
+    signer_timed = pytilpack.crypto.TimestampSigner("key", get_time=lambda: current_time)
+    token = signer_timed.sign("data")
 
-def test_timestamp_signer_expired() -> None:
-    """有効期限切れのテスト。"""
-    signer = pytilpack.crypto.TimestampSigner("key")
+    current_time = 1005.0  # 5秒経過: 期限内
+    assert signer_timed.unsign(token, max_age=10.0) == "data"
 
-    # 現在時刻でトークン生成
-    with unittest.mock.patch("pytilpack.crypto.time") as mock_time:
-        mock_time.time.return_value = 1000.0
-        token = signer.sign("data")
+    current_time = 1060.0  # 60秒経過: 期限切れ
+    with pytest.raises(ValueError, match="期限切れ"):
+        signer_timed.unsign(token, max_age=10.0)
 
-    # 期限内なら検証成功
-    with unittest.mock.patch("pytilpack.crypto.time") as mock_time:
-        mock_time.time.return_value = 1005.0
-        assert signer.unsign(token, max_age=10.0) == "data"
-
-    # 期限切れなら検証失敗
-    with unittest.mock.patch("pytilpack.crypto.time") as mock_time:
-        mock_time.time.return_value = 1060.0
-        with pytest.raises(ValueError, match="期限切れ"):
-            signer.unsign(token, max_age=10.0)
-
-
-def test_timestamp_signer_tampered() -> None:
-    """改ざん検知のテスト。"""
-    signer = pytilpack.crypto.TimestampSigner("key")
+    # 改ざん検知: トークンのバイト列を直接改ざん
     token = signer.sign("secret data")
-
-    # トークンのバイト列を直接改ざん（ペイロード部分を変更）
     raw = base64.urlsafe_b64decode(token + "==")
     tampered_raw = raw[:10] + bytes([raw[10] ^ 0xFF]) + raw[11:]
     tampered = base64.urlsafe_b64encode(tampered_raw).rstrip(b"=").decode()

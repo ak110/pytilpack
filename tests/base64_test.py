@@ -33,14 +33,12 @@ def test_decode(input_data: str, expected_output: bytes) -> None:
     assert pytilpack.base64.decode(input_data) == expected_output
 
 
-def test_encode_decode_roundtrip() -> None:
-    """エンコードとデコードのラウンドトリップテスト。"""
+def test_encode_roundtrip() -> None:
+    """エンコード→デコードのラウンドトリップテスト。"""
+    # str
     original_str = "This is a test string with 日本語 characters."
-    encoded = pytilpack.base64.encode(original_str)
-    decoded = pytilpack.base64.decode(encoded)
-    assert decoded == original_str.encode("utf-8")
+    assert pytilpack.base64.decode(pytilpack.base64.encode(original_str)) == original_str.encode("utf-8")
 
+    # bytes
     original_bytes = b"This is a test byte string \x01\x02\x03"
-    encoded_bytes = pytilpack.base64.encode(original_bytes)
-    decoded_bytes = pytilpack.base64.decode(encoded_bytes)
-    assert decoded_bytes == original_bytes
+    assert pytilpack.base64.decode(pytilpack.base64.encode(original_bytes)) == original_bytes
