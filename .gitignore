@@ -174,3 +174,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Claude Code (個人設定とランタイム生成ファイル)
+.claude/settings.local.json
+.claude/.pyfltr-dirty
