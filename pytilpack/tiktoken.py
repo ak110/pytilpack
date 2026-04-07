@@ -103,7 +103,7 @@ def _calculate_image_token_cost(image: str, detail: str) -> int:
     if detail == "low":
         # Low detail images have a fixed cost
         return LOW_DETAIL_COST
-    elif detail in ("high", "auto"):  # autoのときどうなるか不明のため安全側に倒す
+    elif detail in ("high", "auto"):  # auto のときどうなるか不明のため安全側の判定とする
         # Calculate token cost for high detail images
         width, height = _get_image_dims(image)
         # Check if resizing is needed to fit within a 2048 x 2048 square

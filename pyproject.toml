@@ -134,7 +134,7 @@ web = [
 
 [dependency-groups]
 dev = [
-    "aiosqlite<0.22", # 0.22系はなんかバグってる？ pytestが終わらなくなる
+    "aiosqlite<0.22", # 0.22 系には不具合があるようで pytest が終わらなくなる
     "litellm>=1.72.4",
     "mkdocs-llmstxt>=0.2",
     "mkdocs-material>=9.6",

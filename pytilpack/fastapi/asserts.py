@@ -32,7 +32,7 @@ def assert_bytes(
     """
     response_body = response.content
 
-    with pytilpack.pytest.AssertBlock(response_body, suffix=".txt"):  # binでは開けないのでとりあえずtxt
+    with pytilpack.pytest.AssertBlock(response_body, suffix=".txt"):  # bin では開けないため txt として扱う
         # ステータスコードチェック
         pytilpack.web.check_status_code(response.status_code, status_code)
 

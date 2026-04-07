@@ -1,7 +1,7 @@
 """HtmlRAG関連。
 
-clean_htmlだけを使用したい場合に依存関係が色々厳しいため切り出したものを用意しちゃう。
-ついでに少し独自拡張。
+clean_html だけを使用したい場合に依存関係が厳しいため、切り出したものを用意する。
+加えて独自の拡張を行っている。
 
 <https://github.com/plageon/HtmlRAG/blob/main/toolkit/README.md>
 <https://github.com/plageon/HtmlRAG/blob/main/toolkit/LICENSE>
@@ -190,7 +190,7 @@ def _simplify_html(soup: bs4.BeautifulSoup, aggressive: bool, keep_title: bool, 
 
     res = str(soup)
 
-    # 独自拡張。セマンティックな意味をあまり持たないタグ(html, head, body, div, span)を削除しちゃう。
+    # 独自拡張。セマンティックな意味をあまり持たないタグ (html, head, body, div, span) を削除する。
     if aggressive:
         res = re.sub(r"</?(html|head|body|div|span)>", "", res)
 

@@ -177,4 +177,4 @@ cython_debug/
 
 # Claude Code (個人設定とランタイム生成ファイル)
 .claude/settings.local.json
-.claude/.pyfltr-dirty
+.claude/.format-dirty

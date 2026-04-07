@@ -6,7 +6,7 @@ description: Use when adding a new top-level module under pytilpack/ — either 
 # pytilpack 新モジュール追加チェックリスト
 
 pytilpack に新モジュールを追加する際、更新漏れが起きやすいポイントが複数箇所に分散している。
-以下を上から順に実施し、最後に検証コマンドまで走らせて完了とする。
+以下を上から順に実施し、最後に検証コマンドまで実行して完了とする。
 
 ## 0. 前提情報の整理
 

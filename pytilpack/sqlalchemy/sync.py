@@ -72,7 +72,7 @@ class SyncMixin(_ReprMixin):
         expire_on_commit: bool = False,
         **kwargs: typing.Any,
     ) -> None:
-        """DB接続を初期化する。(デフォルトである程度おすすめの設定をしちゃう。)
+        """DB接続を初期化する。(推奨される既定設定を適用する。)
 
         Args:
             url: DB接続URL。

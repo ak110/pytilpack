@@ -36,7 +36,7 @@ async def assert_bytes(
     response = await _get_response(response)
     response_body = await response.get_data(as_text=False)
 
-    async with pytilpack.pytest.AssertBlock(response_body, suffix=".txt"):  # binでは開けないのでとりあえずtxt
+    async with pytilpack.pytest.AssertBlock(response_body, suffix=".txt"):  # bin では開けないため txt として扱う
         # ステータスコードチェック
         pytilpack.web.check_status_code(response.status_code, status_code)
 

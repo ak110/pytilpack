@@ -81,7 +81,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin):
         eagerly_init: bool = True,
         **kwargs: typing.Any,
     ) -> None:
-        """DB接続を初期化する。(デフォルトである程度おすすめの設定をしちゃう。)
+        """DB接続を初期化する。(推奨される既定設定を適用する。)
 
         engineとsessionmakerはスレッドローカルで遅延初期化される。
         各スレッドが初めてDB操作を行う際にそのスレッド専用のengineとsessionmakerが生成される。
