@@ -3,18 +3,30 @@
 import asyncio
 import datetime
 import functools
+import importlib
 import logging
 import pathlib
 import shutil
 import typing
 
-import yaml
-
 import pytilpack.io
 import pytilpack.json
 import pytilpack.jsonc
 import pytilpack.pathlib
-import pytilpack.yaml
+
+# yaml / pytilpack.yaml は pyyaml extras に依存するため遅延 import する。
+# pytilpack.asyncio 自体はベース依存のみで動作させたい (pytilpack.sqlalchemy
+# 等が pytilpack.asyncio を import する経路で pyyaml 不在時に壊れていた)。
+# 関数内では importlib.import_module で取り込み、top-level の
+# `import pytilpack.io` 等と同じ `pytilpack` 名前空間を共有する。
+
+
+def _load_yaml_modules() -> tuple[typing.Any, typing.Any]:
+    """Pyyaml / pytilpack.yaml を必要時にのみ import する。"""
+    yaml_module = importlib.import_module("yaml")
+    pytilpack_yaml = importlib.import_module("pytilpack.yaml")
+    return yaml_module, pytilpack_yaml
+
 
 logger = logging.getLogger(__name__)
 
@@ -98,14 +110,17 @@ async def read_yaml(
     encoding: str = "utf-8",
     errors: str = "replace",
     strict: bool = False,
-    Loader=yaml.SafeLoader,
+    Loader: typing.Any = None,
 ) -> typing.Any:
     """YAMLファイルから非同期で読み取る。"""
+    yaml_module, pytilpack_yaml = _load_yaml_modules()
+    if Loader is None:
+        Loader = yaml_module.SafeLoader
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
         None,
         functools.partial(
-            pytilpack.yaml.load,
+            pytilpack_yaml.load,
             path,
             encoding,
             errors,
@@ -120,14 +135,17 @@ async def read_yaml_all(
     encoding: str = "utf-8",
     errors: str = "replace",
     strict: bool = False,
-    Loader=yaml.SafeLoader,
+    Loader: typing.Any = None,
 ) -> list[typing.Any]:
     """YAMLファイルから非同期で読み取る。"""
+    yaml_module, pytilpack_yaml = _load_yaml_modules()
+    if Loader is None:
+        Loader = yaml_module.SafeLoader
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
         None,
         functools.partial(
-            pytilpack.yaml.load_all,
+            pytilpack_yaml.load_all,
             path,
             encoding,
             errors,
@@ -145,16 +163,19 @@ async def write_yaml(
     default_style: str | None = None,
     default_flow_style: bool | None = False,
     sort_keys: bool = False,
-    Dumper=pytilpack.yaml.CustomDumper,
+    Dumper: typing.Any = None,
     encoding: str = "utf-8",
     **kwargs,
 ) -> None:
     """YAMLファイルに非同期で書き込む。"""
+    _, pytilpack_yaml = _load_yaml_modules()
+    if Dumper is None:
+        Dumper = pytilpack_yaml.CustomDumper
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(
         None,
         functools.partial(
-            pytilpack.yaml.save,
+            pytilpack_yaml.save,
             path,
             data,
             allow_unicode,
@@ -177,16 +198,19 @@ async def write_yaml_all(
     default_style: str | None = None,
     default_flow_style: bool | None = False,
     sort_keys: bool = False,
-    Dumper=pytilpack.yaml.CustomDumper,
+    Dumper: typing.Any = None,
     encoding: str = "utf-8",
     **kwargs,
 ) -> None:
     """YAMLファイルに非同期で書き込む。"""
+    _, pytilpack_yaml = _load_yaml_modules()
+    if Dumper is None:
+        Dumper = pytilpack_yaml.CustomDumper
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(
         None,
         functools.partial(
-            pytilpack.yaml.save_all,
+            pytilpack_yaml.save_all,
             path,
             data,
             allow_unicode,
