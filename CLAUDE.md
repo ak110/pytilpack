@@ -21,7 +21,7 @@
 
 ## 外部ライブラリ仕様の確認
 
-- httpx / werkzeug / openai / anthropic / fastapi / flask / sqlalchemy / pydantic など、本リポジトリの extras で扱う各ライブラリの API・設定・バージョン差分を参照する場合は `context7` MCP (`mcp__plugin_context7_context7__resolve-library-id` → `mcp__plugin_context7_context7__query-docs`) を優先する
+- httpx / werkzeug / fastapi / flask / sqlalchemy / pydantic など、本リポジトリの extras で扱う各ライブラリの API・設定・バージョン差分を参照する場合は `context7` MCP (`mcp__plugin_context7_context7__resolve-library-id` → `mcp__plugin_context7_context7__query-docs`) を優先する
 - pytilpack は多数のサードパーティライブラリに対するユーティリティ集であり、各ライブラリのバージョン追従が宿命のため、知識のスナップショットではなく最新ドキュメントを確認する
 
 ## 依存関係の方針

@@ -34,7 +34,6 @@ uvx --from 'pytilpack[sqlalchemy]' pytilpack wait-for-db-connection "$SQLALCHEMY
 | Extra | 対象モジュール | 主な依存パッケージ |
 | ----- | -------------- | ------------------ |
 | `all` | 全モジュール | (全依存) |
-| `anthropic` | `pytilpack.anthropic` | anthropic |
 | `babel` | `pytilpack.babel`, `pytilpack.i18n` | babel |
 | `bleach` | (markdown extraに含まれる) | bleach |
 | `environ` | `pytilpack.environ` | python-dotenv |
@@ -44,7 +43,6 @@ uvx --from 'pytilpack[sqlalchemy]' pytilpack wait-for-db-connection "$SQLALCHEMY
 | `markdown` | `pytilpack.markdown` | bleach, markdown, tinycss2 |
 | `mcp` | CLI: `pytilpack mcp` | mcp, beautifulsoup4 |
 | `msal` | `pytilpack.msal` | azure-identity, cryptography, msal |
-| `openai` | `pytilpack.openai` | openai |
 | `pycryptodome` | `pytilpack.pycrypto` | pycryptodome |
 | `pydantic` | `pytilpack.pydantic` | pydantic |
 | `pytest` | `pytilpack.pytest` | pytest, pytest-asyncio |
@@ -63,13 +61,12 @@ uvx --from 'pytilpack[sqlalchemy]' pytilpack wait-for-db-connection "$SQLALCHEMY
 import pytilpack.xxx
 ```
 
-`xxx` には対象ライブラリ名（`openai` や `pathlib` など）が入る。
+`xxx` には対象ライブラリ名（`httpx` や `pathlib` など）が入る。
 
 一部は CLI もある。詳細は [CLIコマンド](cli.md) を参照。
 
 ## 各種ライブラリ用ユーティリティ
 
-- [pytilpack.anthropic](api/anthropic.md)
 - [pytilpack.asyncio](api/asyncio.md)
 - [pytilpack.babel](api/babel.md)
 - [pytilpack.base64](api/base64.md)
@@ -87,7 +84,6 @@ import pytilpack.xxx
 - [pytilpack.logging](api/logging.md)
 - [pytilpack.markdown](api/markdown.md)
 - [pytilpack.msal](api/msal.md)
-- [pytilpack.openai](api/openai.md)
 - [pytilpack.pathlib](api/pathlib.md)
 - [pytilpack.pycrypto](api/pycrypto.md)
 - [pytilpack.pydantic](api/pydantic.md)

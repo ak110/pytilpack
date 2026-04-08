@@ -52,7 +52,7 @@ plugins:
         pip install pytilpack
         ```
 
-        オプション依存: `pytilpack[all]`, `pytilpack[anthropic]`, `pytilpack[fastapi]`, `pytilpack[flask]`, `pytilpack[markdown]`, `pytilpack[msal]`, `pytilpack[openai]`, `pytilpack[pycryptodome]`, `pytilpack[pytest]`, `pytilpack[pyyaml]`, `pytilpack[quart]`, `pytilpack[sqlalchemy]`, `pytilpack[tiktoken]`, `pytilpack[tqdm]`
+        オプション依存: `pytilpack[all]`, `pytilpack[fastapi]`, `pytilpack[flask]`, `pytilpack[markdown]`, `pytilpack[msal]`, `pytilpack[pycryptodome]`, `pytilpack[pytest]`, `pytilpack[pyyaml]`, `pytilpack[quart]`, `pytilpack[sqlalchemy]`, `pytilpack[tiktoken]`, `pytilpack[tqdm]`
 
         ## 主な使い方
 
@@ -62,13 +62,12 @@ plugins:
         import pytilpack.xxx
         ```
 
-        `xxx` には対象ライブラリ名（`openai` や `pathlib` など）が入る。
+        `xxx` には対象ライブラリ名（`httpx` や `pathlib` など）が入る。
       sections:
         ドキュメント:
           - index.md: トップページ
           - cli.md: CLIコマンド
         ライブラリ用ユーティリティ:
-          - api/anthropic.md
           - api/asyncio.md
           - api/babel.md
           - api/base64.md
@@ -86,7 +85,6 @@ plugins:
           - api/logging.md
           - api/markdown.md
           - api/msal.md
-          - api/openai.md
           - api/pathlib.md
           - api/pycrypto.md
           - api/pydantic.md
@@ -135,7 +133,6 @@ nav:
   - CLIコマンド: cli.md
   - APIリファレンス:
       - ライブラリ用ユーティリティ:
-          - pytilpack.anthropic: api/anthropic.md
           - pytilpack.asyncio: api/asyncio.md
           - pytilpack.babel: api/babel.md
           - pytilpack.base64: api/base64.md
@@ -153,7 +150,6 @@ nav:
           - pytilpack.logging: api/logging.md
           - pytilpack.markdown: api/markdown.md
           - pytilpack.msal: api/msal.md
-          - pytilpack.openai: api/openai.md
           - pytilpack.pathlib: api/pathlib.md
           - pytilpack.pycrypto: api/pycrypto.md
           - pytilpack.pydantic: api/pydantic.md

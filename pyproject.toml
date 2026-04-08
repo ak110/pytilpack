@@ -22,7 +22,6 @@ dependencies = [
 
 [project.optional-dependencies]
 all = [
-    "anthropic>=0.75.0",
     "azure-identity>=1.23.0",
     "babel>=2.18.0",
     "beautifulsoup4>=4.12",
@@ -36,7 +35,6 @@ all = [
     "markdown>=3.6",
     "mcp>=1.0.0",
     "msal>=1.32.3",
-    "openai>=1.99.6",
     "pillow",
     "pycryptodome",
     "pydantic>=2.12.5",
@@ -52,9 +50,6 @@ all = [
     "tinycss2>=1.4",
     "tqdm>=4.0",
     "uvicorn>=0.34.3",
-]
-anthropic = [
-    "anthropic>=0.75.0",
 ]
 bleach = [
     "bleach>=6.2",
@@ -73,9 +68,6 @@ markdown = [
     "bleach",
     "markdown>=3.6",
     "tinycss2",
-]
-openai = [
-    "openai>=1.99.6",
 ]
 pycryptodome = [
     "pycryptodome",

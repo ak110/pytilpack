@@ -37,7 +37,6 @@ uvx --from 'pytilpack[sqlalchemy]' pytilpack wait-for-db-connection "$SQLALCHEMY
 | Extra | 対象モジュール | 依存パッケージ |
 | ----- | -------------- | -------------- |
 | `all` | 全モジュール | (全依存) |
-| `anthropic` | `.anthropic` | anthropic |
 | `babel` | `.babel` `.i18n` | babel |
 | `environ` | `.environ` | python-dotenv |
 | `fastapi` | `.fastapi` | fastapi等 |
@@ -46,7 +45,6 @@ uvx --from 'pytilpack[sqlalchemy]' pytilpack wait-for-db-connection "$SQLALCHEMY
 | `markdown` | `.markdown` | bleach等 |
 | `mcp` | CLI: `pytilpack mcp` | mcp等 |
 | `msal` | `.msal` | msal等 |
-| `openai` | `.openai` | openai |
 | `pycryptodome` | `.pycrypto` | pycryptodome |
 | `pydantic` | `.pydantic` | pydantic |
 | `pytest` | `.pytest` | pytest等 |
