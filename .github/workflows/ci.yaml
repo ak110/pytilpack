@@ -54,3 +54,58 @@ jobs:
 
       - name: Prune uv cache for CI
         run: uv cache prune --ci
+
+  cli-smoke:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57 # v8.0.0
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      - name: Build wheel
+        run: uv build --wheel
+
+      - name: ベースのみで CLI が動作すること
+        run: |
+          set -euo pipefail
+          wheel=$(ls dist/pytilpack-*.whl)
+          uv venv .venv-base
+          uv pip install --python .venv-base "$wheel"
+          .venv-base/bin/pytilpack --help
+          # 未インストールサブコマンドは argv の形に関わらず extras 案内で exit 2 になること。
+          for args in "mcp" "mcp --help" "wait-for-db-connection --help" "babel --help" "fetch --help"; do
+            set +e
+            # shellcheck disable=SC2086
+            out=$(.venv-base/bin/pytilpack $args 2>&1); rc=$?
+            set -e
+            echo "---- pytilpack $args (exit=$rc) ----"
+            echo "$out"
+            test "$rc" = "2"
+            echo "$out" | grep -qE 'extras \[(mcp|sqlalchemy|babel|htmlrag)\]'
+          done
+
+      - name: 各 extras で対応サブコマンドが動作すること
+        run: |
+          set -euo pipefail
+          wheel=$(ls dist/pytilpack-*.whl)
+          for extra in mcp sqlalchemy babel htmlrag; do
+            case "$extra" in
+              mcp) cmd="mcp --help" ;;
+              sqlalchemy) cmd="wait-for-db-connection --help" ;;
+              babel) cmd="babel --help" ;;
+              htmlrag) cmd="fetch --help" ;;
+            esac
+            venv=".venv-$extra"
+            uv venv "$venv"
+            uv pip install --python "$venv" "pytilpack[$extra] @ $wheel"
+            # shellcheck disable=SC2086
+            "$venv/bin/pytilpack" $cmd
+          done
+
+      - name: Prune uv cache for CI
+        run: uv cache prune --ci

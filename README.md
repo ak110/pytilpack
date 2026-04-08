@@ -25,6 +25,13 @@ pip install pytilpack[flask]     # pytilpack.flask 用
 # ...
 ```
 
+`uvx` で CLI を使う場合、サブコマンドが要求する extras を `--from` で明示する:
+
+```bash
+uvx --from 'pytilpack[mcp]' pytilpack mcp
+uvx --from 'pytilpack[sqlalchemy]' pytilpack wait-for-db-connection "$SQLALCHEMY_DATABASE_URI"
+```
+
 ### extras 一覧
 
 | Extra | 対象モジュール | 依存パッケージ |
