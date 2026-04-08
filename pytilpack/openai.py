@@ -315,8 +315,8 @@ def _accumulate_event_to_snapshot(
         else:
             _warn(strict, f"output.type が function_call 以外: {pytilpack.logging.jsonify(event)}")
     # NOTE: response.audio.transcript.deltaイベントは現在のライブラリでは
-    # output_indexやcontent_indexフィールドを持たないため、処理できません。
-    # このイベントタイプは将来的に変更される可能性があります。
+    # output_indexやcontent_indexフィールドを持たないため処理できない。
+    # このイベントタイプは将来的に変更される可能性がある。
     # elif event.type == "response.audio.transcript.delta":
     #     # ResponseAudioTranscriptDeltaEvent には output_index, content_index がない
     elif event.type == "response.reasoning_text.delta":

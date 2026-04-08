@@ -76,7 +76,7 @@ def static_url_for(
     cache_timestamp: bool | typing.Literal["when_not_debug"] = "when_not_debug",
     **kwargs: typing.Any,
 ) -> str:
-    """静的ファイルのURLを生成します。
+    """静的ファイルのURLを生成する。
 
     Args:
         filename: 静的ファイルの名前

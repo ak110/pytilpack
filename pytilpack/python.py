@@ -1,6 +1,6 @@
 """Pythonのユーティリティ集。
 
-本格的にはpydashとか使った方がいいかも…？
+本格的な用途にはpydash等の利用も検討する。
 
 """
 
@@ -81,8 +81,8 @@ def find_index[T](collection: typing.Iterable[T], predicate: typing.Callable[[T]
 def empty(x: typing.Any) -> bool:
     """Noneまたは空の場合にTrueを返す。
 
-    関数名はis_null_or_emptyとかの方が正しいが、
-    短く使いたいのでemptyにしている。
+    関数名はis_null_or_empty等の方が正確であるが、
+    短く使いたいためemptyとしている。
 
     """
     return x is None or (isinstance(x, str) and x == "") or (hasattr(x, "__len__") and len(x) == 0)
@@ -91,8 +91,8 @@ def empty(x: typing.Any) -> bool:
 def default[T](x: typing.Any, default_value: T) -> T:
     """Noneまたは空の場合にデフォルト値を返す。
 
-    関数名はdefault_if_null_or_emptyとかの方が正しいが、
-    短く使いたいのでdefaultにしている。
+    関数名はdefault_if_null_or_empty等の方が正確であるが、
+    短く使いたいためdefaultとしている。
 
     """
     return default_value if empty(x) else x
@@ -348,13 +348,13 @@ def convert[T](
             else:
                 if errors == "ignore":
                     return default_value
-                raise ValueError(f"値の変換失敗: {value!r} to {target_type.__name__}")
+                raise ValueError(f"値の変換に失敗しました: {value!r} to {target_type.__name__}")
         elif isinstance(value, int) and value in (0, 1):
             return typing.cast(T, bool(value))
         else:
             if errors == "ignore":
                 return default_value
-            raise ValueError(f"値の変換失敗: {value!r} to {target_type.__name__}")
+            raise ValueError(f"値の変換に失敗しました: {value!r} to {target_type.__name__}")
 
     try:
         # intなどを想定した型変換
@@ -363,7 +363,7 @@ def convert[T](
     except Exception as e:
         if errors == "ignore":
             return default_value
-        raise ValueError(f"値の変換失敗: {value!r} to {target_type.__name__}") from e
+        raise ValueError(f"値の変換に失敗しました: {value!r} to {target_type.__name__}") from e
 
 
 def convert_or_none[T](

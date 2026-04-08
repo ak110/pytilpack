@@ -84,7 +84,7 @@ class ThreadPool:
                 "ThreadPool is being destroyed with %d active worker(s). Sending stop signal.",
                 len(active_workers),
             )
-            # デストラクタ内では待機せず、停止シグナルだけ送る
+            # デストラクタ内では待機せず、停止シグナルのみ送出する
             for w in active_workers:
                 if w.loop is not None:
                     w.loop.call_soon_threadsafe(w.loop.stop)  # 一時的に無効化

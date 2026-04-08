@@ -4,7 +4,7 @@ import typing
 
 
 class Paginator[T]:
-    """ページング用簡易ヘルパ
+    """ページング用の簡易ヘルパ。
 
     Args:
         page: 1オリジンのページ番号
@@ -69,12 +69,12 @@ class Paginator[T]:
 
     @property
     def prev_num(self) -> int:
-        """前ページ"""
+        """前ページのページ番号。"""
         return self.page - 1
 
     @property
     def next_num(self) -> int:
-        """次ページ"""
+        """次ページのページ番号。"""
         return self.page + 1
 
     def next(self) -> typing.Self:
@@ -106,10 +106,10 @@ class Paginator[T]:
         right_current: int = 4,
         right_edge: int = 2,
     ) -> list[int | None]:
-        """ページネーションウィジェット用のページ番号を生成します。
+        """ページネーションウィジェット用のページ番号を生成する。
 
-        ページの先頭と末尾の間にあるスキップされたページは None で表現されます。
-        例えば、総ページ数が 20 ページで、現在のページが 7 ページの場合、以下の値が生成されます。
+        ページの先頭と末尾の間でスキップされるページは None で表現する。
+        例えば、総ページ数が 20 ページで現在のページが 7 ページの場合、以下の値が生成される。
         1, 2, None, 5, 6, 7, 8, 9, 10, 11, None, 19, 20
 
         Args:

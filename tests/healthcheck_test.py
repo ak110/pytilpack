@@ -124,7 +124,7 @@ async def test_run_misc() -> None:
         pytilpack.healthcheck.make_entry("duplicate", mock_success_check),
         pytilpack.healthcheck.make_entry("duplicate", mock_success_check),
     ]
-    with pytest.raises(AssertionError, match="名前の重複"):
+    with pytest.raises(AssertionError, match="ヘルスチェック名が重複しています"):
         await pytilpack.healthcheck.run(checks_dup)
 
     # レスポンス時間の測定

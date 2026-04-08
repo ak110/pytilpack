@@ -219,7 +219,7 @@ def jsonify(
         separators = None if indent is not None else (",", ":")
         return json.dumps(data, ensure_ascii=False, indent=indent, separators=separators, default=default)
     except Exception:
-        # この関数はログに出すのが主目的なので、失敗しても例外を投げずにreprを返す。
+        # この関数はログ出力が主目的であるため、失敗しても例外を送出せずreprを返す。
         _logger.warning("jsonify失敗", exc_info=True)
         return repr(data)
 

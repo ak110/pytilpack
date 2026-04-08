@@ -97,7 +97,7 @@ import pytilpack.xxx
 - [pytilpack.quart_auth](api/quart_auth.md)
 - [pytilpack.sqlalchemy](api/sqlalchemy.md)
 - [pytilpack.threading](api/threading.md)
-- [pytilpack.threadinga](api/threadinga.md): asyncio版
+- [pytilpack.threadinga](api/threadinga.md): asyncio 版
 - [pytilpack.tiktoken](api/tiktoken.md)
 - [pytilpack.tqdm](api/tqdm.md)
 - [pytilpack.typing](api/typing.md)

@@ -9,7 +9,7 @@ import typing
 class CacheEntry[T]:
     """キャッシュエントリ。
 
-    タイムスタンプ、データ、ローダー関数を保持します。
+    タイムスタンプ、データ、ローダー関数を保持する。
     """
 
     mtime: float

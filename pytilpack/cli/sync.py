@@ -7,7 +7,7 @@ import pytilpack.pathlib
 
 
 def add_parser(subparsers: argparse._SubParsersAction) -> None:
-    """syncサブコマンドのパーサーを追加します。"""
+    """syncサブコマンドのパーサーを追加する。"""
     parser = subparsers.add_parser(
         "sync",
         help="ディレクトリを同期",
@@ -36,7 +36,7 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
 
 
 def run(args: argparse.Namespace) -> None:
-    """syncコマンドを実行します。"""
+    """syncコマンドを実行する。"""
     pytilpack.pathlib.sync(
         pathlib.Path(args.src),
         pathlib.Path(args.dst),

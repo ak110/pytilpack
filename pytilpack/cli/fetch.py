@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 def add_parser(subparsers: argparse._SubParsersAction) -> None:
-    """fetchサブコマンドのパーサーを追加します。"""
+    """fetchサブコマンドのパーサーを追加する。"""
     parser = subparsers.add_parser(
         "fetch",
         help="URLの内容を取得",
@@ -46,7 +46,7 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
 
 
 def run(args: argparse.Namespace) -> None:
-    """fetchコマンドを実行します。"""
+    """fetchコマンドを実行する。"""
     output = pytilpack.htmlrag.fetch_url(
         url=args.url,
         no_verify=args.no_verify,

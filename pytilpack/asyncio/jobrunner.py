@@ -19,22 +19,22 @@ class Job(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     async def run(self) -> None:
-        """ジョブの処理。内部でブロッキング処理がある場合は適宜 asyncio.to_thread などを利用してください。"""
+        """ジョブの処理。内部でブロッキング処理がある場合は適宜 asyncio.to_thread 等を利用する。"""
 
     async def on_finished(self) -> None:
-        """ジョブが完了した場合に呼ばれる処理。必要に応じてサブクラスで追加の処理をしてください。"""
+        """ジョブが完了した場合に呼ばれる処理。必要に応じてサブクラスで追加の処理を行う。"""
         self.status = "finished"
 
     async def on_canceled(self) -> None:
-        """ジョブが完了する前にキャンセルされた場合に呼ばれる処理。必要に応じてサブクラスで追加の処理をしてください。"""
+        """ジョブが完了する前にキャンセルされた場合に呼ばれる処理。必要に応じてサブクラスで追加の処理を行う。"""
         self.status = "canceled"
 
     async def on_errored(self) -> None:
-        """ジョブがエラー終了した場合に呼ばれる処理。必要に応じてサブクラスで追加の処理をしてください。"""
+        """ジョブがエラー終了した場合に呼ばれる処理。必要に応じてサブクラスで追加の処理を行う。"""
         self.status = "errored"
 
     async def on_finally(self) -> None:
-        """ジョブの終了時に必ず呼ばれる処理。必要に応じてサブクラスで追加の処理をしてください。"""
+        """ジョブの終了時に必ず呼ばれる処理。必要に応じてサブクラスで追加の処理を行う。"""
         del self  # noqa
 
 

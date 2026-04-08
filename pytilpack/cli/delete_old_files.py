@@ -8,7 +8,7 @@ import pytilpack.pathlib
 
 
 def add_parser(subparsers: argparse._SubParsersAction) -> None:
-    """delete-old-filesサブコマンドのパーサーを追加します。"""
+    """delete-old-filesサブコマンドのパーサーを追加する。"""
     parser = subparsers.add_parser(
         "delete-old-files",
         help="古いファイルを削除",
@@ -45,7 +45,7 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
 
 
 def run(args: argparse.Namespace) -> None:
-    """delete-old-filesコマンドを実行します。"""
+    """delete-old-filesコマンドを実行する。"""
     days = max(0, args.days)
     before = datetime.datetime.now() - datetime.timedelta(days=days)
     pytilpack.pathlib.delete_old_files(

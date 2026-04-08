@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class SSE:
     r"""Server-Sent Events メッセージ。
 
-    改行を含むデータは自動的に複数のdata:行に分割されます。
+    改行を含むデータは自動的に複数のdata:行に分割する。
 
     仕様: <https://triple-underscore.github.io/HTML-server-sent-events-ja.html>
 
@@ -58,8 +58,8 @@ class SSE:
         """SSE形式の文字列への変換。
 
         Returns:
-            SSE形式の文字列。各フィールドはコロンで区切られ、最後に空行が付加されます。
-            data フィールドに改行が含まれる場合、複数の data: 行に分割されます。
+            SSE形式の文字列。各フィールドはコロンで区切られ、最後に空行が付加される。
+            data フィールドに改行が含まれる場合は複数の data: 行に分割される。
         """
         return self.to_str()
 
@@ -67,8 +67,8 @@ class SSE:
         """SSE形式の文字列への変換。
 
         Returns:
-            SSE形式の文字列。各フィールドはコロンで区切られ、最後に空行が付加されます。
-            data フィールドに改行が含まれる場合、複数の data: 行に分割されます。
+            SSE形式の文字列。各フィールドはコロンで区切られ、最後に空行が付加される。
+            data フィールドに改行が含まれる場合は複数の data: 行に分割される。
         """
         lines = []
 
@@ -91,7 +91,7 @@ class SSE:
 def generator(interval: float = 15) -> typing.Callable:
     """SSEジェネレーターのデコレーター。
 
-    15秒以上メッセージが送信されない場合、コメント行を送信してコネクションを維持します。
+    15秒以上メッセージが送信されない場合、コメント行を送信してコネクションを維持する。
 
     Args:
         interval: キープアライブを送信する間隔（秒）。デフォルトは15秒

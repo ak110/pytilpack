@@ -25,7 +25,7 @@ def fetch_url(
     accept: str = DEFAULT_ACCEPT,
     user_agent: str | None = None,
 ) -> str:
-    """URLからHTMLを取得し、簡略化して返します。
+    """URLからHTMLを取得し、簡略化して返す。
 
     Args:
         url: 取得するURL
@@ -133,7 +133,7 @@ def _simplify_html(soup: bs4.BeautifulSoup, aggressive: bool, keep_title: bool, 
     # スタイルタグの削除
     for style in soup.find_all("style"):
         style.decompose()
-    # 独自拡張: メインコンテンツじゃなさそうなタグとtitleタグを削除
+    # 独自拡張: メインコンテンツとは考えにくいタグとtitleタグを削除する
     if aggressive:
         for el in soup.find_all(["nav", "header", "footer", "aside", "dialog"]):
             el.decompose()
@@ -162,7 +162,7 @@ def _simplify_html(soup: bs4.BeautifulSoup, aggressive: bool, keep_title: bool, 
                 removed = True
         if not removed:
             break
-    # ↓元々意味をなしてない？
+    # 以下は元々意味をなしていないと思われるためコメントアウトしている。
     # #  remove href attributes
     # for tag in soup.find_all("a"):
     #     del tag["href"]

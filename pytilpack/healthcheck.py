@@ -105,9 +105,9 @@ async def run(
         now = datetime.datetime.now()
     if start_time is None:
         start_time = startup_time
-    # 名前の重複はAssertionError
+    # 名前が重複している場合は AssertionError を送出する
     check_names = [name for name, _ in checks]
-    assert len(checks) == len(set(check_names)), f"名前の重複: {check_names}"
+    assert len(checks) == len(set(check_names)), f"ヘルスチェック名が重複しています: {check_names}"
 
     details: dict[str, HealthCheckDetail] = {}
 

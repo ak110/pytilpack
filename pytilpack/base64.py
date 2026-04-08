@@ -4,9 +4,9 @@ import base64
 
 
 def encode(s: str | bytes, url_safe: bool = False) -> str:
-    """文字列またはバイト列をBase64エンコードします。
+    """文字列またはバイト列をBase64エンコードする。
 
-    文字列が与えられた場合、UTF-8としてエンコードされます。
+    文字列が与えられた場合はUTF-8としてエンコードする。
 
     Args:
         s: エンコードする文字列またはバイト列。
@@ -21,7 +21,7 @@ def encode(s: str | bytes, url_safe: bool = False) -> str:
 
 
 def decode(s: str, url_safe: bool = False) -> bytes:
-    """Base64エンコードされた文字列をデコードします。
+    """Base64エンコードされた文字列をデコードする。
 
     Args:
         s: Base64エンコードされた文字列。

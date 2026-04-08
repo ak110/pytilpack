@@ -24,7 +24,7 @@ def is_async_url(url: str) -> bool:
 
 
 def add_parser(subparsers: argparse._SubParsersAction) -> None:
-    """wait-for-db-connectionサブコマンドのパーサーを追加します。"""
+    """wait-for-db-connectionサブコマンドのパーサーを追加する。"""
     parser = subparsers.add_parser(
         "wait-for-db-connection",
         help="DB接続可能になるまで待機",
@@ -49,7 +49,7 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
 
 
 def run(args: argparse.Namespace) -> None:
-    """wait-for-db-connectionコマンドを実行します。"""
+    """wait-for-db-connectionコマンドを実行する。"""
     if is_async_url(args.url):
         asyncio.run(pytilpack.sqlalchemy.await_for_connection(args.url, timeout=args.timeout))
     else:

@@ -1,10 +1,10 @@
 # CLIコマンド
 
-一部機能は CLI から利用できます。
+一部機能は CLI から利用できる。
 
 ## uvx から起動する場合
 
-`uvx pytilpack` は extras 無しのベースパッケージのみで起動するため、`mcp` や `wait-for-db-connection` のように追加依存を必要とするサブコマンドはそのままでは実行できません。`--from` で必要な extras を明示してください。
+`uvx pytilpack` は extras 無しのベースパッケージのみで起動するため、`mcp` や `wait-for-db-connection` のように追加依存を必要とするサブコマンドはそのままでは実行できない。`--from` で必要な extras を明示する。
 
 ```bash
 uvx --from 'pytilpack[mcp]' pytilpack mcp
@@ -13,7 +13,7 @@ uvx --from 'pytilpack[babel]' pytilpack babel extract .
 uvx --from 'pytilpack[htmlrag]' pytilpack fetch https://example.com/
 ```
 
-extras が足りない状態で該当サブコマンドを呼ぶと、必要な extras 名を含むエラーメッセージが表示されます。
+extras が足りない状態で該当サブコマンドを呼ぶと、必要な extras 名を含むエラーメッセージが表示される。
 
 ## 空のディレクトリを削除
 

@@ -70,7 +70,7 @@ def test_main_missing_extras_exits(capsys, argv: list[str]) -> None:
 
 
 def test_main_real_import_error_reraised(monkeypatch: pytest.MonkeyPatch) -> None:
-    """`pytilpack.cli.xxx` 自体の import 失敗は握りつぶさず再送出される。"""
+    """`pytilpack.cli.xxx` 自体の import 失敗は抑制されず再送出される。"""
     real_import_module = importlib.import_module
 
     def fake(name: str, package: str | None = None):

@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def add_parser(subparsers: argparse._SubParsersAction) -> None:
-    """mcpサブコマンドのパーサーを追加します。"""
+    """mcpサブコマンドのパーサーを追加する。"""
     parser = subparsers.add_parser(
         "mcp",
         help="MCPサーバーを起動",
@@ -44,12 +44,12 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
 
 
 def run(args: argparse.Namespace) -> None:
-    """mcpコマンドを実行します。"""
+    """mcpコマンドを実行する。"""
     _run_server(transport=args.transport, host=args.host, port=args.port)
 
 
 def _run_server(transport: str = "stdio", host: str = "localhost", port: int = 8000) -> None:
-    """MCPサーバーを起動します。
+    """MCPサーバーを起動する。
 
     Args:
         transport: 通信方式（"stdio" または "http"）
@@ -65,7 +65,7 @@ def _run_server(transport: str = "stdio", host: str = "localhost", port: int = 8
 
 
 def _create_server(**kwargs) -> FastMCP:
-    """MCPサーバーインスタンスを作成します。"""
+    """MCPサーバーインスタンスを作成する。"""
     mcp = FastMCP("pytilpack", instructions="pytilpackのユーティリティ機能を提供するMCPサーバー", **kwargs)
 
     @mcp.tool()
@@ -75,7 +75,7 @@ def _create_server(**kwargs) -> FastMCP:
         accept: str = pytilpack.htmlrag.DEFAULT_ACCEPT,
         user_agent: str | None = None,
     ) -> str:
-        """URLからHTMLを取得し、簡略化して返します。
+        """URLからHTMLを取得し、簡略化して返す。
 
         Args:
             url: 取得するURL

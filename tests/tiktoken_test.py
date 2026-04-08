@@ -138,8 +138,7 @@ def test_vs_litellm(model: str):
     # ツールあり
     tools: list[openai.types.chat.ChatCompletionToolParam] | None = [
         # ここは定義によってはLiteLLMと計算が合わないが、
-        # 何が正解かわからないので偶然にも一致したこの定義のテストだけ通して
-        # 満足しておく…
+        # 何が正解か不明のため、偶然にも一致したこの定義のテストだけ通しておく
         {
             "type": "function",
             "function": {
@@ -170,8 +169,8 @@ def test_vs_litellm(model: str):
         tools=typing.cast(list[litellm.types.llms.openai.ChatCompletionToolParam], tools),
     )
 
-    # LiteLLMは現在以下のモデルがgpt-3.5-turboとかと同じ扱いになっている
-    # (おそらくバグっている)
+    # LiteLLMは現在以下のモデルがgpt-3.5-turboなどと同じ扱いになっている
+    # (おそらく不具合)
     if actual_tokens != litellm_tokens and model in [
         "o1-mini",
         "o1-mini-2024-09-12",

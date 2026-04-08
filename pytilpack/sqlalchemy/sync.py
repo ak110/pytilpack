@@ -404,7 +404,7 @@ class SyncMixin(_ReprMixin):
         cls.session().commit()
 
     # 非同期版
-    # 注意: これらのメソッドは別スレッドで独立したセッション・トランザクションを使用します。
+    # 注意: これらのメソッドは別スレッドで独立したセッション・トランザクションを使用する。
 
     @classmethod
     async def acount(cls, query: sqlalchemy.Select | sqlalchemy.CompoundSelect) -> int:

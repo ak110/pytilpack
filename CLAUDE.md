@@ -7,14 +7,14 @@
 
 - `make format`: 整形 + 軽量lint + 自動修正（開発時の手動実行用）
   - 新しいファイルを作成する場合は近い階層の代表的なファイルを確認し、可能な限りスタイルを揃える
-- `make test`: 全チェック実行（これが通ればコミットしてOK）
+- `make test`: 全チェック実行（これが通ればコミット可能）
 - `make update`: 依存更新 + pre-commit autoupdate + pinactアクション更新 + 全テスト実行
   - `make update-actions`: GitHub Actionsのハッシュピン更新のみ（mise経由でpinact実行）
 - `make docs`: ドキュメントのローカルプレビュー
 - pyfltr は git ソースなので更新時は `uv lock --upgrade-package pyfltr && uv sync` が必要
 - テストコードは`pytilpack/xxx.py`に対して`tests/xxx_test.py`として配置する
   - `pytilpack/xxx/yyy.py`に対して`tests/xxx/yyy_test.py`
-  - `xxx`がpythonキーワードなどの場合、`xxx_.py`になる。そのときは`xxx_test.py`とする (アンダースコアは無視)
+  - `xxx`がpythonキーワードなどの場合、`xxx_.py`になる。そのときは`xxx_test.py`とする (アンダースコアは対象外)
 - テストコードの実行は `uv run pyfltr <path>` を使う (pytestを直接呼び出さない)
   - `-vv`などが必要な場合に限り `uv run pyfltr -vv <path>` のようにする
 - Markdownファイルのformat/lintの実行方法: `uv run pre-commit run --files <file>`

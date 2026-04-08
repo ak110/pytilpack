@@ -69,7 +69,7 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
             template_context["current_user"] = self.current_user  # type: ignore[assignment]
             return template_context
         except Exception:
-            logger.warning("テンプレートコンテキストのユーザーロードに失敗", exc_info=True)
+            logger.warning("テンプレートコンテキストのユーザーロードに失敗しました", exc_info=True)
             return {"current_user": AnonymousUser()}  # type: ignore[dict-item]
 
     @typing.overload
@@ -118,7 +118,7 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
             # sync版loaderで読み込む
             quart.g.quart_auth_current_user = self.user_loader_func(auth_id)
         else:
-            raise RuntimeError("user_loaderが未設定")
+            raise RuntimeError("user_loaderが設定されていません")
 
         if auth_id is not None and quart.g.quart_auth_current_user is None:
             # ユーザーが見つからない場合はAnonymousUserにする
@@ -164,9 +164,9 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
 
 
 def reset_user(user: UserMixin) -> None:
-    """現在のユーザーをリセットする。DBのセッション切れ対策など用。
+    """現在のユーザーをリセットする。DBのセッション切れ対策などに使用する。
 
-    無理やりquart.gに設定するだけなので要注意。
+    quart.gに直接設定するだけの処理のため、利用時は注意する。
     """
     quart.g.quart_auth_current_user = user
 
@@ -177,7 +177,7 @@ def login_user(auth_id: str, remember: bool = True, set_cookie: bool = True) -> 
     Args:
         auth_id: 認証ID
         remember: ログイン状態を保持するかどうか
-        set_cookie: 通常のCookie発行を行うか否か (APIキー認証などを自前でした場合はFalseにする)
+        set_cookie: 通常のCookie発行を行うか否か (APIキー認証等を自前で実装した場合はFalseにする)
 
     """
     user = quart_auth.AuthUser(auth_id)
@@ -186,7 +186,7 @@ def login_user(auth_id: str, remember: bool = True, set_cookie: bool = True) -> 
         # Action.WRITE / Action.WRITE_PERMANENTで設定される
         quart_auth.login_user(user, remember=remember)
     else:
-        # 無理やりAction.PASSのまま設定する
+        # Action.PASSのまま直接設定する
         assert user.action == quart_auth.Action.PASS
         _find_extension().login_user(user)
     # ユーザーは再ロード要
@@ -199,7 +199,7 @@ def logout_user() -> None:
 
 
 async def ensure_user_loaded() -> None:
-    """ユーザーをロードする。async版のuser_loaderを使っている場合はこれを呼び出す必要あり。"""
+    """ユーザーをロードする。async版のuser_loaderを使用している場合はこの関数の呼び出しが必要である。"""
     await _find_extension().ensure_user_loaded()
 
 
@@ -211,7 +211,7 @@ def is_authenticated() -> bool:
 def current_user() -> UserMixin:
     """現在のユーザーを取得する。
 
-    .. deprecated:: acurrent_user() を使用してください。
+    .. deprecated:: acurrent_user() を使用すること。
     """
     warnings.warn(
         "current_user()は非推奨です。acurrent_user()を使用してください。",
@@ -229,7 +229,7 @@ async def acurrent_user() -> UserMixin:
 def is_admin(attr_name: str = "is_admin") -> bool:
     """現在のユーザーが認証済みかつ管理者であるか否かを取得する。
 
-    .. deprecated:: ais_admin() を使用してください。
+    .. deprecated:: ais_admin() を使用すること。
 
     Args:
         attr_name: 管理者かどうかを判定する属性名。デフォルトは "is_admin"。

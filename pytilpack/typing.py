@@ -8,14 +8,14 @@ import typing
 def get_literal_values(literal_type: typing.Any) -> list:
     """Literalの値を取得する。
 
-    XXType: typing.TypeAlias = typing.Literal[1, 2, 3] のような型アノテーションなら
+    XXType: typing.TypeAlias = typing.Literal[1, 2, 3] のような型アノテーションであれば
     typing.get_args(XXType) で値を取得できるが、
-    type XXType = typing.Literal[1, 2, 3] のような型エイリアス(TypeAliasType?)の場合は
-    XXType.__value__ に対して typing.get_args() を使う必要があるらしい…。
+    type XXType = typing.Literal[1, 2, 3] のような型エイリアス (TypeAliasType) の場合は
+    XXType.__value__ に対して typing.get_args() を使う必要がある。
     <https://github.com/python/cpython/issues/112472>
 
-    ZZType = XXType | ZZType やさらにその型エイリアスなどもいい感じに解決する。
-    ここは判定方法よくわからないのでtyping.get_argsで出てこなくなるまで再帰する形に…。
+    ZZType = XXType | ZZType のような入れ子の型エイリアスも解決する。
+    判定方法が一律でないため、typing.get_args で値が得られなくなるまで再帰的に処理する。
 
     """
     # 型エイリアスの解決
