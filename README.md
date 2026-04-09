@@ -16,7 +16,7 @@ Pythonのユーティリティ集。
 pip install pytilpack
 ```
 
-各モジュールが必要とするライブラリは extras で追加インストールする:
+各モジュールが必要とするライブラリはextrasで追加インストールする:
 
 ```bash
 pip install pytilpack[all]       # 全モジュール
@@ -25,7 +25,7 @@ pip install pytilpack[flask]     # pytilpack.flask 用
 # ...
 ```
 
-`uvx` で CLI を使う場合、サブコマンドが要求する extras を `--from` で明示する:
+`uvx` でCLIを使う場合、サブコマンドが要求するextrasを `--from` で明示する:
 
 ```bash
 uvx --from 'pytilpack[mcp]' pytilpack mcp
@@ -55,15 +55,16 @@ uvx --from 'pytilpack[sqlalchemy]' pytilpack wait-for-db-connection "$SQLALCHEMY
 | `tqdm` | `.tqdm` | tqdm |
 | `web` | `.web` (check_html) | html5lib |
 
-extras不要のモジュール（ベースパッケージに含まれる）:
-`.cache` `.crypto` `.data_url` `.functools`
-`.healthcheck` `.http` `.httpx` `.io`
-`.json` `.jsonc` `.paginator` `.random`
-`.ratelimit` `.secrets` `.sse` `.validator` 等
+extras不要のモジュール（ベースパッケージに含まれる）は以下のとおり。
+
+- `.cache` / `.crypto` / `.data_url` / `.functools`
+- `.healthcheck` / `.http` / `.httpx` / `.io`
+- `.json` / `.jsonc` / `.paginator` / `.random`
+- `.ratelimit` / `.secrets` / `.sse` / `.validator` など
 
 ## 主な使い方
 
-各モジュールを個別に import して利用する。
+各モジュールを個別にimportして利用する。
 
 ```python
 import pytilpack.xxx
@@ -72,4 +73,4 @@ import pytilpack.xxx
 `xxx` には対象ライブラリ名（`openai` や `pathlib` など）が入る。
 
 モジュール一覧やAPIリファレンスは[ドキュメント](https://ak110.github.io/pytilpack/)を参照。
-一部は CLI もある。詳細は[CLIコマンド](https://ak110.github.io/pytilpack/cli/)を参照。
+一部はCLIもある。詳細は[CLIコマンド](https://ak110.github.io/pytilpack/cli/)を参照。

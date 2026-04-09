@@ -3,8 +3,8 @@ revision = 3
 requires-python = ">=3.12, <4.0"
 
 [options]
-exclude-newer = "2026-04-08T10:20:18.76812891Z"
-exclude-newer-span = "P1D"
+exclude-newer = "2026-04-09T22:16:45.521905562Z"
+exclude-newer-span = "PT0S"
 
 [[package]]
 name = "aiofiles"
@@ -2217,8 +2217,8 @@ wheels = [
 
 [[package]]
 name = "pyfltr"
-version = "1.17.1.dev2+g680224310"
-source = { git = "https://github.com/ak110/pyfltr.git#680224310ad814b4b32b11d05a1fe453d82efcd8" }
+version = "1.17.2.dev2+g87396abca"
+source = { git = "https://github.com/ak110/pyfltr.git#87396abca921f7d766ecbd7ae2b9cefe6e5bdfb2" }
 dependencies = [
     { name = "autoflake" },
     { name = "black" },

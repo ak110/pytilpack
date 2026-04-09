@@ -13,7 +13,7 @@ Pythonのユーティリティ集。
 pip install pytilpack
 ```
 
-各モジュールが必要とするライブラリは extras で追加インストールする:
+各モジュールが必要とするライブラリはextrasで追加インストールする:
 
 ```bash
 pip install pytilpack[all]       # 全モジュール
@@ -22,7 +22,7 @@ pip install pytilpack[flask]     # pytilpack.flask 用
 # ...
 ```
 
-`uvx` で CLI を使う場合、サブコマンドが要求する extras を `--from` で明示する:
+`uvx` でCLIを使う場合、サブコマンドが要求するextrasを `--from` で明示する:
 
 ```bash
 uvx --from 'pytilpack[mcp]' pytilpack mcp
@@ -55,7 +55,7 @@ uvx --from 'pytilpack[sqlalchemy]' pytilpack wait-for-db-connection "$SQLALCHEMY
 
 ## 主な使い方
 
-各モジュールを個別に import して利用する。
+各モジュールを個別にimportして利用する。
 
 ```python
 import pytilpack.xxx
@@ -63,7 +63,7 @@ import pytilpack.xxx
 
 `xxx` には対象ライブラリ名（`httpx` や `pathlib` など）が入る。
 
-一部は CLI もある。詳細は [CLIコマンド](cli.md) を参照。
+一部はCLIもある。詳細は [CLIコマンド](cli.md) を参照。
 
 ## 各種ライブラリ用ユーティリティ
 
@@ -93,7 +93,7 @@ import pytilpack.xxx
 - [pytilpack.quart_auth](api/quart_auth.md)
 - [pytilpack.sqlalchemy](api/sqlalchemy.md)
 - [pytilpack.threading](api/threading.md)
-- [pytilpack.threadinga](api/threadinga.md): asyncio 版
+- [pytilpack.threadinga](api/threadinga.md): asyncio版
 - [pytilpack.tiktoken](api/tiktoken.md)
 - [pytilpack.tqdm](api/tqdm.md)
 - [pytilpack.typing](api/typing.md)

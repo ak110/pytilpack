@@ -2,15 +2,15 @@
 
 ## 開発環境の構築手順
 
-1. 本リポジトリをcloneする。
-2. [uvをインストール](https://docs.astral.sh/uv/getting-started/installation/)する。
-3. [pre-commit](https://pre-commit.com/)フックをインストールする。
+1. 本リポジトリをcloneする
+2. [uvをインストール](https://docs.astral.sh/uv/getting-started/installation/)する
+3. [pre-commit](https://pre-commit.com/)フックをインストールする
 
     ```bash
     uv run pre-commit install
     ```
 
-4. サプライチェーン攻撃対策として、`uvx`/`pnpx`用のグローバル設定をする。
+4. サプライチェーン攻撃対策として、`uvx`/`pnpx`用のグローバル設定をする
 
     ```bash
     mkdir -p ~/.config/uv && echo 'exclude-newer = "1 day"' >> ~/.config/uv/uv.toml
@@ -31,8 +31,8 @@ make docs   # ローカルプレビュー (http://127.0.0.1:8000/)
 
 masterへのプッシュ時に`.github/workflows/docs.yaml`が自動実行されるが、初回のみGitHub側の設定が必要。
 
-1. リポジトリの Settings > Pages を開く
-2. Build and deployment の Source を **GitHub Actions** に変更する
+1. リポジトリの `Settings` → `Pages` を開く
+2. `Build and deployment` の `Source` を `GitHub Actions` に変更する
 
 設定後、masterにプッシュすれば <https://ak110.github.io/pytilpack/> に自動デプロイされる。
 

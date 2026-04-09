@@ -1,10 +1,10 @@
 # CLIコマンド
 
-一部機能は CLI から利用できる。
+一部機能はCLIから利用できる。
 
 ## uvx から起動する場合
 
-`uvx pytilpack` は extras 無しのベースパッケージのみで起動するため、`mcp` や `wait-for-db-connection` のように追加依存を必要とするサブコマンドはそのままでは実行できない。`--from` で必要な extras を明示する。
+`uvx pytilpack` はextras無しのベースパッケージのみで起動するため、`mcp` や `wait-for-db-connection` のように追加依存を必要とするサブコマンドはそのままでは実行できない。`--from` で必要なextrasを明示する。
 
 ```bash
 uvx --from 'pytilpack[mcp]' pytilpack mcp
@@ -13,7 +13,7 @@ uvx --from 'pytilpack[babel]' pytilpack babel extract .
 uvx --from 'pytilpack[htmlrag]' pytilpack fetch https://example.com/
 ```
 
-extras が足りない状態で該当サブコマンドを呼ぶと、必要な extras 名を含むエラーメッセージが表示される。
+extrasが足りない状態で該当サブコマンドを呼ぶと、必要なextras名を含むエラーメッセージが表示される。
 
 ## 空のディレクトリを削除
 
@@ -41,7 +41,7 @@ pytilpack delete-old-files path/to/dir --days=7 \
 pytilpack sync src dst [--delete] [--verbose]
 ```
 
-- コピー元(src)からコピー先(dst)へファイル・ディレクトリを同期
+- コピー元（src）からコピー先(dst)へファイル・ディレクトリを同期
 - 日付が異なるファイルをコピー
 - `--delete`オプションでコピー元に存在しないコピー先のファイル・ディレクトリを削除
 
