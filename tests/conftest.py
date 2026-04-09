@@ -6,6 +6,8 @@ import babel.messages.mofile
 import babel.messages.pofile
 import pytest
 
+import pytilpack.pytest
+
 TESTS_DIR = pathlib.Path(__file__).parent
 
 
@@ -21,6 +23,17 @@ def pytest_configure(config: pytest.Config) -> None:
             catalog = babel.messages.pofile.read_po(f)
         with mo_path.open("wb") as f:
             babel.messages.mofile.write_mo(f, catalog)
+
+
+@pytest.fixture(autouse=True, scope="session")
+def _pytilpack_basetmp(tmp_path_factory: pytest.TempPathFactory) -> None:  # type: ignore[misc]
+    """pytest本体のbasetmpを環境変数に登録する。
+
+    pytilpack.pytest.get_tmp_pathがpytest-currentシンボリックリンク経由の
+    フォールバックを使わないようにして、複数pytestプロセスが近接した環境での
+    test_tmp_pathの非決定性を回避する。
+    """
+    pytilpack.pytest.register_basetmp(tmp_path_factory)
 
 
 @pytest.fixture

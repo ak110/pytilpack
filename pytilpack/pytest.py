@@ -6,7 +6,12 @@ import os
 import pathlib
 import tempfile
 
+import pytest
+
 logger = logging.getLogger(__name__)
+
+# get_tmp_pathが参照する環境変数名。register_basetmpで設定される。
+_BASETMP_ENV = "PYTILPACK_PYTEST_BASETMP"
 
 
 class AssertBlock:
@@ -95,18 +100,58 @@ def tmp_file_path(tmp_path: pathlib.Path | None = None, suffix: str = ".txt", pr
         return pathlib.Path(f.name)
 
 
-def get_tmp_path() -> pathlib.Path:
-    """temp_path fixtureの指す先の1つ上の階層と思われるパスを返す。
+def register_basetmp(tmp_path_factory: pytest.TempPathFactory) -> None:
+    """pytestのbasetmpを環境変数に登録する。
 
-    fixtureを直接使用することが望ましいが、手軽に利用したい場合向けの簡易関数である。
+    ``get_tmp_path``がシンボリックリンク (``pytest-current``) 経由のフォールバックを
+    使わず、pytest本体のbasetmpを直接参照できるようにする。これにより複数の
+    pytestプロセスが近接した環境でも``tmp_path``との照合が非決定的にならない。
+
+    本ライブラリを利用するプロジェクトの``tests/conftest.py``にautouseのセッション
+    スコープfixtureを定義して呼び出すこと。
+
+    Example:
+        ``tests/conftest.py``で以下のように使う::
+
+            import pytest
+            import pytilpack.pytest
+
+
+            @pytest.fixture(autouse=True, scope="session")
+            def _pytilpack_basetmp(
+                tmp_path_factory: pytest.TempPathFactory,
+            ) -> None:
+                pytilpack.pytest.register_basetmp(tmp_path_factory)
 
     """
-    username = getpass.getuser()
-    path = pathlib.Path(tempfile.gettempdir()) / f"pytest-of-{username}" / "pytest-current"
-    path = path.resolve()
-    # pytest-xdist環境ではワーカーごとのサブディレクトリが使われる
-    worker_id = os.environ.get("PYTEST_XDIST_WORKER")
-    if worker_id is not None:
-        path = path / f"popen-{worker_id}"
+    os.environ[_BASETMP_ENV] = str(tmp_path_factory.getbasetemp())
+
+
+def get_tmp_path() -> pathlib.Path:
+    """一時ファイルを置けるディレクトリを返す。
+
+    ``tmp_path``/``tmp_path_factory`` fixtureを直接使用することが望ましいが、
+    手軽に利用したい場合向けの簡易関数である。
+
+    ``register_basetmp``が呼ばれていれば、pytest本体のbasetmpを直接返す。
+    呼ばれていない場合は``pytest-of-<user>/pytest-current``シンボリックリンク
+    経由のフォールバックを使う。ただしフォールバック経路は並列/近接した別の
+    pytestプロセスがある環境で``tmp_path``と一致しないことがあるため、
+    本ライブラリの利用者は``register_basetmp``の利用を推奨する。
+
+    """
+    basetmp = os.environ.get(_BASETMP_ENV)
+    if basetmp is not None:
+        # register_basetmp経由: pytest_xdistではworkerごとのbasetmpが既に個別化されている
+        path = pathlib.Path(basetmp)
+    else:
+        # フォールバック: pytest-currentシンボリックリンクを解決する
+        username = getpass.getuser()
+        path = pathlib.Path(tempfile.gettempdir()) / f"pytest-of-{username}" / "pytest-current"
+        path = path.resolve()
+        # pytest-xdist環境ではワーカーごとのサブディレクトリが使われる
+        worker_id = os.environ.get("PYTEST_XDIST_WORKER")
+        if worker_id is not None:
+            path = path / f"popen-{worker_id}"
     path.mkdir(parents=True, exist_ok=True)
     return path
