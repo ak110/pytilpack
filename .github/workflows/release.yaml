@@ -20,6 +20,10 @@ concurrency:
   group: release
   cancel-in-progress: false
 
+env:
+  # サプライチェーン対策: uv が lockfile を常に尊重し、意図しない再 resolve を防ぐ
+  UV_FROZEN: "1"
+
 jobs:
   release:
     runs-on: ubuntu-latest

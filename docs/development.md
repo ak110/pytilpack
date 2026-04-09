@@ -17,6 +17,19 @@
     pnpm config set minimum-release-age 1440 --global
     ```
 
+## サプライチェーン対策とUV_FROZENの運用
+
+本リポジトリはサプライチェーン攻撃対策として、`Makefile`とCIワークフローの両方で`UV_FROZEN=1`を常時有効化している。
+これにより`uv sync`や`uv run`は常に`uv.lock`をそのまま使い、意図しない再resolveが走らない。
+この設定は`pyproject.toml`の`exclude-newer = "1 day"`と組み合わせて二重防御として機能する。
+
+- `make format`や`make test`は`Makefile`の`export UV_FROZEN := 1`で自動適用される
+- CIは`.github/workflows/*.yaml`の`env.UV_FROZEN`で自動適用される
+- `git commit`経由のpre-commitフックは`.pre-commit-config.yaml`のlocal hookのentryに`--frozen`を明示している
+
+開発者のシェルでは`UV_FROZEN`を設定しない前提なので、依存の追加・更新は通常どおり`uv add`/`uv remove`/`uv lock --upgrade-package`を使えばよい。
+`make update`も内部で自動的にUV_FROZENを外すため、そのまま実行してよい。
+
 ## ドキュメント
 
 MkDocs + mkdocstrings + mkdocs-llmstxtでAPIリファレンスとllms.txtを自動生成し、GitHub Pagesにデプロイしている。

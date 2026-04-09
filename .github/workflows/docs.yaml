@@ -15,6 +15,10 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+env:
+  # サプライチェーン対策: uv が lockfile を常に尊重し、意図しない再 resolve を防ぐ
+  UV_FROZEN: "1"
+
 jobs:
   deploy:
     runs-on: ubuntu-latest

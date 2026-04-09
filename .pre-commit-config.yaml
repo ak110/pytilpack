@@ -33,14 +33,14 @@ repos:
     hooks:
       - id: pyfltr
         name: pyfltr
-        entry: uv run pyfltr --exit-zero-even-if-formatted --commands=fast
+        entry: uv run --frozen pyfltr --exit-zero-even-if-formatted --commands=fast
         types_or: [python, markdown]
         pass_filenames: false
         require_serial: true
         language: system
       - id: check-docs-api
         name: check-docs-api
-        entry: uv run python scripts/check_docs_api.py
+        entry: uv run --frozen python scripts/check_docs_api.py
         language: system
         pass_filenames: false
         always_run: true
