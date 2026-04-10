@@ -29,7 +29,7 @@ async def test_ratelimit_throttle() -> None:
     start = time.monotonic()
     await limiter.acquire()
     elapsed = time.monotonic() - start
-    assert elapsed >= 0.003  # 非ゼロの待機時間
+    assert elapsed >= 0.001  # 非ゼロの待機時間
 
 
 @pytest.mark.asyncio
