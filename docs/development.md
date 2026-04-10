@@ -17,11 +17,10 @@
     pnpm config set minimum-release-age 1440 --global
     ```
 
-## サプライチェーン対策とUV_FROZENの運用
+## UV_FROZENによるlockfile尊重（サプライチェーン攻撃対策）
 
-本リポジトリはサプライチェーン攻撃対策として、`Makefile`とCIワークフローの両方で`UV_FROZEN=1`を常時有効化している。
-これにより`uv sync`や`uv run`は常に`uv.lock`をそのまま使い、意図しない再resolveが走らない。
-この設定は`pyproject.toml`の`exclude-newer = "1 day"`と組み合わせて二重防御として機能する。
+CI/`make`などの自動実行環境で`uv sync`/`uv run`が依存解決を再実行せず`uv.lock`をそのまま使うよう、環境変数`UV_FROZEN=1`を常時有効化している。
+意図しない再resolveでロックファイルが書き換わるリスクを抑え、`pyproject.toml`の`exclude-newer = "1 day"`と組み合わせて二重防御として機能する。
 
 - `make format`や`make test`は`Makefile`の`export UV_FROZEN := 1`で自動適用される
 - CIは`.github/workflows/*.yaml`の`env.UV_FROZEN`で自動適用される

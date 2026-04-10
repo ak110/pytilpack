@@ -30,10 +30,10 @@
 - コア依存（`[project.dependencies]`）は最小限に保つ（現在: httpx, typing-extensions, werkzeug）
 - サードパーティライブラリに依存するモジュールはextras（`[project.optional-dependencies]`）で管理する
 - インポートは原則トップレベルで行う（`.pylintrc` で `import-outside-toplevel` は有効）
-- サプライチェーン対策として`UV_FROZEN=1`を`Makefile`とCIワークフローで常時有効化している
+- サプライチェーン攻撃対策として`UV_FROZEN=1`を`Makefile`とCIワークフローで常時有効化し、`uv sync`/`uv run`が`uv.lock`を再resolveせずそのまま使うようにしている
   - 開発者のシェルでは`UV_FROZEN`を設定しない前提のため、依存の追加・更新は通常どおり`uv add`/`uv remove`/`uv lock --upgrade-package`を使えばよい
   - `make update`も内部で自動的にUV_FROZENを外すため、そのまま実行してよい
-  - 詳細な運用方針は`docs/development.md`のUV_FROZEN運用セクションを参照
+  - 詳細な運用方針は`docs/development.md`の「UV_FROZENによるlockfile尊重」セクションを参照
 
 ### モジュール追加時の extras チェックリスト
 
