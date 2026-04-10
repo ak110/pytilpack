@@ -151,7 +151,6 @@ pytilpack = "pytilpack.cli.main:main"
 [tool.uv]
 default-groups = ["dev"]
 exclude-newer = "1 day"
-exclude-newer-package = { pyfltr = false }
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]

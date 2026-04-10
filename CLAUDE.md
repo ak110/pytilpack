@@ -18,13 +18,6 @@
   - `-vv`などが必要な場合に限り `uv run pyfltr -vv <path>` のようにする
 - Markdownファイルのformat/lintの実行方法: `uv run pre-commit run --files <file>`
 
-## 外部ライブラリ仕様の確認
-
-- 本リポジトリのextrasで扱う各ライブラリ（httpx、werkzeug、fastapi、flask、sqlalchemy、pydanticなど）のAPI・設定・バージョン差分を参照する場合は`context7` MCPを優先する
-- 具体的には`mcp__plugin_context7_context7__resolve-library-id`→`mcp__plugin_context7_context7__query-docs`の順で呼び出す
-- pytilpackは多数のサードパーティライブラリに対するユーティリティ集である
-- 各ライブラリのバージョン追従が宿命のため、知識のスナップショットではなく最新ドキュメントを確認する
-
 ## 依存関係の方針
 
 - コア依存（`[project.dependencies]`）は最小限に保つ（現在: httpx, typing-extensions, werkzeug）
