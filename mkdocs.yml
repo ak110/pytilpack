@@ -66,7 +66,7 @@ plugins:
       sections:
         ドキュメント:
           - index.md: トップページ
-          - cli.md: CLIコマンド
+          - guide/cli.md: CLIコマンド
         ライブラリ用ユーティリティ:
           - api/asyncio.md
           - api/babel.md
@@ -130,7 +130,9 @@ markdown_extensions:
 
 nav:
   - ホーム: index.md
-  - CLIコマンド: cli.md
+  - 使い方:
+      - 概要: guide/index.md
+      - CLIコマンド: guide/cli.md
   - APIリファレンス:
       - ライブラリ用ユーティリティ:
           - pytilpack.asyncio: api/asyncio.md
@@ -183,4 +185,5 @@ nav:
           - pytilpack.validator: api/validator.md
           - pytilpack.web: api/web.md
   - 開発:
-      - 開発手順: development.md
+      - 概要: development/index.md
+      - 開発手順: development/development.md

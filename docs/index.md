@@ -63,7 +63,7 @@ import pytilpack.xxx
 
 `xxx` には対象ライブラリ名（`httpx` や `pathlib` など）が入る。
 
-一部はCLIもある。詳細は [CLIコマンド](cli.md) を参照。
+一部はCLIもある。詳細は [CLIコマンド](guide/cli.md) を参照。
 
 ## 各種ライブラリ用ユーティリティ
 

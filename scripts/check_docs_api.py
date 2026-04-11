@@ -62,7 +62,7 @@ def _get_public_modules() -> set[str]:
         if name == "__init__":
             continue
         modules.add(name)
-    # サブパッケージ（cliは既存のdocs/cli.mdがあるため除外）
+    # サブパッケージ（cliは既存のdocs/guide/cli.mdがあるため除外）
     for d in sorted(pkg.iterdir()):
         if d.is_dir() and (d / "__init__.py").exists() and d.name not in ("__pycache__", "cli"):
             modules.add(d.name)

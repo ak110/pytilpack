@@ -26,7 +26,7 @@
 - サプライチェーン攻撃対策として`UV_FROZEN=1`を`Makefile`とCIワークフローで常時有効化し、`uv sync`/`uv run`が`uv.lock`を再resolveせずそのまま使うようにしている
   - 開発者のシェルでは`UV_FROZEN`を設定しない前提のため、依存の追加・更新は通常どおり`uv add`/`uv remove`/`uv lock --upgrade-package`を使えばよい
   - `make update`も内部で自動的にUV_FROZENを外すため、そのまま実行してよい
-  - 詳細な運用方針は`docs/development.md`の「UV_FROZENによるlockfile尊重」セクションを参照
+  - 詳細な運用方針は`docs/development/development.md`の「UV_FROZENによるlockfile尊重」セクションを参照
 
 ### モジュール追加時の extras チェックリスト
 
@@ -41,7 +41,7 @@
 ## 関連ドキュメント
 
 - @README.md
-- @docs/README.md
-- @docs/development.md
+- @docs/index.md
+- @docs/development/development.md
 - モジュール追加時は `docs/index.md` と `docs/api/xxx.md` の更新要
 - ドキュメント追加時は `mkdocs.yml` の `nav` 更新要
