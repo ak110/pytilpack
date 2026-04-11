@@ -28,7 +28,7 @@ pip install pytilpack[flask]     # pytilpack.flask 用
 `uvx` でCLIを使う場合、サブコマンドが要求するextrasを `--from` で明示する:
 
 ```bash
-uvx --from 'pytilpack[mcp]' pytilpack mcp
+uvx pytilpack mcp
 uvx --from 'pytilpack[sqlalchemy]' pytilpack wait-for-db-connection "$SQLALCHEMY_DATABASE_URI"
 ```
 
@@ -41,9 +41,7 @@ uvx --from 'pytilpack[sqlalchemy]' pytilpack wait-for-db-connection "$SQLALCHEMY
 | `environ` | `.environ` | python-dotenv |
 | `fastapi` | `.fastapi` | fastapi等 |
 | `flask` | `.flask` `.flask_login` | flask等 |
-| `htmlrag` | `.htmlrag` | beautifulsoup4 |
 | `markdown` | `.markdown` | bleach等 |
-| `mcp` | CLI: `pytilpack mcp` | mcp等 |
 | `msal` | `.msal` | msal等 |
 | `pycryptodome` | `.pycrypto` | pycryptodome |
 | `pydantic` | `.pydantic` | pydantic |

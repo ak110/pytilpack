@@ -84,8 +84,13 @@ jobs:
           uv venv .venv-base
           uv pip install --python .venv-base "$wheel"
           .venv-base/bin/pytilpack --help
-          # 未インストールサブコマンドは argv の形に関わらず extras 案内で exit 2 になること。
-          for args in "mcp" "mcp --help" "wait-for-db-connection --help" "babel --help" "fetch --help"; do
+          # ベース依存のみで完結するサブコマンドは --help が exit 0 で返ること。
+          for args in "mcp --help" "fetch --help"; do
+            # shellcheck disable=SC2086
+            .venv-base/bin/pytilpack $args
+          done
+          # extras 必須のサブコマンドは argv の形に関わらず extras 案内で exit 2 になること。
+          for args in "wait-for-db-connection --help" "babel --help"; do
             set +e
             # shellcheck disable=SC2086
             out=$(.venv-base/bin/pytilpack $args 2>&1); rc=$?
@@ -93,19 +98,17 @@ jobs:
             echo "---- pytilpack $args (exit=$rc) ----"
             echo "$out"
             test "$rc" = "2"
-            echo "$out" | grep -qE 'extras \[(mcp|sqlalchemy|babel|htmlrag)\]'
+            echo "$out" | grep -qE 'extras \[(sqlalchemy|babel)\]'
           done
 
       - name: 各 extras で対応サブコマンドが動作すること
         run: |
           set -euo pipefail
           wheel=$(ls dist/pytilpack-*.whl)
-          for extra in mcp sqlalchemy babel htmlrag; do
+          for extra in sqlalchemy babel; do
             case "$extra" in
-              mcp) cmd="mcp --help" ;;
               sqlalchemy) cmd="wait-for-db-connection --help" ;;
               babel) cmd="babel --help" ;;
-              htmlrag) cmd="fetch --help" ;;
             esac
             venv=".venv-$extra"
             uv venv "$venv"

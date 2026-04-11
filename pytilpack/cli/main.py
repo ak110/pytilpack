@@ -16,8 +16,8 @@ _SUBCOMMANDS: list[tuple[str, str, str | None]] = [
     ("delete-empty-dirs", "pytilpack.cli.delete_empty_dirs", None),
     ("delete-old-files", "pytilpack.cli.delete_old_files", None),
     ("sync", "pytilpack.cli.sync", None),
-    ("fetch", "pytilpack.cli.fetch", "htmlrag"),
-    ("mcp", "pytilpack.cli.mcp", "mcp"),
+    ("fetch", "pytilpack.cli.fetch", None),
+    ("mcp", "pytilpack.cli.mcp", None),
     ("wait-for-db-connection", "pytilpack.cli.wait_for_db_connection", "sqlalchemy"),
 ]
 

@@ -3,7 +3,7 @@ revision = 3
 requires-python = ">=3.12, <4.0"
 
 [options]
-exclude-newer = "2026-04-09T18:28:15.592656824Z"
+exclude-newer = "2026-04-10T08:54:52.920124595Z"
 exclude-newer-span = "P1D"
 
 [options.exclude-newer-package]
@@ -2446,7 +2446,9 @@ wheels = [
 name = "pytilpack"
 source = { editable = "." }
 dependencies = [
+    { name = "beautifulsoup4" },
     { name = "httpx" },
+    { name = "mcp" },
     { name = "typing-extensions" },
     { name = "werkzeug" },
 ]
@@ -2455,7 +2457,6 @@ dependencies = [
 all = [
     { name = "azure-identity" },
     { name = "babel" },
-    { name = "beautifulsoup4" },
     { name = "bleach" },
     { name = "cryptography" },
     { name = "fastapi" },
@@ -2464,7 +2465,6 @@ all = [
     { name = "html5lib" },
     { name = "hypercorn" },
     { name = "markdown" },
-    { name = "mcp" },
     { name = "msal" },
     { name = "pillow" },
     { name = "pycryptodome" },
@@ -2501,17 +2501,10 @@ flask = [
     { name = "html5lib" },
     { name = "pytest" },
 ]
-htmlrag = [
-    { name = "beautifulsoup4" },
-]
 markdown = [
     { name = "bleach" },
     { name = "markdown" },
     { name = "tinycss2" },
-]
-mcp = [
-    { name = "beautifulsoup4" },
-    { name = "mcp" },
 ]
 msal = [
     { name = "azure-identity" },
@@ -2582,9 +2575,7 @@ requires-dist = [
     { name = "azure-identity", marker = "extra == 'msal'", specifier = ">=1.23.0" },
     { name = "babel", marker = "extra == 'all'", specifier = ">=2.18.0" },
     { name = "babel", marker = "extra == 'babel'", specifier = ">=2.18.0" },
-    { name = "beautifulsoup4", marker = "extra == 'all'", specifier = ">=4.12" },
-    { name = "beautifulsoup4", marker = "extra == 'htmlrag'", specifier = ">=4.12" },
-    { name = "beautifulsoup4", marker = "extra == 'mcp'", specifier = ">=4.12" },
+    { name = "beautifulsoup4", specifier = ">=4.14.3" },
     { name = "bleach", marker = "extra == 'all'", specifier = ">=6.2" },
     { name = "bleach", marker = "extra == 'bleach'", specifier = ">=6.2" },
     { name = "bleach", marker = "extra == 'markdown'" },
@@ -2606,8 +2597,7 @@ requires-dist = [
     { name = "hypercorn", marker = "extra == 'quart'", specifier = ">=0.18.0" },
     { name = "markdown", marker = "extra == 'all'", specifier = ">=3.6" },
     { name = "markdown", marker = "extra == 'markdown'", specifier = ">=3.6" },
-    { name = "mcp", marker = "extra == 'all'", specifier = ">=1.0.0" },
-    { name = "mcp", marker = "extra == 'mcp'", specifier = ">=1.0.0" },
+    { name = "mcp", specifier = ">=1.0.0" },
     { name = "msal", marker = "extra == 'all'", specifier = ">=1.32.3" },
     { name = "msal", marker = "extra == 'msal'", specifier = ">=1.32.3" },
     { name = "openai", marker = "extra == 'tiktoken'", specifier = ">=1.99.6" },

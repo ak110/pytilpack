@@ -15,7 +15,9 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
 ]
 dependencies = [
+    "beautifulsoup4>=4.14.3",
     "httpx>=0.28.1",
+    "mcp>=1.0.0",
     "typing-extensions>=4.0",
     "werkzeug>=3.1.7",
 ]
@@ -24,7 +26,6 @@ dependencies = [
 all = [
     "azure-identity>=1.23.0",
     "babel>=2.18.0",
-    "beautifulsoup4>=4.12",
     "bleach>=6.2",
     "cryptography>=46.0.6",
     "fastapi>=0.111",
@@ -33,7 +34,6 @@ all = [
     "html5lib",
     "hypercorn>=0.18.0",
     "markdown>=3.6",
-    "mcp>=1.0.0",
     "msal>=1.32.3",
     "pillow",
     "pycryptodome",
@@ -104,19 +104,14 @@ msal = [
     "cryptography>=46.0.6",
     "msal>=1.32.3",
 ]
-mcp = [
-    "beautifulsoup4>=4.12",
-    "mcp>=1.0.0",
-]
+mcp = []  # 後方互換用（bs4/mcpはコア依存へ統合済み）
 babel = [
     "babel>=2.18.0",
 ]
 environ = [
     "python-dotenv>=1.2.2",
 ]
-htmlrag = [
-    "beautifulsoup4>=4.12",
-]
+htmlrag = []  # 後方互換用（bs4はコア依存へ統合済み）
 pydantic = [
     "pydantic>=2.12.5",
 ]
