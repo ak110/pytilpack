@@ -5,8 +5,12 @@
 
 Pythonのユーティリティ集。
 
-- [ドキュメント](https://ak110.github.io/pytilpack/)
-- [llms.txt](https://ak110.github.io/pytilpack/llms.txt)
+## 特徴
+
+- モジュール単位の個別import: 必要なモジュールだけ取り込む
+- extrasによる依存の最小化: 対象ライブラリごとに追加インストール
+- CLI同梱: `pytilpack`コマンドで各種サブコマンドを提供
+- 主要Pythonライブラリ向けユーティリティ（FastAPI / Flask / Quart / SQLAlchemy / Pydanticなど）
 
 ## インストール
 
@@ -72,3 +76,9 @@ import pytilpack.xxx
 
 モジュール一覧やAPIリファレンスは[ドキュメント](https://ak110.github.io/pytilpack/)を参照。
 一部はCLIもある。詳細は[CLIコマンド](https://ak110.github.io/pytilpack/cli/)を参照。
+
+## ドキュメント
+
+- <https://ak110.github.io/pytilpack/> — 概要・モジュール一覧・APIリファレンス
+- [llms.txt](https://ak110.github.io/pytilpack/llms.txt) — LLM向け構造化インデックス
+- [docs/development/development.md](docs/development/development.md) — 開発者向け情報
