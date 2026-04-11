@@ -94,3 +94,7 @@ gh workflow run release.yaml --field="bump=メジャーバージョンアップ"
 ```
 
 <https://github.com/ak110/pytilpack/actions> で状況を確認できる。
+
+## コミットメッセージ (Conventional Commits)
+
+Conventional Commits形式に従う。ただし記述の方向性があまり変わらないような軽微な修正は`chore`などにしてよい。
