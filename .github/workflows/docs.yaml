@@ -13,10 +13,10 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
-  # サプライチェーン攻撃対策: uv が lockfile を常に尊重し、意図しない再 resolve を防ぐ
+  # サプライチェーン攻撃対策: uvがlockfileを常に尊重する
   UV_FROZEN: "1"
 
 jobs:
