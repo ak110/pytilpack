@@ -20,6 +20,16 @@
 - ドキュメントのみの変更（`*.md`や`docs/**`の更新）をコミットする場合、事前の手動`make test`は省略してよい。`git commit`時点で`pre-commit`の`pyfltr fast`フックが`markdownlint-fast`と`textlint-fast`を自動実行するため、Markdownの検証はそこで担保される
 - コードやテストに手を入れた変更では従来どおり`make test`を通してからコミットする
 
+## Claude Code向けコミット前検証
+
+Claude Codeがコミット前に検証する際は、`make test`の代わりに以下を実行する。JSON Lines出力によりLLMがツール別診断を効率的に解釈できる。
+
+```bash
+uv run pyfltr run --output-format=jsonl
+```
+
+人間の開発者は従来通り`make test`を使用する。
+
 ## 依存関係の方針
 
 - コア依存（`[project.dependencies]`）は最小限に保つ（現在: httpx, typing-extensions, werkzeug）
