@@ -87,6 +87,13 @@ def retry[**P, R](
     Returns:
         リトライを行うデコレーター
 
+    Examples:
+        非同期関数でのリトライ::
+
+            @pytilpack.functools.retry(max_retries=3, initial_delay=1.0)
+            async def call_external_api():
+                ...
+
     """
 
     def decorator(func: typing.Callable[P, R]) -> typing.Callable[P, R]:

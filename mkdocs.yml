@@ -25,9 +25,6 @@ theme:
     - search.suggest
     - search.highlight
 
-exclude_docs: |
-  README.md
-
 plugins:
   - search:
       lang: ja
@@ -46,13 +43,15 @@ plugins:
   - llmstxt:
       full_output: llms-full.txt
       markdown_description: |
+        Python 3.12以上が必要。コア依存: beautifulsoup4, httpx, mcp, typing-extensions, werkzeug。
+
         ## インストール
 
         ```bash
         pip install pytilpack
         ```
 
-        オプション依存: `pytilpack[all]`, `pytilpack[fastapi]`, `pytilpack[flask]`, `pytilpack[markdown]`, `pytilpack[msal]`, `pytilpack[pycryptodome]`, `pytilpack[pytest]`, `pytilpack[pyyaml]`, `pytilpack[quart]`, `pytilpack[sqlalchemy]`, `pytilpack[tiktoken]`, `pytilpack[tqdm]`
+        オプション依存: `pytilpack[all]`, `pytilpack[babel]`, `pytilpack[bleach]`, `pytilpack[environ]`, `pytilpack[fastapi]`, `pytilpack[flask]`, `pytilpack[markdown]`, `pytilpack[msal]`, `pytilpack[pycryptodome]`, `pytilpack[pydantic]`, `pytilpack[pytest]`, `pytilpack[pyyaml]`, `pytilpack[quart]`, `pytilpack[sqlalchemy]`, `pytilpack[tiktoken]`, `pytilpack[tqdm]`, `pytilpack[web]`
 
         ## 主な使い方
 
@@ -65,40 +64,41 @@ plugins:
         `xxx` には対象ライブラリ名（`httpx` や `pathlib` など）が入る。
       sections:
         ドキュメント:
-          - index.md: トップページ
+          - index.md: ドキュメント入口
+          - guide/index.md: インストール・extras一覧・モジュール一覧
           - guide/cli.md: CLIコマンド
         ライブラリ用ユーティリティ:
-          - api/asyncio.md
-          - api/babel.md
-          - api/base64.md
-          - api/csv.md
-          - api/dataclasses.md
-          - api/datetime.md
-          - api/fastapi.md
-          - api/flask.md
-          - api/flask_login.md
-          - api/fnctl.md
-          - api/functools.md
-          - api/httpx.md
-          - api/importlib.md
-          - api/json.md
-          - api/logging.md
-          - api/markdown.md
-          - api/msal.md
-          - api/pathlib.md
-          - api/pycrypto.md
-          - api/pydantic.md
-          - api/pytest.md
-          - api/python.md
-          - api/quart.md
-          - api/quart_auth.md
-          - api/sqlalchemy.md
-          - api/threading.md
-          - api/threadinga.md: asyncio版
-          - api/tiktoken.md
-          - api/tqdm.md
-          - api/typing.md
-          - api/yaml.md
+          - api/asyncio.md: 非同期I/O、ジョブランナー、スレッドプール
+          - api/babel.md: Babel多言語メッセージ管理
+          - api/base64.md: Base64エンコードとデコード
+          - api/csv.md: CSV読み書き
+          - api/dataclasses.md: dataclass操作
+          - api/datetime.md: 日時ユーティリティ
+          - api/fastapi.md: FastAPIアサーション、i18n
+          - api/flask.md: Flaskアサーション、プロキシー修正
+          - api/flask_login.md: Flask-Login拡張
+          - api/fnctl.md: ファイルロック
+          - api/functools.md: retryデコレータ、キャッシュ
+          - api/httpx.md: httpx拡張
+          - api/importlib.md: 動的モジュールインポート
+          - api/json.md: JSON読み書き
+          - api/logging.md: ロギング設定、ログチェッカー
+          - api/markdown.md: Markdownレンダリング
+          - api/msal.md: Microsoft認証(MSAL/Entra ID)
+          - api/pathlib.md: パス操作拡張
+          - api/pycrypto.md: AES-GCM暗号化
+          - api/pydantic.md: Pydantic v2ユーティリティ
+          - api/pytest.md: テスト用アサーション
+          - api/python.md: 型変換、辞書マージ、None判定
+          - api/quart.md: Quartアサーション、i18n
+          - api/quart_auth.md: Quart認証拡張
+          - api/sqlalchemy.md: 非同期ORM基盤、セッション管理
+          - api/threading.md: スレッド関連ユーティリティ
+          - api/threadinga.md: asyncio版スレッドユーティリティ
+          - api/tiktoken.md: トークンカウント、画像処理
+          - api/tqdm.md: プログレスバー拡張
+          - api/typing.md: 型ヒント関連
+          - api/yaml.md: YAML読み書き
         汎用モジュール:
           - api/cache.md: ファイルキャッシュ関連
           - api/crypto.md: 署名・トークン関連

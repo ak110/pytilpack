@@ -56,6 +56,8 @@ def make_entry[**P, R](
 ) -> CheckerEntry:
     """CheckerEntryを作成する。
 
+    同期関数は自動的にasyncio.to_thread()で非同期化される。
+
     Args:
         name: ヘルスチェックの名前。
         func: ヘルスチェック関数。
@@ -64,6 +66,16 @@ def make_entry[**P, R](
 
     Returns:
         ヘルスチェックの名前と関数を持つタプル。
+
+    Examples:
+        ヘルスチェックの構成例::
+
+            entries = [
+                pytilpack.healthcheck.make_entry("database", check_db),
+                pytilpack.healthcheck.make_entry("redis", check_redis, host="localhost"),
+            ]
+            result = await pytilpack.healthcheck.run(entries)
+
     """
     if inspect.iscoroutinefunction(func):
 

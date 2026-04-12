@@ -32,7 +32,7 @@ uv run pyfltr run --output-format=jsonl
 
 ## 依存関係の方針
 
-- コア依存（`[project.dependencies]`）は最小限に保つ（現在: httpx, typing-extensions, werkzeug）
+- コア依存（`[project.dependencies]`）は最小限に保つ（現在: `beautifulsoup4`/`httpx`/`mcp`/`typing-extensions`/`werkzeug`）
 - サードパーティライブラリに依存するモジュールはextras（`[project.optional-dependencies]`）で管理する
 - インポートは原則トップレベルで行う（`.pylintrc` で `import-outside-toplevel` は有効）
 - サプライチェーン攻撃対策として`UV_FROZEN=1`を`Makefile`とCIワークフローで常時有効化し、`uv sync`/`uv run`が`uv.lock`を再resolveせずそのまま使うようにしている
@@ -48,12 +48,13 @@ uv run pyfltr run --output-format=jsonl
 2. `[all]` extrasにも同じパッケージを追加: `uv add --optional all library`
 3. 推移的依存に注意: 他のpytilpackモジュールをimportしている場合、そのモジュールの依存もextrasに含める
 4. `docs/api/xxx.md` に `!!! note "必要なextra"` 注記を追加
-5. `README.md` と `docs/index.md` のextras一覧テーブルを更新
+5. `README.md` と `docs/guide/index.md` のextras一覧テーブルを更新
 
 ## 関連ドキュメント
 
 - @README.md
 - @docs/index.md
+- @docs/guide/index.md
 - @docs/development/development.md
-- モジュール追加時は `docs/index.md` と `docs/api/xxx.md` の更新要
+- モジュール追加時は `docs/guide/index.md` と `docs/api/xxx.md` の更新要
 - ドキュメント追加時は `mkdocs.yml` の `nav` 更新要

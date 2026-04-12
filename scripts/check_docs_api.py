@@ -1,7 +1,7 @@
 """docs/api/ の整合性チェック。
 
 pytilpackの全publicモジュールに対応するdocs/api/*.mdが存在し、
-docs/index.md・mkdocs.yml nav・mkdocs.yml llmstxt sectionsの3箇所で
+docs/guide/index.md・mkdocs.yml nav・mkdocs.yml llmstxt sectionsの3箇所で
 同期されているか検証する。
 """
 
@@ -29,10 +29,10 @@ def main() -> None:
     if missing_api:
         errors.append(f"docs/api/ に不足: {sorted(missing_api)}")
 
-    # docs/api/*.md → docs/index.md
+    # docs/api/*.md → docs/guide/index.md
     missing_index = docs_api_files - index_modules
     if missing_index:
-        errors.append(f"docs/index.md に不足: {sorted(missing_index)}")
+        errors.append(f"docs/guide/index.md に不足: {sorted(missing_index)}")
 
     # docs/api/*.md → mkdocs.yml nav
     missing_nav = docs_api_files - nav_modules
@@ -76,9 +76,9 @@ def _get_docs_api_files() -> set[str]:
 
 
 def _get_index_md_modules() -> set[str]:
-    """docs/index.mdからapi/xxx.mdへのリンクを抽出してモジュール名を取得する。"""
-    text = pathlib.Path("docs/index.md").read_text(encoding="utf-8")
-    return set(re.findall(r"\(api/(\w+)\.md\)", text))
+    """docs/guide/index.mdから../api/xxx.mdへのリンクを抽出してモジュール名を取得する。"""
+    text = pathlib.Path("docs/guide/index.md").read_text(encoding="utf-8")
+    return set(re.findall(r"\(\.\./api/(\w+)\.md\)", text))
 
 
 def _get_nav_modules(config: dict[str, typing.Any]) -> set[str]:

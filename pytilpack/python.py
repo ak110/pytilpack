@@ -331,6 +331,13 @@ def convert[T](
     Raises:
         ValueError: errors="strict"の場合で値の変換に失敗した場合に発生。
 
+    Examples:
+        安全な型変換::
+
+            pytilpack.python.convert("123", int, 0)   # => 123
+            pytilpack.python.convert("abc", int, 0)   # => 0
+            pytilpack.python.convert(None, int, 0)    # => 0
+
     """
     if value is None:
         return default_value
@@ -455,12 +462,23 @@ class SingletonMixin:
 def merge(dst: typing.Any, src: typing.Any) -> typing.Any:
     """2つのオブジェクトをマージする。
 
+    dictは再帰的にマージし、listは結合し、それ以外はsrcで上書きする。
+
     Args:
         dst: マージ先のオブジェクト。
         src: マージ元のオブジェクト。
 
     Returns:
         マージされたオブジェクト。
+
+    Examples:
+        辞書の再帰的マージ::
+
+            pytilpack.python.merge(
+                {"a": {"x": 1}, "b": [1, 2]},
+                {"a": {"y": 2}, "b": [3]},
+            )
+            # => {"a": {"x": 1, "y": 2}, "b": [1, 2, 3]}
 
     """
     # pydanticモデルの場合はdictに変換

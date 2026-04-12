@@ -84,6 +84,21 @@ pytilpack mcp --transport=stdio
 pytilpack mcp --transport=http --port=8000
 ```
 
+## Babelメッセージ管理
+
+```bash
+pytilpack babel extract input_dirs... [-o messages.pot] [-k KEYWORDS...] [--charset=utf-8]
+pytilpack babel init -l LOCALE [-i messages.pot] [-d locales] [--domain=messages]
+pytilpack babel update [-i messages.pot] [-d locales] [--domain=messages]
+pytilpack babel compile [-d locales] [--domain=messages]
+```
+
+- gettextメッセージの抽出、初期化、更新、コンパイルを行う
+- `extract`: 指定ディレクトリからメッセージを抽出してPOTファイルに出力
+- `init`: POTファイルから新しいロケールのカタログを初期化
+- `update`: 既存カタログをテンプレートで更新
+- `compile`: POファイルをコンパイルしてMOファイルを生成
+
 ## DB接続待機
 
 ```bash
