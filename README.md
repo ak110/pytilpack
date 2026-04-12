@@ -81,5 +81,5 @@ import pytilpack.xxx
 ## ドキュメント
 
 - <https://ak110.github.io/pytilpack/> — 概要・モジュール一覧・APIリファレンス
-- [llms.txt](https://ak110.github.io/pytilpack/llms.txt) — LLM向け構造化インデックス
+- <https://ak110.github.io/pytilpack/llms.txt> — LLM向け構造化インデックス
 - [docs/development/development.md](docs/development/development.md) — 開発者向け情報

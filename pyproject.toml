@@ -156,6 +156,23 @@ source = "vcs"
 
 [tool.pyfltr]
 preset = "latest"
+ty = true
+# tyは型推論が発展途上のため、サードパーティの型定義やParamSpec周りの偽陽性を抑制する
+ty-args = [
+    "check",
+    "--output-format", "concise",
+    "--error-on-warning",
+    "--ignore", "invalid-argument-type",
+    "--ignore", "invalid-return-type",
+    "--ignore", "invalid-context-manager",
+    "--ignore", "unresolved-attribute",
+    "--ignore", "invalid-type-form",
+    "--ignore", "invalid-assignment",
+    "--ignore", "no-matching-overload",
+    "--ignore", "invalid-method-override",
+    "--ignore", "unused-type-ignore-comment",
+    "--ignore", "redundant-cast",
+]
 pylint-args = ["--jobs=4"]
 extend-exclude = ["docs/api"]
 
