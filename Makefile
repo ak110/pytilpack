@@ -5,14 +5,14 @@ export UV_FROZEN := 1
 help:
 	@cat Makefile
 
-# 開発環境セットアップ
+# 開発環境のセットアップ
 setup:
-	env --unset UV_FROZEN uv sync --all-extras --all-groups
+	uv sync --all-groups --all-extras
 	uv run pre-commit install
 
 # 依存パッケージをアップグレードし全テスト実行
 update:
-	env --unset UV_FROZEN uv sync --upgrade --all-extras --all-groups
+	env --unset UV_FROZEN uv sync --upgrade --all-groups --all-extras
 	uv run pre-commit autoupdate
 	$(MAKE) update-actions
 	$(MAKE) test
@@ -28,7 +28,7 @@ format:
 	-uv run pyfltr fix
 	-uv run pyfltr fast
 
-# 全チェック実行（これが通ればコミットしてOK）
+# 全チェック実行（これを通過すればコミット可能）
 test:
 	SKIP=pyfltr uv run pre-commit run --all-files
 	uv run pyfltr run
