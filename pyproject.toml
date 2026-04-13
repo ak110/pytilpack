@@ -223,6 +223,10 @@ warn_redundant_casts = true
 warn_unused_configs = true
 show_error_codes = true
 
+[tool.typos.default.extend-identifiers]
+# SQLAlchemyの非同期カウントメソッド
+acount = "acount"
+
 [tool.pytest.ini_options]
 # https://docs.pytest.org/en/latest/reference/reference.html#ini-options-ref
 addopts = "--showlocals -p no:cacheprovider --maxfail=5 --durations=30 --durations-min=0.5 -n 4"
