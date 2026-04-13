@@ -127,7 +127,6 @@ dev = [
     "mkdocs-material>=9.6",
     "mkdocs>=1.6",
     "mkdocstrings[python]>=0.29",
-    "pre-commit>=4.2.0",
     "pyfltr>=1.23.0",
     "pylint-pydantic>=0.4.1",
     "pyright[nodejs]>=1.1.403",
