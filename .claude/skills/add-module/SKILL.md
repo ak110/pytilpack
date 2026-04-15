@@ -96,10 +96,10 @@ extras不要ならば `!!! note` ブロックは省略する (既存の `docs/ap
 
 ```bash
 uv run python scripts/check_docs_api.py
-uv run  pyfltr run-for-agent
+uv run pyfltr run-for-agent
 ```
 
-`uv run  pyfltr run-for-agent` が通ったらコミットしてよい。
+`uv run pyfltr run-for-agent` が通ったらコミットしてよい。
 
 ## よく使う参考ファイル
 
