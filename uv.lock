@@ -3,11 +3,8 @@ revision = 3
 requires-python = ">=3.12, <4.0"
 
 [options]
-exclude-newer = "2026-04-14T20:46:39.075653026Z"
+exclude-newer = "2026-04-14T21:33:22.926504267Z"
 exclude-newer-span = "P1D"
-
-[options.exclude-newer-package]
-pyfltr = false
 
 [[package]]
 name = "aiofiles"
@@ -2220,7 +2217,7 @@ wheels = [
 
 [[package]]
 name = "pyfltr"
-version = "2.2.0"
+version = "2.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "autoflake" },
@@ -2245,9 +2242,9 @@ dependencies = [
     { name = "ty" },
     { name = "uv-sort" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/07/b2/40f88bb0815d4e070a46eab7eb054e5dbbce3dd7be165a2ea3b407a2f28a/pyfltr-2.2.0.tar.gz", hash = "sha256:cba50ac96ec2a30b912c25c7c559b60e868890b9e29dae70875738959ccb3df4", size = 190765, upload-time = "2026-04-15T20:22:32.024Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/37/ec/c950476bb30b862ae376893d7013698de63355f5ddc4bde2123462c6a327/pyfltr-2.0.1.tar.gz", hash = "sha256:15999650550f738f7bdaacd33382a82ef79786cf37e76821cba7ff28b23ca318", size = 188703, upload-time = "2026-04-14T08:01:45.73Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0a/7d/367fc3bc2586230c821c77539d3448e80196f696ad812d554103950ac242/pyfltr-2.2.0-py3-none-any.whl", hash = "sha256:40995619e631ad7493a9eeae64de01b0353b6dca898c5f1735d9c8cc816af969", size = 55167, upload-time = "2026-04-15T20:22:30.816Z" },
+    { url = "https://files.pythonhosted.org/packages/e4/03/53e8d9e19c1f1c5b0988886c99c2c8ae037da171a04927093b920b1d38df/pyfltr-2.0.1-py3-none-any.whl", hash = "sha256:abeafad2c470002ba8c8ab52c1cb9df11e24da7d389ede01a53d3620c188f1e2", size = 54393, upload-time = "2026-04-14T08:01:47.017Z" },
 ]
 
 [[package]]
@@ -2437,11 +2434,11 @@ wheels = [
 
 [[package]]
 name = "python-multipart"
-version = "0.0.24"
+version = "0.0.26"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/8a/45/e23b5dc14ddb9918ae4a625379506b17b6f8fc56ca1d82db62462f59aea6/python_multipart-0.0.24.tar.gz", hash = "sha256:9574c97e1c026e00bc30340ef7c7d76739512ab4dfd428fec8c330fa6a5cc3c8", size = 37695, upload-time = "2026-04-05T20:49:13.829Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/88/71/b145a380824a960ebd60e1014256dbb7d2253f2316ff2d73dfd8928ec2c3/python_multipart-0.0.26.tar.gz", hash = "sha256:08fadc45918cd615e26846437f50c5d6d23304da32c341f289a617127b081f17", size = 43501, upload-time = "2026-04-10T14:09:59.473Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a3/73/89930efabd4da63cea44a3f438aeb753d600123570e6d6264e763617a9ce/python_multipart-0.0.24-py3-none-any.whl", hash = "sha256:9b110a98db707df01a53c194f0af075e736a770dc5058089650d70b4a182f950", size = 24420, upload-time = "2026-04-05T20:49:12.555Z" },
+    { url = "https://files.pythonhosted.org/packages/9a/22/f1925cdda983ab66fc8ec6ec8014b959262747e58bdca26a4e3d1da29d56/python_multipart-0.0.26-py3-none-any.whl", hash = "sha256:c0b169f8c4484c13b0dcf2ef0ec3a4adb255c4b7d18d8e420477d2b1dd03f185", size = 28847, upload-time = "2026-04-10T14:09:58.131Z" },
 ]
 
 [[package]]
