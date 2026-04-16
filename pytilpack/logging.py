@@ -19,8 +19,8 @@ import pytilpack.python
 
 _logger = logging.getLogger(__name__)
 
-_exception_history: dict[str, datetime.datetime] = {}
-"""例外フィンガープリント → 最終発生時刻。"""
+_exception_history: dict[str, tuple[datetime.datetime, int]] = {}
+"""例外フィンガープリント → (最終発生時刻, 最終WARNING以降の発生回数)。"""
 
 
 def clear_exception_history() -> None:
@@ -94,35 +94,57 @@ def timer(name, logger: logging.Logger | None = None):
 
 def exception_with_dedup(
     logger: logging.Logger,
-    exc: BaseException,
+    exc: BaseException | str,
     msg: str = "Unhandled exception occurred",
     dedup_window: datetime.timedelta | None = None,
+    dedup_count: int | None = None,
     now: datetime.datetime | None = None,
 ) -> None:
-    """同一 fingerprint が dedup_window 内にあれば INFO、そうでなければ WARN で exc_info=True 付きでログ出力する。
+    """同一 fingerprint が重複排除ウィンドウ内にあれば INFO、そうでなければ WARN でログ出力する。
+
+    exc に例外オブジェクトを渡した場合は WARN 時に exc_info=True が付く。
+    文字列を渡した場合は exc_info なしで出力される。
+
+    dedup_window（時間窓）と dedup_count（個数窓）は併用可能で、
+    いずれかの条件を超えた場合に再度 WARN で出力される。
+    両方 None の場合は dedup_window のデフォルト（24 時間）が適用される。
 
     Args:
         logger: 出力先ロガー
-        exc: 例外
+        exc: 例外オブジェクトまたは文字列。fingerprint の生成に使用する。
         msg: ログメッセージ。fingerprint にも含まれる。
-        dedup_window: 同一エラーとみなす時間幅。デフォルト 24 時間。
+        dedup_window: 同一エラーとみなす時間幅。デフォルト 24 時間（dedup_count 指定時は None）。
+        dedup_count: 同一エラーとみなす回数。この回数分 INFO で抑制した後に再度 WARN で出力する。
         now: 現在時刻。
     """
-    if dedup_window is None:
+    if dedup_window is None and dedup_count is None:
         dedup_window = datetime.timedelta(days=1)
     if now is None:
         now = datetime.datetime.now()
 
-    raw = f"{exc.__class__.__name__}:{str(exc)}:{msg}"
+    is_exception = isinstance(exc, BaseException)
+    raw = f"{exc.__class__.__name__}:{str(exc)}:{msg}" if is_exception else f"{exc}:{msg}"
     fingerprint = hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
-    last_seen = _exception_history.get(fingerprint)
-    if last_seen is not None and (now - last_seen) < dedup_window:
-        logger.info(msg)
+    last = _exception_history.get(fingerprint)
+    if last is None:
+        should_warn = True
     else:
-        logger.warning(msg, exc_info=True)
+        last_seen, count = last
+        time_expired = dedup_window is not None and (now - last_seen) >= dedup_window
+        count_expired = dedup_count is not None and count + 1 >= dedup_count
+        should_warn = time_expired or count_expired
 
-    _exception_history[fingerprint] = now
+    if should_warn:
+        if is_exception:
+            logger.warning(msg, exc_info=True)
+        else:
+            logger.warning(msg)
+        _exception_history[fingerprint] = (now, 0)
+    else:
+        logger.info(msg)
+        assert last is not None
+        _exception_history[fingerprint] = (now, last[1] + 1)
 
 
 _current_context_id: contextvars.ContextVar[str] = contextvars.ContextVar("_current_context_id", default="")
