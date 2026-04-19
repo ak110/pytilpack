@@ -1,14 +1,11 @@
 """Quartのテストコード用アサーション関数。"""
 
-import json
 import pathlib
 import typing
-import xml.etree.ElementTree as ET
 
 import quart
 
-import pytilpack.pytest
-import pytilpack.web
+import pytilpack._web_asserts as _core
 
 __all__ = [
     "ResponseType",
@@ -45,14 +42,7 @@ async def assert_bytes(
     """
     response = await _get_response(response)
     response_body = await response.get_data(as_text=False)
-
-    async with pytilpack.pytest.AssertBlock(response_body, suffix=".txt"):  # bin では開けないため txt として扱う
-        # ステータスコードチェック
-        pytilpack.web.check_status_code(response.status_code, status_code)
-
-        # Content-Typeチェック
-        pytilpack.web.check_content_type(response.content_type, content_type)
-
+    _core.assert_bytes_core(response_body, response.status_code, response.content_type, status_code, content_type)
     return response_body
 
 
@@ -84,20 +74,16 @@ async def assert_html(
     response = await _get_response(response)
     response_body = await response.get_data(as_text=True)
     response_bytes = await response.get_data(as_text=False)
-
-    if content_type == "__default__":
-        content_type = ["text/html", "application/xhtml+xml"]
-
-    async with pytilpack.pytest.AssertBlock(response_body, suffix=".html", tmp_path=tmp_path):
-        # ステータスコードチェック
-        pytilpack.web.check_status_code(response.status_code, status_code)
-
-        # Content-Typeチェック
-        pytilpack.web.check_content_type(response.content_type, content_type)
-
-        # HTMLのチェック
-        pytilpack.web.check_html(response_bytes, strict=strict)
-
+    _core.assert_html_core(
+        response_body,
+        response_bytes,
+        response.status_code,
+        response.content_type,
+        status_code,
+        content_type,
+        strict,
+        tmp_path,
+    )
     return response_body
 
 
@@ -122,22 +108,7 @@ async def assert_json(
     """
     response = await _get_response(response)
     response_body = await response.get_data(as_text=True)
-    data: typing.Any
-
-    async with pytilpack.pytest.AssertBlock(response_body, suffix=".json"):
-        # ステータスコードチェック
-        pytilpack.web.check_status_code(response.status_code, status_code)
-
-        # Content-Typeチェック
-        pytilpack.web.check_content_type(response.content_type, content_type)
-
-        # JSONのチェック
-        try:
-            data = json.loads(response_body)
-        except Exception as e:
-            raise AssertionError(f"JSONエラー: {e}") from e
-
-    return data
+    return _core.assert_json_core(response_body, response.status_code, response.content_type, status_code, content_type)
 
 
 async def assert_xml(
@@ -161,23 +132,7 @@ async def assert_xml(
     """
     response = await _get_response(response)
     response_body = await response.get_data(as_text=True)
-
-    if content_type == "__default__":
-        content_type = ["text/xml", "application/xml"]
-
-    async with pytilpack.pytest.AssertBlock(response_body, suffix=".xml"):
-        # ステータスコードチェック
-        pytilpack.web.check_status_code(response.status_code, status_code)
-
-        # Content-Typeチェック
-        pytilpack.web.check_content_type(response.content_type, content_type)
-
-        # XMLのチェック
-        try:
-            _ = ET.fromstring(response_body)
-        except Exception as e:
-            raise AssertionError(f"XMLエラー: {e}") from e
-
+    _core.assert_xml_core(response_body, response.status_code, response.content_type, status_code, content_type)
     return response_body
 
 
@@ -199,8 +154,7 @@ async def assert_sse(
 
     """
     response = await _get_response(response)
-    pytilpack.web.check_status_code(response.status_code, status_code)
-    pytilpack.web.check_content_type(response.content_type, "text/event-stream")
+    _core.assert_sse_core(response.status_code, response.content_type, status_code)
     return response
 
 
@@ -222,7 +176,7 @@ async def assert_response(
 
     """
     response = await _get_response(response)
-    pytilpack.web.check_status_code(response.status_code, status_code)
+    _core.assert_response_core(response.status_code, status_code)
     return response
 
 

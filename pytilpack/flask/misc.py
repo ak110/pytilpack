@@ -4,7 +4,6 @@ import base64
 import contextlib
 import logging
 import pathlib
-import re
 import threading
 import typing
 import warnings
@@ -13,7 +12,6 @@ import flask
 import httpx
 import werkzeug.serving
 
-import pytilpack.http
 import pytilpack.secrets
 import pytilpack.web
 
@@ -59,10 +57,11 @@ def data_url(data: bytes, mime_type: str) -> str:
 
 def get_next_url() -> str:
     """ログイン後遷移用のnextパラメータ用のURLを返す。"""
-    path = flask.request.script_root + flask.request.path
-    query_string = flask.request.query_string.decode("utf-8")
-    next_ = f"{path}?{query_string}" if query_string else path
-    return next_
+    return pytilpack.web.build_next_url(
+        flask.request.script_root,
+        flask.request.path,
+        flask.request.query_string.decode("utf-8"),
+    )
 
 
 def prefer_markdown() -> bool:
@@ -76,10 +75,7 @@ def prefer_markdown() -> bool:
         markdownがHTMLより優先されている場合True、そうでなければFalse
 
     """
-    accept_header = flask.request.headers.get("Accept", "")
-    # text/htmlを先頭にすることで、同一quality時はHTMLを優先する（従来と同じ挙動）
-    result = pytilpack.http.select_accept(accept_header, ["text/html", "text/markdown", "text/plain"])
-    return result in ("text/markdown", "text/plain")
+    return pytilpack.web.is_prefer_markdown(flask.request.headers.get("Accept", ""))
 
 
 def static_url_for(
@@ -102,31 +98,16 @@ def static_url_for(
     Returns:
         静的ファイルのURL
     """
-    if not cache_busting:
-        return flask.url_for("static", filename=filename, **kwargs)
-
-    # スタティックファイルのパスを取得
-    static_folder = flask.current_app.static_folder
-    assert static_folder is not None, "static_folder is None"
-
-    filepath = pathlib.Path(static_folder) / filename
-    try:
-        # ファイルの最終更新日時のキャッシュを利用するか否か
-        if cache_timestamp is True or (cache_timestamp == "when_not_debug" and not flask.current_app.debug):
-            # キャッシュを使う
-            timestamp = _TIMESTAMP_CACHE.get(str(filepath))
-            if timestamp is None:
-                timestamp = int(filepath.stat().st_mtime)
-                _TIMESTAMP_CACHE[str(filepath)] = timestamp
-        else:
-            # キャッシュを使わない
-            timestamp = int(filepath.stat().st_mtime)
-
-        # キャッシュバスティングありのURLを返す
-        return flask.url_for("static", filename=filename, v=timestamp, **kwargs)
-    except OSError:
-        # ファイルが存在しない場合などは通常のURLを返す
-        return flask.url_for("static", filename=filename, **kwargs)
+    return pytilpack.web.resolve_static_url(
+        flask.current_app.static_folder,
+        filename,
+        bool(flask.current_app.debug),
+        cache_busting,
+        cache_timestamp,
+        lambda **kw: flask.url_for("static", **kw),
+        _TIMESTAMP_CACHE,
+        **kwargs,
+    )
 
 
 def get_safe_url(target: str | None, host_url: str, default_url: str) -> str:
@@ -139,18 +120,8 @@ def get_safe_url(target: str | None, host_url: str, default_url: str) -> str:
     return pytilpack.web.get_safe_url(target, host_url, default_url)
 
 
-class RouteInfo(typing.NamedTuple):
-    """ルーティング情報を保持するクラス。
-
-    Attributes:
-        endpoint: エンドポイント名
-        url_parts: URLのパーツのリスト
-        arg_names: URLパーツの引数名のリスト
-    """
-
-    endpoint: str
-    url_parts: list[str]
-    arg_names: list[str]
+# RouteInfoはpytilpack.webに集約。既存呼び出しのためflask名前空間にも公開する。
+RouteInfo = pytilpack.web.RouteInfo
 
 
 def get_routes(app: flask.Flask) -> list[RouteInfo]:
@@ -159,20 +130,7 @@ def get_routes(app: flask.Flask) -> list[RouteInfo]:
     Returns:
         ルーティング情報のリスト。
     """
-    arg_regex = re.compile(r"<([^>]+)>")  # <name> <type:name> にマッチするための正規表現
-    split_regex = re.compile(r"<[^>]+>")  # re.splitのためグループ無しにした版
-    output: list[RouteInfo] = []
-    for r in app.url_map.iter_rules():
-        endpoint = str(r.endpoint)
-        rule = (
-            r.rule
-            if app.config["APPLICATION_ROOT"] == "/" or not app.config["APPLICATION_ROOT"]
-            else f"{app.config['APPLICATION_ROOT']}{r.rule}"
-        )
-        url_parts = [str(part) for part in split_regex.split(rule)]
-        arg_names = [str(x.split(":")[-1]) for x in arg_regex.findall(rule)]
-        output.append(RouteInfo(endpoint, url_parts, arg_names))
-    return sorted(output, key=lambda x: len(x[2]), reverse=True)
+    return pytilpack.web.build_routes(app.url_map.iter_rules(), app.config.get("APPLICATION_ROOT"))
 
 
 @contextlib.contextmanager

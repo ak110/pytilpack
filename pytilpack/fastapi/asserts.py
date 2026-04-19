@@ -1,14 +1,11 @@
 """FastAPIのテストコード用アサーション関数。"""
 
-import json
 import pathlib
 import typing
-import xml.etree.ElementTree as ET
 
 import httpx
 
-import pytilpack.pytest
-import pytilpack.web
+import pytilpack._web_asserts as _core
 
 __all__ = [
     "assert_bytes",
@@ -18,6 +15,11 @@ __all__ = [
     "assert_sse",
     "assert_response",
 ]
+
+
+def _content_type(response: httpx.Response) -> str | None:
+    """httpxレスポンスのContent-Typeヘッダー値を返す。"""
+    return response.headers.get("content-type")
 
 
 def assert_bytes(
@@ -40,15 +42,7 @@ def assert_bytes(
 
     """
     response_body = response.content
-
-    with pytilpack.pytest.AssertBlock(response_body, suffix=".txt"):  # bin では開けないため txt として扱う
-        # ステータスコードチェック
-        pytilpack.web.check_status_code(response.status_code, status_code)
-
-        # Content-Typeチェック
-        content_type_value = response.headers.get("content-type")
-        pytilpack.web.check_content_type(content_type_value, content_type)
-
+    _core.assert_bytes_core(response_body, response.status_code, _content_type(response), status_code, content_type)
     return response_body
 
 
@@ -78,21 +72,16 @@ def assert_html(
 
     """
     response_body = response.text
-
-    if content_type == "__default__":
-        content_type = ["text/html", "application/xhtml+xml"]
-
-    with pytilpack.pytest.AssertBlock(response_body, suffix=".html", tmp_path=tmp_path):
-        # ステータスコードチェック
-        pytilpack.web.check_status_code(response.status_code, status_code)
-
-        # Content-Typeチェック
-        content_type_value = response.headers.get("content-type")
-        pytilpack.web.check_content_type(content_type_value, content_type)
-
-        # HTMLのチェック
-        pytilpack.web.check_html(response.content, strict=strict)
-
+    _core.assert_html_core(
+        response_body,
+        response.content,
+        response.status_code,
+        _content_type(response),
+        status_code,
+        content_type,
+        strict,
+        tmp_path,
+    )
     return response_body
 
 
@@ -116,23 +105,7 @@ def assert_json(
 
     """
     response_body = response.text
-    data: typing.Any
-
-    with pytilpack.pytest.AssertBlock(response_body, suffix=".json"):
-        # ステータスコードチェック
-        pytilpack.web.check_status_code(response.status_code, status_code)
-
-        # Content-Typeチェック
-        content_type_value = response.headers.get("content-type")
-        pytilpack.web.check_content_type(content_type_value, content_type)
-
-        # JSONのチェック
-        try:
-            data = json.loads(response_body)
-        except Exception as e:
-            raise AssertionError(f"JSONエラー: {e}") from e
-
-    return data
+    return _core.assert_json_core(response_body, response.status_code, _content_type(response), status_code, content_type)
 
 
 def assert_xml(
@@ -155,24 +128,7 @@ def assert_xml(
 
     """
     response_body = response.text
-
-    if content_type == "__default__":
-        content_type = ["text/xml", "application/xml"]
-
-    with pytilpack.pytest.AssertBlock(response_body, suffix=".xml"):
-        # ステータスコードチェック
-        pytilpack.web.check_status_code(response.status_code, status_code)
-
-        # Content-Typeチェック
-        content_type_value = response.headers.get("content-type")
-        pytilpack.web.check_content_type(content_type_value, content_type)
-
-        # XMLのチェック
-        try:
-            _ = ET.fromstring(response_body)
-        except Exception as e:
-            raise AssertionError(f"XMLエラー: {e}") from e
-
+    _core.assert_xml_core(response_body, response.status_code, _content_type(response), status_code, content_type)
     return response_body
 
 
@@ -193,9 +149,7 @@ def assert_sse(
         レスポンス
 
     """
-    pytilpack.web.check_status_code(response.status_code, status_code)
-    content_type_value = response.headers.get("content-type")
-    pytilpack.web.check_content_type(content_type_value, "text/event-stream")
+    _core.assert_sse_core(response.status_code, _content_type(response), status_code)
     return response
 
 
@@ -216,5 +170,5 @@ def assert_response(
         レスポンス
 
     """
-    pytilpack.web.check_status_code(response.status_code, status_code)
+    _core.assert_response_core(response.status_code, status_code)
     return response

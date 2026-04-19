@@ -19,6 +19,27 @@ import pytilpack.python
 
 _logger = logging.getLogger(__name__)
 
+
+def _json_default(o: typing.Any) -> typing.Any:
+    """JSONエンコードできないオブジェクトの変換処理。
+
+    jsonifyで使用する。挙動互換のため、pytilpack.json.converterとは別関数として持つ
+    （converterはbytesをbase64化するが、jsonifyは元々bytesを`str(o)`にフォールバック
+    していたため）。
+    """
+    if isinstance(o, datetime.datetime):
+        return o.isoformat(timespec="milliseconds")
+    if isinstance(o, datetime.date):
+        return o.isoformat()
+    if isinstance(o, datetime.time):
+        return o.isoformat(timespec="milliseconds")
+    if isinstance(o, pathlib.Path):
+        return str(o)
+    if hasattr(o, "__dict__"):
+        return o.__dict__
+    return str(o)
+
+
 _exception_history: dict[str, tuple[datetime.datetime, int]] = {}
 """例外フィンガープリント → (最終発生時刻, 最終WARNING以降の発生回数)。"""
 
@@ -224,22 +245,8 @@ def jsonify(
         else:
             data = pytilpack.python.pydantic_to_dict(data, **model_dump_kwargs)
 
-        def default(o: typing.Any) -> typing.Any:
-            """JSONエンコードできないオブジェクトの変換処理。"""
-            if isinstance(o, datetime.datetime):
-                return o.isoformat(timespec="milliseconds")
-            if isinstance(o, datetime.date):
-                return o.isoformat()
-            if isinstance(o, datetime.time):
-                return o.isoformat(timespec="milliseconds")
-            if isinstance(o, pathlib.Path):
-                return str(o)
-            if hasattr(o, "__dict__"):
-                return o.__dict__
-            return str(o)
-
         separators = None if indent is not None else (",", ":")
-        return json.dumps(data, ensure_ascii=False, indent=indent, separators=separators, default=default)
+        return json.dumps(data, ensure_ascii=False, indent=indent, separators=separators, default=_json_default)
     except Exception:
         # この関数はログ出力が主目的であるため、失敗しても例外を送出せずreprを返す。
         _logger.warning("jsonify失敗", exc_info=True)

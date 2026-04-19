@@ -18,7 +18,7 @@ class Base(sqlalchemy.orm.DeclarativeBase):  # type: ignore[name-defined]
     __test__ = False
 
 
-class Test1(Base, pytilpack.sqlalchemy.Mixin, pytilpack.sqlalchemy.UniqueIDMixin):
+class Test1(Base, pytilpack.sqlalchemy.Mixin, pytilpack.sqlalchemy.UniqueIDMixin):  # pylint: disable=too-many-ancestors
     """テストクラス。"""
 
     __test__ = False

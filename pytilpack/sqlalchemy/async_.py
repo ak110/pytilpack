@@ -4,11 +4,9 @@ import asyncio
 import contextlib
 import contextvars
 import dataclasses
-import datetime
 import logging
 import secrets
 import threading
-import time
 import typing
 
 import sqlalchemy
@@ -17,7 +15,7 @@ import sqlalchemy.sql.base
 
 import pytilpack.asyncio
 import pytilpack.paginator
-from pytilpack.sqlalchemy._base import _ReprMixin
+from pytilpack.sqlalchemy._base import _ReprMixin, _ToDictMixin, _WaitForConnectionState
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +30,7 @@ class _InitArgs:
     engine_kwargs: dict
 
 
-class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin):
+class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
     """モデルのベースクラス。SQLAlchemy 2.0スタイル・async前提。
 
     Examples:
@@ -452,59 +450,6 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin):
         # pylint: disable=protected-access
         return pytilpack.paginator.Paginator(page=page, per_page=per_page, items=items, total=total)
 
-    def to_dict(
-        self,
-        includes: list[str] | None = None,
-        excludes: list[str] | None = None,
-        exclude_none: bool = False,
-        value_converter: typing.Callable[[typing.Any], typing.Any] | None = None,
-        datetime_to_iso: bool = True,
-    ) -> dict[str, typing.Any]:
-        """インスタンスを辞書化する。
-
-        Args:
-            includes: 辞書化するフィールド名のリスト。excludesと同時指定不可。
-            excludes: 辞書化しないフィールド名のリスト。includesと同時指定不可。
-            exclude_none: Noneのフィールドを除外するかどうか。
-            value_converter: 各フィールドの値を変換する関数。引数は値、戻り値は変換後の値。
-            datetime_to_iso: datetime型の値をISOフォーマットの文字列に変換するかどうか。
-
-        Returns:
-            辞書。
-
-        """
-        assert (includes is None) or (excludes is None)
-        mapper = sqlalchemy.inspect(self.__class__, raiseerr=True)
-        assert mapper is not None
-        all_columns = [
-            mapper.get_property_by_column(column).key
-            for column in self.__table__.columns  # type: ignore[attr-defined]
-        ]
-        if includes is None:
-            includes = all_columns
-            if excludes is None:
-                pass
-            else:
-                assert (set(all_columns) & set(excludes)) == set(excludes)
-                includes = list(filter(lambda x: x not in excludes, includes))
-        else:
-            assert excludes is None
-            assert (set(all_columns) & set(includes)) == set(includes)
-
-        def convert_value(value: typing.Any) -> typing.Any:
-            """値を変換する関数。"""
-            if datetime_to_iso and isinstance(value, datetime.datetime | datetime.date):
-                return value.isoformat()
-            if value_converter is not None:
-                return value_converter(value)
-            return value
-
-        return {
-            column_name: convert_value(getattr(self, column_name))
-            for column_name in includes
-            if not exclude_none or getattr(self, column_name) is not None
-        }
-
     @classmethod
     def run_with_session[**P, R](cls, func: typing.Callable[P, typing.Awaitable[R]], *args: P.args, **kwargs: P.kwargs) -> R:
         """非同期関数をセッション付きで同期実行する関数。
@@ -563,8 +508,7 @@ class AsyncUniqueIDMixin:
 
 async def await_for_connection(url: str, timeout: float = 180.0) -> None:
     """DBに接続可能になるまで待機する。"""
-    failed = False
-    start_time = time.time()
+    state = _WaitForConnectionState(url, timeout)
     while True:
         try:
             engine = sqlalchemy.ext.asyncio.create_async_engine(url)
@@ -573,19 +517,10 @@ async def await_for_connection(url: str, timeout: float = 180.0) -> None:
                     await connection.execute(sqlalchemy.text("SELECT 1"))
             finally:
                 await engine.dispose()
-            # 接続成功
-            if failed:  # 過去に接続失敗していた場合だけログを出す
-                logger.info("DB接続成功")
+            state.on_success()
             break
         except Exception as e:
-            # 接続失敗
-            if not failed:
-                failed = True
-                logger.info(f"DB接続待機中 . . . (URL: {url})")
-            remain_time = timeout - (time.time() - start_time)
-            if remain_time <= 0:
-                raise RuntimeError(f"DB接続タイムアウト (URL: {url})") from e
-            await asyncio.sleep(min(1, remain_time))
+            await asyncio.sleep(state.on_failure(e))
 
 
 async def asafe_close(session: sqlalchemy.ext.asyncio.AsyncSession, log_level: int | None = logging.DEBUG):

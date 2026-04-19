@@ -23,6 +23,29 @@ def load_dotenv(path: str | pathlib.Path | None = None, override: bool = False) 
     dotenv.load_dotenv(dotenv_path=path, override=override)
 
 
+def _get_typed[T](
+    key: str,
+    converter: typing.Callable[[str], T],
+    default: T | _Unset,
+    environ: collections.abc.Mapping[str, str] | None,
+) -> T:
+    """環境変数を取得し、converterで指定型に変換する。get_*共通の内部ヘルパー。"""
+    value = (os.environ if environ is None else environ).get(key)
+    if value is None:
+        if isinstance(default, _Unset):
+            raise ValueError(f"環境変数 {key} が設定されていません")
+        return default
+    return converter(value)
+
+
+def _to_decimal(value: str, key: str) -> decimal.Decimal:
+    """環境変数値をDecimalに変換する。"""
+    try:
+        return decimal.Decimal(value)
+    except decimal.InvalidOperation as e:
+        raise ValueError(f"環境変数 {key} の値 '{value}' をDecimalに変換できません") from e
+
+
 @typing.overload
 def get_str(key: str, *, environ: collections.abc.Mapping[str, str] | None = None) -> str: ...
 
@@ -38,12 +61,7 @@ def get_str(
     environ: collections.abc.Mapping[str, str] | None = None,
 ) -> str:
     """環境変数を文字列として取得する。"""
-    value = (os.environ if environ is None else environ).get(key)
-    if value is None:
-        if isinstance(default, _Unset):
-            raise ValueError(f"環境変数 {key} が設定されていません")
-        return default
-    return value
+    return _get_typed(key, lambda v: v, default, environ)
 
 
 @typing.overload
@@ -61,12 +79,7 @@ def get_int(
     environ: collections.abc.Mapping[str, str] | None = None,
 ) -> int:
     """環境変数を整数として取得する。"""
-    value = (os.environ if environ is None else environ).get(key)
-    if value is None:
-        if isinstance(default, _Unset):
-            raise ValueError(f"環境変数 {key} が設定されていません")
-        return default
-    return pytilpack.python.convert(value, int, 0, errors="strict")
+    return _get_typed(key, lambda v: pytilpack.python.convert(v, int, 0, errors="strict"), default, environ)
 
 
 @typing.overload
@@ -89,12 +102,7 @@ def get_float(
     environ: collections.abc.Mapping[str, str] | None = None,
 ) -> float:
     """環境変数を浮動小数点数として取得する。"""
-    value = (os.environ if environ is None else environ).get(key)
-    if value is None:
-        if isinstance(default, _Unset):
-            raise ValueError(f"環境変数 {key} が設定されていません")
-        return default
-    return pytilpack.python.convert(value, float, 0.0, errors="strict")
+    return _get_typed(key, lambda v: pytilpack.python.convert(v, float, 0.0, errors="strict"), default, environ)
 
 
 @typing.overload
@@ -117,12 +125,7 @@ def get_bool(
     environ: collections.abc.Mapping[str, str] | None = None,
 ) -> bool:
     """環境変数を真偽値として取得する。"""
-    value = (os.environ if environ is None else environ).get(key)
-    if value is None:
-        if isinstance(default, _Unset):
-            raise ValueError(f"環境変数 {key} が設定されていません")
-        return default
-    return pytilpack.python.convert(value, bool, False, errors="strict")
+    return _get_typed(key, lambda v: pytilpack.python.convert(v, bool, False, errors="strict"), default, environ)
 
 
 @typing.overload
@@ -145,15 +148,7 @@ def get_decimal(
     environ: collections.abc.Mapping[str, str] | None = None,
 ) -> decimal.Decimal:
     """環境変数をDecimalとして取得する。"""
-    value = (os.environ if environ is None else environ).get(key)
-    if value is None:
-        if isinstance(default, _Unset):
-            raise ValueError(f"環境変数 {key} が設定されていません")
-        return default
-    try:
-        return decimal.Decimal(value)
-    except decimal.InvalidOperation as e:
-        raise ValueError(f"環境変数 {key} の値 '{value}' をDecimalに変換できません") from e
+    return _get_typed(key, lambda v: _to_decimal(v, key), default, environ)
 
 
 @typing.overload
@@ -176,12 +171,7 @@ def get_path(
     environ: collections.abc.Mapping[str, str] | None = None,
 ) -> pathlib.Path:
     """環境変数をPathとして取得する。"""
-    value = (os.environ if environ is None else environ).get(key)
-    if value is None:
-        if isinstance(default, _Unset):
-            raise ValueError(f"環境変数 {key} が設定されていません")
-        return default
-    return pathlib.Path(value).resolve()
+    return _get_typed(key, lambda v: pathlib.Path(v).resolve(), default, environ)
 
 
 @typing.overload

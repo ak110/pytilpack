@@ -45,6 +45,80 @@ class Retry:
     should_retry: typing.Callable[[Exception], bool] | None | _Unset = UNSET
 
 
+@dataclasses.dataclass
+class _RetryConfig:
+    """retryデコレーター内部で使う実効設定。"""
+
+    max_retries: int
+    initial_delay: float
+    exponential_base: float
+    max_delay: float
+    max_jitter: float
+    includes: typing.Iterable[type[Exception]]
+    excludes: typing.Iterable[type[Exception]]
+    loglevel: int
+    retry_status_codes: typing.Iterable[int] | None
+    should_retry: typing.Callable[[Exception], bool] | None
+    total_delay: float
+
+
+def _apply_retry_override(
+    retry_override: typing.Any,
+    max_retries: int,
+    initial_delay: float,
+    exponential_base: float,
+    max_delay: float,
+    max_jitter: float,
+    includes: typing.Iterable[type[Exception]] | None,
+    excludes: typing.Iterable[type[Exception]] | None,
+    loglevel: int,
+    retry_status_codes: typing.Iterable[int] | None,
+    should_retry: typing.Callable[[Exception], bool] | None,
+) -> _RetryConfig:
+    """retry_overrideを反映した実効設定を返す。sync/async両wrapperで共用する。"""
+    if retry_override is not None and isinstance(retry_override, Retry):
+        if not isinstance(retry_override.max_retries, _Unset):
+            max_retries = retry_override.max_retries
+        if not isinstance(retry_override.initial_delay, _Unset):
+            initial_delay = retry_override.initial_delay
+        if not isinstance(retry_override.exponential_base, _Unset):
+            exponential_base = retry_override.exponential_base
+        if not isinstance(retry_override.max_delay, _Unset):
+            max_delay = retry_override.max_delay
+        if not isinstance(retry_override.max_jitter, _Unset):
+            max_jitter = retry_override.max_jitter
+        if not isinstance(retry_override.includes, _Unset):
+            includes = retry_override.includes
+        if not isinstance(retry_override.excludes, _Unset):
+            excludes = retry_override.excludes
+        if not isinstance(retry_override.loglevel, _Unset):
+            loglevel = retry_override.loglevel
+        if not isinstance(retry_override.retry_status_codes, _Unset):
+            retry_status_codes = retry_override.retry_status_codes
+        if not isinstance(retry_override.should_retry, _Unset):
+            should_retry = retry_override.should_retry
+    if includes is None:
+        includes = (Exception,)
+    if excludes is None:
+        excludes = ()
+    # 最大待機時間の目安（オーバーライド適用後の設定で計算）
+    total_delay = sum(min(initial_delay * (exponential_base**i), max_delay) for i in range(max_retries))
+    total_delay = max(total_delay, 0.001)  # 念のため0秒は避ける
+    return _RetryConfig(
+        max_retries=max_retries,
+        initial_delay=initial_delay,
+        exponential_base=exponential_base,
+        max_delay=max_delay,
+        max_jitter=max_jitter,
+        includes=includes,
+        excludes=excludes,
+        loglevel=loglevel,
+        retry_status_codes=retry_status_codes,
+        should_retry=should_retry,
+        total_delay=total_delay,
+    )
+
+
 def retry[**P, R](
     max_retries: int = 3,
     initial_delay: float = 1.0,
@@ -106,84 +180,59 @@ def retry[**P, R](
                 # pylint: disable=catching-non-exception,raising-non-exception
                 # kwargs から retry 設定を取得してオーバーライド
                 retry_override = kwargs.pop("retry", None)
-                _max_retries = max_retries
-                _initial_delay = initial_delay
-                _exponential_base = exponential_base
-                _max_delay = max_delay
-                _max_jitter = max_jitter
-                _includes = includes
-                _excludes = excludes
-                _loglevel = loglevel
-                _retry_status_codes = retry_status_codes
-                _should_retry = should_retry
-                if retry_override is not None and isinstance(retry_override, Retry):
-                    if not isinstance(retry_override.max_retries, _Unset):
-                        _max_retries = retry_override.max_retries
-                    if not isinstance(retry_override.initial_delay, _Unset):
-                        _initial_delay = retry_override.initial_delay
-                    if not isinstance(retry_override.exponential_base, _Unset):
-                        _exponential_base = retry_override.exponential_base
-                    if not isinstance(retry_override.max_delay, _Unset):
-                        _max_delay = retry_override.max_delay
-                    if not isinstance(retry_override.max_jitter, _Unset):
-                        _max_jitter = retry_override.max_jitter
-                    if not isinstance(retry_override.includes, _Unset):
-                        _includes = retry_override.includes
-                    if not isinstance(retry_override.excludes, _Unset):
-                        _excludes = retry_override.excludes
-                    if not isinstance(retry_override.loglevel, _Unset):
-                        _loglevel = retry_override.loglevel
-                    if not isinstance(retry_override.retry_status_codes, _Unset):
-                        _retry_status_codes = retry_override.retry_status_codes
-                    if not isinstance(retry_override.should_retry, _Unset):
-                        _should_retry = retry_override.should_retry
-                if _includes is None:
-                    _includes = (Exception,)
-                if _excludes is None:
-                    _excludes = ()
-                # 最大待機時間の目安（オーバーライド適用後の設定で計算）
-                _total_delay = sum(min(_initial_delay * (_exponential_base**i), _max_delay) for i in range(_max_retries))
-                _total_delay = max(_total_delay, 0.001)  # 念のため0秒は避ける
+                cfg = _apply_retry_override(
+                    retry_override,
+                    max_retries,
+                    initial_delay,
+                    exponential_base,
+                    max_delay,
+                    max_jitter,
+                    includes,
+                    excludes,
+                    loglevel,
+                    retry_status_codes,
+                    should_retry,
+                )
 
                 attempt = 0
-                delay = _initial_delay
+                delay = cfg.initial_delay
                 retry_after_total = 0.0
                 while True:
                     try:
                         return await func(*args, **kwargs)
-                    except tuple(_includes) as e:
-                        if isinstance(e, tuple(_excludes)):
+                    except tuple(cfg.includes) as e:
+                        if isinstance(e, tuple(cfg.excludes)):
                             raise
                         attempt += 1
-                        if attempt > _max_retries:
+                        if attempt > cfg.max_retries:
                             raise
                         # should_retryが指定されている場合はそれを使用
-                        if _should_retry is not None and not _should_retry(e):
+                        if cfg.should_retry is not None and not cfg.should_retry(e):
                             raise
                         # HTTPエラーの場合、ステータスコードを確認してリトライするか判定
-                        if _retry_status_codes is not None:
+                        if cfg.retry_status_codes is not None:
                             status_code = pytilpack.http.get_status_code_from_exception(e)
-                            if status_code is not None and status_code not in _retry_status_codes:
+                            if status_code is not None and status_code not in cfg.retry_status_codes:
                                 raise
                         # Retry-Afterヘッダーがある場合、累積待機時間が本来の設定を超えるならエラーにする
-                        if retry_after_total >= _total_delay:
+                        if retry_after_total >= cfg.total_delay:
                             raise
                         logger.log(
-                            _loglevel,
+                            cfg.loglevel,
                             "%s: %s (retry %d/%d)",
                             func.__name__,
                             e,
                             attempt,
-                            _max_retries,
+                            cfg.max_retries,
                         )
                         retry_after = pytilpack.http.get_retry_after_from_exception(e)
                         if retry_after is None:
                             # Exponential backoff with jitter
-                            await asyncio.sleep(delay * random.uniform(1.0, 1.0 + _max_jitter))
-                            delay = min(delay * _exponential_base, _max_delay)
+                            await asyncio.sleep(delay * random.uniform(1.0, 1.0 + cfg.max_jitter))
+                            delay = min(delay * cfg.exponential_base, cfg.max_delay)
                         else:
                             # Retry-Afterヘッダーに従い待機
-                            logger.log(_loglevel, "Retry-After: %.1f", retry_after)
+                            logger.log(cfg.loglevel, "Retry-After: %.1f", retry_after)
                             await asyncio.sleep(retry_after)
                             retry_after_total += retry_after
 
@@ -196,84 +245,59 @@ def retry[**P, R](
                 # pylint: disable=catching-non-exception,raising-non-exception
                 # kwargs から retry 設定を取得してオーバーライド
                 retry_override = kwargs.pop("retry", None)
-                _max_retries = max_retries
-                _initial_delay = initial_delay
-                _exponential_base = exponential_base
-                _max_delay = max_delay
-                _max_jitter = max_jitter
-                _includes = includes
-                _excludes = excludes
-                _loglevel = loglevel
-                _retry_status_codes = retry_status_codes
-                _should_retry = should_retry
-                if retry_override is not None and isinstance(retry_override, Retry):
-                    if not isinstance(retry_override.max_retries, _Unset):
-                        _max_retries = retry_override.max_retries
-                    if not isinstance(retry_override.initial_delay, _Unset):
-                        _initial_delay = retry_override.initial_delay
-                    if not isinstance(retry_override.exponential_base, _Unset):
-                        _exponential_base = retry_override.exponential_base
-                    if not isinstance(retry_override.max_delay, _Unset):
-                        _max_delay = retry_override.max_delay
-                    if not isinstance(retry_override.max_jitter, _Unset):
-                        _max_jitter = retry_override.max_jitter
-                    if not isinstance(retry_override.includes, _Unset):
-                        _includes = retry_override.includes
-                    if not isinstance(retry_override.excludes, _Unset):
-                        _excludes = retry_override.excludes
-                    if not isinstance(retry_override.loglevel, _Unset):
-                        _loglevel = retry_override.loglevel
-                    if not isinstance(retry_override.retry_status_codes, _Unset):
-                        _retry_status_codes = retry_override.retry_status_codes
-                    if not isinstance(retry_override.should_retry, _Unset):
-                        _should_retry = retry_override.should_retry
-                if _includes is None:
-                    _includes = (Exception,)
-                if _excludes is None:
-                    _excludes = ()
-                # 最大待機時間の目安（オーバーライド適用後の設定で計算）
-                _total_delay = sum(min(_initial_delay * (_exponential_base**i), _max_delay) for i in range(_max_retries))
-                _total_delay = max(_total_delay, 0.001)  # 念のため0秒は避ける
+                cfg = _apply_retry_override(
+                    retry_override,
+                    max_retries,
+                    initial_delay,
+                    exponential_base,
+                    max_delay,
+                    max_jitter,
+                    includes,
+                    excludes,
+                    loglevel,
+                    retry_status_codes,
+                    should_retry,
+                )
 
                 attempt = 0
-                delay = _initial_delay
+                delay = cfg.initial_delay
                 retry_after_total = 0.0
                 while True:
                     try:
                         return func(*args, **kwargs)
-                    except tuple(_includes) as e:
-                        if isinstance(e, tuple(_excludes)):
+                    except tuple(cfg.includes) as e:
+                        if isinstance(e, tuple(cfg.excludes)):
                             raise
                         attempt += 1
-                        if attempt > _max_retries:
+                        if attempt > cfg.max_retries:
                             raise
                         # should_retryが指定されている場合はそれを使用
-                        if _should_retry is not None and not _should_retry(e):
+                        if cfg.should_retry is not None and not cfg.should_retry(e):
                             raise
                         # HTTPエラーの場合、ステータスコードを確認してリトライするか判定
-                        if _retry_status_codes is not None:
+                        if cfg.retry_status_codes is not None:
                             status_code = pytilpack.http.get_status_code_from_exception(e)
-                            if status_code is not None and status_code not in _retry_status_codes:
+                            if status_code is not None and status_code not in cfg.retry_status_codes:
                                 raise
                         # Retry-Afterヘッダーがある場合、累積待機時間が本来の設定を超えるならエラーにする
-                        if retry_after_total >= _total_delay:
+                        if retry_after_total >= cfg.total_delay:
                             raise
                         logger.log(
-                            _loglevel,
+                            cfg.loglevel,
                             "%s: %s (retry %d/%d)",
                             func.__name__,
                             e,
                             attempt,
-                            _max_retries,
+                            cfg.max_retries,
                         )
                         retry_after = pytilpack.http.get_retry_after_from_exception(e)
                         if retry_after is None:
                             # Exponential backoff with jitter
-                            time.sleep(delay * random.uniform(1.0, 1.0 + _max_jitter))
-                            delay = min(delay * _exponential_base, _max_delay)
+                            time.sleep(delay * random.uniform(1.0, 1.0 + cfg.max_jitter))
+                            delay = min(delay * cfg.exponential_base, cfg.max_delay)
                         else:
                             # Retry-Afterヘッダーに従い待機
-                            logger.log(_loglevel, "Retry-After: %.1f", retry_after)
+                            logger.log(cfg.loglevel, "Retry-After: %.1f", retry_after)
                             time.sleep(retry_after)
                             retry_after_total += retry_after
 

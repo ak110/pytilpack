@@ -61,6 +61,9 @@ def _get_public_modules() -> set[str]:
         name = f.stem
         if name == "__init__":
             continue
+        # アンダースコア始まりはprivateモジュールのため除外
+        if name.startswith("_"):
+            continue
         modules.add(name)
     # サブパッケージ（cliは既存のdocs/guide/cli.mdがあるため除外）
     for d in sorted(pkg.iterdir()):

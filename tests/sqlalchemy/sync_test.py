@@ -16,7 +16,7 @@ class Base(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.SyncMixin):
     """ベースクラス。"""
 
 
-class Test1(Base, pytilpack.sqlalchemy.SyncUniqueIDMixin):
+class Test1(Base, pytilpack.sqlalchemy.SyncUniqueIDMixin):  # pylint: disable=too-many-ancestors
     """テストクラス。"""
 
     __test__ = False
@@ -50,7 +50,7 @@ class Test2(Base):
     value5 = sqlalchemy.Column(sqlalchemy.Text, nullable=False, default=lambda: "func")
 
 
-class Test3(Base, pytilpack.sqlalchemy.SyncUniqueIDMixin):
+class Test3(Base, pytilpack.sqlalchemy.SyncUniqueIDMixin):  # pylint: disable=too-many-ancestors
     """テストクラス。"""
 
     __test__ = False

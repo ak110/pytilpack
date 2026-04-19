@@ -105,6 +105,10 @@ def delete_empty_dirs(path: str | pathlib.Path, keep_root: bool = True) -> None:
         logger.warning(f"ディレクトリの削除に失敗: {path}", exc_info=True)
 
 
+# delete_old_files内で同名のパラメーターとぶつかるため別名を用意する
+_delete_empty_dirs = delete_empty_dirs
+
+
 def sync(src: str | pathlib.Path, dst: str | pathlib.Path, delete: bool = False) -> None:
     """コピー元からコピー先へ同期する。
 
@@ -210,11 +214,7 @@ def delete_old_files(
             delete_old_files(item, before, delete_empty_dirs, keep_root_empty_dir=False)
 
         # 空になったディレクトリを削除
-        if delete_empty_dirs and not keep_root_empty_dir:
-            try:
-                remaining_files = list(path.iterdir())
-                if not remaining_files:
-                    logger.info(f"削除: {path}")
-                    path.rmdir()
-            except Exception:
-                logger.warning(f"ディレクトリの削除に失敗: {path}", exc_info=True)
+        if delete_empty_dirs:
+            # delete_empty_dirs関数に委譲（keep_root_empty_dirに応じてpath自体の
+            # 削除可否が切り替わる）。引数名の衝突のため別名で呼び出す。
+            _delete_empty_dirs(path, keep_root=keep_root_empty_dir)

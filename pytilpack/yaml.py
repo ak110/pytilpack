@@ -1,10 +1,34 @@
 """YAML関連。"""
 
+import dataclasses
 import typing
 
 import yaml
 
 import pytilpack.io
+
+
+@dataclasses.dataclass
+class _DumpOptions:
+    """yaml.dump/dump_all共通のダンプオプション。save/save_all/dumps/dumps_all間で設定を集約する。"""
+
+    allow_unicode: bool | None = True
+    width: int = 99
+    default_style: str | None = None
+    default_flow_style: bool | None = False
+    sort_keys: bool = False
+    Dumper: typing.Any = None  # CustomDumperは後方定義のため後段で差し替える
+
+    def to_kwargs(self) -> dict[str, typing.Any]:
+        """yaml.dump/dump_allに渡すキーワード引数辞書を返す。"""
+        return {
+            "allow_unicode": self.allow_unicode,
+            "width": self.width,
+            "default_style": self.default_style,
+            "default_flow_style": self.default_flow_style,
+            "sort_keys": self.sort_keys,
+            "Dumper": self.Dumper,
+        }
 
 
 def load(
@@ -87,6 +111,25 @@ class CustomDumper(yaml.SafeDumper):
 CustomDumper.add_representer(str, CustomDumper.str_representer)
 
 
+def _build_dump_options(
+    allow_unicode: bool | None,
+    width: int,
+    default_style: str | None,
+    default_flow_style: bool | None,
+    sort_keys: bool,
+    Dumper: typing.Any,
+) -> _DumpOptions:
+    """save/save_all/dumps/dumps_allの6引数を_DumpOptionsに詰め替える。"""
+    return _DumpOptions(
+        allow_unicode=allow_unicode,
+        width=width,
+        default_style=default_style,
+        default_flow_style=default_flow_style,
+        sort_keys=sort_keys,
+        Dumper=Dumper,
+    )
+
+
 def save(
     dest: pytilpack.io.PathOrIO,
     data: typing.Any,
@@ -100,18 +143,10 @@ def save(
     **kwargs,
 ) -> None:
     """YAMLのファイル保存。"""
+    options = _build_dump_options(allow_unicode, width, default_style, default_flow_style, sort_keys, Dumper)
     pytilpack.io.write_text(
         dest,
-        dumps(
-            data,
-            allow_unicode=allow_unicode,
-            width=width,
-            default_style=default_style,
-            default_flow_style=default_flow_style,
-            sort_keys=sort_keys,
-            Dumper=Dumper,
-            **kwargs,
-        ),
+        yaml.dump(data, **options.to_kwargs(), **kwargs),
         encoding=encoding,
     )
 
@@ -129,18 +164,10 @@ def save_all(
     **kwargs,
 ) -> None:
     """YAMLのファイル保存。"""
+    options = _build_dump_options(allow_unicode, width, default_style, default_flow_style, sort_keys, Dumper)
     pytilpack.io.write_text(
         dest,
-        dumps_all(
-            data,
-            allow_unicode=allow_unicode,
-            width=width,
-            default_style=default_style,
-            default_flow_style=default_flow_style,
-            sort_keys=sort_keys,
-            Dumper=Dumper,
-            **kwargs,
-        ),
+        yaml.dump_all(data, **options.to_kwargs(), **kwargs),
         encoding=encoding,
     )
 
@@ -156,16 +183,8 @@ def dumps(
     **kwargs,
 ) -> str:
     """YAMLの文字列化。"""
-    return yaml.dump(
-        data,
-        allow_unicode=allow_unicode,
-        width=width,
-        default_style=default_style,
-        default_flow_style=default_flow_style,
-        sort_keys=sort_keys,
-        Dumper=Dumper,
-        **kwargs,
-    )
+    options = _build_dump_options(allow_unicode, width, default_style, default_flow_style, sort_keys, Dumper)
+    return yaml.dump(data, **options.to_kwargs(), **kwargs)
 
 
 def dumps_all(
@@ -179,13 +198,5 @@ def dumps_all(
     **kwargs,
 ) -> str:
     """YAMLの文字列化。"""
-    return yaml.dump_all(
-        data,
-        allow_unicode=allow_unicode,
-        width=width,
-        default_style=default_style,
-        default_flow_style=default_flow_style,
-        sort_keys=sort_keys,
-        Dumper=Dumper,
-        **kwargs,
-    )
+    options = _build_dump_options(allow_unicode, width, default_style, default_flow_style, sort_keys, Dumper)
+    return yaml.dump_all(data, **options.to_kwargs(), **kwargs)

@@ -153,6 +153,34 @@ def class_field_comments(cls: typing.Any) -> dict[str, str | None]:
     return field_comments
 
 
+def _get_typed[T](
+    data: list | dict,
+    key: str | int | list[str | int],
+    expected_type: type[T] | tuple[type[T], ...],
+    default_value: T | None,
+    errors: typing.Literal["strict", "ignore"],
+    type_name: str,
+) -> T:
+    """辞書またはリストから値を取得し、expected_type型であることを検証する。
+
+    get_bool/get_int/get_float/get_str/get_list/get_dictの共通処理。
+    default_valueがNoneの場合は、expected_typeの空インスタンスを採用する
+    （list→[]、dict→{}）。
+    """
+    if default_value is None and expected_type is list:
+        default_value = typing.cast(T, [])
+    elif default_value is None and expected_type is dict:
+        default_value = typing.cast(T, {})
+    # int型チェックはboolを誤検知しないよう、get_intでもそのままisinstance(value, int)を使う。
+    # （元実装に倣う。boolはintのサブクラスだがget_intはboolもTrueとして受け入れていた）
+    value = get(data, key, default_value, errors)
+    if isinstance(value, expected_type):
+        return value
+    if errors == "ignore":
+        return typing.cast(T, default_value)
+    raise ValueError(f"{_stringify_key(key)} is not {type_name}: {value!r}")
+
+
 def get_bool(
     data: list | dict,
     key: str | int | list[str | int],
@@ -160,12 +188,7 @@ def get_bool(
     errors: typing.Literal["strict", "ignore"] = "strict",
 ) -> bool:
     """辞書またはリストからbool値を取得する。"""
-    value = get(data, key, default_value, errors)
-    if isinstance(value, bool):
-        return value
-    if errors == "ignore":
-        return default_value
-    raise ValueError(f"{_stringify_key(key)} is not bool: {value!r}")
+    return _get_typed(data, key, bool, default_value, errors, "bool")
 
 
 def get_int(
@@ -175,12 +198,7 @@ def get_int(
     errors: typing.Literal["strict", "ignore"] = "strict",
 ) -> int:
     """辞書またはリストからint値を取得する。"""
-    value = get(data, key, default_value, errors)
-    if isinstance(value, int):
-        return value
-    if errors == "ignore":
-        return default_value
-    raise ValueError(f"{_stringify_key(key)} is not int: {value!r}")
+    return _get_typed(data, key, int, default_value, errors, "int")
 
 
 def get_float(
@@ -190,12 +208,7 @@ def get_float(
     errors: typing.Literal["strict", "ignore"] = "strict",
 ) -> float:
     """辞書またはリストからfloat値を取得する。"""
-    value = get(data, key, default_value, errors)
-    if isinstance(value, float):
-        return value
-    if errors == "ignore":
-        return default_value
-    raise ValueError(f"{_stringify_key(key)} is not float: {value!r}")
+    return _get_typed(data, key, float, default_value, errors, "float")
 
 
 def get_str(
@@ -205,12 +218,7 @@ def get_str(
     errors: typing.Literal["strict", "ignore"] = "strict",
 ) -> str:
     """辞書またはリストからstr値を取得する。"""
-    value = get(data, key, default_value, errors)
-    if isinstance(value, str):
-        return value
-    if errors == "ignore":
-        return default_value
-    raise ValueError(f"{_stringify_key(key)} is not str: {value!r}")
+    return _get_typed(data, key, str, default_value, errors, "str")
 
 
 def get_list(
@@ -220,14 +228,7 @@ def get_list(
     errors: typing.Literal["strict", "ignore"] = "strict",
 ) -> list:
     """辞書またはリストからlist値を取得する。"""
-    if default_value is None:
-        default_value = []
-    value = get(data, key, default_value, errors)
-    if isinstance(value, list):
-        return value
-    if errors == "ignore":
-        return default_value
-    raise ValueError(f"{_stringify_key(key)} is not list: {value!r}")
+    return _get_typed(data, key, list, default_value, errors, "list")
 
 
 def get_dict(
@@ -237,14 +238,7 @@ def get_dict(
     errors: typing.Literal["strict", "ignore"] = "strict",
 ) -> dict:
     """辞書またはリストからdict値を取得する。"""
-    if default_value is None:
-        default_value = {}
-    value = get(data, key, default_value, errors)
-    if isinstance(value, dict):
-        return value
-    if errors == "ignore":
-        return default_value
-    raise ValueError(f"{_stringify_key(key)} is not dict: {value!r}")
+    return _get_typed(data, key, dict, default_value, errors, "dict")
 
 
 def get[T](

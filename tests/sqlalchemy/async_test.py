@@ -30,7 +30,7 @@ class Test1(Base, pytilpack.sqlalchemy.AsyncUniqueIDMixin):  # pylint: disable=t
     )
 
 
-class Test2(Base):
+class Test2(Base):  # pylint: disable=too-many-ancestors
     """テストクラス。"""
 
     __test__ = False
@@ -309,7 +309,7 @@ def _make_isolated_base() -> tuple[typing.Any, typing.Any]:
     class IsolatedBase(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.AsyncMixin):
         """テスト用ベースクラス。"""
 
-    class Item(IsolatedBase):
+    class Item(IsolatedBase):  # pylint: disable=too-many-ancestors
         """テスト用アイテムクラス。"""
 
         __tablename__ = "items"
