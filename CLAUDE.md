@@ -4,6 +4,7 @@
 
 - `make update`: 依存更新 + pre-commit autoupdate + pinactアクション更新 + 全テスト実行
   - `make update-actions`: GitHub Actionsのハッシュピン更新のみ（mise経由でpinact実行）
+- リリース手順: [docs/development/development.md](docs/development/development.md) 参照
 - テストコードは`pytilpack/xxx.py`に対して`tests/xxx_test.py`として配置する
   - `pytilpack/xxx/yyy.py`に対して`tests/xxx/yyy_test.py`
   - `xxx`がpythonキーワードなどの場合、`xxx_.py`になる。そのときは`xxx_test.py`とする（アンダースコアは対象外）
