@@ -141,8 +141,8 @@ def retry[**P, R](
                     _includes = (Exception,)
                 if _excludes is None:
                     _excludes = ()
-                # 最大待機時間の目安
-                _total_delay = sum(min(initial_delay * (exponential_base**i), max_delay) for i in range(max_retries))
+                # 最大待機時間の目安（オーバーライド適用後の設定で計算）
+                _total_delay = sum(min(_initial_delay * (_exponential_base**i), _max_delay) for i in range(_max_retries))
                 _total_delay = max(_total_delay, 0.001)  # 念のため0秒は避ける
 
                 attempt = 0
@@ -227,15 +227,12 @@ def retry[**P, R](
                         _retry_status_codes = retry_override.retry_status_codes
                     if not isinstance(retry_override.should_retry, _Unset):
                         _should_retry = retry_override.should_retry
-                    # total_delayも再計算
-                    _total_delay = sum(min(_initial_delay * (_exponential_base**i), _max_delay) for i in range(_max_retries))
-                    _total_delay = max(_total_delay, 0.001)
                 if _includes is None:
                     _includes = (Exception,)
                 if _excludes is None:
                     _excludes = ()
-                # 最大待機時間の目安
-                _total_delay = sum(min(initial_delay * (exponential_base**i), max_delay) for i in range(max_retries))
+                # 最大待機時間の目安（オーバーライド適用後の設定で計算）
+                _total_delay = sum(min(_initial_delay * (_exponential_base**i), _max_delay) for i in range(_max_retries))
                 _total_delay = max(_total_delay, 0.001)  # 念のため0秒は避ける
 
                 attempt = 0

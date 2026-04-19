@@ -54,4 +54,11 @@ def init_app(
             i18n_state.supported_locales,
             default=i18n_state.default_locale,
         )
-        pytilpack.i18n.activate(i18n_state, locale)
+        # Tokenタプルをgに保存してteardown_requestでdeactivateする
+        quart.g.pytilpack_i18n_tokens = pytilpack.i18n.activate(i18n_state, locale)
+
+    @app.teardown_request
+    async def _teardown_locale(exc: BaseException | None) -> None:
+        del exc  # noqa
+        if hasattr(quart.g, "pytilpack_i18n_tokens"):
+            pytilpack.i18n.deactivate(quart.g.pytilpack_i18n_tokens)

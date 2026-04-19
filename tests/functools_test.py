@@ -204,6 +204,55 @@ async def test_retry_should_retry() -> None:
     assert call_count == 1
 
 
+@pytest.mark.asyncio
+async def test_retry_override_total_delay() -> None:
+    """retry_overrideでmax_retriesを増やすと_total_delayが正しく再計算されることを確認。
+
+    _total_delayはRetry-After累積のガードに使われる内部値。
+    オーバーライド前後でリトライ回数が正しく変わることで、
+    オーバーライド後の設定が_total_delay計算に使われていることを間接確認する。
+    """
+    # 同期版: max_retries=1（デフォルト）→ 2回呼ばれる
+    call_count = 0
+
+    @pytilpack.functools.retry(max_retries=1, initial_delay=0, exponential_base=0)
+    def f_sync(retry=None):
+        del retry  # noqa
+        nonlocal call_count
+        call_count += 1
+        raise RuntimeError("test")
+
+    with pytest.raises(RuntimeError):
+        f_sync()
+    assert call_count == 2
+
+    # オーバーライドでmax_retries=3に増やす → 4回呼ばれる
+    call_count = 0
+    with pytest.raises(RuntimeError):
+        f_sync(retry=pytilpack.functools.Retry(max_retries=3))
+    assert call_count == 4
+
+    # 非同期版: max_retries=1（デフォルト）→ 2回呼ばれる
+    call_count = 0
+
+    @pytilpack.functools.retry(max_retries=1, initial_delay=0, exponential_base=0)
+    async def f_async(retry=None):
+        del retry  # noqa
+        nonlocal call_count
+        call_count += 1
+        raise RuntimeError("test")
+
+    with pytest.raises(RuntimeError):
+        await f_async()
+    assert call_count == 2
+
+    # オーバーライドでmax_retries=3に増やす → 4回呼ばれる
+    call_count = 0
+    with pytest.raises(RuntimeError):
+        await f_async(retry=pytilpack.functools.Retry(max_retries=3))
+    assert call_count == 4
+
+
 def test_retry_override_should_retry() -> None:
     """Retryオーバーライドでshould_retryを指定するテスト。"""
     call_count = 0

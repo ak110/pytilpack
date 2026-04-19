@@ -329,7 +329,7 @@ class SyncMixin(_ReprMixin):
         return list(cls.session().execute(query).all())
 
     @classmethod
-    async def get_by_id_not_null(
+    def get_by_id_not_null(
         cls, id_: int, for_update: bool = False, options: sqlalchemy.sql.base.ExecutableOption | None = None
     ) -> typing.Self:
         """IDを元にインスタンスを取得。見つからない場合は例外を出す。

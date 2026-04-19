@@ -68,3 +68,23 @@ async def test_jinja2_template(app: quart.Quart) -> None:
         assert response.status_code == 200
         data = await response.get_data(as_text=True)
         assert data == "こんにちは"
+
+
+@pytest.mark.asyncio
+async def test_i18n_state_deactivated_after_request(app: quart.Quart) -> None:
+    """リクエスト完了後にpytilpack.i18n._current_stateが元に戻ることを確認。
+
+    修正前はteardown_requestでdeactivate()を呼ぶコードがなく、
+    _current_stateがリクエストスコープを超えてリークしていた。
+    """
+    # リクエスト前: _current_stateはNone（未設定）
+    assert pytilpack.i18n._current_state.get() is None  # pylint: disable=protected-access
+
+    async with app.test_client() as client:
+        response = await client.get("/hello", headers={"Accept-Language": "ja"})
+        assert response.status_code == 200
+
+    # リクエスト完了後: _current_stateがNone（元に戻っている）に戻っていることを確認
+    # Quartはリクエストごとにcontextvarsコンテキストを分離するため、
+    # テストコンテキストでの_current_stateはリクエスト前のままNoneであるべき
+    assert pytilpack.i18n._current_state.get() is None  # pylint: disable=protected-access

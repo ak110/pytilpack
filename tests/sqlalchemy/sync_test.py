@@ -191,6 +191,29 @@ def test_get_by_id(session: sqlalchemy.orm.Session) -> None:
     assert Test1.get_by_id(test_id, for_update=True).id == test_id  # type: ignore
 
 
+def test_get_by_id_not_null(session: sqlalchemy.orm.Session) -> None:
+    """get_by_id_not_nullが同期呼び出しで動作することを確認。
+
+    修正前は async def で定義されており、awaitせずに呼ぶとコルーチンオブジェクトが
+    返り、ValueErrorが送出されなかった。修正後は同期的に値を返すことを検証する。
+    """
+    with Base.connect() as conn:
+        Base.metadata.create_all(conn)
+    session.add(Test1(unique_id="test_get_by_id_not_null"))
+    session.commit()
+
+    created_record = session.execute(Test1.select().where(Test1.unique_id == "test_get_by_id_not_null")).scalar_one()
+    test_id = created_record.id
+
+    # 存在するIDでは正常にインスタンスが返る（awaitなし）
+    result = Test1.get_by_id_not_null(test_id)
+    assert result.id == test_id
+
+    # 存在しないIDではValueErrorが送出される（awaitなし）
+    with pytest.raises(ValueError):
+        Test1.get_by_id_not_null(test_id + 1000)
+
+
 def test_get_by_unique_id(session: sqlalchemy.orm.Session) -> None:
     """get_by_unique_idのテスト。"""
     with Base.connect() as conn:

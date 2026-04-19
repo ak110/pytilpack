@@ -31,5 +31,4 @@ def read_to_dict(
             skipinitialspace=skipinitialspace,
             lineterminator=lineterminator,
         )
-        reader = csv.DictReader(f)
         return list(reader)

@@ -24,7 +24,7 @@ def import_all(
 
     imported_count = 0
     for item in sorted(path.rglob("*.py")):
-        if ignore_test and item.name.startswith("test_") or item.name.endswith("_test.py"):
+        if ignore_test and (item.name.startswith("test_") or item.name.endswith("_test.py")):
             continue
         import_path = item.parent if item.name == "__init__.py" else item.with_suffix("")
         module_name = ".".join(import_path.relative_to(base_path).parts)
