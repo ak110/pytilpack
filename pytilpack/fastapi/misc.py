@@ -6,6 +6,8 @@ import typing
 import fastapi.encoders
 import starlette.responses
 
+__all__ = ["JSONResponse"]
+
 
 class JSONResponse(starlette.responses.Response):
     """インデント付きJSONを返すFastAPIのresponse_class。

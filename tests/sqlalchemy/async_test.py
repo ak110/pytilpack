@@ -1,6 +1,8 @@
 """async版のテストコード。"""
 
+import asyncio
 import datetime
+import threading
 import typing
 
 import pytest
@@ -299,6 +301,133 @@ def test_to_dict() -> None:
         "value5": None,
     }
     assert test2.to_dict(includes=["name", "value3"], exclude_none=True) == {"name": "test2"}
+
+
+def _make_isolated_base() -> tuple[typing.Any, typing.Any]:
+    """テストごとに独立したBaseクラスとItemクラスを生成する。"""
+
+    class IsolatedBase(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.AsyncMixin):
+        """テスト用ベースクラス。"""
+
+    class Item(IsolatedBase):
+        """テスト用アイテムクラス。"""
+
+        __tablename__ = "items"
+        id: sqlalchemy.orm.Mapped[int] = sqlalchemy.orm.mapped_column(primary_key=True, autoincrement=True)
+        name: sqlalchemy.orm.Mapped[str] = sqlalchemy.orm.mapped_column()
+
+    return IsolatedBase, Item
+
+
+@pytest.mark.asyncio
+async def test_engine_init_and_scalars(tmp_path) -> None:
+    """init/session_scope/term および scalars メソッドの基本テスト。"""
+    IsolatedBase, Item = _make_isolated_base()
+    url = f"sqlite+aiosqlite:///{tmp_path / 'test.db'}"
+    IsolatedBase.init(url)
+    try:
+        async with IsolatedBase.connect() as conn:
+            await conn.run_sync(IsolatedBase.metadata.create_all)
+
+        async with IsolatedBase.session_scope() as session:
+            session.add(Item(name="hello"))
+            await session.commit()
+
+        async with IsolatedBase.session_scope():
+            items = await Item.scalars(Item.select())
+            assert len(items) == 1
+            assert items[0].name == "hello"
+    finally:
+        await IsolatedBase.term()
+
+
+@pytest.mark.asyncio
+async def test_thread_local_engine_isolation(tmp_path) -> None:
+    """異なるスレッドでは別々のengineが生成されることを確認する。"""
+    IsolatedBase, _ = _make_isolated_base()
+    url = f"sqlite+aiosqlite:///{tmp_path / 'test.db'}"
+    IsolatedBase.init(url)
+
+    engines: list[int] = []
+    errors: list[Exception] = []
+
+    def run_in_thread() -> None:
+        async def inner() -> None:
+            engine = IsolatedBase.engine()
+            assert engine is not None
+            engines.append(id(engine))
+            await IsolatedBase.term()
+
+        try:
+            asyncio.run(inner())
+        except Exception as e:
+            errors.append(e)
+
+    threads = [threading.Thread(target=run_in_thread) for _ in range(2)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert not errors, f"スレッド内でエラーが発生: {errors}"
+    assert len(engines) == 2
+    # 別々のスレッドからは別々のengineインスタンスが生成される
+    assert engines[0] != engines[1], "異なるスレッドが同じengineを共有している"
+
+
+@pytest.mark.asyncio
+async def test_term_resets_engine(tmp_path) -> None:
+    """term()後に再度アクセスすると新しいengineが生成されることを確認する。"""
+    IsolatedBase, _ = _make_isolated_base()
+    url = f"sqlite+aiosqlite:///{tmp_path / 'test.db'}"
+    IsolatedBase.init(url)
+
+    engine1 = IsolatedBase.engine()
+    await IsolatedBase.term()
+    engine2 = IsolatedBase.engine()
+    await IsolatedBase.term()
+
+    assert id(engine1) != id(engine2), "term()後も同じengineインスタンスが返された"
+
+
+@pytest.mark.asyncio
+async def test_init_args_stored_globally(tmp_path) -> None:
+    """_init_argsがクラス変数として保持されていることを確認する。"""
+    IsolatedBase, _ = _make_isolated_base()
+    url = f"sqlite+aiosqlite:///{tmp_path / 'test.db'}"
+    IsolatedBase.init(url)
+    try:
+        assert IsolatedBase._init_args is not None  # pylint: disable=protected-access
+        assert str(IsolatedBase._init_args.url) == url  # pylint: disable=protected-access
+    finally:
+        await IsolatedBase.term()
+
+
+@pytest.mark.asyncio
+async def test_negative_pool_size_uses_null_pool(tmp_path) -> None:
+    """pool_sizeが負数ならNullPoolで初期化されることを確認する。"""
+    IsolatedBase, _ = _make_isolated_base()
+    url = f"sqlite+aiosqlite:///{tmp_path / 'test.db'}"
+    IsolatedBase.init(url, pool_size=-1)
+    try:
+        engine = IsolatedBase.engine()
+        assert isinstance(engine.sync_engine.pool, sqlalchemy.pool.NullPool)
+    finally:
+        await IsolatedBase.term()
+
+
+@pytest.mark.asyncio
+async def test_same_thread_reuses_engine(tmp_path) -> None:
+    """同じスレッド内では同じengineが再利用されることを確認する。"""
+    IsolatedBase, _ = _make_isolated_base()
+    url = f"sqlite+aiosqlite:///{tmp_path / 'test.db'}"
+    IsolatedBase.init(url)
+    try:
+        engine1 = IsolatedBase.engine()
+        engine2 = IsolatedBase.engine()
+        assert id(engine1) == id(engine2), "同じスレッド内で異なるengineが返された"
+    finally:
+        await IsolatedBase.term()
 
 
 def test_describe() -> None:

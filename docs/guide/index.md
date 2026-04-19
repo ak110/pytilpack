@@ -61,6 +61,7 @@ import pytilpack.xxx
 ## 各種ライブラリ用ユーティリティ
 
 - [pytilpack.asyncio](../api/asyncio.md)
+- [pytilpack.cli](../api/cli.md): CLIコマンド実装
 - [pytilpack.babel](../api/babel.md)
 - [pytilpack.base64](../api/base64.md)
 - [pytilpack.csv](../api/csv.md)

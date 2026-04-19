@@ -43,7 +43,7 @@ plugins:
   - llmstxt:
       full_output: llms-full.txt
       markdown_description: |
-        Python 3.12以上が必要。コア依存: beautifulsoup4, httpx, mcp, typing-extensions, werkzeug。
+        Python 3.12以上が必要。コア依存: beautifulsoup4, httpx, mcp, werkzeug。
 
         ## インストール
 
@@ -69,6 +69,7 @@ plugins:
           - guide/cli.md: CLIコマンド
         ライブラリ用ユーティリティ:
           - api/asyncio.md: 非同期I/O、ジョブランナー、スレッドプール
+          - api/cli.md: CLIコマンド
           - api/babel.md: Babel多言語メッセージ管理
           - api/base64.md: Base64エンコードとデコード
           - api/csv.md: CSV読み書き
@@ -136,6 +137,7 @@ nav:
   - APIリファレンス:
       - ライブラリ用ユーティリティ:
           - pytilpack.asyncio: api/asyncio.md
+          - pytilpack.cli: api/cli.md
           - pytilpack.babel: api/babel.md
           - pytilpack.base64: api/base64.md
           - pytilpack.csv: api/csv.md

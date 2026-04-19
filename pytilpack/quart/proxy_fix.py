@@ -7,6 +7,8 @@ import hypercorn.typing
 import quart
 import quart_auth
 
+__all__ = ["ProxyFix"]
+
 
 class ProxyFix:
     """リバースプロキシ対応。

@@ -7,6 +7,8 @@ import quart
 import pytilpack.http
 import pytilpack.i18n
 
+__all__ = ["init_app"]
+
 
 def init_app(
     app: quart.Quart,

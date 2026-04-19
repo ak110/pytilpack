@@ -5,6 +5,8 @@ import typing
 import flask
 import werkzeug.middleware.proxy_fix
 
+__all__ = ["ProxyFix"]
+
 
 class ProxyFix(werkzeug.middleware.proxy_fix.ProxyFix):
     """リバースプロキシ対応。
