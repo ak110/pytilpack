@@ -17,7 +17,7 @@ Pythonのユーティリティ集。
 
 ## インストール
 
-ベースパッケージ（stdlib系ユーティリティ + beautifulsoup4/httpx/mcp/typing-extensions/werkzeug）:
+ベースパッケージ（stdlib系ユーティリティ + beautifulsoup4/httpx/mcp/werkzeug）:
 
 ```bash
 pip install pytilpack

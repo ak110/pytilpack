@@ -69,9 +69,9 @@ plugins:
           - guide/cli.md: CLIコマンド
         ライブラリ用ユーティリティ:
           - api/asyncio.md: 非同期I/O、ジョブランナー、スレッドプール
-          - api/cli.md: CLIコマンド
           - api/babel.md: Babel多言語メッセージ管理
           - api/base64.md: Base64エンコードとデコード
+          - api/cli.md: CLIコマンド
           - api/csv.md: CSV読み書き
           - api/dataclasses.md: dataclass操作
           - api/datetime.md: 日時ユーティリティ
@@ -137,9 +137,9 @@ nav:
   - APIリファレンス:
       - ライブラリ用ユーティリティ:
           - pytilpack.asyncio: api/asyncio.md
-          - pytilpack.cli: api/cli.md
           - pytilpack.babel: api/babel.md
           - pytilpack.base64: api/base64.md
+          - pytilpack.cli: api/cli.md
           - pytilpack.csv: api/csv.md
           - pytilpack.dataclasses: api/dataclasses.md
           - pytilpack.datetime: api/datetime.md
@@ -155,7 +155,6 @@ nav:
           - pytilpack.markdown: api/markdown.md
           - pytilpack.msal: api/msal.md
           - pytilpack.pathlib: api/pathlib.md
-          - pytilpack.aes_gcm: api/aes_gcm.md
           - pytilpack.pycrypto: api/pycrypto.md
           - pytilpack.pydantic: api/pydantic.md
           - pytilpack.pytest: api/pytest.md

@@ -2,7 +2,7 @@
 
 ## インストール
 
-ベースパッケージ（stdlib系ユーティリティ + beautifulsoup4/httpx/mcp/typing-extensions/werkzeug）:
+ベースパッケージ（stdlib系ユーティリティ + beautifulsoup4/httpx/mcp/werkzeug）:
 
 ```bash
 pip install pytilpack
@@ -61,9 +61,9 @@ import pytilpack.xxx
 ## 各種ライブラリ用ユーティリティ
 
 - [pytilpack.asyncio](../api/asyncio.md)
-- [pytilpack.cli](../api/cli.md): CLIコマンド実装
 - [pytilpack.babel](../api/babel.md)
 - [pytilpack.base64](../api/base64.md)
+- [pytilpack.cli](../api/cli.md): CLIコマンド実装
 - [pytilpack.csv](../api/csv.md)
 - [pytilpack.dataclasses](../api/dataclasses.md)
 - [pytilpack.datetime](../api/datetime.md)
@@ -87,7 +87,7 @@ import pytilpack.xxx
 - [pytilpack.quart_auth](../api/quart_auth.md)
 - [pytilpack.sqlalchemy](../api/sqlalchemy.md)
 - [pytilpack.threading](../api/threading.md)
-- [pytilpack.threadinga](../api/threadinga.md): asyncio版
+- [pytilpack.threadinga](../api/threadinga.md): asyncio版スレッドユーティリティ
 - [pytilpack.tiktoken](../api/tiktoken.md)
 - [pytilpack.tqdm](../api/tqdm.md)
 - [pytilpack.typing](../api/typing.md)

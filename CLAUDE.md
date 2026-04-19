@@ -11,10 +11,12 @@
   - ドキュメントなどのみの変更の場合は省略可（pre-commitで実行されるため）
   - テストコードの単体実行なども極力 `uv run pyfltr run-for-agent <path>` を使う（pytestを直接呼び出さない）
     - 詳細な情報などが必要な場合に限り `uv run pytest -vv <path>` などを使用
+  - 修正後の再実行時は、対象ファイルや対象ツールを必要に応じて絞って実行する（最終検証はCIに委ねる前提）
+    - 例: `pyfltr run-for-agent --commands=mypy,ruff-check path/to/file`
 
 ## 注意点
 
-- コア依存（`[project.dependencies]`）は最小限に保つ（現在: `beautifulsoup4`/`httpx`/`mcp`/`typing-extensions`/`werkzeug`）
+- コア依存（`[project.dependencies]`）は最小限に保つ（現在: `beautifulsoup4`/`httpx`/`mcp`/`werkzeug`）
 - サードパーティライブラリに依存するモジュールはextras（`[project.optional-dependencies]`）で管理する
 - インポートは原則トップレベルで行う（`.pylintrc` で `import-outside-toplevel` は有効）
 - モジュール追加時は必ず`/add-module`スキルを使用する
