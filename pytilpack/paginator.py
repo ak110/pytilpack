@@ -42,9 +42,12 @@ class Paginator[T]:
     """
 
     def __init__(self, page: int, per_page: int, items: list[T], total: int):
-        assert page >= 1
-        assert per_page >= 1
-        assert total >= 0
+        if page < 1:
+            raise ValueError(f"pageは1以上でなければなりません: page={page}")
+        if per_page < 1:
+            raise ValueError(f"per_pageは1以上でなければなりません: per_page={per_page}")
+        if total < 0:
+            raise ValueError(f"totalは0以上でなければなりません: total={total}")
         self.page = page
         self.per_page = per_page
         self.items = items

@@ -15,8 +15,8 @@ __all__ = [
     "assert_xml",
     "assert_sse",
     "assert_response",
-    "check_status_code",
-    "check_content_type",
+    # 非推奨のcheck_status_code/check_content_typeは再エクスポートしない。
+    # 直接importで利用できるよう、pytilpack.flask.asserts側の__all__には残してある。
     # misc
     "generate_secret_key",
     "data_url",

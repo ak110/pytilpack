@@ -155,6 +155,7 @@ nav:
           - pytilpack.markdown: api/markdown.md
           - pytilpack.msal: api/msal.md
           - pytilpack.pathlib: api/pathlib.md
+          - pytilpack.aes_gcm: api/aes_gcm.md
           - pytilpack.pycrypto: api/pycrypto.md
           - pytilpack.pydantic: api/pydantic.md
           - pytilpack.pytest: api/pytest.md

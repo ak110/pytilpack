@@ -96,7 +96,8 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
             **kwargs: その他のsqlalchemy.create_async_engine()へのキーワード引数。
 
         """
-        assert cls._init_args is None, "DB接続はすでに初期化されています。"
+        if cls._init_args is not None:
+            raise RuntimeError("DB接続はすでに初期化されています。")
 
         if pool_size is not None and pool_size < 0:
             engine_kwargs = kwargs.copy()
@@ -151,8 +152,10 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
         sqlalchemy.ext.asyncio.async_sessionmaker[sqlalchemy.ext.asyncio.AsyncSession],
     ]:
         """現在のスレッドのengineとsessionmakerを取得する（なければ遅延生成）。"""
-        assert cls._init_args is not None, "init()が呼ばれていません。"
-        assert cls._thread_local is not None
+        if cls._init_args is None:
+            raise RuntimeError("init()が呼ばれていません。")
+        if cls._thread_local is None:
+            raise RuntimeError("init()が呼ばれていません。")
         if not hasattr(cls._thread_local, "engine") or cls._thread_local.engine is None:
             cls._thread_local.engine = sqlalchemy.ext.asyncio.create_async_engine(
                 cls._init_args.url, **cls._init_args.engine_kwargs
@@ -442,8 +445,10 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
         Returns:
             ページネーションされた結果を返すpytilpack.paginator.Paginatorインスタンス。
         """
-        assert page > 0, "ページ番号は1以上でなければなりません。"
-        assert per_page > 0, "1ページあたりのアイテム数は1以上でなければなりません。"
+        if page <= 0:
+            raise ValueError(f"ページ番号は1以上でなければなりません: page={page}")
+        if per_page <= 0:
+            raise ValueError(f"1ページあたりのアイテム数は1以上でなければなりません: per_page={per_page}")
         total = await cls.count(query)
         page_query = query.offset((page - 1) * per_page).limit(per_page)
         items = await (cls.scalars(page_query) if scalar else cls.all(page_query))

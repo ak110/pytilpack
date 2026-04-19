@@ -11,7 +11,7 @@ _lock = threading.Lock()
 """スレッド間での排他制御用ロック。"""
 
 
-@pytilpack.functools.retry()
+@pytilpack.functools.retry(includes=[OSError])
 def generate_secret_key(cache_path: str | pathlib.Path, nbytes: int | None = None) -> bytes:
     """シークレットキーの作成/取得。
 

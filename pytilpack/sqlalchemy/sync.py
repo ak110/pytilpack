@@ -23,7 +23,83 @@ from pytilpack.sqlalchemy._base import _ReprMixin, _ToDictMixin, _WaitForConnect
 logger = logging.getLogger(__name__)
 
 
-class SyncMixin(_ReprMixin, _ToDictMixin):
+class SyncAsyncBridgeMixin:
+    """同期DBを非同期環境から扱うためのブリッジMixin。
+
+    SQLAlchemyの同期APIによるI/Oを`asyncio.to_thread`でスレッドに逃がし、
+    awaitableなインターフェースを提供する。各呼び出しは別スレッド・独立セッション
+    ・独立トランザクションで実行される。
+
+    SyncMixinが継承する形で提供されるため、`SyncMixin.acount(...)`等の
+    呼び出しはそのまま維持される。非同期専用のコードから同期DBを利用する場合の
+    責務分離を明確にする目的で、別Mixinとして切り出している。
+    """
+
+    @classmethod
+    async def acount(cls, query: sqlalchemy.Select | sqlalchemy.CompoundSelect) -> int:
+        """queryのレコード数を取得する。(非同期版)"""
+        # cls.count.__func__はSyncMixin側で定義されるためmypy向けに抑制する。
+        sync_cls = typing.cast("type[SyncMixin]", cls)
+        return await run_sync_with_session(sync_cls.count.__func__)(sync_cls, query)  # type: ignore[attr-defined]
+
+    @classmethod
+    async def ascalar_one[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T:
+        """queryの結果を1件取得する。(非同期版)"""
+        sync_cls = typing.cast("type[SyncMixin]", cls)
+        return await run_sync_with_session(sync_cls.scalar_one.__func__)(sync_cls, query)  # type: ignore[attr-defined]
+
+    @classmethod
+    async def ascalar_one_or_none[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T | None:
+        """queryの結果を0件または1件取得する。(非同期版)"""
+        sync_cls = typing.cast("type[SyncMixin]", cls)
+        return await run_sync_with_session(sync_cls.scalar_one_or_none.__func__)(sync_cls, query)  # type: ignore[attr-defined]
+
+    @classmethod
+    async def ascalars[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> list[T]:
+        """queryの結果を全件取得する。(非同期版)"""
+        sync_cls = typing.cast("type[SyncMixin]", cls)
+        return await run_sync_with_session(sync_cls.scalars.__func__)(sync_cls, query)  # type: ignore[attr-defined]
+
+    @classmethod
+    async def aone[TT: tuple](cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT]:
+        """queryの結果を1件取得する。(非同期版)"""
+        sync_cls = typing.cast("type[SyncMixin]", cls)
+        return await run_sync_with_session(sync_cls.one.__func__)(sync_cls, query)  # type: ignore[attr-defined]
+
+    @classmethod
+    async def aone_or_none[TT: tuple](
+        cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]
+    ) -> sqlalchemy.Row[TT] | None:
+        """queryの結果を0件または1件取得する。(非同期版)"""
+        sync_cls = typing.cast("type[SyncMixin]", cls)
+        return await run_sync_with_session(sync_cls.one_or_none.__func__)(sync_cls, query)  # type: ignore[attr-defined]
+
+    @classmethod
+    async def aall[TT: tuple](cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> list[sqlalchemy.Row[TT]]:
+        """queryの結果を全件取得する。(非同期版)"""
+        sync_cls = typing.cast("type[SyncMixin]", cls)
+        return await run_sync_with_session(sync_cls.all.__func__)(sync_cls, query)  # type: ignore[attr-defined]
+
+    @classmethod
+    async def aget_by_id(cls, id_: int, for_update: bool = False) -> typing.Self | None:
+        """IDを元にインスタンスを取得。(非同期版)"""
+        sync_cls = typing.cast("type[SyncMixin]", cls)
+        return await run_sync_with_session(sync_cls.get_by_id.__func__)(sync_cls, id_, for_update)  # type: ignore[attr-defined,return-value]
+
+    @classmethod
+    async def apaginate(
+        cls,
+        query: sqlalchemy.Select | sqlalchemy.CompoundSelect,
+        page: int,
+        per_page: int,
+        scalar: bool = True,
+    ) -> pytilpack.paginator.Paginator:
+        """Flask-SQLAlchemy風ページネーション。(非同期版)"""
+        sync_cls = typing.cast("type[SyncMixin]", cls)
+        return await run_sync_with_session(sync_cls.paginate.__func__)(sync_cls, query, page, per_page, scalar)  # type: ignore[attr-defined]
+
+
+class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
     """モデルのベースクラス。SQLAlchemy 2.0スタイル・同期前提。
 
     Examples:
@@ -84,7 +160,8 @@ class SyncMixin(_ReprMixin, _ToDictMixin):
             **kwargs: sqlalchemy.create_engineに渡す追加のキーワード引数。
 
         """
-        assert cls.engine is None, "DB接続はすでに初期化されています。"
+        if cls.engine is not None:
+            raise RuntimeError("DB接続はすでに初期化されています。")
 
         if pool_size is not None and max_overflow is None:
             max_overflow = pool_size * 1  # デフォルトで倍まで許可
@@ -112,7 +189,8 @@ class SyncMixin(_ReprMixin, _ToDictMixin):
                 Base.metadata.create_all(conn)
 
         """
-        assert cls.engine is not None
+        if cls.engine is None:
+            raise RuntimeError("init()が呼ばれていません。")
         return cls.engine.connect()
 
     @classmethod
@@ -133,7 +211,8 @@ class SyncMixin(_ReprMixin, _ToDictMixin):
             log_level: ログレベル。
 
         """
-        assert cls.sessionmaker is not None
+        if cls.sessionmaker is None:
+            raise RuntimeError("init()が呼ばれていません。")
         token = cls.start_session(name=name, log_level=log_level)
         try:
             yield cls.session()
@@ -158,7 +237,8 @@ class SyncMixin(_ReprMixin, _ToDictMixin):
             log_level: ログレベル。
 
         """
-        assert cls.sessionmaker is not None
+        if cls.sessionmaker is None:
+            raise RuntimeError("init()が呼ばれていません。")
         token = cls.start_session(name=name, log_level=log_level)
         try:
             yield cls.session()
@@ -170,7 +250,8 @@ class SyncMixin(_ReprMixin, _ToDictMixin):
         cls, name: str | None = None, log_level: int = logging.DEBUG
     ) -> contextvars.Token[sqlalchemy.orm.Session]:
         """セッションを開始する。"""
-        assert cls.sessionmaker is not None
+        if cls.sessionmaker is None:
+            raise RuntimeError("init()が呼ばれていません。")
         session = cls.sessionmaker()  # pylint: disable=not-callable
         token = cls.session_var.set(session)
         if name is not None:
@@ -389,8 +470,10 @@ class SyncMixin(_ReprMixin, _ToDictMixin):
         Returns:
             ページネーションされた結果を返すpytilpack.paginator.Paginatorインスタンス。
         """
-        assert page > 0, "ページ番号は1以上でなければなりません。"
-        assert per_page > 0, "1ページあたりのアイテム数は1以上でなければなりません。"
+        if page <= 0:
+            raise ValueError(f"ページ番号は1以上でなければなりません: page={page}")
+        if per_page <= 0:
+            raise ValueError(f"1ページあたりのアイテム数は1以上でなければなりません: per_page={per_page}")
         total = cls.count(query)
         page_query = query.offset((page - 1) * per_page).limit(per_page)
         items = cls.scalars(page_query) if scalar else cls.all(page_query)
@@ -401,62 +484,6 @@ class SyncMixin(_ReprMixin, _ToDictMixin):
     def commit(cls) -> None:
         """セッションをコミットする。"""
         cls.session().commit()
-
-    # 非同期版
-    # 注意: これらのメソッドは別スレッドで独立したセッション・トランザクションを使用する。
-
-    @classmethod
-    async def acount(cls, query: sqlalchemy.Select | sqlalchemy.CompoundSelect) -> int:
-        """queryのレコード数を取得する。(非同期版)"""
-        return await run_sync_with_session(cls.count.__func__)(cls, query)  # type: ignore[attr-defined]
-
-    @classmethod
-    async def ascalar_one[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T:
-        """queryの結果を1件取得する。(非同期版)"""
-        return await run_sync_with_session(cls.scalar_one.__func__)(cls, query)  # type: ignore[attr-defined]
-
-    @classmethod
-    async def ascalar_one_or_none[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T | None:
-        """queryの結果を0件または1件取得する。(非同期版)"""
-        return await run_sync_with_session(cls.scalar_one_or_none.__func__)(cls, query)  # type: ignore[attr-defined]
-
-    @classmethod
-    async def ascalars[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> list[T]:
-        """queryの結果を全件取得する。(非同期版)"""
-        return await run_sync_with_session(cls.scalars.__func__)(cls, query)  # type: ignore[attr-defined]
-
-    @classmethod
-    async def aone[TT: tuple](cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT]:
-        """queryの結果を1件取得する。(非同期版)"""
-        return await run_sync_with_session(cls.one.__func__)(cls, query)  # type: ignore[attr-defined]
-
-    @classmethod
-    async def aone_or_none[TT: tuple](
-        cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]
-    ) -> sqlalchemy.Row[TT] | None:
-        """queryの結果を0件または1件取得する。(非同期版)"""
-        return await run_sync_with_session(cls.one_or_none.__func__)(cls, query)  # type: ignore[attr-defined]
-
-    @classmethod
-    async def aall[TT: tuple](cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> list[sqlalchemy.Row[TT]]:
-        """queryの結果を全件取得する。(非同期版)"""
-        return await run_sync_with_session(cls.all.__func__)(cls, query)  # type: ignore[attr-defined]
-
-    @classmethod
-    async def aget_by_id(cls, id_: int, for_update: bool = False) -> typing.Self | None:
-        """IDを元にインスタンスを取得。(非同期版)"""
-        return await run_sync_with_session(cls.get_by_id.__func__)(cls, id_, for_update)  # type: ignore[attr-defined]
-
-    @classmethod
-    async def apaginate(
-        cls,
-        query: sqlalchemy.Select | sqlalchemy.CompoundSelect,
-        page: int,
-        per_page: int,
-        scalar: bool = True,
-    ) -> pytilpack.paginator.Paginator:
-        """Flask-SQLAlchemy風ページネーション。(非同期版)"""
-        return await run_sync_with_session(cls.paginate.__func__)(cls, query, page, per_page, scalar)  # type: ignore[attr-defined]
 
 
 class SyncUniqueIDMixin:

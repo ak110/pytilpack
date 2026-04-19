@@ -28,7 +28,7 @@ class Test1(Base, pytilpack.sqlalchemy.SyncUniqueIDMixin):  # pylint: disable=to
     )
 
 
-class Test2(Base):
+class Test2(Base):  # pylint: disable=too-many-ancestors
     """テストクラス。"""
 
     __test__ = False
@@ -234,6 +234,43 @@ def test_get_by_unique_id(session: sqlalchemy.orm.Session) -> None:
     assert Test1.get_by_unique_id(str(test_id), allow_id=True) is None
 
 
+def test_to_dict_invalid_args() -> None:
+    """to_dictに無効な引数を渡した場合にValueErrorが送出されることを確認。
+
+    assert文からValueErrorに変更したため、`-O`実行時も検証が効く。
+    """
+    test_record = Test1(id=1, unique_id="test_dict")
+
+    # includesとexcludes同時指定はValueError
+    with pytest.raises(ValueError):
+        test_record.to_dict(includes=["id"], excludes=["unique_id"])
+
+    # 未知のフィールド名
+    with pytest.raises(ValueError):
+        test_record.to_dict(includes=["nonexistent"])
+
+    with pytest.raises(ValueError):
+        test_record.to_dict(excludes=["nonexistent"])
+
+
+def test_init_already_called() -> None:
+    """init()を二重呼び出しした場合にRuntimeErrorが送出されることを確認。
+
+    assert文からRuntimeErrorに変更したため、`-O`実行時も検証が効く。
+    """
+
+    class TempBase(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.SyncMixin):
+        """テスト専用Base。グローバル状態を汚染しないよう個別クラスで検証する。"""
+
+    TempBase.init("sqlite:///:memory:?check_same_thread=false", poolclass=sqlalchemy.pool.StaticPool)
+    try:
+        with pytest.raises(RuntimeError, match="すでに初期化"):
+            TempBase.init("sqlite:///:memory:?check_same_thread=false", poolclass=sqlalchemy.pool.StaticPool)
+    finally:
+        if TempBase.engine is not None:
+            TempBase.engine.dispose()
+
+
 def test_wait_for_connection() -> None:
     """wait_for_connectionのテスト。"""
     # 正常系
@@ -283,11 +320,11 @@ def test_paginate() -> None:
         assert paginator.has_next is False
         assert paginator.has_prev is True
 
-        # 境界値テスト：無効なページ番号
-        with pytest.raises(AssertionError):
+        # 境界値テスト：無効なページ番号（ValueErrorに変更）
+        with pytest.raises(ValueError):
             Test1.paginate(query, page=0, per_page=3)
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             Test1.paginate(query, page=1, per_page=0)
 
         # 空のクエリの場合

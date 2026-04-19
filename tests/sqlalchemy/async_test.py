@@ -258,11 +258,11 @@ async def test_paginate() -> None:
         assert paginator.has_next is False
         assert paginator.has_prev is True
 
-        # 境界値テスト：無効なページ番号
-        with pytest.raises(AssertionError):
+        # 境界値テスト：無効なページ番号（ValueErrorに変更）
+        with pytest.raises(ValueError):
             await Test1.paginate(query, page=0, per_page=3)
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             await Test1.paginate(query, page=1, per_page=0)
 
         # 空のクエリの場合
@@ -271,6 +271,24 @@ async def test_paginate() -> None:
         assert paginator.total_items == 0
         assert len(paginator.items) == 0
         assert paginator.pages == 1
+
+
+@pytest.mark.asyncio
+async def test_async_init_already_called() -> None:
+    """AsyncMixin.init()二重呼び出し時にRuntimeErrorが送出されることを確認。
+
+    assert文からRuntimeErrorに変更したため、`-O`実行時も検証が効く。
+    """
+
+    class TempBase(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.AsyncMixin):
+        """テスト専用Base。グローバル状態を汚染しないよう個別クラスで検証する。"""
+
+    TempBase.init("sqlite+aiosqlite:///:memory:")
+    try:
+        with pytest.raises(RuntimeError, match="すでに初期化"):
+            TempBase.init("sqlite+aiosqlite:///:memory:")
+    finally:
+        await TempBase.term()
 
 
 @pytest.mark.asyncio

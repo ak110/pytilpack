@@ -50,19 +50,22 @@ def assert_html(
     response: httpx.Response,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "__default__",
-    tmp_path: pathlib.Path | None = None,
     strict: bool = False,
+    tmp_path: pathlib.Path | None = None,
 ) -> str:
     """テストコード用。
 
     html5libが必要なので注意。
 
+    strict・tmp_pathはキーワード引数での指定を推奨する。flask/quart/fastapi間で
+    位置引数順を揃えているが、将来的な引数追加時の互換性のため。
+
     Args:
         response: レスポンス
         status_code: 期待するステータスコード
         content_type: 期待するContent-Type
+        strict: Trueの場合、HTML5の仕様に従ったパースを行う
         tmp_path: 一時ファイルを保存するディレクトリ
-        strict: HTML解析を厳格に行うかどうか
 
     Raises:
         AssertionError: ステータスコードが異なる場合

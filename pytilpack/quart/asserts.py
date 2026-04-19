@@ -57,6 +57,9 @@ async def assert_html(
 
     html5libが必要なので注意。
 
+    strict・tmp_pathはキーワード引数での指定を推奨する。flask/quart/fastapi間で
+    位置引数順を揃えているが、将来的な引数追加時の互換性のため。
+
     Args:
         response: レスポンス
         status_code: 期待するステータスコード

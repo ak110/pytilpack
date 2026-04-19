@@ -79,7 +79,7 @@ import pytilpack.xxx
 - [pytilpack.markdown](../api/markdown.md)
 - [pytilpack.msal](../api/msal.md)
 - [pytilpack.pathlib](../api/pathlib.md)
-- [pytilpack.pycrypto](../api/pycrypto.md)
+- [pytilpack.pycrypto](../api/pycrypto.md): AES-GCM暗号化（pycryptodome依存）
 - [pytilpack.pydantic](../api/pydantic.md)
 - [pytilpack.pytest](../api/pytest.md)
 - [pytilpack.python](../api/python.md)
