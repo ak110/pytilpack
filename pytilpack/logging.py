@@ -94,7 +94,7 @@ def file_handler(
 
 
 @contextlib.contextmanager
-def timer(name, logger: logging.Logger | None = None):
+def timer(name: str, logger: logging.Logger | None = None):
     """処理時間の計測＆表示。"""
     start_time = time.perf_counter()
     has_error = False

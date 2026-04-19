@@ -40,8 +40,9 @@ def fromdict(cls: "type[TDataClass]", data: dict[str, typing.Any]) -> "TDataClas
         dataclassのインスタンス
 
     """
-    # dataclassのフィールドを取得
-    field_types = {f.name: f.type for f in dataclasses.fields(cls)}
+    # get_type_hints()を使うことで前方参照（文字列）も解決した実際の型を得る。
+    # f.typeは前方参照の場合に文字列のまま返るため、dataclasses.is_dataclass()が常にFalseになるバグを回避する。
+    field_types = typing.get_type_hints(cls)
     # dataclassのフィールドに対応する値を取得
     values: dict[str, typing.Any] = {}
     for k, v in data.items():

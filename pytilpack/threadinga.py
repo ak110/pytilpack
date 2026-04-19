@@ -1,4 +1,12 @@
-"""スレッド関連のasync版。"""
+"""スレッド関連のasync版。
+
+`parallel()`は、各コルーチンを個別のOSスレッドで`asyncio.run()`することで並列実行する。
+同一イベントループ上での`asyncio.gather()`と異なり、スレッドごとに独立したイベントループを持つ設計のため、
+同期DBドライバーや非再入可能なリソース（SQLiteのコネクションなど）を複数コルーチンから安全に並列利用できる。
+
+具体的な実装は`asyncio.to_thread()`で`_thread()`関数（スレッド上で`asyncio.run(coroutine)`を呼ぶ）を起動し、
+`threading.Semaphore`で同時実行スレッド数を制御する二重構造になっている。
+"""
 
 import asyncio
 import multiprocessing

@@ -340,22 +340,18 @@ def convert[T](
         return value
 
     if target_type is bool:
-        if isinstance(value, str):
-            value = value.lower()
-            if value in ("true", "1"):
-                return typing.cast(T, True)
-            elif value in ("false", "0"):
-                return typing.cast(T, False)
-            else:
-                if errors == "ignore":
-                    return default_value
-                raise ValueError(f"値の変換に失敗しました: {value!r} to {target_type.__name__}")
-        elif isinstance(value, int) and value in (0, 1):
-            return typing.cast(T, bool(value))
-        else:
-            if errors == "ignore":
-                return default_value
-            raise ValueError(f"値の変換に失敗しました: {value!r} to {target_type.__name__}")
+        match value:
+            case str():
+                value = value.lower()
+                if value in ("true", "1"):
+                    return typing.cast(T, True)
+                elif value in ("false", "0"):
+                    return typing.cast(T, False)
+            case int() if value in (0, 1):
+                return typing.cast(T, bool(value))
+        if errors == "ignore":
+            return default_value
+        raise ValueError(f"値の変換に失敗しました: {value!r} to {target_type.__name__}")
 
     try:
         # intなどを想定した型変換

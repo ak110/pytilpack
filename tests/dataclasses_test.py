@@ -24,6 +24,13 @@ class Nested:
     a: A
 
 
+@dataclasses.dataclass
+class ForwardRef:
+    """前方参照テスト用。フィールドにdataclassを文字列型注釈で参照する。"""
+
+    child: "A"
+
+
 # NewType for testing
 StrType = typing.NewType("StrType", str)
 IntType = typing.NewType("IntType", int)
@@ -45,6 +52,19 @@ class UserWithNewType:
 
     id: IntType
     name: StrType
+
+
+def test_fromdict_forward_ref() -> None:
+    """前方参照（文字列型注釈）のフィールドをfromdictで正しく処理できることを確認する。
+
+    f.typeが文字列の場合にdataclasses.is_dataclass()が常にFalseを返すバグが
+    typing.get_type_hints()の使用によって解消されていることを検証する。
+    """
+    data = {"child": {"a": 1, "b": "hello"}}
+    result = pytilpack.dataclasses.fromdict(ForwardRef, data)
+    assert isinstance(result.child, A)
+    assert result.child.a == 1
+    assert result.child.b == "hello"
 
 
 def test_asdict() -> None:

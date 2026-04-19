@@ -181,22 +181,14 @@ def num_tokens_for_tools(
     if encoding is None:
         encoding = get_encoding_for_model(model)
 
-    if "gpt-3.5-" in model or "gpt-4-" in model or model == "gpt-4":
-        # gpt-3.5-turbo, gpt-4, gpt-4-turboまで
-        func_init = 10
-        prop_init = 3
-        prop_key = 3
-        enum_init = -3
-        enum_item = 3
-        func_end = 12
-    else:
-        # gpt-4o, o1など以降
-        func_init = 7
-        prop_init = 3
-        prop_key = 3
-        enum_init = -3
-        enum_item = 3
-        func_end = 12
+    # 両世代共通の定数
+    prop_init = 3
+    prop_key = 3
+    enum_init = -3
+    enum_item = 3
+    func_end = 12
+    # gpt-3.5-turbo/gpt-4/gpt-4-turboとgpt-4o以降でfunc_initが異なる
+    func_init = 10 if "gpt-3.5-" in model or "gpt-4-" in model or model == "gpt-4" else 7
 
     num_tokens = 0
     for tool in tools:

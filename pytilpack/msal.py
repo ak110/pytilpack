@@ -22,6 +22,8 @@ def load_pem_certificate(certificate_path: pathlib.Path | str) -> dict:
 def load_pem_certificate_data(certificate_data: bytes) -> dict:
     """PEM形式の証明書データを読み込み、秘密鍵と指紋を返す。"""
     cert = cryptography.x509.load_pem_x509_certificate(certificate_data, cryptography.hazmat.backends.default_backend())
+    # Azure AD証明書認証ではSHA-1フィンガープリントをthumbprintとして要求する仕様のため、
+    # SHA-1を使用する（セキュリティ上の選択ではなくAzure APIの要件）。
     fingerprint = cert.fingerprint(cryptography.hazmat.primitives.hashes.SHA1())
     return {
         "private_key": certificate_data,
