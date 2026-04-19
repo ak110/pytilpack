@@ -4,7 +4,8 @@
 
 ## uvx から起動する場合
 
-`uvx pytilpack` はベースパッケージのみで起動する。`mcp` や `fetch` はベース依存で動作するためそのまま実行できる。`wait-for-db-connection` や `babel` のように追加依存を必要とするサブコマンドは `--from` で必要なextrasを明示する。
+`uvx pytilpack` はベースパッケージのみで起動する。`mcp` や `fetch` はベース依存で動作するためそのまま実行できる。
+`wait-for-db-connection` や `babel` のように追加依存を必要とするサブコマンドは `--from` で必要なextrasを明示する。
 
 ```bash
 uvx pytilpack mcp

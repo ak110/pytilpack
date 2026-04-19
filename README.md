@@ -1,6 +1,9 @@
 # pytilpack
 
-[![CI](https://github.com/ak110/pytilpack/actions/workflows/ci.yaml/badge.svg)](https://github.com/ak110/pytilpack/actions/workflows/ci.yaml)
+[![CI][ci-badge]][ci-link]
+
+[ci-badge]: https://github.com/ak110/pytilpack/actions/workflows/ci.yaml/badge.svg
+[ci-link]: https://github.com/ak110/pytilpack/actions/workflows/ci.yaml
 [![PyPI version](https://badge.fury.io/py/pytilpack.svg)](https://badge.fury.io/py/pytilpack)
 
 Pythonのユーティリティ集。
@@ -58,7 +61,8 @@ uvx --from 'pytilpack[sqlalchemy]' pytilpack wait-for-db-connection "$SQLALCHEMY
 | `tqdm` | `.tqdm` | tqdm |
 | `web` | `.web` (check_html) | html5lib |
 
-extras不要のモジュール（ベースパッケージに含まれる）の代表例は以下のとおり。全モジュール一覧は[ドキュメント](https://ak110.github.io/pytilpack/)を参照。
+extras不要のモジュール（ベースパッケージに含まれる）の代表例は以下のとおり。
+全モジュール一覧は[ドキュメント](https://ak110.github.io/pytilpack/)を参照。
 
 - `.cache` / `.crypto` / `.data_url` / `.functools`
 - `.healthcheck` / `.htmlrag` / `.http` / `.httpx` / `.io`

@@ -3,4 +3,6 @@ $schema: https://raw.githubusercontent.com/DavidAnson/markdownlint-cli2/v0.20.0/
 config:
   ul-indent:
     indent: 4
-  line-length: false
+  line-length:
+    line_length: 127
+    code_blocks: false

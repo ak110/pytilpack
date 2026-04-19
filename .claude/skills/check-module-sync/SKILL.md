@@ -1,11 +1,17 @@
 ---
 name: check-module-sync
-description: Use when editing any file under pytilpack/<name>.py or pytilpack/<name>/ (subpackages like pytilpack/asyncio/, pytilpack/sqlalchemy/ count as a single module <name>). Verifies docs/api/<name>.md exists, its 必要なextra note matches pyproject.toml, [project.optional-dependencies].all includes every optional package the module pulls in, README/docs/index extras tables are current, and mkdocs.yml nav and llmstxt sections contain it.
+description: >
+  Use when editing any file under pytilpack/<name>.py or pytilpack/<name>/ (subpackages like
+  pytilpack/asyncio/, pytilpack/sqlalchemy/ count as a single module <name>). Verifies
+  docs/api/<name>.md exists, its 必要なextra note matches pyproject.toml,
+  [project.optional-dependencies].all includes every optional package the module pulls in,
+  README/docs/index extras tables are current, and mkdocs.yml nav and llmstxt sections contain it.
 ---
 
 # check-module-sync
 
-pytilpackの既存モジュールを編集したとき、関連するドキュメント・extras・テストの整合性が崩れていないか確認するためのチェックリスト。
+pytilpackの既存モジュールを編集したとき、関連するドキュメント・extras・テストの整合性が崩れていないか
+確認するためのチェックリスト。
 編集ファイルから **トップレベル名** を特定し、その単位で同期を確認する。
 
 ## トップレベル名の特定方法
