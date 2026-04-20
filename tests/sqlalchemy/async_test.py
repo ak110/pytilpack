@@ -366,14 +366,14 @@ async def test_thread_local_engine_isolation(tmp_path) -> None:
     url = f"sqlite+aiosqlite:///{tmp_path / 'test.db'}"
     IsolatedBase.init(url)
 
-    engines: list[int] = []
+    engines: list = []
     errors: list[Exception] = []
 
     def run_in_thread() -> None:
         async def inner() -> None:
             engine = IsolatedBase.engine()
             assert engine is not None
-            engines.append(id(engine))
+            engines.append(engine)
             await IsolatedBase.term()
 
         try:
@@ -390,7 +390,7 @@ async def test_thread_local_engine_isolation(tmp_path) -> None:
     assert not errors, f"スレッド内でエラーが発生: {errors}"
     assert len(engines) == 2
     # 別々のスレッドからは別々のengineインスタンスが生成される
-    assert engines[0] != engines[1], "異なるスレッドが同じengineを共有している"
+    assert engines[0] is not engines[1], "異なるスレッドが同じengineを共有している"
 
 
 @pytest.mark.asyncio
