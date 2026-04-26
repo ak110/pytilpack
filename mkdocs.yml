@@ -100,6 +100,7 @@ plugins:
           - api/tqdm.md: プログレスバー拡張
           - api/typing.md: 型ヒント関連
           - api/yaml.md: YAML読み書き
+          - api/zipfile.md: ZIPエントリ名復号、Zip Slip検証
         汎用モジュール:
           - api/cache.md: ファイルキャッシュ関連
           - api/crypto.md: 署名・トークン関連
@@ -168,6 +169,7 @@ nav:
           - pytilpack.tqdm: api/tqdm.md
           - pytilpack.typing: api/typing.md
           - pytilpack.yaml: api/yaml.md
+          - pytilpack.zipfile: api/zipfile.md
       - 汎用モジュール:
           - pytilpack.cache: api/cache.md
           - pytilpack.crypto: api/crypto.md

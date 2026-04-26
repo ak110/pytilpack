@@ -92,6 +92,7 @@ import pytilpack.xxx
 - [pytilpack.tqdm](../api/tqdm.md)
 - [pytilpack.typing](../api/typing.md)
 - [pytilpack.yaml](../api/yaml.md)
+- [pytilpack.zipfile](../api/zipfile.md): ZIPエントリ名復号、Zip Slip検証
 
 ## 特定ライブラリに依存しないモジュール
 
