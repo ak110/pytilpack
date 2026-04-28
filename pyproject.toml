@@ -4,7 +4,7 @@ dynamic = ["version"]
 description = "Python Utility Pack"
 license = {text = "MIT"}
 authors = [
-    {name = "aki.", email = "mark@aur.ll.to"}
+    {name = "aki.", email = "aki@tqzh.tk"}
 ]
 readme = "README.md"
 requires-python = ">=3.12,<4.0"
