@@ -8,12 +8,12 @@ help:
 # 開発環境のセットアップ
 setup:
 	uv sync --all-groups --all-extras
-	uv run pre-commit install
+	uvx pre-commit install
 
 # 依存パッケージをアップグレードし全テスト実行
 update:
 	env --unset UV_FROZEN uv sync --upgrade --all-groups --all-extras
-	uv run pre-commit autoupdate
+	uvx pre-commit autoupdate
 	$(MAKE) update-actions
 	$(MAKE) test
 
@@ -24,11 +24,11 @@ update-actions:
 
 # フォーマット + 軽量lint（開発時の手動実行用。自動修正あり）
 format:
-	uv run pyfltr fast
+	uvx pyfltr fast
 
 # 全チェック実行（これを通過すればコミット可能）
 test:
-	uv run pyfltr run
+	uvx pyfltr run
 
 docs:
 	uv run mkdocs serve

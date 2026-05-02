@@ -106,10 +106,10 @@ extras不要モジュールの場合も、ベースパッケージ側の箇条�
 
 ```bash
 uv run python scripts/check_docs_api.py
-uv run pyfltr run-for-agent
+uvx pyfltr run-for-agent
 ```
 
-`uv run pyfltr run-for-agent` が通ったらコミットしてよい。
+`uvx pyfltr run-for-agent`が通ったらコミットしてよい。
 
 ## よく使う参考ファイル
 
