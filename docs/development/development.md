@@ -32,7 +32,7 @@ CI/`make`などの自動実行環境で`uv sync`/`uv run`が依存解決を再�
 `uv add`/`uv remove`/`uv lock --upgrade-package`を使えばよい。
 `make update`も内部で自動的にUV_FROZENを外すため、そのまま実行してよい。
 
-## ドキュメント
+## ドキュメントサイト運用
 
 MkDocs + mkdocstrings + mkdocs-llmstxtでAPIリファレンスとllms.txtを自動生成し、GitHub Pagesにデプロイしている。
 
