@@ -37,11 +37,12 @@ pytilpackの既存モジュールを編集したとき、関連するドキュ�
 ```markdown
 !!! note "必要なextra"
 
-    `pip install pytilpack[<name>]`
+    `pip install pytilpack[<extrasキー>]`
 ```
 
-`pyproject.toml` の `[project.optional-dependencies]` に `<name>` が定義されていることを確認。
-extras不要モジュール（ベース依存のみで動く）ならばこの注記がないことを確認。
+`pyproject.toml` の `[project.optional-dependencies]` に対応するextrasキーが定義されていることを確認する。
+モジュール名とextrasキー名が異なる場合は`CLAUDE.md`の「モジュール→extrasキーマッピング」表を参照する。
+extras不要モジュール（ベース依存のみで動く）ならばこの注記がないことを確認する。
 
 ### 3. `[project.optional-dependencies].all` の網羅
 
@@ -52,9 +53,10 @@ extras不要モジュール（ベース依存のみで動く）ならばこの�
 
 `pytilpack/<name>.py`（または `pytilpack/<name>/**/*.py`）の **トップレベル import** を
 `grep -E '^(import|from)' pytilpack/<name>...'` で抽出する。
-サードパーティ（`pytilpack` / 標準ライブラリ以外）が `<name>` extrasに過不足なくマッピングされているか確認する。
+サードパーティ（`pytilpack` / 標準ライブラリ以外）が対応extrasに過不足なくマッピングされているか確認する。
+モジュール名とextrasキー名が異なる場合は`CLAUDE.md`の「モジュール→extrasキーマッピング」表を参照する。
 
-`.pylintrc` で `import-outside-toplevel` が有効なため、関数内importは基本的にない前提でOK。
+`.pylintrc`で`import-outside-toplevel`が有効なため、関数内importは基本的にない前提でOK。
 
 ### 5. extras 一覧テーブル
 

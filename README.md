@@ -17,29 +17,12 @@ Pythonのユーティリティ集。
 
 ## インストール
 
-ベースパッケージ（stdlib系ユーティリティ + beautifulsoup4/httpx/mcp/werkzeug）:
-
 ```bash
 pip install pytilpack
 ```
 
-各モジュールが必要とするライブラリはextrasで追加インストールする:
-
-```bash
-pip install pytilpack[all]       # 全モジュール
-pip install pytilpack[fastapi]   # pytilpack.fastapi 用
-pip install pytilpack[flask]     # pytilpack.flask 用
-# ...
-```
-
-`uvx` でCLIを使う場合、サブコマンドが要求するextrasを `--from` で明示する:
-
-```bash
-uvx pytilpack mcp
-uvx --from 'pytilpack[sqlalchemy]' pytilpack wait-for-db-connection "$SQLALCHEMY_DATABASE_URI"
-```
-
-extras一覧と各モジュールが必要とする依存は[ドキュメント](https://ak110.github.io/pytilpack/)を参照。
+extras一覧と各モジュールが必要とする依存は[ドキュメント](https://ak110.github.io/pytilpack/guide/)を参照。
+extras付きインストール例（`pip install pytilpack[fastapi]`等）もドキュメントに記載している。
 
 ## 主な使い方
 
@@ -56,6 +39,6 @@ import pytilpack.xxx
 
 ## ドキュメント
 
-- <https://ak110.github.io/pytilpack/> — 概要・モジュール一覧・APIリファレンス
-- <https://ak110.github.io/pytilpack/llms.txt> — LLM向け構造化インデックス
-- [docs/development/development.md](docs/development/development.md) — 開発者向け情報
+- [利用者向けガイド](https://ak110.github.io/pytilpack/guide/) — インストール・extras一覧・モジュール一覧・CLI
+- [APIリファレンス](https://ak110.github.io/pytilpack/api/asyncio/) — 各モジュールのAPIリファレンス
+- [開発者向け情報](docs/development/development.md) — セットアップ・リリース手順

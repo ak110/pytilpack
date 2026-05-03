@@ -1,3 +1,4 @@
 # 開発者向けガイド
 
-- [docs/development/development.md](development.md) — 開発環境構築・UV_FROZEN運用・ドキュメント・リリース手順
+- [開発手順](development.md) — 環境構築・開発コマンド・チェック実行・ドキュメントサイト運用・リリース手順
+- [アーキテクチャ](architecture.md) — モジュール構成方針・extrasマッピング・テスト配置規約

@@ -85,7 +85,7 @@ jobs:
           set -euo pipefail
           wheel=$(ls dist/pytilpack-*.whl)
           uv venv .venv-base
-          uv pip install --python .venv-base "$wheel"
+          uv pip install --python=.venv-base "$wheel"
           .venv-base/bin/pytilpack --help
           # ベース依存のみで完結するサブコマンドは --help が exit 0 で返ること。
           for args in "mcp --help" "fetch --help"; do
@@ -115,7 +115,7 @@ jobs:
             esac
             venv=".venv-$extra"
             uv venv "$venv"
-            uv pip install --python "$venv" "pytilpack[$extra] @ $wheel"
+            uv pip install --python="$venv" "pytilpack[$extra] @ $wheel"
             # shellcheck disable=SC2086
             "$venv/bin/pytilpack" $cmd
           done

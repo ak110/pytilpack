@@ -22,9 +22,9 @@ pytilpackに新モジュールを追加する際、更新漏れが起きやす�
   - 複数ファイルに分割したい場合や、ライブラリごとに名前空間を切りたい場合はサブパッケージにする
   - 既存例: 単一ファイル `pytilpack/openai.py` / サブパッケージ `pytilpack/sqlalchemy/`, `pytilpack/asyncio/`
 - トップレベル名 `<name>` の確定
-  - Pythonキーワードと衝突する場合はファイル名を `<name>_.py` にする
-   （例: `pytilpack/json_.py` はない想定だが、将来的に衝突する場合）
+  - Pythonキーワードと衝突する場合はファイル名を `<name>_.py` にする（テスト配置規約はCLAUDE.mdを参照）
 - 必要なサードパーティextras（ベース依存で済む場合はextras追加不要）
+- モジュール名とextrasキー名が異なる既知のケースはCLAUDE.mdの「モジュール→extrasキーマッピング」表を参照する
 
 ## 1. 依存関係 (`pyproject.toml`)
 
@@ -73,12 +73,7 @@ extras不要ならば `!!! note` ブロックは省略する (既存の `docs/ap
 
 ## 3. テスト
 
-配置規約（CLAUDE.mdより）:
-
-- 単一ファイル `pytilpack/<name>.py` → `tests/<name>_test.py` (例: `pytilpack/json.py` → `tests/json_test.py`)
-- サブパッケージ `pytilpack/<name>/foo.py` → `tests/<name>/foo_test.py` (例: `pytilpack/asyncio/` → `tests/asyncio/`)
-- 万が一Pythonキーワードと衝突して `<name>_.py` を使う場合は、テストも `<name>_test.py`
- （アンダースコアは無視）。現時点で該当モジュールはなし
+テスト配置規約はCLAUDE.mdの「テスト配置規約」を参照する。
 
 新しいpublic関数には必ずテストを書く。CRUDのような一連の流れは1つのテスト関数にまとめるのを優先する。
 既存の `tests/` ディレクトリから近い形式のものを選んで真似る。
@@ -113,7 +108,7 @@ uvx pyfltr run-for-agent
 
 ## よく使う参考ファイル
 
-- `CLAUDE.md`（「モジュール追加時のextrasチェックリスト」の原典）
-- `scripts/check_docs_api.py`（整合性チェックのロジック）
+- `CLAUDE.md` — 実装上の不変条件・モジュール→extrasキーマッピング・テスト配置規約
+- `scripts/check_docs_api.py` — 整合性チェックのロジック
 - 既存モジュール例（単一ファイル）: `pytilpack/openai.py` + `docs/api/openai.md` + `tests/openai_test.py`
 - 既存モジュール例（サブパッケージ）: `pytilpack/sqlalchemy/` + `docs/api/sqlalchemy.md` + `tests/sqlalchemy/`

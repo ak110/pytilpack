@@ -52,20 +52,26 @@ pytilpackは多数のサードパーティに対するユーティリティ集�
 
 4. **モジュール → extras マッピング (参考情報扱い)**
 
-   > TODO: 現在の手順4はモジュール名とextrasキー名が1:1対応する前提である。
-   > 実際には `flask_login` → `flask`, `pycrypto` → `pycryptodome`, `yaml` → `pyyaml` のような非1:1ケースが存在する。
-   > また `pytilpack/i18n.py` のようにimport解析だけではextras要否を機械決定できないモジュールも存在する。
-   > 正しいモジュール → extrasマッピングを得るには手順4の根本的な再設計が必要（別タスク）。
-   > 当面、本手順は誤検知し得るので結果は参考情報として扱い、verdictは出さない。
+   モジュール名とextrasキー名が異なる既知のケースは`CLAUDE.md`の「モジュール→extrasキーマッピング」表を参照する。
+   現在の既知マッピング:
 
-   - 各トップレベル名 `<name>` に対し、対象ファイルの **トップレベル import** を `Grep` で抽出する
+   - `flask_login` → `flask` extra
+   - `pycrypto` → `pycryptodome` extra
+   - `yaml` → `pyyaml` extra
+   - `quart_auth` → `quart` extra
+   - `i18n` → `babel` extra
+
+   各トップレベル名 `<name>` に対して以下を行う。
+
+   - 対象ファイルの **トップレベル import** を `Grep` で抽出する
      - 対象ファイルは `pytilpack/<name>.py` または `pytilpack/<name>/**/*.py`
      - パターンは `^(import|from)[[:space:]]`
    - 標準ライブラリ・`pytilpack` 内部importを除外し、サードパーティ名を集合化
-   - そのサードパーティが `[project.optional-dependencies].<name>`（またはextras不要なベース依存）に含まれているか確認
-   - 観測事実（`<name>` モジュールがimportするサードパーティ集合 / 対応extrasと思われるキーの中身）を列挙し、
+   - 上記の既知マッピングを適用してextrasキー名を決定し、
+     `[project.optional-dependencies].<extrasキー>`に対応パッケージが含まれているか確認する
+   - 観測事実（importするサードパーティ集合 / 対応extrasキーの中身）を列挙し、
      不一致の **可能性** をflagする
-   - OK/NG判定は下さない（モジュール名とextrasキー名が1:1対応しないケースを機械判別できないため）
+   - OK/NG判定は下さない（import解析だけではextras要否を機械決定できないモジュールが存在するため）
 
 5. **`all` extras の網羅性検査**
    - 全extrasキー (`all` 自身を除く) の値の和集合を作り、`all` extrasと一致するか比較
@@ -75,11 +81,8 @@ pytilpackは多数のサードパーティに対するユーティリティ集�
    - `docs/api/<name>.md` の存在（サブパッケージも1ファイル）... verdict対象
    - `docs/api/<name>.md` に `!!! note "必要なextra"` ブロックがあるか/ないかを `Grep` で確認する
    - 各モジュールについて「note有 / note無」の事実だけを列挙する（この項目ではOK/NG判定をしない）
-   - モジュール名とextrasキー名は1:1対応しない
-    （例: `flask_login` → `flask`, `pycrypto` → `pycryptodome`, `yaml` → `pyyaml`）
-   - また `pytilpack/i18n.py` のようにimport解析だけではnoteの要否を機械的に決められないモジュールも
-     存在する（関連統合機能の利用条件としてのnote）
-   - そのため要否の最終判断は呼び出し元の人間が行い、本agentは判断材料を提供するに留める
+   - モジュール名とextrasキー名の非1:1対応については`CLAUDE.md`の「モジュール→extrasキーマッピング」表を参照する
+   - noteの要否の最終判断は呼び出し元の人間が行い、本agentは判断材料を提供するに留める
    - `README.md` のextras一覧テーブルに `<name>` 行があるか ... verdict対象
    - `docs/index.md` のextras一覧に `<name>` 行があるか ... verdict対象
    - `mkdocs.yml` の `nav.APIリファレンス` 配下に `api/<name>.md` があるか ... verdict対象

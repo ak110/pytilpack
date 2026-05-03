@@ -5,23 +5,28 @@
 
 ## 開発手順
 
-- `make update`: 依存更新 + pre-commit autoupdate + pinactアクション更新 + 全テスト実行
-  - `make update-actions`: GitHub Actionsのハッシュピン更新のみ（mise経由でpinact実行）
-- リリース手順: [docs/development/development.md](docs/development/development.md) 参照
-- テストコードは`pytilpack/xxx.py`に対して`tests/xxx_test.py`として配置する
-  - `pytilpack/xxx/yyy.py`に対して`tests/xxx/yyy_test.py`
-  - `xxx`がpythonキーワードなどの場合、`xxx_.py`になる。そのときは`xxx_test.py`とする（アンダースコアは対象外）
-- コミット前の検証方法: `uvx pyfltr run-for-agent`
-  - ドキュメントなどのみの変更の場合は省略可（pre-commitで実行されるため）
-  - テストコードの単体実行なども極力`uvx pyfltr run-for-agent <path>`を使う（pytestを直接呼び出さない）
-  - 修正後の再実行時は、対象ファイルや対象ツールを必要に応じて絞って実行する（最終検証はCIに委ねる前提）
-    - 例: `pyfltr run-for-agent --commands=mypy,ruff-check path/to/file`
+コミット前の検証方法: `uvx pyfltr run-for-agent`
+
+## アーキテクチャの参照先
+
+[docs/development/architecture.md](docs/development/architecture.md) — モジュール構成方針・extrasマッピング・テスト配置規約など
 
 ## 実装上の不変条件・コーディング規約
 
 - コア依存（`[project.dependencies]`）は最小限に保つ（現在: `beautifulsoup4`/`httpx`/`mcp`/`werkzeug`）
 - サードパーティライブラリに依存するモジュールはextras（`[project.optional-dependencies]`）で管理する
-- インポートは原則トップレベルで行う（`.pylintrc` で `import-outside-toplevel` は有効）
+- インポートは原則トップレベルで行う（`.pylintrc`で`import-outside-toplevel`は有効）
+
+### モジュール→extrasキーマッピング（要点）
+
+モジュール名とextrasキー名が異なる主なケース（詳細は`architecture.md`参照）:
+
+- `pytilpack.pycrypto` → `pycryptodome`
+- `pytilpack.yaml` → `pyyaml`
+- `pytilpack.flask_login` / `pytilpack.quart_auth` / `pytilpack.i18n` → それぞれ`flask`/`quart`/`babel`に含まれる
+
+上記以外は原則としてモジュール名とextrasキー名が一致する。
+`.claude/agents/extras-consistency-checker.md`はこのマッピングを参照して判定する。
 
 ## 注意点
 

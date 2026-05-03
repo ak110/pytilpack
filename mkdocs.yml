@@ -191,3 +191,4 @@ nav:
   - 開発:
       - 概要: development/index.md
       - 開発手順: development/development.md
+      - アーキテクチャ: development/architecture.md
