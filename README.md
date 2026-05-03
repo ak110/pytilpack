@@ -1,9 +1,9 @@
 # pytilpack
 
-[![CI][ci-badge]][ci-link]
+[![CI][ci-badge]][ci-url]
 
 [ci-badge]: https://github.com/ak110/pytilpack/actions/workflows/ci.yaml/badge.svg
-[ci-link]: https://github.com/ak110/pytilpack/actions/workflows/ci.yaml
+[ci-url]: https://github.com/ak110/pytilpack/actions/workflows/ci.yaml
 [![PyPI version](https://badge.fury.io/py/pytilpack.svg)](https://badge.fury.io/py/pytilpack)
 
 Pythonのユーティリティ集。
@@ -39,35 +39,7 @@ uvx pytilpack mcp
 uvx --from 'pytilpack[sqlalchemy]' pytilpack wait-for-db-connection "$SQLALCHEMY_DATABASE_URI"
 ```
 
-### extras 一覧
-
-| Extra | 対象モジュール | 主な依存パッケージ |
-| ----- | -------------- | ------------------ |
-| `all` | 全モジュール | (全依存) |
-| `babel` | `.babel`, `.i18n` | babel |
-| `bleach` | (markdown extraに含まれる) | bleach |
-| `environ` | `.environ` | python-dotenv |
-| `fastapi` | `.fastapi` | fastapi, html5lib |
-| `flask` | `.flask`, `.flask_login` | flask, flask-login, html5lib |
-| `markdown` | `.markdown` | bleach, markdown, tinycss2 |
-| `msal` | `.msal` | azure-identity, cryptography, msal |
-| `pycryptodome` | `.pycrypto` | pycryptodome |
-| `pydantic` | `.pydantic` | pydantic |
-| `pytest` | `.pytest` | pytest, pytest-asyncio |
-| `pyyaml` | `.yaml` | pyyaml |
-| `quart` | `.quart`, `.quart_auth` | quart, quart-auth, hypercorn, uvicorn |
-| `sqlalchemy` | `.sqlalchemy` | sqlalchemy, tabulate |
-| `tiktoken` | `.tiktoken` | tiktoken, openai, pillow |
-| `tqdm` | `.tqdm` | tqdm |
-| `web` | `.web` (check_html) | html5lib |
-
-extras不要のモジュール（ベースパッケージに含まれる）の代表例は以下のとおり。
-全モジュール一覧は[ドキュメント](https://ak110.github.io/pytilpack/)を参照。
-
-- `.cache` / `.crypto` / `.data_url` / `.functools`
-- `.healthcheck` / `.htmlrag` / `.http` / `.httpx` / `.io`
-- `.json` / `.jsonc` / `.paginator` / `.random`
-- `.ratelimit` / `.secrets` / `.sse` / `.validator` / `.zipfile`
+extras一覧と各モジュールが必要とする依存は[ドキュメント](https://ak110.github.io/pytilpack/)を参照。
 
 ## 主な使い方
 

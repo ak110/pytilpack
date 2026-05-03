@@ -30,7 +30,7 @@ jobs:
         shell: bash
     strategy:
       matrix:
-        python-version: ["3.12", "3.13", "3.14"]
+        python-version: [ "3.12", "3.13", "3.14" ]
     env:
       UV_PYTHON: ${{ matrix.python-version }}
       # mise・pinact等がGitHub APIを叩く際のレート制限（403）回避。
@@ -48,10 +48,10 @@ jobs:
           key: pyfltr-cache-${{ runner.os }}-py${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: uv sync --all-extras --all-groups
+        run: uv sync --all-groups --all-extras
 
       - name: Test with pyfltr
-        run: pyfltr ci
+        run: pyfltr ci --output-format=github-annotations
 
       - name: Prune uv cache for CI
         run: uv cache prune --ci
