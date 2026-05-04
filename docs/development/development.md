@@ -17,7 +17,7 @@
 - コミット前の検証: `uvx pyfltr run-for-agent`
     - ドキュメントのみの変更は省略可（pre-commitで実行されるため）
     - テストコードの単体実行も極力`uvx pyfltr run-for-agent <path>`を使う（pytestを直接呼び出さない）
-    - 対象ファイルや対象ツールを絞って実行できる（最終検証はCIに委ねる前提）
+    - 対象ファイルや対象ツールを限定して実行できる（最終検証はCIに委ねる前提）
 
 ```bash
 uvx pyfltr run-for-agent --commands=mypy,ruff-check path/to/file

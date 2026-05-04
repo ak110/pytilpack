@@ -41,7 +41,7 @@ jobs:
         run: uv sync --all-groups --all-extras
 
       - name: Check docs/api/ consistency
-        run: uv run python scripts/check_docs_api.py
+        run: uv run --script scripts/check_docs_api.py
 
       - name: Build docs
         run: uv run mkdocs build --strict

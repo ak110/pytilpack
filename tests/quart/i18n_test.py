@@ -62,7 +62,7 @@ async def test_accept_language_default(app: quart.Quart) -> None:
 
 @pytest.mark.asyncio
 async def test_jinja2_template(app: quart.Quart) -> None:
-    """Jinja2テンプレートで_()が使える。"""
+    """Jinja2テンプレートで_()を利用できる。"""
     async with app.test_client() as client:
         response = await client.get("/template", headers={"Accept-Language": "ja"})
         assert response.status_code == 200

@@ -76,7 +76,7 @@ extras不要モジュール（ベース依存のみで動く）ならばこの�
 ### 8. 整合性チェックスクリプトの実行
 
 ```bash
-uv run python scripts/check_docs_api.py
+uv run --script scripts/check_docs_api.py
 ```
 
 これが警告を出力しなければ最低限の整合性はOK。

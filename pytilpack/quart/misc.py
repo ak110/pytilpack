@@ -59,7 +59,7 @@ def set_max_concurrency(app: quart.Quart, max_concurrency: int, timeout: float |
 
     Notes:
         * Hypercorn の ``--workers`` / ``--threads`` とは独立した
-        アプリレベルの制御。1 ワーカー内のコルーチン数を絞る用途で使う。
+        アプリレベルの制御。1 ワーカー内のコルーチン数を制限する用途で使う。
     """
     if max_concurrency < 1:
         raise ValueError("max_concurrency must be >= 1")
