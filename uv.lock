@@ -7,7 +7,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-05-01T10:47:51.306552726Z"
+exclude-newer = "2026-05-03T04:58:34.090612051Z"
 exclude-newer-span = "P1D"
 
 [options.exclude-newer-package]
@@ -496,6 +496,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/70/75/158e494e4c08dc05e039da5bb48553826bd26c23930cf8d3cd5f21fa8921/cryptography-47.0.0-cp38-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:80887c5cbd1774683cb126f0ab4184567f080071d5acf62205acb354b4b753b7", size = 4912060, upload-time = "2026-04-24T19:54:30.869Z" },
     { url = "https://files.pythonhosted.org/packages/06/bd/0a9d3edbf5eadbac926d7b9b3cd0c4be584eeeae4a003d24d9eda4affbbd/cryptography-47.0.0-cp38-abi3-win32.whl", hash = "sha256:ed67ea4e0cfb5faa5bc7ecb6e2b8838f3807a03758eec239d6c21c8769355310", size = 3248487, upload-time = "2026-04-24T19:54:33.494Z" },
     { url = "https://files.pythonhosted.org/packages/60/80/5681af756d0da3a599b7bdb586fac5a1540f1bcefd2717a20e611ddade45/cryptography-47.0.0-cp38-abi3-win_amd64.whl", hash = "sha256:835d2d7f47cdc53b3224e90810fb1d36ca94ea29cc1801fb4c1bc43876735769", size = 3755737, upload-time = "2026-04-24T19:54:35.408Z" },
+]
+
+[[package]]
+name = "defusedxml"
+version = "0.7.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/0f/d5/c66da9b79e5bdb124974bfe172b4daf3c984ebd9c2a06e2b8a4dc7331c72/defusedxml-0.7.1.tar.gz", hash = "sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69", size = 75520, upload-time = "2021-03-08T10:59:26.269Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/6c/aa3f2f849e01cb6a001cd8554a88d4c77c5c1a31c95bdf1cf9301e6d9ef4/defusedxml-0.7.1-py2.py3-none-any.whl", hash = "sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61", size = 25604, upload-time = "2021-03-08T10:59:24.45Z" },
 ]
 
 [[package]]
@@ -2392,6 +2401,7 @@ all = [
     { name = "babel" },
     { name = "bleach" },
     { name = "cryptography" },
+    { name = "defusedxml" },
     { name = "fastapi" },
     { name = "flask" },
     { name = "flask-login" },
@@ -2425,10 +2435,12 @@ environ = [
     { name = "python-dotenv" },
 ]
 fastapi = [
+    { name = "defusedxml" },
     { name = "fastapi" },
     { name = "html5lib" },
 ]
 flask = [
+    { name = "defusedxml" },
     { name = "flask" },
     { name = "flask-login" },
     { name = "html5lib" },
@@ -2458,6 +2470,7 @@ pyyaml = [
     { name = "pyyaml" },
 ]
 quart = [
+    { name = "defusedxml" },
     { name = "html5lib" },
     { name = "hypercorn" },
     { name = "pytest" },
@@ -2513,6 +2526,10 @@ requires-dist = [
     { name = "bleach", marker = "extra == 'markdown'" },
     { name = "cryptography", marker = "extra == 'all'", specifier = ">=46.0.6" },
     { name = "cryptography", marker = "extra == 'msal'", specifier = ">=46.0.6" },
+    { name = "defusedxml", marker = "extra == 'all'", specifier = ">=0.7" },
+    { name = "defusedxml", marker = "extra == 'fastapi'", specifier = ">=0.7" },
+    { name = "defusedxml", marker = "extra == 'flask'", specifier = ">=0.7" },
+    { name = "defusedxml", marker = "extra == 'quart'", specifier = ">=0.7" },
     { name = "fastapi", marker = "extra == 'all'", specifier = ">=0.111" },
     { name = "fastapi", marker = "extra == 'fastapi'", specifier = ">=0.111" },
     { name = "flask", marker = "extra == 'all'", specifier = ">=3.0" },

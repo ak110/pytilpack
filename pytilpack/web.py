@@ -13,6 +13,108 @@ import pytilpack.http
 
 logger = logging.getLogger(__name__)
 
+# RFC3986のpchar相当（query/fragmentを含まない）の許可文字集合
+# 英数字 / - _ . ~ / : @ ! $ & ' ( ) * + , ; = %
+_FORWARDED_PREFIX_ALLOWED = re.compile(r"^[a-zA-Z0-9\-_.~/:%@!$&'()*+,;=]*$")
+# 制御文字（CR/LF/NUL等）の検出用
+_CONTROL_CHAR = re.compile(r"[\x00-\x1f\x7f]")
+
+
+def validate_forwarded_prefix(value: str) -> str | None:
+    """X-Forwarded-Prefixヘッダー値を検証し、正規化したprefixを返す。
+
+    受け入れ時は末尾の``/``を除去した値を返す（先頭の``/``は保持する）。
+    ``/``単独の場合もNoneを返す（prefix無し相当のため）。
+
+    不正条件:
+        - 空文字列
+        - 先頭が``/``でない
+        - ``//``で始まる（プロトコル相対形式）
+        - CR/LF/NUL等の制御文字を含む
+        - 許可文字集合外の文字を含む（RFC3986のpchar相当。query/fragmentは含めない）
+
+    許可文字集合: 英数字 / ``-`` ``_`` ``.`` ``~`` ``/`` ``:`` ``@`` ``!`` ``$``
+    ``&`` ``'`` ``(`` ``)`` ``*`` ``+`` ``,`` ``;`` ``=`` ``%``
+
+    Args:
+        value: 検証対象の文字列
+
+    Returns:
+        正規化したprefix（末尾``/``除去済み）、不正値または``/``単独の場合はNone
+    """
+    if not value:
+        return None
+    if not value.startswith("/"):
+        return None
+    if value.startswith("//"):
+        return None
+    if _CONTROL_CHAR.search(value):
+        return None
+    if not _FORWARDED_PREFIX_ALLOWED.match(value):
+        return None
+    normalized = value.rstrip("/")
+    if not normalized:
+        # "/" 単独だった場合
+        return None
+    return normalized
+
+
+def validate_forwarded_host(value: str) -> str | None:
+    """X-Forwarded-Hostヘッダー値を検証する。
+
+    受け入れ時はそのまま返す。
+
+    不正条件:
+        - 空文字列
+        - ``//``で始まる
+        - CR/LF/NUL等の制御文字を含む
+        - 空白を含む
+        - ``[``で始まるがその値に``]``が含まれない（不完全なIPv6形式）
+
+    Args:
+        value: 検証対象の文字列
+
+    Returns:
+        valueそのまま、不正値の場合はNone
+    """
+    if not value:
+        return None
+    if value.startswith("//"):
+        return None
+    if _CONTROL_CHAR.search(value):
+        return None
+    if any(c.isspace() for c in value):
+        return None
+    # [で始まる場合は]を含まない不完全なIPv6形式を拒否する
+    if value.startswith("[") and "]" not in value:
+        return None
+    return value
+
+
+def is_host_in_trusted(host_value: str, trusted_hosts: typing.Iterable[str]) -> bool:
+    """ホスト値（ポート含む可能性あり）を許可リストと照合する。
+
+    ホスト値からホスト名部分のみを抽出して許可リストと突き合わせる。
+    ポート番号は無視する。IPv6アドレス（``[::1]:8080``形式）にも対応する。
+
+    Args:
+        host_value: 検証対象のホスト値。``host:port``または``[ipv6]:port``形式を含む
+        trusted_hosts: 許可するホスト名のイテラブル
+
+    Returns:
+        ホスト名が許可リストに含まれる場合True
+    """
+    # IPv6アドレスの解析: [::1]:8080 → ::1
+    if host_value.startswith("["):
+        bracket_end = host_value.find("]")
+        host = host_value[1:bracket_end] if bracket_end != -1 else host_value
+    elif ":" in host_value:
+        host = host_value.rsplit(":", 1)[0]
+    else:
+        host = host_value
+
+    return host in set(trusted_hosts)
+
 
 class RouteInfo(typing.NamedTuple):
     """ルーティング情報を保持するクラス。

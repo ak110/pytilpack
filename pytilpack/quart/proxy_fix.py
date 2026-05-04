@@ -1,19 +1,26 @@
 """リバースプロキシ対応。"""
 
 import copy
+import logging
+import threading
 import typing
 
 import hypercorn.typing
 import quart
 import quart_auth
 
+import pytilpack.web
+
 __all__ = ["ProxyFix"]
+
+logger = logging.getLogger(__name__)
 
 
 class ProxyFix:
     """リバースプロキシ対応。
 
     nginx.conf設定例::
+
         proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-Port $server_port;
@@ -22,6 +29,23 @@ class ProxyFix:
     参考:
         - hypercorn.middleware.ProxyFixMiddleware
           <https://github.com/pgjones/hypercorn/blob/main/src/hypercorn/middleware/proxy_fix.py>
+
+    設計意図:
+        prefixはpin方式で管理する。初回有効リクエスト時に一度だけ``app.config``へ反映し、
+        以降は変更しない。これにより攻撃者制御の``X-Forwarded-Prefix``値で
+        Cookie発行パス等のアプリ全体設定が書き換わる経路を断つ。
+
+        運用時にprefixが既知であれば、``static_prefix``引数で起動時に確定させることを推奨する。
+        ``static_prefix``を指定した場合、初期化時に``app.config``を確定する。
+        ただし``scope["root_path"]``はリクエストごとに``X-Forwarded-Prefix``ヘッダーの値から
+        設定するため、ヘッダーが来ないリクエストでは``scope["root_path"]``は更新されない。
+
+        ``x_host > 0``でX-Forwarded-Hostを有効化する場合は、``trusted_hosts``引数で
+        許可ホストリストを指定することを推奨する。指定がない場合は値検証（制御文字・
+        ``//``始まり等の排除）のみ行い追加警告は出さない。
+
+        旧挙動（リクエストごとに``app.config``を上書き）を期待していた利用者は、
+        ``static_prefix``指定方式、またはpin後の挙動（初回リクエストでpinされる）へ移行すること。
 
     """
 
@@ -33,14 +57,39 @@ class ProxyFix:
         x_host: int = 0,
         x_port: int = 0,
         x_prefix: int = 1,
+        static_prefix: str | None = None,
+        trusted_hosts: typing.Iterable[str] | None = None,
     ):
         self.quartapp = quartapp
         self.asgi_app = quartapp.asgi_app
         self.x_for = x_for
         self.x_proto = x_proto
-        self.x_host = x_host
         self.x_port = x_port
-        self.x_prefix = x_prefix
+        self._x_host = x_host
+        self._x_prefix = x_prefix
+        self.trusted_hosts = list(trusted_hosts) if trusted_hosts is not None else None
+
+        self._pin_lock = threading.Lock()
+        self._pinned_prefix: str | None = None
+        self._prefix_pinned = False
+
+        if static_prefix is not None:
+            validated = pytilpack.web.validate_forwarded_prefix(static_prefix)
+            if validated is None:
+                raise ValueError(f"static_prefixが不正: {static_prefix!r}")
+            self._apply_prefix_to_config(validated)
+            self._pinned_prefix = validated
+            self._prefix_pinned = True
+
+    def _apply_prefix_to_config(self, prefix: str) -> None:
+        """prefixをapp.configおよびQuartAuthインスタンスへ反映する。"""
+        self.quartapp.config["APPLICATION_ROOT"] = prefix
+        self.quartapp.config["SESSION_COOKIE_PATH"] = prefix
+        self.quartapp.config["QUART_AUTH_COOKIE_PATH"] = prefix
+        # QuartAuthはinit_app時にコピーしてしまうので強制反映が必要
+        for extension in self.quartapp.extensions.get("QUART_AUTH", []):
+            if isinstance(extension, quart_auth.QuartAuth):
+                extension.cookie_path = prefix
 
     async def __call__(
         self,
@@ -56,7 +105,6 @@ class ProxyFix:
             # X-Forwarded-For → client
             forwarded_for = self._get_trusted_value(b"x-forwarded-for", headers, self.x_for)
             if forwarded_for and scope.get("client"):
-                forwarded_for = forwarded_for.split(",")[-1].strip()
                 _, orig_port = scope.get("client") or (None, None)
                 scope["client"] = (forwarded_for, orig_port or 0)
 
@@ -66,22 +114,28 @@ class ProxyFix:
                 scope["scheme"] = forwarded_proto
 
             # X-Forwarded-Host → server & Host header
-            forwarded_host = self._get_trusted_value(b"x-forwarded-host", headers, self.x_host)
+            forwarded_host = self._get_trusted_value(b"x-forwarded-host", headers, self._x_host)
             if forwarded_host:
-                host_val = forwarded_host
-                host, port = host_val, None
-                if ":" in host_val and not host_val.startswith("["):
-                    h, p = host_val.rsplit(":", 1)
-                    if p.isdigit():
-                        host, port = h, int(p)
-                # update server tuple
-                orig_server = scope.get("server") or (None, None)
-                orig_port = orig_server[1]
-                scope["server"] = (host, port or orig_port or 0)
-                # rebuild Host header
-                headers = [(hn, hv) for hn, hv in headers if hn.lower() != b"host"]
-                host_hdr = host if port is None else f"{host}:{port}"
-                headers.append((b"host", host_hdr.encode("utf-8", errors="replace")))
+                validated_host = pytilpack.web.validate_forwarded_host(forwarded_host)
+                if validated_host is None:
+                    logger.warning(f"X-Forwarded-Hostに不正な値が含まれています: {forwarded_host!r}")
+                elif self.trusted_hosts is not None and not pytilpack.web.is_host_in_trusted(
+                    validated_host, self.trusted_hosts
+                ):
+                    logger.warning(f"X-Forwarded-Hostが許可リスト外です: {validated_host!r}")
+                else:
+                    host_val = validated_host
+                    host, port = host_val, None
+                    if ":" in host_val and not host_val.startswith("["):
+                        h, p = host_val.rsplit(":", 1)
+                        if p.isdigit():
+                            host, port = h, int(p)
+                    orig_server = scope.get("server") or (None, None)
+                    orig_port = orig_server[1]
+                    scope["server"] = (host, port or orig_port or 0)
+                    headers = [(hn, hv) for hn, hv in headers if hn.lower() != b"host"]
+                    host_hdr = host if port is None else f"{host}:{port}"
+                    headers.append((b"host", host_hdr.encode("utf-8", errors="replace")))
 
             # X-Forwarded-Port → server port & Host header
             forwarded_port = self._get_trusted_value(b"x-forwarded-port", headers, self.x_port)
@@ -94,17 +148,28 @@ class ProxyFix:
                 headers.append((b"host", f"{orig_host}:{port_int}".encode()))
 
             # X-Forwarded-Prefix → root_path + config
-            forwarded_prefix = self._get_trusted_value(b"x-forwarded-prefix", headers, self.x_prefix)
-            if forwarded_prefix and forwarded_prefix != "/":
-                prefix = forwarded_prefix.rstrip("/")
-                scope["root_path"] = prefix
-                self.quartapp.config["APPLICATION_ROOT"] = prefix
-                self.quartapp.config["SESSION_COOKIE_PATH"] = prefix
-                self.quartapp.config["QUART_AUTH_COOKIE_PATH"] = prefix
-                # QuartAuthはinit_app時にコピーしてしまうので強制反映が必要…
-                for extension in self.quartapp.extensions.get("QUART_AUTH", []):
-                    if isinstance(extension, quart_auth.QuartAuth):
-                        extension.cookie_path = prefix
+            forwarded_prefix = self._get_trusted_value(b"x-forwarded-prefix", headers, self._x_prefix)
+            if forwarded_prefix:
+                prefix = pytilpack.web.validate_forwarded_prefix(forwarded_prefix)
+                if prefix is None:
+                    logger.warning(f"X-Forwarded-Prefixに不正な値が含まれています: {forwarded_prefix!r}")
+                else:
+                    scope["root_path"] = prefix
+                    if not self._prefix_pinned:
+                        with self._pin_lock:
+                            if not self._prefix_pinned:
+                                self._apply_prefix_to_config(prefix)
+                                self._pinned_prefix = prefix
+                                self._prefix_pinned = True
+                            elif self._pinned_prefix != prefix:
+                                logger.warning(
+                                    f"X-Forwarded-Prefixがpin済みの値と異なります: "
+                                    f"pinned={self._pinned_prefix!r}, received={prefix!r}"
+                                )
+                    elif self._pinned_prefix != prefix:
+                        logger.warning(
+                            f"X-Forwarded-Prefixがpin済みの値と異なります: pinned={self._pinned_prefix!r}, received={prefix!r}"
+                        )
 
             scope["headers"] = headers
 

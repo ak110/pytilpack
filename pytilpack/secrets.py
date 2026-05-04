@@ -1,6 +1,7 @@
 """Pythonのユーティリティ集。"""
 
 import fcntl
+import os
 import pathlib
 import secrets
 import threading
@@ -28,19 +29,25 @@ def generate_secret_key(cache_path: str | pathlib.Path, nbytes: int | None = Non
 
     with _lock:  # スレッド間の排他制御
         cache_path.parent.mkdir(parents=True, exist_ok=True)
-        with cache_path.open("a+b") as secret:
-            # プロセス間の排他制御
-            fcntl.flock(secret.fileno(), fcntl.LOCK_EX)
-            try:
-                secret.seek(0)
-                secret_key = secret.read()
-                if not secret_key:
-                    secret_key = secrets.token_bytes(nbytes)
+        # os.openを使い作成時点から0o600を保証する（pathlib.open/open()はumaskの影響を受けるため）
+        fd = os.open(cache_path, os.O_RDWR | os.O_CREAT, 0o600)
+        try:
+            with os.fdopen(fd, "r+b") as secret:
+                fd = -1  # fdopen成功でfd所有権がsecretに移った
+                # プロセス間の排他制御
+                fcntl.flock(secret.fileno(), fcntl.LOCK_EX)
+                try:
                     secret.seek(0)
-                    secret.truncate()
-                    secret.write(secret_key)
-                    secret.flush()
-                    cache_path.chmod(0o600)
-                return secret_key
-            finally:
-                fcntl.flock(secret.fileno(), fcntl.LOCK_UN)
+                    secret_key = secret.read()
+                    if not secret_key:
+                        secret_key = secrets.token_bytes(nbytes)
+                        secret.seek(0)
+                        secret.truncate()
+                        secret.write(secret_key)
+                        secret.flush()
+                    return secret_key
+                finally:
+                    fcntl.flock(secret.fileno(), fcntl.LOCK_UN)
+        finally:
+            if fd >= 0:
+                os.close(fd)

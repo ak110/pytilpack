@@ -27,6 +27,7 @@ all = [
     "babel>=2.18.0",
     "bleach>=6.2",
     "cryptography>=46.0.6",
+    "defusedxml>=0.7",
     "fastapi>=0.111",
     "flask-login>=0.6",
     "flask>=3.0",
@@ -54,10 +55,12 @@ bleach = [
     "bleach>=6.2",
 ]
 fastapi = [
+    "defusedxml>=0.7",
     "fastapi>=0.111",
     "html5lib",
 ]
 flask = [
+    "defusedxml>=0.7",
     "flask-login>=0.6",
     "flask>=3.0",
     "html5lib",
@@ -91,6 +94,7 @@ tqdm = [
     "tqdm>=4.0",
 ]
 quart = [
+    "defusedxml>=0.7",
     "html5lib",
     "hypercorn>=0.18.0",
     "pytest",

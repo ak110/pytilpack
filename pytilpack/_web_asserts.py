@@ -13,7 +13,8 @@ from __future__ import annotations
 import json
 import pathlib
 import typing
-import xml.etree.ElementTree as ET
+
+import defusedxml.ElementTree
 
 import pytilpack.pytest
 import pytilpack.web
@@ -89,7 +90,7 @@ def assert_xml_core(
         pytilpack.web.check_status_code(status_code_value, expected_status_code)
         pytilpack.web.check_content_type(typing.cast(str, content_type_value), expected_content_type)
         try:
-            _ = ET.fromstring(response_text)
+            _ = defusedxml.ElementTree.fromstring(response_text)
         except Exception as e:
             raise AssertionError(f"XMLエラー: {e}") from e
 

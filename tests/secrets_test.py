@@ -20,6 +20,18 @@ def test_generate_secret_key(tmp_path: pathlib.Path) -> None:
     assert (os.stat(path).st_mode & 0o777) == 0o600
 
 
+def test_generate_secret_key_permission_with_open_umask(tmp_path: pathlib.Path) -> None:
+    """umaskがゆるい環境でも作成時点から0o600で作成されることを確認。"""
+    path = tmp_path / "secret_key"
+    old_umask = os.umask(0o000)
+    try:
+        pytilpack.secrets.generate_secret_key(path)
+        # 作成直後の時点で0o600であること
+        assert (os.stat(path).st_mode & 0o777) == 0o600
+    finally:
+        os.umask(old_umask)
+
+
 def test_generate_secret_key_concurrent(tmp_path: pathlib.Path) -> None:
     """2プロセス×2スレッドで同時実行して同じ値が返ることを確認。"""
     path = tmp_path / "secret_key"

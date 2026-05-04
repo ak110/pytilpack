@@ -1,6 +1,9 @@
 """Quart miscのテスト。"""
 
+import asyncio
+import contextlib
 import pathlib
+import typing
 
 import httpx
 import pytest
@@ -65,8 +68,10 @@ async def test_run(tmp_path: pathlib.Path) -> None:
     def index():
         return "Hello, World!"
 
-    async with pytilpack.quart.run(app):
-        response = httpx.get("http://localhost:5000/hello")
+    # tests/flask/misc_test.py::test_run が既定の5000を使うため、xdist並列実行時の
+    # ポート衝突を避けるためQuart側は5004を使う。
+    async with pytilpack.quart.run(app, port=5004):
+        response = httpx.get("http://localhost:5004/hello")
         assert response.read() == b"Hello, World!"
         assert response.status_code == 200
 
@@ -212,6 +217,56 @@ async def test_exhaust_concurrency() -> None:
 
         # exhaust後は復帰
         assert (await client.get("/test")).status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_set_max_concurrency_duplicate() -> None:
+    """set_max_concurrencyを同一アプリに二度呼ぶとRuntimeErrorが送出されることのテスト。"""
+    app = quart.Quart(__name__)
+    pytilpack.quart.set_max_concurrency(app, 2)
+    with pytest.raises(RuntimeError, match="already configured"):
+        pytilpack.quart.set_max_concurrency(app, 1)
+
+
+@pytest.mark.asyncio
+async def test_set_max_concurrency_cancel_releases_semaphore() -> None:
+    """キャンセル時にセマフォが解放されることのテスト。
+
+    before_request に登録された _acquire を Quart のリクエストコンテキスト下で
+    直接キャンセルし、セマフォが漏洩しないことを確認する。
+    """
+    app = quart.Quart(__name__)
+    pytilpack.quart.set_max_concurrency(app, 1, timeout=None)
+    state: pytilpack.quart.misc.ConcurrencyState = app.extensions["pytilpack_concurrency"]
+
+    # set_max_concurrency が before_request に登録した _acquire を取り出す
+    (acquire_func,) = app.before_request_funcs[None]
+
+    async with app.test_request_context("/"):
+        assert not state.semaphore.locked()  # 初期値（解放済み）
+
+        # セマフォを枯渇させて _acquire が待機状態に入るよう準備する
+        await state.semaphore.acquire()
+        assert state.semaphore.locked()
+
+        # _acquire をタスクとして起動（セマフォ待機に入る）。
+        # before_request_funcs から取り出した関数の戻り値型はQuartの汎用型のため、
+        # Coroutine[Any, Any, None] としてキャストして型検査を通す。
+        task: asyncio.Task[None] = asyncio.create_task(
+            typing.cast("typing.Coroutine[typing.Any, typing.Any, None]", acquire_func())
+        )
+        # イベントループに制御を渡して _acquire が待機状態へ移行するまで進める
+        await asyncio.sleep(0)
+
+        # タスクをキャンセルして CancelledError を発行する
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
+
+        # 手動取得分を解放する
+        state.semaphore.release()
+        # セマフォが漏洩していなければ解放済みのまま（_acquire は未取得でキャンセル）
+        assert not state.semaphore.locked()
 
 
 @pytest.mark.asyncio

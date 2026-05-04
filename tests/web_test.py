@@ -117,6 +117,97 @@ def test_check_html(
         assert expected_error in caplog.text
 
 
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        # 正常系
+        ("/app", "/app"),
+        ("/app/sub", "/app/sub"),
+        ("/app/", "/app"),  # 末尾スラッシュは除去
+        ("/app//sub", "/app//sub"),  # パス内の//はOK（先頭の//のみ拒否）
+        # 末尾スラッシュを複数持つケース
+        ("/app///", "/app"),
+        # 許可文字全種
+        ("/a-b_c.d~e:f@g!h$i&j'k(l)m*n+o,p;q=r%20", "/a-b_c.d~e:f@g!h$i&j'k(l)m*n+o,p;q=r%20"),
+        # 異常系: 空文字
+        ("", None),
+        # 異常系: 先頭が/でない
+        ("app", None),
+        ("//evil.com", None),  # プロトコル相対形式
+        # 異常系: /単独（正規化後に空になる）
+        ("/", None),
+        ("///", None),
+        # 異常系: 制御文字
+        ("/app\r\nX-Inject: evil", None),
+        ("/app\x00", None),
+        ("/app\x0a", None),
+        # 異常系: 許可文字集合外（スペース・日本語など）
+        ("/app path", None),
+        ("/アプリ", None),
+        ("/app?query=1", None),  # query文字列はNG
+        ("/app#frag", None),  # fragmentはNG
+    ],
+)
+def test_validate_forwarded_prefix(value: str, expected: str | None) -> None:
+    """validate_forwarded_prefixのテスト。"""
+    assert pytilpack.web.validate_forwarded_prefix(value) == expected
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        # 正常系
+        ("example.com", "example.com"),
+        ("example.com:8080", "example.com:8080"),
+        ("[::1]", "[::1]"),
+        ("[::1]:8080", "[::1]:8080"),
+        ("192.168.1.1", "192.168.1.1"),
+        ("192.168.1.1:443", "192.168.1.1:443"),
+        # 異常系: 空文字
+        ("", None),
+        # 異常系: //で始まる
+        ("//evil.com", None),
+        # 異常系: 制御文字（CRLF）
+        ("evil.com\r\nX-Inject: bad", None),
+        ("evil.com\n", None),
+        ("evil.com\x00", None),
+        # 異常系: 空白を含む
+        ("evil .com", None),
+        ("evil\tcom", None),
+        # 異常系: [で始まるが]を含まない不完全なIPv6形式
+        ("[::1", None),
+        ("[", None),
+    ],
+)
+def test_validate_forwarded_host(value: str, expected: str | None) -> None:
+    """validate_forwarded_hostのテスト。"""
+    assert pytilpack.web.validate_forwarded_host(value) == expected
+
+
+@pytest.mark.parametrize(
+    "host_value,trusted_hosts,expected",
+    [
+        # 正常系: ホスト名のみ
+        ("example.com", ["example.com"], True),
+        ("example.com", ["other.com", "example.com"], True),
+        ("example.com", ["other.com"], False),
+        # ポート付きホスト（ポートは無視）
+        ("example.com:8080", ["example.com"], True),
+        ("example.com:8080", ["other.com"], False),
+        # IPv6アドレス（[]内のアドレスで照合）
+        ("[::1]:8080", ["::1"], True),
+        ("[::1]:8080", ["other"], False),
+        ("[::1]", ["::1"], True),
+        # ポートなし
+        ("192.168.1.1", ["192.168.1.1"], True),
+        ("192.168.1.1", ["192.168.1.2"], False),
+    ],
+)
+def test_is_host_in_trusted(host_value: str, trusted_hosts: list[str], expected: bool) -> None:
+    """is_host_in_trustedのテスト。"""
+    assert pytilpack.web.is_host_in_trusted(host_value, trusted_hosts) == expected
+
+
 def test_check_html_complex_error(caplog: pytest.LogCaptureFixture) -> None:
     """check_htmlの複雑なHTML構文エラーのテスト。"""
     html = """

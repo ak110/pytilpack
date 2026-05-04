@@ -51,12 +51,20 @@ def set_max_concurrency(app: quart.Quart, max_concurrency: int, timeout: float |
         max_concurrency: 許可する同時リクエスト数の上限。
         timeout: 最大待機秒数。タイムアウト時は 503 Service Unavailable を返す。
 
+    Raises:
+        ValueError: max_concurrency が 1 未満の場合。
+        RuntimeError: 同一アプリに対して二度目に呼び出した場合。
+            before_request/teardown_request が重複登録されてセマフォが二重管理されるため、
+            同一アプリへの複数回呼び出しは禁止する。
+
     Notes:
         * Hypercorn の ``--workers`` / ``--threads`` とは独立した
         アプリレベルの制御。1 ワーカー内のコルーチン数を絞る用途で使う。
     """
     if max_concurrency < 1:
         raise ValueError("max_concurrency must be >= 1")
+    if "pytilpack_concurrency" in app.extensions:
+        raise RuntimeError("set_max_concurrency is already configured on this app")
 
     semaphore = asyncio.Semaphore(max_concurrency)
     state = ConcurrencyState(
@@ -67,21 +75,34 @@ def set_max_concurrency(app: quart.Quart, max_concurrency: int, timeout: float |
     app.extensions["pytilpack_concurrency"] = state
 
     async def _acquire() -> None:  # before_request
+        # テスト時にセマフォ/timeoutを一時変更できるようstateから読む
+        sem = state.semaphore
+        to = state.timeout
         try:
-            # テスト時にセマフォ/timeoutを一時変更できるようstateから読む
-            sem = state.semaphore
-            to = state.timeout
             if to is None:
                 await sem.acquire()
             else:
                 await asyncio.wait_for(sem.acquire(), timeout=to)
-            quart.g.quart__concurrency_token = True
         except TimeoutError:
             logger.warning(f"Concurrency limit reached, aborting request: {quart.request.path}")
             quart.abort(
                 503,
                 description="サーバーが混みあっています。しばらく待ってから再度お試しください。",
             )
+        # asyncio.CancelledError はここでは捕捉しない。
+        # - to is None 経路（await sem.acquire() 直接）: acquire 待機中にキャンセルされると
+        #   セマフォ未取得のまま CancelledError が伝播するため、漏洩は発生しない。
+        # - to is not None 経路（asyncio.wait_for 経由）: wait_for がキャンセルを受けた場合、
+        #   CPython の保証により acquire 完了済みであれば内部で release 済み。
+        #   未完了であれば未取得のまま伝播する。
+        # いずれの経路でも、この時点では未取得状態が保証されるため保護は不要。
+
+        # acquire 完了。トークン設定前にキャンセルが来てもセマフォを解放するよう保護する。
+        try:
+            quart.g.quart__concurrency_token = True
+        except BaseException:
+            sem.release()
+            raise
 
     async def _release(_: typing.Any) -> None:
         if hasattr(quart.g, "quart__concurrency_token"):
