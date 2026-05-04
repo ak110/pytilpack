@@ -40,6 +40,17 @@ pytilpackは主要Pythonライブラリ向けの軽量ユーティリティ集�
 上記以外は原則としてモジュール名とextrasキー名が一致する。
 `.claude/agents/extras-consistency-checker.md`はこのマッピングを参照して判定する。
 
+### サブパッケージ共通モジュールの依存
+
+`pytilpack/_web_asserts.py`のように複数のフレームワーク向けサブパッケージから共通利用される
+私的モジュールがある。
+これらが特定のサードパーティに依存する場合、当該パッケージは依存元の各フレームワークextras
+（`flask`・`quart`・`fastapi`等）と`all` extrasの双方に含める。
+
+具体例: `pytilpack/_web_asserts.py`の`assert_xml_core`はXML外部実体攻撃を防ぐため
+`defusedxml`を使用する。
+このため`flask`・`quart`・`fastapi`・`all` extrasに`defusedxml`を含める。
+
 ## 公開API設計方針
 
 - 各モジュールは対象ライブラリ（`pytilpack.fastapi`・`pytilpack.flask`等）ごとに独立した名前空間を持つ
@@ -51,6 +62,21 @@ pytilpackは主要Pythonライブラリ向けの軽量ユーティリティ集�
 - `pytilpack/xxx.py` → `tests/xxx_test.py`
 - `pytilpack/xxx/yyy.py` → `tests/xxx/yyy_test.py`
 - `xxx`がPythonキーワード等と衝突する場合は`xxx_.py`となる。テストは`xxx_test.py`（末尾アンダースコアは除く）
+- 既存モジュールへ公開関数・公開クラスを追加した場合は、対応する`tests/.../xxx_test.py`に単体テストも追加する
+
+### テスト用ローカルポートの割り当て
+
+`tests/`配下でローカルHTTPサーバーを起動するテストは、pytest-xdistの並列実行（`-n 4`）で
+ポート衝突によるハング・失敗を避けるため、テストファイル単位で固定のポート番号を割り当てる。
+
+| テストファイル | ポート |
+| --- | --- |
+| `tests/flask/misc_test.py::test_run` | 5000 |
+| `tests/httpx_test.py` | 5001, 5002 |
+| `tests/http_test.py` | 5003 |
+| `tests/quart/misc_test.py::test_run` | 5004 |
+
+新規にローカルサーバーを起動するテストを追加する場合は、本表を参照して未使用のポートを割り当てる。
 
 ## ドキュメント構成
 

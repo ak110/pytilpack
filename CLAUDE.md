@@ -16,6 +16,7 @@
 - コア依存（`[project.dependencies]`）は最小限に保つ（現在: `beautifulsoup4`/`httpx`/`mcp`/`werkzeug`）
 - サードパーティライブラリに依存するモジュールはextras（`[project.optional-dependencies]`）で管理する
 - インポートは原則トップレベルで行う（`.pylintrc`で`import-outside-toplevel`は有効）
+- ファイル作成時に厳密なパーミッションを固定する必要がある場合（umask非依存）は`os.open(..., mode=0o600)`等で作成時点から確定させる。`pathlib.Path.open`+`chmod`の二段では作成→`chmod`の隙間で他プロセスがファイルを開ける時間窓が生じる（`pytilpack/secrets.py`が該当）
 
 ### モジュール→extrasキーマッピング（要点）
 
