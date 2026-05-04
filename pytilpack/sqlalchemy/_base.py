@@ -105,7 +105,7 @@ class _WaitForConnectionState:
         self.failed = False
 
     def on_success(self) -> None:
-        """接続成功時に呼ぶ。過去に失敗していた場合のみログを出す。"""
+        """接続成功時に呼ぶ。過去に失敗していた場合のみログを出力する。"""
         if self.failed:
             logger.info("DB接続成功")
 

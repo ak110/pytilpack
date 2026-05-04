@@ -119,7 +119,7 @@ def _build_dump_options(
     sort_keys: bool,
     Dumper: typing.Any,
 ) -> _DumpOptions:
-    """save/save_all/dumps/dumps_allの6引数を_DumpOptionsに詰め替える。"""
+    """save/save_all/dumps/dumps_allの6引数を_DumpOptionsへ集約する。"""
     return _DumpOptions(
         allow_unicode=allow_unicode,
         width=width,

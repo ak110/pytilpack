@@ -19,7 +19,7 @@ pytilpackに新モジュールを追加する際、更新漏れが起きやす�
 新モジュールについて以下を決める。
 
 - モジュール形態: **単一ファイル** (`pytilpack/<name>.py`) か **サブパッケージ** (`pytilpack/<name>/`) か
-  - 複数ファイルに分割したい場合や、ライブラリごとに名前空間を切りたい場合はサブパッケージにする
+  - 複数ファイルに分割したい場合や、ライブラリごとに名前空間を分けたい場合はサブパッケージにする
   - 既存例: 単一ファイル `pytilpack/openai.py` / サブパッケージ `pytilpack/sqlalchemy/`, `pytilpack/asyncio/`
 - トップレベル名 `<name>` の確定
   - Pythonキーワードと衝突する場合はファイル名を `<name>_.py` にする（テスト配置規約はCLAUDE.mdを参照）
@@ -37,7 +37,7 @@ uv add --optional all <library>
 
 - 対象モジュールが他のpytilpackモジュールをimportする場合、**推移的依存** も `<name>` extrasに含める必要がある
 - `[all]` extrasには必ず同じパッケージを追加すること
-- コア依存 (`[project.dependencies]`) は最小限に保つ方針。ベースパッケージに入れるのは原則禁止
+- コア依存 (`[project.dependencies]`) は最小限に保つ方針。ベースパッケージに含めるのは原則禁止
 
 ## 2. docs/api
 

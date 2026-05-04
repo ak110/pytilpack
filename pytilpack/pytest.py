@@ -17,7 +17,7 @@ _BASETMP_ENV = "PYTILPACK_PYTEST_BASETMP"
 class AssertBlock:
     """大きいデータ (画面のHTML等) をpytestのassertで確認するためのユーティリティ。
 
-    ブロック内でエラーが発生した場合、dataを一時ファイルに書き出し、そのパスを例外メッセージに出力する。
+    ブロック内でエラーが発生した場合、dataを一時ファイルへ保存し、そのパスを例外メッセージに含める。
 
     例::
 
@@ -46,7 +46,7 @@ class AssertBlock:
         """コンテキストマネージャーのenter。"""
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        """コンテキストマネージャーのexit。エラーが発生した場合はdataを一時ファイルに書き出し、パスをログと例外メッセージに出力する。"""
+        """コンテキストマネージャーのexit。エラーが発生した場合はdataを一時ファイルへ保存し、パスをログと例外メッセージへ含める。"""
         del exc_tb  # noqa
         if exc_type is None:
             return
@@ -70,7 +70,7 @@ class AssertBlock:
         return self.__enter__()
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        """非同期コンテキストマネージャーのexit。エラーが発生した場合はdataを一時ファイルに書き出し、パスをログと例外メッセージに出力する。"""
+        """非同期コンテキストマネージャーのexit。エラーが発生した場合はdataを一時ファイルへ保存し、パスをログと例外メッセージへ含める。"""
         self.__exit__(exc_type, exc_val, exc_tb)
 
 

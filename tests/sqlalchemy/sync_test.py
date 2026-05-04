@@ -237,7 +237,7 @@ def test_get_by_unique_id(session: sqlalchemy.orm.Session) -> None:
 def test_to_dict_invalid_args() -> None:
     """to_dictに無効な引数を渡した場合にValueErrorが送出されることを確認。
 
-    assert文からValueErrorに変更したため、`-O`実行時も検証が効く。
+    assert文からValueErrorに変更したため、`-O`実行時も検証が機能する。
     """
     test_record = Test1(id=1, unique_id="test_dict")
 
@@ -256,7 +256,7 @@ def test_to_dict_invalid_args() -> None:
 def test_init_already_called() -> None:
     """init()を二重呼び出しした場合にRuntimeErrorが送出されることを確認。
 
-    assert文からRuntimeErrorに変更したため、`-O`実行時も検証が効く。
+    assert文からRuntimeErrorに変更したため、`-O`実行時も検証が機能する。
     """
 
     class TempBase(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.SyncMixin):

@@ -118,7 +118,7 @@ async def test_first_request_pins_prefix():
 
 @pytest.mark.asyncio
 async def test_pin_does_not_change_on_second_request_with_same_prefix():
-    """pin後に同じprefixが来てもapp.configが変わらないことのテスト。"""
+    """pin後に同じprefixを受信してもapp.configが変わらないことのテスト。"""
     app, middleware = _make_app({"x_prefix": 1})
 
     async def fake_asgi(scope: typing.Any, receive: typing.Any, send: typing.Any) -> None:
@@ -138,7 +138,7 @@ async def test_pin_does_not_change_on_second_request_with_same_prefix():
 
 @pytest.mark.asyncio
 async def test_pin_does_not_change_on_different_prefix(caplog):
-    """pin後に異なるprefixが来てもapp.configが変わらず、scopeだけ書き換わることのテスト。"""
+    """pin後に異なるprefixを受信してもapp.configが変わらず、scopeだけ書き換わることのテスト。"""
     app, middleware = _make_app({"x_prefix": 1})
 
     received_scopes: list[dict] = []

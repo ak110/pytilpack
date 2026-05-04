@@ -122,7 +122,7 @@ class Paginator[T]:
             right_edge: 最後のページから表示するページ数。
 
         Returns:
-            ページ番号のリスト。ページ番号が連続していない場合はNoneを挟む。
+            ページ番号のリスト。ページ番号が連続していない場合はNoneを挿入する。
         """
         last = 0
         result: list[int | None] = []

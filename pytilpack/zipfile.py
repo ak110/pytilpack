@@ -18,8 +18,8 @@ def decode_zipinfo_filename(
     ``info.filename.encode("cp437").decode("cp932")``の往復復元に失敗する。
     そのため、生バイト列に近い``info.orig_filename``を起点に復号する。
 
-    bit 11（Unicode flag）が立つ場合は``zipfile``がUTF-8で``orig_filename``を
-    構築済みなのでそのまま採用する。立たない場合は``orig_filename``をCP437で
+    bit 11（Unicode flag）がセットされている場合は``zipfile``がUTF-8で``orig_filename``を
+    構築済みなのでそのまま採用する。未セットの場合は``orig_filename``をCP437で
     エンコードして原バイト列を復元し、``fallback_encodings``の先頭からstrictで
     復号を試み、全て失敗した場合はCP437既定の``orig_filename``をそのまま返す。
 

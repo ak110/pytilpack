@@ -164,7 +164,7 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
 
 
 def reset_user(user: UserMixin) -> None:
-    """現在のユーザーをリセットする。DBのセッション切れ対策などに使用する。
+    """現在のユーザーをリセットする。DBのセッション失効対策などに使用する。
 
     quart.gに直接設定するだけの処理のため、利用時は注意する。
     """

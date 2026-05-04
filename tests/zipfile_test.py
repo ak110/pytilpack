@@ -7,10 +7,10 @@ import pytilpack.zipfile
 
 
 class _Cp932ZipInfo(zipfile.ZipInfo):
-    """ファイル名をCP932でエンコードし、Unicode flag（bit 11）を立てないZipInfo。
+    """ファイル名をCP932でエンコードし、Unicode flag（bit 11）をセットしないZipInfo。
 
     Python標準の``ZipInfo._encodeFilenameFlags``は非ASCII名をUTF-8に変換して
-    bit 11を立てる。これを上書きすることで、過去の日本語ZIP互換のパターン
+    bit 11をセットする。これを上書きすることで、過去の日本語ZIP互換のパターン
     （CP932生バイト + bit 11未設定）をテストで再現できる。
     """
 
@@ -22,7 +22,7 @@ class _RawBytesZipInfo(zipfile.ZipInfo):
     """ファイル名として任意の生バイト列を書き込むZipInfo。
 
     CP932 strictで復号できないバイト列や、NUL文字を含むエントリ名を
-    テストで合成するために使う。bit 11は立てない。
+    テストで合成するために使う。bit 11はセットしない。
     """
 
     def __init__(self, raw_name: bytes) -> None:

@@ -29,7 +29,7 @@ class DataURL:
 
 
 def create(mime_type: str, data: bytes) -> str:
-    """小さい画像などのバイナリデータをURLに埋め込んだものを作って返す。
+    """小さい画像などのバイナリデータをURLに埋め込んだ文字列を生成して返す。
 
     Args:
         mime_type: 例：'image/png'

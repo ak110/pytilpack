@@ -105,7 +105,7 @@ def delete_empty_dirs(path: str | pathlib.Path, keep_root: bool = True) -> None:
         logger.warning(f"ディレクトリの削除に失敗: {path}", exc_info=True)
 
 
-# delete_old_files内で同名のパラメーターとぶつかるため別名を用意する
+# delete_old_files内で同名のパラメーターと衝突するため別名を用意する
 _delete_empty_dirs = delete_empty_dirs
 
 

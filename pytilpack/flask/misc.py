@@ -44,7 +44,7 @@ def generate_secret_key(cache_path: str | pathlib.Path) -> bytes:
 
 
 def data_url(data: bytes, mime_type: str) -> str:
-    """小さい画像などのバイナリデータをURLに埋め込んだものを作って返す。
+    """小さい画像などのバイナリデータをURLに埋め込んだ文字列を生成して返す。
 
     Args:
         data: 埋め込むデータ

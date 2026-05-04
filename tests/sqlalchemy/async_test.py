@@ -277,7 +277,7 @@ async def test_paginate() -> None:
 async def test_async_init_already_called() -> None:
     """AsyncMixin.init()二重呼び出し時にRuntimeErrorが送出されることを確認。
 
-    assert文からRuntimeErrorに変更したため、`-O`実行時も検証が効く。
+    assert文からRuntimeErrorに変更したため、`-O`実行時も検証が機能する。
     """
 
     class TempBase(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.AsyncMixin):

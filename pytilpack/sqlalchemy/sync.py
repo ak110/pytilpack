@@ -412,7 +412,7 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
     def get_by_id_not_null(
         cls, id_: int, for_update: bool = False, options: sqlalchemy.sql.base.ExecutableOption | None = None
     ) -> typing.Self:
-        """IDを元にインスタンスを取得。見つからない場合は例外を出す。
+        """IDを元にインスタンスを取得。見つからない場合は例外を送出する。
 
         Args:
             id_: ID。
@@ -544,7 +544,7 @@ def safe_close(
     session: sqlalchemy.orm.Session | sqlalchemy.orm.scoped_session,
     log_level: int | None = logging.DEBUG,
 ):
-    """例外を出さずにセッションをクローズ。"""
+    """例外を送出せずにセッションをクローズ。"""
     try:
         session.close()
     except Exception:

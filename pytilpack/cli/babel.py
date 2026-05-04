@@ -89,7 +89,7 @@ def _run_extract(args: argparse.Namespace) -> None:
                 auto_comments=comments,
                 context=context,
             )
-    # POTファイルに書き出し
+    # POTファイルへ出力
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("wb") as f:
         babel.messages.pofile.write_po(f, catalog)

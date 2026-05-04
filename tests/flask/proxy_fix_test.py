@@ -92,7 +92,7 @@ def test_first_request_pins_prefix():
 
 
 def test_pin_does_not_change_on_different_prefix(caplog):
-    """pin後に異なるprefixが来てもapp.configが変わらず、environだけ書き換わることのテスト。"""
+    """pin後に異なるprefixを受信してもapp.configが変わらず、environだけ書き換わることのテスト。"""
     app, middleware = _make_app({"x_prefix": 1})
 
     captured_environs: list[dict] = []
@@ -168,7 +168,7 @@ def test_crlf_prefix_is_rejected(caplog):
 
 
 def test_werkzeug_does_not_reapply_rejected_prefix():
-    """自前検証で弾いたprefixがwerkzeug側で再反映されないことの回帰テスト。"""
+    """自前検証で除外したprefixがwerkzeug側で再反映されないことの回帰テスト。"""
     _, middleware = _make_app({"x_prefix": 1})
 
     captured_environs: list[dict] = []

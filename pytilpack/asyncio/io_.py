@@ -15,7 +15,7 @@ import pytilpack.pathlib
 # yaml / pytilpack.yaml は pyyaml extras に依存するため、以降の YAML 系
 # 関数内で遅延 import する。pytilpack.asyncio 自体はベース依存のみで動作
 # させたい (pytilpack.sqlalchemy 等が pytilpack.asyncio を import する経路で
-# pyyaml 不在時に壊れていた)。
+# pyyaml 不在時に動作しなくなっていた)。
 
 logger = logging.getLogger(__name__)
 

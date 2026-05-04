@@ -387,7 +387,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
     async def get_by_id_not_null(
         cls, id_: int, for_update: bool = False, options: sqlalchemy.sql.base.ExecutableOption | None = None
     ) -> typing.Self:
-        """IDを元にインスタンスを取得。見つからない場合は例外を出す。
+        """IDを元にインスタンスを取得。見つからない場合は例外を送出する。
 
         Args:
             id_: ID。
@@ -529,7 +529,7 @@ async def await_for_connection(url: str, timeout: float = 180.0) -> None:
 
 
 async def asafe_close(session: sqlalchemy.ext.asyncio.AsyncSession, log_level: int | None = logging.DEBUG):
-    """例外を出さずにセッションをクローズ。"""
+    """例外を送出せずにセッションをクローズ。"""
     try:
         await asyncio.shield(session.close())
     except Exception:

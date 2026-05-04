@@ -38,7 +38,7 @@ class Mixin(_ReprMixin, _ToDictMixin):
     def get_by_id_not_null(
         cls, id_: int, for_update: bool = False, options: sqlalchemy.sql.base.ExecutableOption | None = None
     ) -> typing.Self:
-        """IDを元にインスタンスを取得。見つからない場合は例外を出す。
+        """IDを元にインスタンスを取得。見つからない場合は例外を送出する。
 
         Args:
             id_: ID。

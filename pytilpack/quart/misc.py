@@ -92,12 +92,12 @@ def set_max_concurrency(app: quart.Quart, max_concurrency: int, timeout: float |
         # asyncio.CancelledError はここでは捕捉しない。
         # - to is None 経路（await sem.acquire() 直接）: acquire 待機中にキャンセルされると
         #   セマフォ未取得のまま CancelledError が伝播するため、漏洩は発生しない。
-        # - to is not None 経路（asyncio.wait_for 経由）: wait_for がキャンセルを受けた場合、
+        # - to is not None 経路（asyncio.wait_for 経由）: wait_for がキャンセルされた場合、
         #   CPython の保証により acquire 完了済みであれば内部で release 済み。
         #   未完了であれば未取得のまま伝播する。
         # いずれの経路でも、この時点では未取得状態が保証されるため保護は不要。
 
-        # acquire 完了。トークン設定前にキャンセルが来てもセマフォを解放するよう保護する。
+        # acquire 完了。トークン設定前にキャンセルが発生してもセマフォを解放するよう保護する。
         try:
             quart.g.quart__concurrency_token = True
         except BaseException:

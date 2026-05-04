@@ -92,9 +92,9 @@ def _register(
             add_help=False,
             help=f"(未インストール: extras [{extras}] が必要)",
         )
-        # argparse にパースエラーを出させないため、残りの引数を全て吸収する。
+        # argparse にパースエラーを発生させないため、残りの引数を全て吸収する。
         # 実際の dispatch は main() 冒頭の先読みルートが担うが、万一そちらを
-        # すり抜けたケースでも `args.command == name` で missing ルートへ流れる。
+        # すり抜けたケースでも `args.command == name` で missing ルートへ遷移する。
         stub.add_argument("_rest", nargs=argparse.REMAINDER, help=argparse.SUPPRESS)
         return
     module.add_parser(subparsers)

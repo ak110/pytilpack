@@ -19,7 +19,7 @@ def test_paginator_basic() -> None:
 def test_paginator_invalid_page() -> None:
     """無効なpageでValueErrorが送出されることを確認。
 
-    assert文からValueErrorに変更したため、`-O`実行時も検証が効くようになる。
+    assert文からValueErrorに変更したため、`-O`実行時も検証が機能する。
     """
     with pytest.raises(ValueError, match="page"):
         pytilpack.paginator.Paginator(page=0, per_page=3, items=[], total=0)

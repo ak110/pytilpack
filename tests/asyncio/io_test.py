@@ -71,9 +71,9 @@ async def test_json_operations_with_options(tmp_path: pathlib.Path) -> None:
     # ファイル内容を確認
     content = await pytilpack.asyncio.read_text(json_file)
     lines = content.strip().split("\n")
-    assert '"a": 2' in lines[1]  # aが最初に来る
+    assert '"a": 2' in lines[1]  # aが最初に位置する
     assert '"japanese": "日本語"' in lines[2]
-    assert '"z": 1' in lines[3]  # zが最後に来る
+    assert '"z": 1' in lines[3]  # zが最後に位置する
 
     # 読み込み確認
     result = await pytilpack.asyncio.read_json(json_file)
