@@ -37,32 +37,32 @@ class SyncAsyncBridgeMixin:
 
     @classmethod
     async def acount(cls, query: sqlalchemy.Select | sqlalchemy.CompoundSelect) -> int:
-        """queryのレコード数を取得する。(非同期版)"""
+        """queryのレコード数を返す。非同期版。"""
         # cls.count.__func__はSyncMixin側で定義されるためmypy向けに抑制する。
         sync_cls = typing.cast("type[SyncMixin]", cls)
         return await run_sync_with_session(sync_cls.count.__func__)(sync_cls, query)  # type: ignore[attr-defined]
 
     @classmethod
     async def ascalar_one[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T:
-        """queryの結果を1件取得する。(非同期版)"""
+        """queryの結果を1件返す。非同期版。"""
         sync_cls = typing.cast("type[SyncMixin]", cls)
         return await run_sync_with_session(sync_cls.scalar_one.__func__)(sync_cls, query)  # type: ignore[attr-defined]
 
     @classmethod
     async def ascalar_one_or_none[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T | None:
-        """queryの結果を0件または1件取得する。(非同期版)"""
+        """queryの結果を0件または1件返す。非同期版。"""
         sync_cls = typing.cast("type[SyncMixin]", cls)
         return await run_sync_with_session(sync_cls.scalar_one_or_none.__func__)(sync_cls, query)  # type: ignore[attr-defined]
 
     @classmethod
     async def ascalars[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> list[T]:
-        """queryの結果を全件取得する。(非同期版)"""
+        """queryの結果を全件返す。非同期版。"""
         sync_cls = typing.cast("type[SyncMixin]", cls)
         return await run_sync_with_session(sync_cls.scalars.__func__)(sync_cls, query)  # type: ignore[attr-defined]
 
     @classmethod
     async def aone[TT: tuple](cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT]:
-        """queryの結果を1件取得する。(非同期版)"""
+        """queryの結果を1件返す。非同期版。"""
         sync_cls = typing.cast("type[SyncMixin]", cls)
         return await run_sync_with_session(sync_cls.one.__func__)(sync_cls, query)  # type: ignore[attr-defined]
 
@@ -70,19 +70,19 @@ class SyncAsyncBridgeMixin:
     async def aone_or_none[TT: tuple](
         cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]
     ) -> sqlalchemy.Row[TT] | None:
-        """queryの結果を0件または1件取得する。(非同期版)"""
+        """queryの結果を0件または1件返す。非同期版。"""
         sync_cls = typing.cast("type[SyncMixin]", cls)
         return await run_sync_with_session(sync_cls.one_or_none.__func__)(sync_cls, query)  # type: ignore[attr-defined]
 
     @classmethod
     async def aall[TT: tuple](cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> list[sqlalchemy.Row[TT]]:
-        """queryの結果を全件取得する。(非同期版)"""
+        """queryの結果を全件返す。非同期版。"""
         sync_cls = typing.cast("type[SyncMixin]", cls)
         return await run_sync_with_session(sync_cls.all.__func__)(sync_cls, query)  # type: ignore[attr-defined]
 
     @classmethod
     async def aget_by_id(cls, id_: int, for_update: bool = False) -> typing.Self | None:
-        """IDを元にインスタンスを取得。(非同期版)"""
+        """IDを元にインスタンスを取得する。非同期版。"""
         sync_cls = typing.cast("type[SyncMixin]", cls)
         return await run_sync_with_session(sync_cls.get_by_id.__func__)(sync_cls, id_, for_update)  # type: ignore[attr-defined,return-value]
 
@@ -94,7 +94,7 @@ class SyncAsyncBridgeMixin:
         per_page: int,
         scalar: bool = True,
     ) -> pytilpack.paginator.Paginator:
-        """Flask-SQLAlchemy風ページネーション。(非同期版)"""
+        """Flask-SQLAlchemy風ページネーションを返す。非同期版。"""
         sync_cls = typing.cast("type[SyncMixin]", cls)
         return await run_sync_with_session(sync_cls.paginate.__func__)(sync_cls, query, page, per_page, scalar)  # type: ignore[attr-defined]
 
@@ -147,7 +147,7 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
         expire_on_commit: bool = False,
         **kwargs: typing.Any,
     ) -> None:
-        """DB接続を初期化する。(推奨される既定設定を適用する。)
+        """DB接続を初期化する。
 
         Args:
             url: DB接続URL。
@@ -487,7 +487,7 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
 
 
 class SyncUniqueIDMixin:
-    """self.unique_idを持つテーブルクラスに便利メソッドを生やすmixin。"""
+    """self.unique_idを持つテーブルクラスにユニークID操作メソッドを付与するmixin。"""
 
     @classmethod
     def generate_unique_id(cls) -> str:

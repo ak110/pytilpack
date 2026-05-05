@@ -96,7 +96,7 @@ def clean_html(
 
     Args:
         html: HTML文字列
-        aggressive: より強力な削除を行うか否か。Defaults to False.
+        aggressive: 削除対象を拡張するか否か。Defaults to False.
         keep_title: titleタグを残すか否か。Defaults to 'not aggressive'.
         keep_href: href属性を残すか否か。Defaults to 'not aggressive'.
         remove_span: spanタグを削除するか否か。(deprecated)

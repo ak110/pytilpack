@@ -1,11 +1,12 @@
 """Flask/Quart/FastAPI向けasserts.pyの共通実装（private）。
 
-`pytilpack.flask.asserts` / `pytilpack.quart.asserts` / `pytilpack.fastapi.asserts`で
-重複していた`assert_bytes`・`assert_html`・`assert_json`・`assert_xml`・`assert_sse`・
-`assert_response`のコアロジックを集約する。
+`pytilpack.flask.asserts` / `pytilpack.quart.asserts` / `pytilpack.fastapi.asserts`から
+`assert_bytes`・`assert_html`・`assert_json`・`assert_xml`・`assert_sse`・
+`assert_response`のコアロジックを担う。
 
-差分はレスポンス取得APIのみ（flask: `response.get_data()`、quart: `await response.get_data()`、
-fastapi: `response.content`）。各フレームワーク側のラッパーからテキスト/バイト列を渡して呼び出す。
+フレームワーク間の差分はレスポンス取得APIのみ（flask: `response.get_data()`、
+quart: `await response.get_data()`、fastapi: `response.content`）。
+各フレームワーク側のラッパーからテキスト/バイト列を渡して呼び出す。
 """
 
 from __future__ import annotations

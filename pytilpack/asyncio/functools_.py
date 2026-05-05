@@ -40,10 +40,10 @@ def run_sync[**P, R](
 def run_in_thread[**P, R](
     func: typing.Callable[P, typing.Coroutine[typing.Any, typing.Any, R]],
 ) -> typing.Callable[P, typing.Awaitable[R]]:
-    """非同期関数を非同期に実行するデコレーター。
+    """非同期関数を専用スレッドの独立したイベントループで実行するデコレーター。
 
-    awaitも使うけどブロッキング処理も含まれるような関数を雑に何とかするためのもの。
-    安全重視でスレッドを新たに作成するのでオーバーヘッドは大きめ。
+    awaitとブロッキング処理が混在する関数を対象とする。
+    スレッドを新規生成するためオーバーヘッドが大きい。
     """
 
     @functools.wraps(func)
@@ -91,11 +91,11 @@ def run[T](coro: typing.Coroutine[typing.Any, typing.Any, T]) -> T:
         loop = None
 
     # 非同期環境でない場合
-    # (スタックトレースをシンプルにするためexceptの外で実行)
+    # exceptの外で実行することでスタックトレースを短縮する
     if loop is None:
         return asyncio.run(coro)
 
-    # 何らかの理由でイベントループは存在するが動いてない場合 (謎)
+    # イベントループは存在するが停止状態の場合（主にテスト環境で発生）
     if not loop.is_running():
         return loop.run_until_complete(coro)
 

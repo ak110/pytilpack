@@ -10,7 +10,7 @@ import pytilpack.sse
 
 def test_sse_to_str() -> None:
     """SSE.to_str()の各種パターンテスト。"""
-    # シンプルなメッセージ
+    # dataフィールドのみのメッセージ
     assert pytilpack.sse.SSE("test data").to_str() == "data: test data\n\n"
 
     # 複数行データ (LF / CRLF / CR)

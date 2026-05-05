@@ -1,7 +1,7 @@
 """レートリミッター。
 
-httpx.py (429リトライ) やfunctools.py (retry/max_concurrency) を補完する
-プロアクティブなレート制限機能。
+httpx.py（429リトライ）やfunctools.py（retry/max_concurrency）とは独立して
+リクエスト送信前にレートを制御するトークンバケット実装。
 """
 
 import asyncio

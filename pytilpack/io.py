@@ -5,7 +5,7 @@ import pathlib
 import typing
 
 PathOrIO = str | pathlib.Path | typing.IO[str] | typing.IO[bytes]
-"""パスまたはIOオブジェクトな型。"""
+"""パスまたはIOオブジェクトの型エイリアス。"""
 
 
 def read_text(

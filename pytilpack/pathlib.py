@@ -26,7 +26,7 @@ def append_bytes(path: str | pathlib.Path, data: bytes) -> None:
 
 
 def delete_file(path: str | pathlib.Path) -> None:
-    """ファイル削除。"""
+    """ファイルを削除する。"""
     path = pathlib.Path(path)
     if path.is_file():
         path.unlink()

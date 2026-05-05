@@ -54,7 +54,7 @@ def stream_handler(
     level: int | None = logging.INFO,
     format: str | None = "[%(levelname)-5s] %(message)s",
 ) -> logging.Handler:
-    """標準エラー出力用のハンドラを作成。"""
+    """標準エラー出力用のハンドラを作成する。"""
     handler = logging.StreamHandler(stream)
     if level is not None:
         handler.setLevel(level)
@@ -73,7 +73,7 @@ def file_handler(
     when: str | None = None,
     backup_count: int = 5,
 ) -> logging.Handler:
-    """ファイル出力用のハンドラを作成。"""
+    """ファイル出力用のハンドラを作成する。"""
     log_path = pathlib.Path(log_path)
     log_path.parent.mkdir(parents=True, exist_ok=True)
     handler: logging.Handler
@@ -95,7 +95,7 @@ def file_handler(
 
 @contextlib.contextmanager
 def timer(name: str, logger: logging.Logger | None = None):
-    """処理時間の計測＆表示。"""
+    """処理時間を計測してログ出力するコンテキストマネージャー。"""
     start_time = time.perf_counter()
     has_error = False
     try:

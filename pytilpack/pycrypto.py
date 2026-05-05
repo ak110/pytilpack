@@ -1,9 +1,7 @@
-"""pycryptodomeを使って簡単にAES-GCM暗号化/復号を行うユーティリティ。
+"""pycryptodomeによるAES-GCM暗号化/復号ユーティリティ。
 
-キー及び暗号文はBASE64エンコードした文字列で扱うのを基本とする。
-
-また、nonceはデフォルトで12バイト、暗号文の先頭に付加する前提とする。
-
+キーおよび暗号文はBASE64エンコードした文字列で扱う。
+nonceはデフォルトで12バイトとし、暗号文の先頭に付加する前提とする。
 """
 
 import json
@@ -19,22 +17,22 @@ DEFAULT_KEY_SIZE = 32
 
 
 def create_key(nbytes: int = DEFAULT_KEY_SIZE, url_safe: bool = False) -> str:
-    """ランダムなキーを生成。デフォルトは32バイト。"""
+    """ランダムなキーを生成する。デフォルトは32バイト。"""
     return pytilpack.base64.encode(secrets.token_bytes(nbytes), url_safe=url_safe)
 
 
 def encrypt_json(obj: typing.Any, key: str | bytes, url_safe: bool = False) -> str:
-    """JSON化してencrypt()"""
+    """オブジェクトをJSON文字列化してから暗号化する。"""
     return encrypt(json.dumps(obj), key, url_safe=url_safe)
 
 
 def decrypt_json(s: str, key: str | bytes, url_safe: bool = False) -> typing.Any:
-    """decrypt()してJSON読み込み。"""
+    """復号してからJSONとして解析する。"""
     return json.loads(decrypt(s, key, url_safe=url_safe))
 
 
 def encrypt(plaintext: str, key: str | bytes, url_safe: bool = False) -> str:
-    """暗号化。"""
+    """AES-GCMで暗号化する。"""
     if isinstance(key, str):
         key = pytilpack.base64.decode(key, url_safe=url_safe)
     plaintext_bytes = plaintext.encode("utf-8")
@@ -47,7 +45,7 @@ def encrypt(plaintext: str, key: str | bytes, url_safe: bool = False) -> str:
 
 
 def decrypt(ciphertext: str, key: str | bytes, url_safe: bool = False) -> str:
-    """復号。"""
+    """AES-GCMで復号する。"""
     if isinstance(key, str):
         key = pytilpack.base64.decode(key, url_safe=url_safe)
     cipherbytes = pytilpack.base64.decode(ciphertext, url_safe=url_safe)

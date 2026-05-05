@@ -15,11 +15,11 @@ if typing.TYPE_CHECKING:
 
 
 def asdict(obj: typing.Any) -> dict[str, typing.Any]:
-    """dataclasses.asdict()のシャローコピーバージョン。
+    """dataclasses.asdict()のシャロー版。
 
-    dataclasses.asdict()はネストされたdataclassを再帰的に処理してしまうが、
-    その挙動が要らない場合に使う。
-    公式マニュアルに書いてある回避策そのままのコード。
+    dataclasses.asdict()はネストされたdataclassを再帰的に変換するが、
+    本関数は1段階のみ展開する。
+    公式ドキュメントの回避策をそのまま実装する。
     <https://docs.python.org/ja/3/library/dataclasses.html#dataclasses.asdict>
 
     """
@@ -27,10 +27,9 @@ def asdict(obj: typing.Any) -> dict[str, typing.Any]:
 
 
 def fromdict(cls: "type[TDataClass]", data: dict[str, typing.Any]) -> "TDataClass":
-    """dictからdataclassを生成する。
+    """dictからdataclassを生成する。ネストされたdataclassも再帰的に変換する。
 
-    pytilpack.dataclasses_.asdict()ではなく、
-    dataclasses.asdict()の逆変換(ネストにも対応)。
+    dataclasses.asdict()の逆変換に相当する。
 
     Args:
         cls: dataclassの型

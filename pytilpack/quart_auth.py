@@ -34,9 +34,9 @@ class AnonymousUser(UserMixin):
 class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
     """Quart-Authの独自拡張。
 
-    Flask-Loginのように@auth_manager.user_loaderを定義できるようにする。
-    読み込んだユーザーインスタンスは quart.g.quart_auth_current_user に格納する。
-    テンプレートでも {{ current_user }} でアクセスできるようにする。
+    Flask-Loginと同様の`@auth_manager.user_loader`定義に対応する。
+    読み込んだユーザーインスタンスは`quart.g.quart_auth_current_user`に格納する。
+    テンプレートでは`{{ current_user }}`でアクセスできる。
 
     """
 
@@ -199,12 +199,12 @@ def logout_user() -> None:
 
 
 async def ensure_user_loaded() -> None:
-    """ユーザーをロードする。async版のuser_loaderを使用している場合はこの関数の呼び出しが必要である。"""
+    """ユーザーをロードする。async版のuser_loaderを使用している場合は本関数の呼び出しが必要。"""
     await _find_extension().ensure_user_loaded()
 
 
 def is_authenticated() -> bool:
-    """ユーザー認証済みかどうかを取得する。"""
+    """ユーザーが認証済みであるか否かを返す。"""
     return quart_auth.current_user.auth_id is not None
 
 

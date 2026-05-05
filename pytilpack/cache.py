@@ -32,7 +32,7 @@ class CachedFileLoader[T]:
     """
 
     def __init__(self, loader: typing.Callable[[pathlib.Path], T] | None = None) -> None:
-        """デフォルトのローダー関数を設定してインスタンスを初期化。
+        """デフォルトのローダー関数を設定してインスタンスを初期化する。
 
         Args:
             loader: デフォルトのローダー関数。省略可能。
@@ -45,7 +45,7 @@ class CachedFileLoader[T]:
         path: pathlib.Path,
         loader: typing.Callable[[pathlib.Path], T] | None = None,
     ) -> T:
-        """キャッシュを利用してファイルを読み込み。
+        """キャッシュを利用してファイルを読み込む。
 
         Args:
             path: ファイルパス。
@@ -83,11 +83,11 @@ class CachedFileLoader[T]:
         return data
 
     def clear(self) -> None:
-        """すべてのキャッシュエントリをクリア。"""
+        """すべてのキャッシュエントリをクリアする。"""
         self._cache.clear()
 
     def remove(self, path: pathlib.Path) -> None:
-        """指定されたパスのキャッシュを削除。
+        """指定されたパスのキャッシュを削除する。
 
         Args:
             path: 削除するキャッシュのパス。

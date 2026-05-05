@@ -1,4 +1,4 @@
-"""MSAL関連のユーティリティなど。"""
+"""MSAL関連のユーティリティ集。"""
 
 import binascii
 import datetime

@@ -25,7 +25,7 @@ def load(
 
 
 loads = json.loads
-"""JSONの文字列解析。標準ライブラリと同じだけど一応エイリアスを用意しておく。"""
+"""JSONの文字列解析。標準ライブラリのエイリアス。"""
 
 
 def converter(
@@ -94,8 +94,8 @@ def dumps(
 ) -> str:
     """JSONの文字列化。
 
-    標準ライブラリと異なりデフォルトでensure_ascii=False、UTF-8で保存する。
-    また、日付やbytesを変換するためのconverter関数をdefault引数に指定している。
+    標準ライブラリと異なりデフォルトでensure_ascii=False。
+    日付やbytesを変換するconverter関数をdefault引数に指定する。
 
     """
     return (

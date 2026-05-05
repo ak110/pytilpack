@@ -32,7 +32,7 @@ def num_tokens_from_messages(
     tools: list[openai.types.chat.ChatCompletionToolParam] | None = None,
     tool_choice: openai.types.chat.ChatCompletionNamedToolChoiceParam | None = None,
 ) -> int:
-    """メッセージからトークン数を算出。
+    """メッセージからトークン数を算出する。
 
     <https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb>
 
@@ -146,7 +146,7 @@ def _get_image_dims(image: str) -> tuple[int, int]:
 
 
 def num_tokens_from_texts(model: str, texts: list[str] | str) -> int:
-    """テキストからトークン数を算出。"""
+    """テキストからトークン数を算出する。"""
     if isinstance(texts, str):
         texts = [texts]
     enc = get_encoding_for_model(model)
@@ -154,7 +154,7 @@ def num_tokens_from_texts(model: str, texts: list[str] | str) -> int:
 
 
 def num_tokens_from_tools(encoding: tiktoken.Encoding, tools: list[openai.types.chat.ChatCompletionToolParam]) -> int:
-    """Function calling部分のトークン数算出。（非推奨）"""
+    """Function calling部分のトークン数を算出する。（非推奨）"""
     warnings.warn(
         "num_tokens_from_tools is deprecated. Use num_tokens_for_tools instead.",
         DeprecationWarning,
@@ -169,7 +169,7 @@ def num_tokens_for_tools(
     tool_choice: openai.types.chat.ChatCompletionToolChoiceOptionParam | None = None,
     encoding: tiktoken.Encoding | None = None,
 ) -> int:
-    """Function calling部分のトークン数算出。
+    """Function calling部分のトークン数を算出する。
 
     <https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb>
     <https://community.openai.com/t/how-to-calculate-the-tokens-when-using-function-call/266573/10>

@@ -13,9 +13,9 @@ logger = logging.getLogger(__name__)
 
 
 def select_accept(accept_header: str, candidates: collections.abc.Sequence[str]) -> str | None:
-    """Acceptヘッダーに基づいて候補MIMEタイプからベストマッチを返す。
+    """Acceptヘッダーに基づいて候補MIMEタイプから優先度最上位の値を返す。
 
-    specificity・quality値を考慮して最適な候補を選択する。
+    specificity・quality値を考慮して選択する。
     全候補が品質値0（拒否）の場合はNoneを返す。
 
     Acceptヘッダーが空の場合はRFC 7231に従い「何でも受け入れる」として扱い、
@@ -26,7 +26,7 @@ def select_accept(accept_header: str, candidates: collections.abc.Sequence[str])
         candidates: 候補MIMEタイプのリスト（サーバー側の優先順）
 
     Returns:
-        最も優先されるMIMEタイプ。マッチするものがなければNone。
+        優先度最上位のMIMEタイプ。一致するものがなければNone。
 
     """
     if not candidates:
@@ -43,17 +43,17 @@ def select_accept_language(
     supported: collections.abc.Sequence[str],
     default: str | None = None,
 ) -> str | None:
-    """Accept-Languageヘッダーからサポート済みロケールのベストマッチを返す。
+    """Accept-Languageヘッダーからサポート済みロケールの優先度最上位の値を返す。
 
-    quality値を考慮して最適なロケールを選択する。
+    quality値を考慮して選択する。
 
     Args:
         header: Accept-Languageヘッダーの値（生文字列）
         supported: サポートするロケールのリスト（例: ["en", "ja", "ko"]）
-        default: マッチしない場合のデフォルト値
+        default: 一致するものがない場合のデフォルト値
 
     Returns:
-        最も優先されるロケール。マッチするものがなければdefault。
+        優先度最上位のロケール。一致するものがなければdefault。
 
     """
     if not supported:

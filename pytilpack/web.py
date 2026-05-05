@@ -1,4 +1,4 @@
-"""Web関係の一般的な処理をまとめたモジュール。"""
+"""Web関連のユーティリティ集。"""
 
 import logging
 import pathlib

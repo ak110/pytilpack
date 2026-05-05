@@ -14,9 +14,9 @@ _lock = threading.Lock()
 
 @pytilpack.functools.retry(includes=[OSError])
 def generate_secret_key(cache_path: str | pathlib.Path, nbytes: int | None = None) -> bytes:
-    """シークレットキーの作成/取得。
+    """シークレットキーを取得または生成する。
 
-    既にcache_pathに保存済みならそれを返し、でなくば作成する。
+    cache_pathに保存済みの場合はそれを返し、未存在の場合は生成してから保存する。
 
     排他制御の都合上、Linux/Unix系OSでのみ動作する。
 

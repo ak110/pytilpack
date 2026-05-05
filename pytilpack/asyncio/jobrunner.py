@@ -111,7 +111,7 @@ class JobRunner(metaclass=abc.ABCMeta):
             task.cancel()
 
     async def graceful_shutdown(self) -> None:
-        """新規ジョブ取得を停止し、実行中のジョブ完了を待ってから戻る"""
+        """新規ジョブ取得を停止し、実行中のジョブ完了を待ってから戻る。"""
         self.running = False
         await asyncio.sleep(0)
         if len(self.tasks) > 0:

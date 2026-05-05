@@ -1,4 +1,4 @@
-"""Server-Sent Events メッセージを生成するユーティリティ"""
+"""Server-Sent Eventsメッセージ生成ユーティリティ。"""
 
 import asyncio
 import contextlib

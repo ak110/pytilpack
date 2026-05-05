@@ -26,7 +26,7 @@ async def assert_bytes(
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = None,
 ) -> bytes:
-    """テストコード用。
+    """レスポンスのステータスコードとContent-Typeを検証してボディをbytesで返す。
 
     Args:
         response: レスポンス
@@ -53,12 +53,10 @@ async def assert_html(
     strict: bool = False,
     tmp_path: pathlib.Path | None = None,
 ) -> str:
-    """テストコード用。
-
-    html5libが必要なので注意。
+    """レスポンスを検証してHTMLボディを文字列で返す。html5libが必要。
 
     strict・tmp_pathはキーワード引数での指定を推奨する。flask/quart/fastapi間で
-    位置引数順を揃えているが、将来的な引数追加時の互換性のため。
+    位置引数順を揃えているが、将来の引数追加時の後方互換性を保つためである。
 
     Args:
         response: レスポンス
@@ -95,7 +93,7 @@ async def assert_json(
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "application/json",
 ) -> typing.Any:
-    """テストコード用。
+    """レスポンスを検証してJSONをデコードして返す。
 
     Args:
         response: レスポンス
@@ -106,7 +104,7 @@ async def assert_json(
         AssertionError: ステータスコードが異なる場合など
 
     Returns:
-        レスポンスのjson
+        レスポンスのJSONデコード結果
 
     """
     response = await _get_response(response)
@@ -119,7 +117,7 @@ async def assert_xml(
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "__default__",
 ) -> str:
-    """テストコード用。
+    """レスポンスを検証してXMLボディを文字列で返す。
 
     Args:
         response: レスポンス
@@ -130,7 +128,7 @@ async def assert_xml(
         AssertionError: ステータスコードが異なる場合など
 
     Returns:
-        レスポンスのxml
+        レスポンスボディ
 
     """
     response = await _get_response(response)
@@ -143,7 +141,7 @@ async def assert_sse(
     response: ResponseType,
     status_code: int = 200,
 ) -> quart.Response:
-    """テストコード用。
+    """レスポンスのステータスコードとSSE用Content-Typeを検証して返す。
 
     Args:
         response: レスポンス
@@ -165,7 +163,7 @@ async def assert_response(
     response: ResponseType,
     status_code: int = 200,
 ) -> quart.Response:
-    """テストコード用。
+    """レスポンスのステータスコードを検証して返す。
 
     Args:
         response: レスポンス

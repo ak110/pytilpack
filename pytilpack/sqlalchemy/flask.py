@@ -32,7 +32,7 @@ def register_ping():
 
 
 class Mixin(_ReprMixin, _ToDictMixin):
-    """テーブルクラスに色々便利機能を生やすMixin。"""
+    """テーブルクラスに共通メソッドを付与するMixin。"""
 
     @classmethod
     def get_by_id_not_null(
@@ -79,7 +79,7 @@ class Mixin(_ReprMixin, _ToDictMixin):
 
 
 class UniqueIDMixin:
-    """self.unique_idを持つテーブルクラスに便利メソッドを生やすmixin。"""
+    """self.unique_idを持つテーブルクラスにユニークID操作メソッドを付与するmixin。"""
 
     @classmethod
     def generate_unique_id(cls) -> str:

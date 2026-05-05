@@ -1,8 +1,4 @@
-"""Pythonのユーティリティ集。
-
-本格的な用途にはpydash等の利用も検討する。
-
-"""
+"""Pythonのユーティリティ集。"""
 
 import functools
 import inspect

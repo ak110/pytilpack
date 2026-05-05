@@ -13,13 +13,13 @@ tools: Read, Grep, Glob, Bash
 
 # extras-consistency-checker
 
-pytilpackのextras (`[project.optional-dependencies]`) と各モジュール / ドキュメントの整合性を監査するエージェント。
-PR運用はないため、`pyproject.toml` や `pytilpack/` を編集した直後に呼び出す想定。**コード変更はせず、レポートのみ返す**。
+pytilpackのextras（`[project.optional-dependencies]`）と各モジュール/ドキュメントの整合性を検査する。
+**コード変更はせず、レポートのみ返す。**
 
 ## 役割
 
-pytilpackは多数のサードパーティに対するユーティリティ集で、依存関係はextrasに切り出されている。
-モジュール追加・削除・依存変更のたびに以下が崩れやすい:
+pytilpackは多数のサードパーティに対するユーティリティ集であり、依存関係はextrasに切り出されている。
+モジュール追加・削除・依存変更のたびに以下の整合性が崩れることがある:
 
 - コア依存 (`[project.dependencies]`) に余計なものが混入していないか
 - 各モジュールがimportするサードパーティが対応extrasに過不足なく入っているか
