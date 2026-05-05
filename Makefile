@@ -9,6 +9,7 @@ help:
 setup:
 	uv sync --all-groups --all-extras
 	uvx pre-commit install
+	git config --local commit.template .gitmessage
 
 # 依存パッケージをアップグレードし全テスト実行
 update:
