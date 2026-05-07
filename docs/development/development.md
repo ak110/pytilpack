@@ -12,15 +12,10 @@
 
 ## 開発コマンド
 
-- `make update`: 依存更新 + pre-commit autoupdate + pinactアクション更新 + 全テスト実行
-    - `make update-actions`: GitHub Actionsのハッシュピン更新のみ（mise経由でpinact実行）
-- コミット前の検証: `uvx pyfltr run-for-agent`
-    - ドキュメントのみの変更は省略可（pre-commitで実行されるため）
-    - テストコードの単体実行も極力`uvx pyfltr run-for-agent <path>`を使う（pytestを直接呼び出さない）
-    - 対象ファイルや対象ツールを限定して実行できる（最終検証はCIに委ねる前提）
-
 ```bash
-uvx pyfltr run-for-agent --commands=mypy,ruff-check path/to/file
+make format   # 整形 + 軽量lint + 自動修正（開発時の手動実行用）
+make test     # 全チェック実行（これを通過すればコミット可能）
+make update   # 依存更新
 ```
 
 ## サプライチェーン攻撃対策
