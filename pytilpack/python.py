@@ -352,7 +352,7 @@ def convert[T](
     try:
         # intなどを想定した型変換
         value = target_type(value)  # type: ignore[call-arg]
-        return typing.cast(T, value)
+        return value
     except Exception as e:
         if errors == "ignore":
             return default_value

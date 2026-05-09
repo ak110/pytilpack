@@ -27,7 +27,7 @@ class JSONResponse(starlette.responses.Response):
 
     """
 
-    media_type = "application/json"
+    media_type = "application/json"  # type: ignore[assignment]
 
     def render(self, content: typing.Any) -> bytes:
         """コンテンツをインデント付きJSONのバイト列に変換する。"""
