@@ -23,7 +23,7 @@ pytilpackは主要Pythonライブラリ向けの軽量ユーティリティ集�
 
 コア依存（`[project.dependencies]`）は最小限に保つ（現在: `beautifulsoup4`/`httpx`/`mcp`/`werkzeug`）。
 サードパーティライブラリに依存するモジュールはextras（`[project.optional-dependencies]`）で管理する。
-インポートは原則トップレベルで行う（`.pylintrc`で`import-outside-toplevel`は有効）。
+インポートは原則トップレベルで行う（`pyproject.toml`の`[tool.pylint."messages control"]`で`import-outside-toplevel`は有効）。
 
 ### モジュール→extrasキーマッピング
 

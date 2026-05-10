@@ -9,7 +9,7 @@ import babel.numbers
 import pytilpack.i18n
 
 
-def format_date(
+def format_date(  # pylint: disable=redefined-builtin
     date: datetime.date | None = None,
     format: str = "medium",
     locale: str | None = None,
@@ -25,7 +25,7 @@ def format_date(
     return babel.dates.format_date(date, format=format, locale=locale or pytilpack.i18n.get_locale())
 
 
-def format_datetime(
+def format_datetime(  # pylint: disable=redefined-builtin
     dt: datetime.datetime | None = None,
     format: str = "medium",
     locale: str | None = None,
@@ -43,7 +43,7 @@ def format_datetime(
     return babel.dates.format_datetime(dt, format=format, tzinfo=tzinfo, locale=locale or pytilpack.i18n.get_locale())
 
 
-def format_time(
+def format_time(  # pylint: disable=redefined-builtin
     time: datetime.time | None = None,
     format: str = "medium",
     locale: str | None = None,
@@ -73,7 +73,7 @@ def format_number(
     return babel.numbers.format_decimal(number, locale=locale or pytilpack.i18n.get_locale())
 
 
-def format_decimal(
+def format_decimal(  # pylint: disable=redefined-builtin
     number: int | float | decimal.Decimal,
     format: str | None = None,
     locale: str | None = None,
@@ -89,7 +89,7 @@ def format_decimal(
     return babel.numbers.format_decimal(number, format=format, locale=locale or pytilpack.i18n.get_locale())
 
 
-def format_currency(
+def format_currency(  # pylint: disable=redefined-builtin
     number: int | float | decimal.Decimal,
     currency: str,
     locale: str | None = None,
@@ -112,7 +112,7 @@ def format_currency(
     )
 
 
-def format_percent(
+def format_percent(  # pylint: disable=redefined-builtin
     number: int | float | decimal.Decimal,
     format: str | None = None,
     locale: str | None = None,

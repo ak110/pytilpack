@@ -55,7 +55,7 @@ extras不要モジュール（ベース依存のみで動く）ならばこの�
 サードパーティ（`pytilpack` / 標準ライブラリ以外）が対応extrasに過不足なくマッピングされているか確認する。
 モジュール名とextrasキー名が異なる場合は`CLAUDE.md`の「モジュール→extrasキーマッピング」表を参照する。
 
-`.pylintrc`で`import-outside-toplevel`が有効なため、関数内importは基本的にない前提でOK。
+`pyproject.toml`の`[tool.pylint."messages control"]`で`import-outside-toplevel`が有効なため、関数内importは基本的にない前提でOK。
 
 ### 5. extras 一覧テーブル
 
