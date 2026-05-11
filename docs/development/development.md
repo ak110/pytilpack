@@ -12,42 +12,26 @@
 
 ## 開発コマンド
 
-```bash
-make format   # 整形 + 軽量lint + 自動修正（開発時の手動実行用）
-make test     # 全チェック実行（これを通過すればコミット可能）
-make update   # 依存更新
-```
+| コマンド | 用途 |
+| --- | --- |
+| `make format` | 整形 + 軽量lint + 自動修正（開発時の手動実行用） |
+| `make test` | 全チェック実行（コミット前の最終確認用） |
+| `make update` | 依存更新 |
+| `make docs` | ドキュメントのローカルプレビュー（`http://127.0.0.1:8000/`） |
 
 ## サプライチェーン攻撃対策
 
-`uvx`/`pnpx`用のグローバル設定:
+ロックファイル尊重・公開待機・ピン留め運用の3点を基本方針とする。
 
-```bash
-mkdir -p ~/.config/uv && echo 'exclude-newer = "1 day"' >> ~/.config/uv/uv.toml
-```
+- `uv.lock`をそのまま使うため`UV_FROZEN=1`を常時有効化している
+- `pyproject.toml`の`exclude-newer`で公開直後パッケージの即時導入を抑制している
+- GitHub Actionsは`pinact`でハッシュピン留めし、定期更新している
 
-CI/`make`などの自動実行環境で`uv sync`/`uv run`が依存解決を再実行せず`uv.lock`をそのまま使うよう、
-環境変数`UV_FROZEN=1`を常時有効化している。
-意図しない再resolveでロックファイルが書き換わるリスクを抑え、
-`pyproject.toml`の`exclude-newer = "1 day"`と組み合わせて二重防御として機能する。
-
-- `make format`/`make test`/`make setup`は`Makefile`の`export UV_FROZEN := 1`で自動適用される
-- CIは`.github/workflows/*.yaml`の`env.UV_FROZEN`で自動適用される
-- `git commit`経由のpre-commitフックは`.pre-commit-config.yaml`のlocal hookのentryに`--frozen`を明示している
-
-開発者のシェルでは`UV_FROZEN`を設定しない前提のため、依存の追加・更新は通常どおり
-`uv add`/`uv remove`/`uv lock --upgrade-package`で行う。
-`make update`は内部でUV_FROZENを解除して実行する。
+依存の追加・更新は`uv add`/`uv remove`/`uv lock --upgrade-package`で行う。
 
 ## ドキュメントサイト運用
 
 MkDocs + mkdocstrings + mkdocs-llmstxtでAPIリファレンスとllms.txtを自動生成し、GitHub Pagesにデプロイする。
-
-### ローカルでの確認
-
-```bash
-make docs   # ローカルプレビュー (http://127.0.0.1:8000/)
-```
 
 ### GitHub Pagesの初期設定
 
