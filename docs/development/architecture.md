@@ -21,24 +21,11 @@ pytilpackは主要Pythonライブラリ向けの軽量ユーティリティ集�
 
 ### コア依存とextras
 
-コア依存（`[project.dependencies]`）は最小限に保つ（現在: `beautifulsoup4`/`httpx`/`mcp`/`werkzeug`）。
+コア依存（`[project.dependencies]`）は最小限に保つ。
 サードパーティライブラリに依存するモジュールはextras（`[project.optional-dependencies]`）で管理する。
 インポートは原則トップレベルで行う（`pyproject.toml`の`[tool.pylint."messages control"]`で`import-outside-toplevel`は有効）。
 
-### モジュール→extrasキーマッピング
-
-モジュール名とextrasキー名が異なるケースを以下に示す。
-
-| モジュール名 | extrasキー | 主な依存パッケージ |
-| --- | --- | --- |
-| `pytilpack.pycrypto` | `pycryptodome` | pycryptodome |
-| `pytilpack.yaml` | `pyyaml` | pyyaml |
-| `pytilpack.flask_login` | `flask` | flask, flask-login（`flask`extrasに含まれる） |
-| `pytilpack.quart_auth` | `quart` | quart-auth（`quart`extrasに含まれる） |
-| `pytilpack.i18n` | `babel` | babel（`babel`extrasに含まれる） |
-
-上記以外は原則としてモジュール名とextrasキー名が一致する。
-`.claude/agents/extras-consistency-checker.md`はこのマッピングを参照して判定する。
+`.claude/agents/extras-consistency-checker.md`がモジュール名とextrasキーのマッピングを参照して整合性を判定する。
 
 ### サブパッケージ共通モジュールの依存
 

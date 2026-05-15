@@ -3,8 +3,7 @@
 ## 開発環境の構築手順
 
 1. 本リポジトリをcloneする
-2. [uvをインストール](https://docs.astral.sh/uv/getting-started/installation/)する
-3. セットアップを実行する
+2. セットアップを実行する
 
     ```bash
     make setup
@@ -32,15 +31,6 @@
 ## ドキュメントサイト運用
 
 MkDocs + mkdocstrings + mkdocs-llmstxtでAPIリファレンスとllms.txtを自動生成し、GitHub Pagesにデプロイする。
-
-### GitHub Pagesの初期設定
-
-masterへのプッシュ時に`.github/workflows/docs.yaml`が自動実行されるが、初回のみGitHub側の設定が必要。
-
-1. リポジトリの`Settings` → `Pages`を開く
-2. `Build and deployment`の`Source`を`GitHub Actions`に変更する
-
-設定後、masterにプッシュすれば<https://ak110.github.io/pytilpack/>に自動デプロイされる。
 
 ### モジュール追加時
 
