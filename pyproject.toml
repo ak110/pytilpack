@@ -177,6 +177,7 @@ ty-args = [
     "--ignore", "redundant-cast",
 ]
 pylint-args = ["--jobs=4"]
+# docs/apiはmkdocstringsが自動生成するAPIドキュメントのため検査対象から除外する
 extend-exclude = ["docs/api"]
 
 [tool.pylint."messages control"]
@@ -257,7 +258,7 @@ acount = "acount"
 
 [tool.pytest.ini_options]
 # https://docs.pytest.org/en/latest/reference/reference.html#ini-options-ref
-addopts = "--showlocals -p no:cacheprovider --maxfail=5 --durations=30 --durations-min=0.5 -n 4"
+addopts = "--showlocals -p no:cacheprovider --maxfail=5 --durations=30 --durations-min=0.5 --timeout=60 -n 4"
 log_level = "DEBUG"
 xfail_strict = true
 asyncio_mode = "strict"
