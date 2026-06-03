@@ -82,25 +82,33 @@ async def acquire_with_timeout(lock: asyncio.Lock | asyncio.Semaphore, timeout: 
 
 
 def run[T](coro: typing.Coroutine[typing.Any, typing.Any, T]) -> T:
-    """非同期関数を実行する。"""
+    """非同期関数を実行する。
+
+    呼び出しスレッドにイベントループが存在しない場合は ``asyncio.run`` で実行する。
+    親イベントループが実行中の場合は別スレッドで新規ループを起動して ``coro`` を実行し、
+    終了後そのループを破棄する。別ループの破棄は親ループへ波及しないため、呼び出し後も
+    親ループの処理は継続できる。
+
+    制約:
+
+    - ``coro`` 内で親ループ起源のリソース（SQLAlchemy ``AsyncEngine`` ・
+      ``asyncio.Queue`` ・ ``asyncio.Event`` ・ ``asyncio.Task`` ・親ループに紐付く
+      ``asyncio.Future`` など）を参照しないこと。別ループからのアクセスとなり
+      「different loop」例外や ``Future ... attached to a different loop`` 等の事象が
+      発生する。``coro`` は独立した非同期処理として完結する形で渡す。
+    """
     # https://github.com/microsoftgraph/msgraph-sdk-python/issues/366#issuecomment-1830756182
-    loop: asyncio.AbstractEventLoop | None
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
+        # 非同期環境でない場合
+        # exceptの外で実行することでスタックトレースを短縮する
         loop = None
 
-    # 非同期環境でない場合
-    # exceptの外で実行することでスタックトレースを短縮する
     if loop is None:
         return asyncio.run(coro)
 
-    # イベントループは存在するが停止状態の場合（主にテスト環境で発生）
-    if not loop.is_running():
-        return loop.run_until_complete(coro)
-
-    # 現在のスレッドでイベントループが実行されている場合
-    # 別スレッド・別イベントループで実行する
+    # 別スレッドへ ``ContextVar`` を伝播するため ``copy_context`` を明示的に渡す
     ctx = contextvars.copy_context()
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
         future = pool.submit(ctx.run, lambda: asyncio.run(coro))
