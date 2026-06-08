@@ -253,12 +253,12 @@ async def delete_file(path: pathlib.Path | str) -> None:
     await asyncio.to_thread(pytilpack.pathlib.delete_file, path)
 
 
-async def rmtree(path: pathlib.Path | str, ignore_errors: bool = False) -> None:
+async def rmtree(path: pathlib.Path | str, ignore_errors: bool = False) -> "pytilpack.pathlib.RmtreeResult":
     """ディレクトリを非同期で再帰的に削除する。読み取り専用ファイルも削除する。
 
-    パスが存在しない場合は何もしない。
+    パスが存在しない場合は空の結果を返す。
     """
-    await asyncio.to_thread(pytilpack.pathlib.rmtree, path, ignore_errors)
+    return await asyncio.to_thread(pytilpack.pathlib.rmtree, path, ignore_errors)
 
 
 async def disk_usage(path: pathlib.Path | str) -> shutil._ntuple_diskusage:

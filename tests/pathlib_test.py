@@ -4,7 +4,11 @@ import datetime
 import os
 import pathlib
 import shutil
+import sys
 import time
+import typing
+
+import pytest
 
 import pytilpack.pathlib
 
@@ -17,19 +21,112 @@ def test_delete_file(tmp_path: pathlib.Path) -> None:
     assert not path.exists()
 
 
-def test_rmtree(tmp_path: pathlib.Path) -> None:
-    """rmtree()のテスト。"""
-    # 読み取り専用ファイルを含むディレクトリの削除
+def test_rmtree_readonly_file(tmp_path: pathlib.Path) -> None:
+    """rmtree(): 読み取り専用ファイルを含むディレクトリの削除。"""
     d = tmp_path / "dir"
     d.mkdir()
     f = d / "readonly.txt"
     f.write_text("test")
     f.chmod(0o444)
-    pytilpack.pathlib.rmtree(d)
+    result = pytilpack.pathlib.rmtree(d)
     assert not d.exists()
+    assert result.files == 1
+    assert result.dirs == 1
+    assert result.total_size == 4
+    assert result.errors == 0
 
-    # 存在しないパスを渡してもエラーにならない
-    pytilpack.pathlib.rmtree(tmp_path / "nonexistent")
+
+def test_rmtree_nonexistent(tmp_path: pathlib.Path) -> None:
+    """rmtree(): 非存在パスは空の結果を返す。"""
+    result = pytilpack.pathlib.rmtree(tmp_path / "nonexistent")
+    assert result == pytilpack.pathlib.RmtreeResult(0, 0, 0, 0)
+
+
+def test_rmtree_single_file(tmp_path: pathlib.Path) -> None:
+    """rmtree(): 単一ファイルをトップに渡すケース。"""
+    f = tmp_path / "single.txt"
+    f.write_text("hello")  # 5 bytes
+    result = pytilpack.pathlib.rmtree(f)
+    assert not f.exists()
+    assert result.files == 1
+    assert result.dirs == 0
+    assert result.total_size == 5
+    assert result.errors == 0
+
+
+def test_rmtree_empty_dir(tmp_path: pathlib.Path) -> None:
+    """rmtree(): 空ディレクトリをトップに渡すケース。"""
+    d = tmp_path / "empty"
+    d.mkdir()
+    result = pytilpack.pathlib.rmtree(d)
+    assert not d.exists()
+    assert result.files == 0
+    assert result.dirs == 1
+    assert result.total_size == 0
+    assert result.errors == 0
+
+
+def test_rmtree_nested(tmp_path: pathlib.Path) -> None:
+    """rmtree(): ネスト構造（ルート1 + サブ1 + ファイル2）。"""
+    root = tmp_path / "root"
+    root.mkdir()
+    sub = root / "sub"
+    sub.mkdir()
+    (root / "a.txt").write_text("abc")  # 3 bytes
+    (sub / "b.txt").write_text("12345")  # 5 bytes
+
+    result = pytilpack.pathlib.rmtree(root)
+    assert not root.exists()
+    assert result.files == 2
+    assert result.dirs == 2
+    assert result.total_size == 8
+    assert result.errors == 0
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX固有のパーミッション制御を利用するため")
+def test_rmtree_ignore_errors_with_unreadable_subdir(tmp_path: pathlib.Path) -> None:
+    """rmtree(ignore_errors=True): アクセス不能なサブディレクトリを含むケース。"""
+    root = tmp_path / "root"
+    root.mkdir()
+    locked = root / "locked"
+    locked.mkdir()
+    (locked / "inner.txt").write_text("x")
+    # 走査・削除を阻害するため実行権限を除去する
+    locked.chmod(0o000)
+    try:
+        result = pytilpack.pathlib.rmtree(root, ignore_errors=True)
+        assert result.errors >= 1
+    finally:
+        # テスト失敗時にもtmp_pathを後片付けできるよう権限を戻す
+        locked.chmod(0o700)
+        if root.exists():
+            shutil.rmtree(root)
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX固有のsymlink挙動に依存するため")
+def test_rmtree_symlink_to_dir(tmp_path: pathlib.Path) -> None:
+    """rmtree(): ディレクトリへのシンボリックリンクはNotADirectoryErrorを送出する。"""
+    target = tmp_path / "target"
+    target.mkdir()
+    link = tmp_path / "link"
+    link.symlink_to(target, target_is_directory=True)
+    with pytest.raises(NotADirectoryError):
+        pytilpack.pathlib.rmtree(link)
+    # 解決先・シンボリックリンク自体ともに残存する
+    assert target.exists()
+    assert link.is_symlink()
+
+
+def test_rmtree_result_add() -> None:
+    """RmtreeResult.__add__とsum()による集計。"""
+    r1 = pytilpack.pathlib.RmtreeResult(files=1, dirs=2, total_size=10, errors=0)
+    r2 = pytilpack.pathlib.RmtreeResult(files=3, dirs=4, total_size=20, errors=1)
+    expected = pytilpack.pathlib.RmtreeResult(files=4, dirs=6, total_size=30, errors=1)
+    assert r1 + r2 == expected
+    assert sum([r1, r2]) == expected
+    bad: typing.Any = 1
+    with pytest.raises(TypeError):
+        _ = r1 + bad
 
 
 def test_get_size(tmp_path: pathlib.Path) -> None:

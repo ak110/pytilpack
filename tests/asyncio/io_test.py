@@ -6,6 +6,7 @@ import pathlib
 import pytest
 
 import pytilpack.asyncio
+import pytilpack.pathlib
 
 
 @pytest.mark.asyncio
@@ -209,8 +210,13 @@ async def test_asyncio_io_helpers(tmp_path: pathlib.Path) -> None:
     rmtree_dir = tmp_path / "rmtree_dir"
     rmtree_dir.mkdir()
     await pytilpack.asyncio.write_text(rmtree_dir / "x.txt", "x")
-    await pytilpack.asyncio.rmtree(rmtree_dir)
+    rmtree_result = await pytilpack.asyncio.rmtree(rmtree_dir)
     assert not rmtree_dir.exists()
+    assert isinstance(rmtree_result, pytilpack.pathlib.RmtreeResult)
+    assert rmtree_result.files == 1
+    assert rmtree_result.dirs == 1
+    assert rmtree_result.total_size == 1
+    assert rmtree_result.errors == 0
 
     # disk_usage
     usage = await pytilpack.asyncio.disk_usage(tmp_path)

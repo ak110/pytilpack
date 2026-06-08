@@ -1,14 +1,51 @@
 """ファイル関連のユーティリティ集。"""
 
+import dataclasses
 import datetime
 import logging
 import os
 import pathlib
 import shutil
 import stat
-import typing
 
 logger = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass(frozen=True)
+class RmtreeResult:
+    """rmtree()の削除結果。"""
+
+    files: int = 0
+    dirs: int = 0
+    total_size: int = 0
+    errors: int = 0
+
+    def __add__(self, other: "RmtreeResult") -> "RmtreeResult":
+        """フィールド同士を加算した新しい結果を返す。"""
+        if not isinstance(other, RmtreeResult):
+            return NotImplemented
+        return RmtreeResult(
+            files=self.files + other.files,
+            dirs=self.dirs + other.dirs,
+            total_size=self.total_size + other.total_size,
+            errors=self.errors + other.errors,
+        )
+
+    def __radd__(self, other: int) -> "RmtreeResult":
+        """sum()の初期値0との加算を許容し、それ以外はNotImplementedを返す。"""
+        if other == 0:
+            return self
+        return NotImplemented
+
+
+@dataclasses.dataclass
+class _RmtreeStats:
+    """rmtree()内部で集計に用いるミュータブルなアキュムレータ。"""
+
+    files: int = 0
+    dirs: int = 0
+    total_size: int = 0
+    errors: int = 0
 
 
 def append_text(path: str | pathlib.Path, data: str, encoding: str = "utf-8", errors: str = "strict") -> None:
@@ -32,26 +69,111 @@ def delete_file(path: str | pathlib.Path) -> None:
         path.unlink()
 
 
-def rmtree(path: str | pathlib.Path, ignore_errors: bool = False) -> None:
+def rmtree(path: str | pathlib.Path, ignore_errors: bool = False) -> RmtreeResult:
     """ディレクトリを再帰的に削除する。読み取り専用ファイルも削除する。
 
-    パスが存在しない場合は何もしない。
+    パスが存在しない場合は空の結果を返す。
+    ディレクトリへのシンボリックリンクをトップに渡した場合はNotADirectoryErrorを送出する。
+    ファイル本体またはファイルへのシンボリックリンクの場合は単一ファイルとして削除する。
+
+    Args:
+        path: 対象パス
+        ignore_errors: Trueなら削除に失敗してもerrorsへ計上して走査を続行する
+
+    Returns:
+        削除したファイル数・ディレクトリ数・合計サイズ・エラー数。
     """
     path = pathlib.Path(path)
+    stats = _RmtreeStats()
+
+    if path.is_symlink():
+        # シンボリックリンクの解決先がディレクトリならshutil.rmtree同様に例外
+        if path.is_dir():
+            raise NotADirectoryError(f"Cannot call rmtree on a symbolic link: {path}")
+        # ファイルへのシンボリックリンク（または解決先が存在しないリンク）は単一ファイル扱い
+        _remove_file(path, stats, ignore_errors)
+        return _to_result(stats)
+
     if not path.exists():
-        return
-    shutil.rmtree(path, ignore_errors=ignore_errors, onexc=_rmtree_onexc)
+        return _to_result(stats)
+
+    if not path.is_dir():
+        _remove_file(path, stats, ignore_errors)
+        return _to_result(stats)
+
+    def on_walk_error(exc: OSError) -> None:
+        if ignore_errors:
+            stats.errors += 1
+        else:
+            raise exc
+
+    # ``Path.walk(follow_symlinks=False)`` はシンボリックリンクを ``filenames`` に分類する。
+    # ディレクトリへのシンボリックリンクも追従されず ``filenames`` 経由で ``_remove_file`` が処理する。
+    for root, _dirnames, filenames in path.walk(top_down=False, on_error=on_walk_error):
+        for fname in filenames:
+            _remove_file(root / fname, stats, ignore_errors)
+        _remove_dir(root, stats, ignore_errors)
+
+    return _to_result(stats)
 
 
-def _rmtree_onexc(
-    func: typing.Callable,
-    path: str,
-    exc: BaseException,  # noqa
-) -> None:
-    """読み取り専用属性をクリアしてリトライする。"""
-    del exc  # noqa
-    os.chmod(path, stat.S_IWRITE)
-    func(path)
+def _to_result(stats: _RmtreeStats) -> RmtreeResult:
+    return RmtreeResult(files=stats.files, dirs=stats.dirs, total_size=stats.total_size, errors=stats.errors)
+
+
+def _remove_file(path: pathlib.Path, stats: _RmtreeStats, ignore_errors: bool) -> None:
+    """ファイル（またはシンボリックリンク）を削除し統計を更新する。"""
+    is_link = path.is_symlink()
+    try:
+        size = 0 if is_link else path.stat().st_size
+    except OSError:
+        if ignore_errors:
+            stats.errors += 1
+            return
+        raise
+
+    try:
+        path.unlink()
+    except PermissionError:
+        # 読み取り専用属性をクリアしてリトライする
+        try:
+            os.chmod(path, stat.S_IWRITE)
+            path.unlink()
+        except OSError:
+            if ignore_errors:
+                stats.errors += 1
+                return
+            raise
+    except OSError:
+        if ignore_errors:
+            stats.errors += 1
+            return
+        raise
+
+    stats.files += 1
+    stats.total_size += size
+
+
+def _remove_dir(path: pathlib.Path, stats: _RmtreeStats, ignore_errors: bool) -> None:
+    """空ディレクトリを削除し統計を更新する。"""
+    try:
+        path.rmdir()
+    except PermissionError:
+        try:
+            os.chmod(path, stat.S_IWRITE)
+            path.rmdir()
+        except OSError:
+            if ignore_errors:
+                stats.errors += 1
+                return
+            raise
+    except OSError:
+        if ignore_errors:
+            stats.errors += 1
+            return
+        raise
+
+    stats.dirs += 1
 
 
 def get_size(path: str | pathlib.Path) -> int:
@@ -154,14 +276,11 @@ def sync(src: str | pathlib.Path, dst: str | pathlib.Path, delete: bool = False)
             logger.info(f"コピー: {src} -> {dst}")
             shutil.copy2(src, dst)
     elif src.is_dir():
-        # コピー先がファイルでない場合はいったん削除
+        # コピー先がディレクトリでない場合はいったん削除
         if not dst.is_dir():
             if dst.exists():
                 logger.info(f"削除: {dst}")
-                if dst.is_dir():
-                    rmtree(dst)
-                else:
-                    dst.unlink()
+                dst.unlink()
             logger.info(f"作成: {dst}")
             dst.mkdir(parents=True)
 
