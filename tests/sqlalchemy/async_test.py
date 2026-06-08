@@ -410,13 +410,13 @@ async def test_term_resets_engine(tmp_path) -> None:
 
 @pytest.mark.asyncio
 async def test_init_args_stored_globally(tmp_path) -> None:
-    """_init_argsがクラス変数として保持されていることを確認する。"""
+    """init()で渡したURLがengine()経由で取り出せることを確認する。"""
     IsolatedBase, _ = _make_isolated_base()
     url = f"sqlite+aiosqlite:///{tmp_path / 'test.db'}"
     IsolatedBase.init(url)
     try:
-        assert IsolatedBase._init_args is not None  # pylint: disable=protected-access
-        assert str(IsolatedBase._init_args.url) == url  # pylint: disable=protected-access
+        engine = IsolatedBase.engine()
+        assert str(engine.url) == url
     finally:
         await IsolatedBase.term()
 

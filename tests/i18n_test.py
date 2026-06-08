@@ -10,14 +10,6 @@ import pytilpack.i18n
 LOCALES_DIR = pathlib.Path(__file__).parent / "fixtures" / "locales"
 
 
-@pytest.fixture(autouse=True)
-def _cleanup_context() -> None:  # type: ignore[misc]
-    """テストごとにContextVarをリセットする。"""
-    yield  # type: ignore[misc]
-    # ContextVarのデフォルト値に戻すため、新しいTokenでresetはできないので
-    # テスト間の影響を防ぐためにyield後は何もしない
-
-
 def test_i18n_state_init() -> None:
     """I18nStateの初期化テスト。"""
     state = pytilpack.i18n.I18nState(LOCALES_DIR, default_locale="en")
@@ -35,12 +27,15 @@ def test_i18n_state_explicit_locales() -> None:
 def test_activate_deactivate() -> None:
     """activate/deactivateのテスト。"""
     state = pytilpack.i18n.I18nState(LOCALES_DIR, default_locale="en")
+    assert not pytilpack.i18n.is_active()
     tokens = pytilpack.i18n.activate(state, "ja")
     try:
+        assert pytilpack.i18n.is_active()
         assert pytilpack.i18n.get_locale() == "ja"
         assert pytilpack.i18n.get_state() is state
     finally:
         pytilpack.i18n.deactivate(tokens)
+    assert not pytilpack.i18n.is_active()
 
 
 def test_gettext() -> None:

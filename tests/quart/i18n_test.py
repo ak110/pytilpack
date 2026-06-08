@@ -72,19 +72,19 @@ async def test_jinja2_template(app: quart.Quart) -> None:
 
 @pytest.mark.asyncio
 async def test_i18n_state_deactivated_after_request(app: quart.Quart) -> None:
-    """リクエスト完了後にpytilpack.i18n._current_stateが元に戻ることを確認。
+    """リクエスト完了後にis_active()がFalseに戻ることを確認。
 
-    修正前はteardown_requestでdeactivate()を呼ぶコードがなく、
-    _current_stateがリクエストスコープを超えてリークしていた。
+    teardown_requestでdeactivate()まで到達することで、
+    i18n状態がリクエストスコープを超えてリークしないことを保証する。
     """
-    # リクエスト前: _current_stateはNone（未設定）
-    assert pytilpack.i18n._current_state.get() is None  # pylint: disable=protected-access
+    # リクエスト前: 未activate
+    assert not pytilpack.i18n.is_active()
 
     async with app.test_client() as client:
         response = await client.get("/hello", headers={"Accept-Language": "ja"})
         assert response.status_code == 200
 
-    # リクエスト完了後: _current_stateがNone（元に戻っている）に戻っていることを確認
+    # リクエスト完了後: 未activate状態に戻っていることを確認
     # Quartはリクエストごとにcontextvarsコンテキストを分離するため、
-    # テストコンテキストでの_current_stateはリクエスト前のままNoneであるべき
-    assert pytilpack.i18n._current_state.get() is None  # pylint: disable=protected-access
+    # テストコンテキストの未activate状態はリクエスト処理の影響を受けない
+    assert not pytilpack.i18n.is_active()

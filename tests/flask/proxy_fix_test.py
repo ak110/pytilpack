@@ -142,7 +142,6 @@ def test_invalid_prefix_is_rejected(caplog):
 
     # app.configは変わらない
     assert middleware.flaskapp.config.get("APPLICATION_ROOT", "/") == "/"
-    assert not middleware._prefix_pinned  # pylint: disable=protected-access
     # SCRIPT_NAMEが//evil.comに設定されていない
     assert captured_environs[0].get("SCRIPT_NAME", "") == ""
     # 警告が出る
@@ -151,10 +150,13 @@ def test_invalid_prefix_is_rejected(caplog):
 
 def test_crlf_prefix_is_rejected(caplog):
     """CRLF混入prefixが拒否されることのテスト。"""
-    _, middleware = _make_app({"x_prefix": 1})
+    app, middleware = _make_app({"x_prefix": 1})
+
+    captured_environs: list[dict] = []
 
     def capture_app(environ, start_response):
-        del environ, start_response
+        del start_response
+        captured_environs.append(dict(environ))
         return [b"OK"]
 
     middleware.app = capture_app
@@ -163,7 +165,8 @@ def test_crlf_prefix_is_rejected(caplog):
         environ = _make_environ(prefix="/app\r\nX-Injected: evil")
         list(middleware(environ, _noop_start_response))
 
-    assert not middleware._prefix_pinned  # pylint: disable=protected-access
+    assert app.config.get("APPLICATION_ROOT", "/") == "/"
+    assert captured_environs[0].get("SCRIPT_NAME", "") == ""
     assert any("不正な値" in r.message for r in caplog.records)
 
 

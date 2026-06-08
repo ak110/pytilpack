@@ -186,7 +186,6 @@ async def test_invalid_prefix_is_rejected(caplog):
 
     # app.configは変わらない（初回でも）
     assert middleware.quartapp.config.get("APPLICATION_ROOT", "/") == "/"
-    assert not middleware._prefix_pinned  # pylint: disable=protected-access
     # scopeのroot_pathも変わらない
     assert received_scopes[0].get("root_path", "") == ""
     # 警告が出る
@@ -196,10 +195,13 @@ async def test_invalid_prefix_is_rejected(caplog):
 @pytest.mark.asyncio
 async def test_crlf_prefix_is_rejected(caplog):
     """CRLF混入prefixが拒否されることのテスト。"""
-    _, middleware = _make_app({"x_prefix": 1})
+    app, middleware = _make_app({"x_prefix": 1})
+
+    received_scopes: list[dict] = []
 
     async def fake_asgi(scope: typing.Any, receive: typing.Any, send: typing.Any) -> None:
-        del scope, receive, send
+        del receive, send
+        received_scopes.append(scope)
 
     middleware.asgi_app = fake_asgi
 
@@ -207,7 +209,8 @@ async def test_crlf_prefix_is_rejected(caplog):
         scope = _make_scope([(b"x-forwarded-prefix", b"/app\r\nX-Injected: evil")])
         await middleware(scope, _noop_receive, _noop_send)  # type: ignore[arg-type]
 
-    assert not middleware._prefix_pinned  # pylint: disable=protected-access
+    assert app.config.get("APPLICATION_ROOT", "/") == "/"
+    assert received_scopes[0].get("root_path", "") == ""
     assert any("不正な値" in r.message for r in caplog.records)
 
 

@@ -47,11 +47,19 @@ class I18nState:
 
 
 def get_state() -> I18nState:
-    """現在のI18nStateを返す。未設定時はRuntimeError。"""
+    """現在のI18nStateを返す。未設定時はRuntimeErrorを送出する。"""
     state = _current_state.get()
     if state is None:
         raise RuntimeError("I18nStateが未設定です。activate()またはフレームワーク統合のinit_app()を呼んでください。")
     return state
+
+
+def is_active() -> bool:
+    """現在のコンテキストでactivate()済みかを返す。
+
+    teardownや例外経路でdeactivate()まで到達したかを検証する用途を想定する。
+    """
+    return _current_state.get() is not None
 
 
 def get_locale() -> str:
