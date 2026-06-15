@@ -2,24 +2,29 @@
 name = "pytilpack"
 dynamic = ["version"]
 description = "Python Utility Pack"
+authors = [{ name = "aki.", email = "aki@tqzh.tk" }]
 license = {text = "MIT"}
-authors = [
-    {name = "aki.", email = "aki@tqzh.tk"}
-]
 readme = "README.md"
-requires-python = ">=3.12,<4.0"
 classifiers = [
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
+requires-python = ">=3.12,<4.0"
 dependencies = [
     "beautifulsoup4>=4.14.3",
     "httpx>=0.28.1",
     "mcp>=1.0.0",
     "werkzeug>=3.1.7",
 ]
+
+[project.urls]
+Homepage = "https://github.com/ak110/pytilpack"
 
 [project.optional-dependencies]
 all = [
