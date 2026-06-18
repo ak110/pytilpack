@@ -13,9 +13,11 @@ logger = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class SSE:
-    r"""Server-Sent Events メッセージ。
+    r"""Server-Sent Eventsメッセージ。
 
-    改行を含むデータは自動的に複数のdata:行に分割する。
+    改行を含む`data`は自動的に複数の`data:`行へ分割する。
+    `comment`に文字列を指定するとSSE仕様上のコメント行（`:`始まり）として出力する。
+    `data`と`comment`は併用でき、いずれか一方は必ず指定する。
 
     仕様: <https://triple-underscore.github.io/HTML-server-sent-events-ja.html>
 
@@ -37,6 +39,8 @@ class SSE:
                     event="update"
                 ))
                 await asyncio.sleep(1)
+                # コメント単独の送信（任意のキープアライブ用途等）
+                yield str(pytilpack.sse.SSE(comment="keep-alive"))
 
             return quart.Response(
                 generate(),
@@ -49,18 +53,19 @@ class SSE:
         ```
     """
 
-    data: str
+    data: str | None = None
     event: str | None = None
     id: str | None = None
     retry: int | None = None
+    comment: str | None = None
+
+    def __post_init__(self) -> None:
+        """dataとcommentがともに未指定でないことを検証する。"""
+        if self.data is None and self.comment is None:
+            raise ValueError("`data`と`comment`のいずれかを指定してください。")
 
     def __str__(self) -> str:
-        """SSE形式の文字列への変換。
-
-        Returns:
-            SSE形式の文字列。各フィールドはコロンで区切られ、最後に空行が付加される。
-            data フィールドに改行が含まれる場合は複数の data: 行に分割される。
-        """
+        """`to_str()`の結果を返す。"""
         return self.to_str()
 
     def to_str(self) -> str:
@@ -68,7 +73,7 @@ class SSE:
 
         Returns:
             SSE形式の文字列。各フィールドはコロンで区切られ、最後に空行が付加される。
-            data フィールドに改行が含まれる場合は複数の data: 行に分割される。
+            data・commentフィールドに改行が含まれる場合は複数の行に分割される。
         """
         lines = []
 
@@ -79,12 +84,14 @@ class SSE:
         if self.retry is not None:
             lines.append(f"retry: {self.retry}")
 
-        # dataフィールドの各行をdata:プレフィックス付きで追加
         # SSE仕様の行区切りは \n, \r\n, \r の3種のみ (splitlines()は対象が広すぎる)
-        for line in re.split(r"\r\n|\r|\n", self.data):
-            lines.append(f"data: {line}")
+        if self.comment is not None:
+            for line in re.split(r"\r\n|\r|\n", self.comment):
+                lines.append(f": {line}")
+        if self.data is not None:
+            for line in re.split(r"\r\n|\r|\n", self.data):
+                lines.append(f"data: {line}")
 
-        # 最後に空行を追加して終端
         return "\n".join(lines) + "\n\n"
 
 

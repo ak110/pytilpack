@@ -23,9 +23,33 @@ def test_sse_to_str() -> None:
     assert msg.to_str() == "event: update\nid: 123\nretry: 3000\ndata: test data\n\n"
 
 
+def test_sse_comment() -> None:
+    """commentフィールドの各種パターンテスト。"""
+    # コメント単独
+    assert pytilpack.sse.SSE(comment="ping").to_str() == ": ping\n\n"
+
+    # dataとの併用（出力順はcomment→data）
+    assert pytilpack.sse.SSE(data="x", comment="info").to_str() == ": info\ndata: x\n\n"
+
+    # 全フィールド併用（event/id/retry/comment/dataの順）
+    msg = pytilpack.sse.SSE(data="x", event="e", id="1", retry=3000, comment="c")
+    assert msg.to_str() == "event: e\nid: 1\nretry: 3000\n: c\ndata: x\n\n"
+
+    # 複数行コメント (LF / CRLF / CR)
+    assert pytilpack.sse.SSE(comment="a\nb\r\nc\rd").to_str() == ": a\n: b\n: c\n: d\n\n"
+
+
+def test_sse_requires_data_or_comment() -> None:
+    """dataとcommentがともにNoneの場合にValueErrorを送出することを確認。"""
+    with pytest.raises(ValueError):
+        pytilpack.sse.SSE()
+    with pytest.raises(ValueError):
+        pytilpack.sse.SSE(event="e")
+
+
 @pytest.mark.parametrize(
     "sep",
-    ["\x0b", "\x0c", "\x1c", "\x1d", "\x1e", "\x85", "\u2028", "\u2029"],
+    ["\x0b", "\x0c", "\x1c", "\x1d", "\x1e", "\x85", " ", " "],
 )
 def test_sse_non_sse_line_separators_not_split(sep: str) -> None:
     """SSE仕様外の行区切り文字で分割されないことを確認。"""
