@@ -6,6 +6,7 @@ import json
 import typing
 
 import pytilpack.io
+import pytilpack.jsonc
 
 
 def load(
@@ -109,4 +110,43 @@ def dumps(
             **kwargs,
         )
         + "\n"
+    )
+
+
+def edit(
+    text: str,
+    updates: typing.Mapping[typing.Sequence[str | int], typing.Any],
+    ensure_ascii: bool = False,
+    default: typing.Callable[[typing.Any], typing.Any] | None = None,
+    **dumps_kwargs: typing.Any,
+) -> str:
+    """JSON文字列中の指定パスの値を書き換えつつ空行・インデントを維持する。
+
+    実装は`pytilpack.jsonc.edit`を再利用する。JSONはJSONCの部分集合であり、
+    コメント・trailing commaを含まない入力に対しても同じ位置追跡ロジックで安全に動作する。
+
+    詳細は`pytilpack.jsonc.edit`のdocstringを参照。
+
+    """
+    return pytilpack.jsonc.edit(text, updates, ensure_ascii=ensure_ascii, default=default, **dumps_kwargs)
+
+
+def edit_file(
+    path: pytilpack.io.PathOrIO,
+    updates: typing.Mapping[typing.Sequence[str | int], typing.Any],
+    encoding: str = "utf-8",
+    errors: str = "replace",
+    ensure_ascii: bool = False,
+    default: typing.Callable[[typing.Any], typing.Any] | None = None,
+    **dumps_kwargs: typing.Any,
+) -> None:
+    """JSONファイルを`edit`で書き換えて上書き保存する。"""
+    pytilpack.jsonc.edit_file(
+        path,
+        updates,
+        encoding=encoding,
+        errors=errors,
+        ensure_ascii=ensure_ascii,
+        default=default,
+        **dumps_kwargs,
     )

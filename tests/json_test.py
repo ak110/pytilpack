@@ -47,3 +47,18 @@ def test_load_save_io() -> None:
     buf_b.seek(0)
     data3 = pytilpack.json.load(buf_b)
     assert data == data3
+
+
+def test_edit_preserves_blank_lines() -> None:
+    """editが空行・インデントを維持することを確認する。"""
+    text = '{\n  "name": "old",\n\n  "count": 1\n}\n'
+    result = pytilpack.json.edit(text, {("name",): "new"})
+    assert result == '{\n  "name": "new",\n\n  "count": 1\n}\n'
+
+
+def test_edit_file(tmp_path: pathlib.Path) -> None:
+    """edit_fileでファイルを差し替えられることを確認する。"""
+    p = tmp_path / "a.json"
+    p.write_text('{\n  "value": 1\n}\n', encoding="utf-8")
+    pytilpack.json.edit_file(p, {("value",): 42})
+    assert p.read_text(encoding="utf-8") == '{\n  "value": 42\n}\n'
