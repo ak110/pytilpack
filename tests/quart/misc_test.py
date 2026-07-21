@@ -104,6 +104,8 @@ async def test_get_routes() -> None:
     async with app.test_request_context("/"):
         routes = pytilpack.quart.misc.get_routes(app)
 
+        # pylint: disable=duplicate-code
+        # Flask/Quartの並行実装を同一ルート定義で検証する定型アサーションのため許容する。
         # 引数の多い順にソートされることを確認
         assert len(routes[0].arg_names) >= len(routes[-1].arg_names)
 

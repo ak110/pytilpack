@@ -2,7 +2,6 @@
 
 import copy
 import logging
-import threading
 import typing
 
 import hypercorn.typing
@@ -69,17 +68,8 @@ class ProxyFix:
         self._x_prefix = x_prefix
         self.trusted_hosts = list(trusted_hosts) if trusted_hosts is not None else None
 
-        self._pin_lock = threading.Lock()
-        self._pinned_prefix: str | None = None
-        self._prefix_pinned = False
-
-        if static_prefix is not None:
-            validated = pytilpack.web.validate_forwarded_prefix(static_prefix)
-            if validated is None:
-                raise ValueError(f"static_prefixが不正: {static_prefix!r}")
-            self._apply_prefix_to_config(validated)
-            self._pinned_prefix = validated
-            self._prefix_pinned = True
+        self._pin = pytilpack.web.PrefixPinner(apply=self._apply_prefix_to_config, warn=logger.warning)
+        self._pin.initialize(static_prefix)
 
     def _apply_prefix_to_config(self, prefix: str) -> None:
         """prefixをapp.configおよびQuartAuthインスタンスへ反映する。"""
@@ -155,21 +145,7 @@ class ProxyFix:
                     logger.warning(f"X-Forwarded-Prefixに不正な値が含まれています: {forwarded_prefix!r}")
                 else:
                     scope["root_path"] = prefix
-                    if not self._prefix_pinned:
-                        with self._pin_lock:
-                            if not self._prefix_pinned:
-                                self._apply_prefix_to_config(prefix)
-                                self._pinned_prefix = prefix
-                                self._prefix_pinned = True
-                            elif self._pinned_prefix != prefix:
-                                logger.warning(
-                                    f"X-Forwarded-Prefixがpin済みの値と異なります: "
-                                    f"pinned={self._pinned_prefix!r}, received={prefix!r}"
-                                )
-                    elif self._pinned_prefix != prefix:
-                        logger.warning(
-                            f"X-Forwarded-Prefixがpin済みの値と異なります: pinned={self._pinned_prefix!r}, received={prefix!r}"
-                        )
+                    self._pin.pin(prefix)
 
             scope["headers"] = headers
 

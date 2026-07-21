@@ -1,5 +1,7 @@
 """テストコード。"""
 
+import dataclasses
+
 import pytest
 
 import pytilpack.web
@@ -42,79 +44,68 @@ def test_get_safe_url(target: str | None, host_url: str, default_url: str, expec
     assert actual == expected
 
 
-@pytest.mark.parametrize(
-    "status_code,valid_status_code,expected_error",
-    [
-        # 正常系
-        (200, 200, None),
-        # 異常系
-        (404, 200, "ステータスコードエラー: 404 != 200"),
-    ],
-)
-def test_check_status_code(status_code: int, valid_status_code: int, expected_error: str | None) -> None:
-    """check_status_codeのテスト。"""
-    if expected_error is None:
-        pytilpack.web.check_status_code(status_code, valid_status_code)  # 例外が発生しないことを確認
-    else:
-        with pytest.raises(AssertionError) as exc_info:
-            pytilpack.web.check_status_code(status_code, valid_status_code)
-        assert expected_error in str(exc_info.value)
+def test_check_status_code_ok() -> None:
+    """check_status_codeの正常系のテスト（一致時に例外が発生しないことの確認）。"""
+    pytilpack.web.check_status_code(200, 200)
+
+
+def test_check_status_code_error() -> None:
+    """check_status_codeの異常系のテスト（不一致時にAssertionErrorが送出されることの確認）。"""
+    with pytest.raises(AssertionError) as exc_info:
+        pytilpack.web.check_status_code(404, 200)
+    assert "ステータスコードエラー: 404 != 200" in str(exc_info.value)
 
 
 @pytest.mark.parametrize(
-    "content_type,valid_types,expected_error",
+    "content_type,valid_types",
     [
         # valid_types=None
-        ("text/html", None, None),
+        ("text/html", None),
         # valid_typesが文字列
-        ("text/html", "text/html", None),
+        ("text/html", "text/html"),
         # valid_typesが配列
-        ("text/html", ["text/html", "application/json"], None),
+        ("text/html", ["text/html", "application/json"]),
         # Content-Typeにパラメータがある場合
-        ("text/html; charset=utf-8", "text/html", None),
-        # 異常系
-        ("text/plain", "text/html", "Content-Typeエラー: text/plain != ['text/html']"),
+        ("text/html; charset=utf-8", "text/html"),
     ],
 )
-def test_check_content_type(content_type: str, valid_types: str | list[str] | None, expected_error: str | None) -> None:
-    """check_content_typeのテスト。"""
-    if expected_error is None:
-        pytilpack.web.check_content_type(content_type, valid_types)  # 例外が発生しないことを確認
-    else:
-        with pytest.raises(AssertionError) as exc_info:
-            pytilpack.web.check_content_type(content_type, valid_types)
-        assert expected_error in str(exc_info.value)
+def test_check_content_type_ok(content_type: str, valid_types: str | list[str] | None) -> None:
+    """check_content_typeの正常系のテスト（一致時に例外が発生しないことの確認）。"""
+    pytilpack.web.check_content_type(content_type, valid_types)
+
+
+def test_check_content_type_error() -> None:
+    """check_content_typeの異常系のテスト（不一致時にAssertionErrorが送出されることの確認）。"""
+    with pytest.raises(AssertionError) as exc_info:
+        pytilpack.web.check_content_type("text/plain", "text/html")
+    assert "Content-Typeエラー: text/plain != ['text/html']" in str(exc_info.value)
 
 
 @pytest.mark.parametrize(
-    "html,strict,expected_error",
+    "html",
     [
         # 正常系
-        ("<html><body><h1>Hello</h1></body></html>", False, None),
+        "<html><body><h1>Hello</h1></body></html>",
         # 空HTML
-        ("", False, None),
-        # 誤った閉じタグ（strict=False）
-        ("<table><tr>Invalid table structure</div>", False, "HTMLエラー:"),
-        # 誤った閉じタグ（strict=True）
-        ("<table><tr>Invalid table structure</div>", True, "HTMLエラー:"),
+        "",
     ],
 )
-def test_check_html(
-    html: str,
-    strict: bool,
-    expected_error: str | None,
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    """check_htmlのテスト。"""
-    if expected_error is None:
-        pytilpack.web.check_html(html, strict)  # 例外が発生しないことを確認
-    elif strict:
-        with pytest.raises(AssertionError) as exc_info:
-            pytilpack.web.check_html(html, strict)
-        assert expected_error in str(exc_info.value)
-    else:
-        pytilpack.web.check_html(html, strict)
-        assert expected_error in caplog.text
+def test_check_html_ok(html: str) -> None:
+    """check_htmlの正常系のテスト（構文エラーが無い場合に例外が発生しないことの確認）。"""
+    pytilpack.web.check_html(html, strict=False)
+
+
+def test_check_html_strict_error() -> None:
+    """check_htmlのstrict=True時の異常系のテスト（構文エラー時にAssertionErrorが送出されることの確認）。"""
+    with pytest.raises(AssertionError) as exc_info:
+        pytilpack.web.check_html("<table><tr>Invalid table structure</div>", strict=True)
+    assert "HTMLエラー:" in str(exc_info.value)
+
+
+def test_check_html_non_strict_error(caplog: pytest.LogCaptureFixture) -> None:
+    """check_htmlのstrict=False時の異常系のテスト（構文エラー時に例外を送出せずログ出力することの確認）。"""
+    pytilpack.web.check_html("<table><tr>Invalid table structure</div>", strict=False)
+    assert "HTMLエラー:" in caplog.text
 
 
 @pytest.mark.parametrize(
@@ -226,3 +217,80 @@ def test_check_html_complex_error(caplog: pytest.LogCaptureFixture) -> None:
     pytilpack.web.check_html(html, strict=False)
     assert "HTMLエラー:" in caplog.text
     assert len([r for r in caplog.records if "HTMLエラー:" in r.message]) > 1
+
+
+@dataclasses.dataclass
+class _PrefixPinnerFixture:
+    """PrefixPinnerテスト用の共通セットアップ結果。"""
+
+    applied: list[str]
+    warned: list[str]
+    pinner: pytilpack.web.PrefixPinner
+
+
+@pytest.fixture(name="prefix_pinner_fixture")
+def _prefix_pinner_fixture() -> _PrefixPinnerFixture:
+    """applied・warnedの記録リストとPrefixPinnerインスタンスを組み立てる。"""
+    applied: list[str] = []
+    warned: list[str] = []
+    pinner = pytilpack.web.PrefixPinner(apply=applied.append, warn=warned.append)
+    return _PrefixPinnerFixture(applied=applied, warned=warned, pinner=pinner)
+
+
+def test_prefix_pinner_initialize_applies_static_prefix(prefix_pinner_fixture: _PrefixPinnerFixture) -> None:
+    """initializeでstatic_prefixが検証・適用され、以降のpinで固定されることのテスト。"""
+    applied, warned, pinner = prefix_pinner_fixture.applied, prefix_pinner_fixture.warned, prefix_pinner_fixture.pinner
+    pinner.initialize("/static")
+    assert applied == ["/static"]
+    assert not warned
+    # initialize後はpin済み扱いのため、pinへ異なる値を渡すと警告が発火する
+    pinner.pin("/other")
+    assert applied == ["/static"]
+    assert len(warned) == 1
+    assert "/static" in warned[0]
+    assert "/other" in warned[0]
+
+
+def test_prefix_pinner_initialize_invalid_static_prefix_raises(prefix_pinner_fixture: _PrefixPinnerFixture) -> None:
+    """initializeで不正なstatic_prefixを渡すとValueErrorが送出されることのテスト。"""
+    applied, warned, pinner = prefix_pinner_fixture.applied, prefix_pinner_fixture.warned, prefix_pinner_fixture.pinner
+    with pytest.raises(ValueError, match="static_prefixが不正"):
+        pinner.initialize("invalid")
+    assert not applied
+    assert not warned
+
+
+def test_prefix_pinner_initialize_none_is_noop(prefix_pinner_fixture: _PrefixPinnerFixture) -> None:
+    """initializeでstatic_prefix=Noneを渡すとapply・warnのいずれも呼ばれないことのテスト。"""
+    applied, warned, pinner = prefix_pinner_fixture.applied, prefix_pinner_fixture.warned, prefix_pinner_fixture.pinner
+    pinner.initialize(None)
+    assert not applied
+    assert not warned
+
+
+def test_prefix_pinner_pin_first_call_fixes_value(prefix_pinner_fixture: _PrefixPinnerFixture) -> None:
+    """pinの初回呼び出しで値が確定し、applyへ反映されることのテスト。"""
+    applied, warned, pinner = prefix_pinner_fixture.applied, prefix_pinner_fixture.warned, prefix_pinner_fixture.pinner
+    pinner.pin("/app")
+    assert applied == ["/app"]
+    assert not warned
+
+
+def test_prefix_pinner_pin_second_call_same_value_no_warn(prefix_pinner_fixture: _PrefixPinnerFixture) -> None:
+    """pinの2回目以降で同一値なら値が固定されたまま警告が発火しないことのテスト。"""
+    applied, warned, pinner = prefix_pinner_fixture.applied, prefix_pinner_fixture.warned, prefix_pinner_fixture.pinner
+    pinner.pin("/app")
+    pinner.pin("/app")
+    assert applied == ["/app"]  # applyは初回のみ呼ばれる
+    assert not warned
+
+
+def test_prefix_pinner_pin_second_call_different_value_warns(prefix_pinner_fixture: _PrefixPinnerFixture) -> None:
+    """pinの2回目以降で異なる値が渡された場合に警告コールバックが発火することのテスト。"""
+    applied, warned, pinner = prefix_pinner_fixture.applied, prefix_pinner_fixture.warned, prefix_pinner_fixture.pinner
+    pinner.pin("/app")
+    pinner.pin("/other")
+    assert applied == ["/app"]  # applyは初回のみ呼ばれる
+    assert len(warned) == 1
+    assert "/app" in warned[0]
+    assert "/other" in warned[0]

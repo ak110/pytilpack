@@ -33,6 +33,9 @@ class Test1(Base, pytilpack.sqlalchemy.AsyncUniqueIDMixin):  # pylint: disable=t
 class Test2(Base):  # pylint: disable=too-many-ancestors
     """テストクラス。"""
 
+    # pylint: disable=duplicate-code
+    # sync/flask版（tests.sqlalchemy.sync_test.Test2・tests.sqlalchemy.flask_test.Test2）と
+    # 並行実装のため許容する。
     __test__ = False
     __tablename__ = "test2"
     __table_args__ = (sqlalchemy.UniqueConstraint("value1", "value2", name="uc1"),)
@@ -71,6 +74,9 @@ async def _session() -> typing.AsyncGenerator[sqlalchemy.ext.asyncio.AsyncSessio
 
 def test_repr() -> None:
     """__repr__のテスト。"""
+    # pylint: disable=duplicate-code
+    # sync/flask版（tests.sqlalchemy.sync_test.test_repr・tests.sqlalchemy.flask_test.test_repr）と
+    # 並行実装のため許容する。
     # デフォルト: idを表示
     test1 = Test1(id=1)
     r = repr(test1)
@@ -306,6 +312,8 @@ async def test_asafe_close() -> None:
 
 def test_to_dict() -> None:
     """to_dictのテスト。"""
+    # pylint: disable=duplicate-code
+    # flask版（tests.sqlalchemy.flask_test.test_to_dict）と並行実装のため許容する。
     test2 = Test2(name="test2", enabled=True, value4=datetime.datetime(2021, 1, 1))
     assert test2.to_dict(excludes=["pass_hash"]) == {
         "id": None,
@@ -450,6 +458,9 @@ async def test_same_thread_reuses_engine(tmp_path) -> None:
 
 def test_describe() -> None:
     """describe()のテスト。"""
+    # pylint: disable=duplicate-code
+    # sync/flask版（tests.sqlalchemy.sync_test.test_describe・tests.sqlalchemy.flask_test.test_describe）と
+    # 並行実装のため許容する。テスト対象モデルの構造が同一であるため出力アサーションも一致する。
     desc = pytilpack.sqlalchemy.describe(Base)
     print(f"{'=' * 64}")
     print(desc)

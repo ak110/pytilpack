@@ -252,6 +252,8 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
         """セッションを開始する。"""
         if cls.sessionmaker is None:
             raise RuntimeError("init()が呼ばれていません。")
+        # pylint: disable=duplicate-code
+        # async版（pytilpack.sqlalchemy.async_.AsyncMixin.start_session）と並行実装のため許容する。
         session = cls.sessionmaker()  # pylint: disable=not-callable
         token = cls.session_var.set(session)
         if name is not None:
@@ -268,6 +270,8 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
         cls, token: contextvars.Token[sqlalchemy.orm.Session], name: str | None = None, log_level: int = logging.DEBUG
     ) -> None:
         """セッションを終了する。"""
+        # pylint: disable=duplicate-code
+        # async版（pytilpack.sqlalchemy.async_.AsyncMixin.close_session）と並行実装のため許容する。
         session = cls.session()
         if name is not None:
             logger.log(

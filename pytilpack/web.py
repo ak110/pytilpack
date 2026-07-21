@@ -3,6 +3,7 @@
 import logging
 import pathlib
 import re
+import threading
 import typing
 import urllib.parse
 
@@ -57,6 +58,61 @@ def validate_forwarded_prefix(value: str) -> str | None:
         # "/" 単独だった場合
         return None
     return normalized
+
+
+class PrefixPinner:
+    """X-Forwarded-Prefixのpin管理。
+
+    初回有効値のみ``apply``コールバックへ反映し、以降は固定する。
+    攻撃者制御のヘッダー値でCookie発行パス等のアプリ全体設定が
+    リクエストごとに書き換わる経路を断つための共通ロジックであり、
+    Flask/QuartのProxyFix実装間で共有する。
+    """
+
+    def __init__(self, apply: typing.Callable[[str], None], warn: typing.Callable[[str], None]) -> None:
+        """初期化する。
+
+        Args:
+            apply: pin確定時にprefixを反映するコールバック。
+            warn: pin済み値と異なる値を受信した際の警告出力コールバック。
+
+        """
+        self._apply = apply
+        self._warn = warn
+        self._lock = threading.Lock()
+        self._pinned_prefix: str | None = None
+        self._prefix_pinned = False
+
+    def initialize(self, static_prefix: str | None) -> None:
+        """``static_prefix``指定時に初期pinする。
+
+        Args:
+            static_prefix: 起動時に確定させるprefix。Noneの場合は何もしない。
+
+        Raises:
+            ValueError: static_prefixが不正な場合。
+
+        """
+        if static_prefix is None:
+            return
+        validated = validate_forwarded_prefix(static_prefix)
+        if validated is None:
+            raise ValueError(f"static_prefixが不正: {static_prefix!r}")
+        self._apply(validated)
+        self._pinned_prefix = validated
+        self._prefix_pinned = True
+
+    def pin(self, prefix: str) -> None:
+        """リクエストごとのprefixを初回のみ反映し、以降は不一致を警告する。"""
+        if not self._prefix_pinned:
+            with self._lock:
+                if not self._prefix_pinned:
+                    self._apply(prefix)
+                    self._pinned_prefix = prefix
+                    self._prefix_pinned = True
+                    return
+        if self._pinned_prefix != prefix:
+            self._warn(f"X-Forwarded-Prefixがpin済みの値と異なります: pinned={self._pinned_prefix!r}, received={prefix!r}")
 
 
 def validate_forwarded_host(value: str) -> str | None:

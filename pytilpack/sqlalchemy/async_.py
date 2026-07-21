@@ -219,6 +219,8 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
         cls, name: str | None = None, log_level: int = logging.DEBUG
     ) -> contextvars.Token[sqlalchemy.ext.asyncio.AsyncSession]:
         """セッションを開始する。"""
+        # pylint: disable=duplicate-code
+        # sync版（pytilpack.sqlalchemy.sync.SyncMixin.start_session）と並行実装のため許容する。
         session = cls.sessionmaker()()  # pylint: disable=not-callable
         token = cls.session_var.set(session)
         if name is not None:
@@ -238,6 +240,8 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
         log_level: int = logging.DEBUG,
     ) -> None:
         """セッションを終了する。"""
+        # pylint: disable=duplicate-code
+        # sync版（pytilpack.sqlalchemy.sync.SyncMixin.close_session）と並行実装のため許容する。
         session = cls.session()
         if name is not None:
             logger.log(

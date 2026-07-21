@@ -1,7 +1,6 @@
 """リバースプロキシ対応。"""
 
 import logging
-import threading
 import typing
 
 import flask
@@ -72,17 +71,8 @@ class ProxyFix(werkzeug.middleware.proxy_fix.ProxyFix):
         self._x_host = x_host
         self.trusted_hosts = list(trusted_hosts) if trusted_hosts is not None else None
 
-        self._pin_lock = threading.Lock()
-        self._pinned_prefix: str | None = None
-        self._prefix_pinned = False
-
-        if static_prefix is not None:
-            validated = pytilpack.web.validate_forwarded_prefix(static_prefix)
-            if validated is None:
-                raise ValueError(f"static_prefixが不正: {static_prefix!r}")
-            self._apply_prefix_to_config(validated)
-            self._pinned_prefix = validated
-            self._prefix_pinned = True
+        self._pin = pytilpack.web.PrefixPinner(apply=self._apply_prefix_to_config, warn=logger.warning)
+        self._pin.initialize(static_prefix)
 
     def _apply_prefix_to_config(self, prefix: str) -> None:
         """prefixをapp.configへ反映する。"""
@@ -135,20 +125,6 @@ class ProxyFix(werkzeug.middleware.proxy_fix.ProxyFix):
                     path_info = environ.get("PATH_INFO", "")
                     if path_info.startswith(prefix):
                         environ["PATH_INFO"] = path_info[len(prefix) :]
-                    if not self._prefix_pinned:
-                        with self._pin_lock:
-                            if not self._prefix_pinned:
-                                self._apply_prefix_to_config(prefix)
-                                self._pinned_prefix = prefix
-                                self._prefix_pinned = True
-                            elif self._pinned_prefix != prefix:
-                                logger.warning(
-                                    f"X-Forwarded-Prefixがpin済みの値と異なります: "
-                                    f"pinned={self._pinned_prefix!r}, received={prefix!r}"
-                                )
-                    elif self._pinned_prefix != prefix:
-                        logger.warning(
-                            f"X-Forwarded-Prefixがpin済みの値と異なります: pinned={self._pinned_prefix!r}, received={prefix!r}"
-                        )
+                    self._pin.pin(prefix)
 
         return super().__call__(environ, start_response)
