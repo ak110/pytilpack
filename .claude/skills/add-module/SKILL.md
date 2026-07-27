@@ -101,10 +101,10 @@ extras不要モジュールの場合も、ベースパッケージ側の箇条�
 
 ```bash
 uv run --script scripts/check_docs_api.py
-uvx pyfltr run-for-agent
+make test
 ```
 
-`uvx pyfltr run-for-agent`が通ったらコミットしてよい。
+`make test`が通ったらコミットしてよい。
 
 ## よく使う参考ファイル
 

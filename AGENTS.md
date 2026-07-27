@@ -5,7 +5,7 @@
 
 ## 開発手順
 
-コミット前の検証方法: `uvx pyfltr run-for-agent`
+コミット前の検証方法: `make test`（特定ファイルに限定する場合は`uvx pyfltr run <path>`）
 
 ## アーキテクチャの参照先
 
