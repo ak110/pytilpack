@@ -35,7 +35,7 @@ MkDocs + mkdocstrings + mkdocs-llmstxtでAPIリファレンスとllms.txtを自�
 ### モジュール追加時
 
 新しいモジュールを追加した場合は`/add-module`スキルの手順に従う。
-`docs/api/<name>.md`の作成を忘れた場合はpre-commitおよびCIで検出される。
+`docs/api/<name>.md`の作成を忘れた場合はコミット時のフックおよびCIで検出される。
 
 ## リリース手順
 
