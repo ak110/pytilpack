@@ -128,7 +128,7 @@ def retry[**P, R](
     includes: typing.Iterable[type[Exception]] | None = None,
     excludes: typing.Iterable[type[Exception]] | None = None,
     loglevel: int = logging.INFO,
-    retry_status_codes: typing.Iterable[int] | None = (408, 429, 500, 502, 503, 504),
+    retry_status_codes: typing.Iterable[int] | None = (408, 429, 500, 502, 503, 504, 529),
     should_retry: typing.Callable[[Exception], bool] | None = None,
 ) -> typing.Callable[[typing.Callable[P, R]], typing.Callable[P, R]]:
     """リトライを行うデコレーター。

@@ -60,6 +60,55 @@ async def test_retry() -> None:
     assert call_count == 3
 
 
+class _StatusCodeError(Exception):
+    """status_code属性を持つHTTPエラーの模擬。"""
+
+    def __init__(self, status_code: int) -> None:
+        super().__init__(f"status_code={status_code}")
+        self.status_code = status_code
+
+
+@pytest.mark.asyncio
+async def test_retry_default_status_codes() -> None:
+    """retry_status_codesの既定値のテスト（同期・非同期）。"""
+    call_count = 0
+
+    @pytilpack.functools.retry(max_retries=2, initial_delay=0, exponential_base=0)
+    def f_sync(status_code: int):
+        nonlocal call_count
+        call_count += 1
+        raise _StatusCodeError(status_code)
+
+    @pytilpack.functools.retry(max_retries=2, initial_delay=0, exponential_base=0)
+    async def f_async(status_code: int):
+        nonlocal call_count
+        call_count += 1
+        raise _StatusCodeError(status_code)
+
+    # 既定値に含まれるコードはリトライされる（max_retries=2なので3回呼ばれる）
+    for status_code in (408, 429, 500, 502, 503, 504, 529):
+        call_count = 0
+        with pytest.raises(_StatusCodeError):
+            f_sync(status_code)
+        assert call_count == 3, f"sync: status_code={status_code}"
+
+        call_count = 0
+        with pytest.raises(_StatusCodeError):
+            await f_async(status_code)
+        assert call_count == 3, f"async: status_code={status_code}"
+
+    # 既定値に含まれないコードはリトライされない
+    call_count = 0
+    with pytest.raises(_StatusCodeError):
+        f_sync(404)
+    assert call_count == 1
+
+    call_count = 0
+    with pytest.raises(_StatusCodeError):
+        await f_async(404)
+    assert call_count == 1
+
+
 @pytest.mark.asyncio
 async def test_warn_if_slow(caplog: pytest.LogCaptureFixture) -> None:
     """warn_if_slowデコレーターの同期・非同期テスト。"""
