@@ -28,6 +28,9 @@
 
 依存の追加・更新は`uv add`/`uv remove`/`uv lock --upgrade-package`で行う。
 
+依存パッケージの脆弱性検知の仕組み（Dependabot alerts・定期監査ワークフロー）は設けない。
+本リポジトリはライブラリであり`uv.lock`は開発専用のため、利用者の実行環境への脆弱性の影響は限定的である。
+
 ## ドキュメントサイト運用
 
 MkDocs + mkdocstrings + mkdocs-llmstxtでAPIリファレンスとllms.txtを自動生成し、GitHub Pagesにデプロイする。
