@@ -153,6 +153,13 @@ pytilpack = "pytilpack.cli.main:main"
 [tool.uv]
 default-groups = ["dev"]
 exclude-newer = "1 day"
+# dev依存経由で入るsemgrepが`mcp==1.23.3`を厳密ピンしており（1.171.0時点）、
+# そのままではmcpのGHSA-vj7q-gjh5-988w / GHSA-jpw9-pfvf-9f58 / GHSA-hvrp-rf83-w775に
+# 相当する3件のDependabotアラート（いずれも1.28.1で修正済み）を解消できない。
+# semgrepはlinterとしてCLI起動するのみでMCPサーバー機能を使わないため、
+# overrideでピンを無視してmcpを修正済みバージョンへ更新する。
+# semgrep側のピンが1.28.1以上へ追従したら本行を削除する。
+override-dependencies = ["mcp>=1.28.1"]
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
