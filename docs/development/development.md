@@ -44,6 +44,27 @@
 変更した版指定に起因する依存解決不能を確認した場合は、配布物のインストールを不能にするため
 当該版指定を採用しない。
 
+### MCP SDKを1.x系へ据え置く判断
+
+コア依存の`mcp`は上限を設けて1.x系へ据え置き、MCP SDK 2.0系へは移行しない。根拠は次のとおり。
+
+- 公式移行ガイド（<https://py.sdk.modelcontextprotocol.io/migration/>）は
+  「If your package depends on `mcp`, keep a `<2` upper bound until you've migrated.」と記す。
+  上限の維持は上流の推奨に沿う
+- 2.0は`mcp.server.fastmcp`を削除して`mcp.server.mcpserver`へ改称し、互換のための別名を提供しない。
+  `pytilpack/cli/mcp.py`は削除された側を直接importする
+- `pytilpack/cli/main.py`のサブコマンド登録はextras指定を持たないサブコマンドのimport失敗をそのまま送出する。
+  `mcp`はextras指定を持たないため、importの失敗は`pytilpack --help`を含むCLI全体の起動不能へ波及する
+- 2.0は`httpx2`・`mcp-types`・`starlette`・`uvicorn`・`pydantic`・`pyjwt`・`opentelemetry-api`・
+  `jsonschema`・`python-multipart`・`sse-starlette`をコア依存として要求する。
+  `mcp`は本リポジトリのコア依存であるため、これらが全利用者へ無条件で入り、
+  コア依存を最小限に保つ方針と衝突する
+
+コア依存を最小限に保つ方針を維持したまま移行するには、`mcp`をextrasへ移し、
+`pytilpack/cli/main.py`のサブコマンド定義でextrasを指定する必要がある。
+`pip install pytilpack`だけではmcpサブコマンドを利用できなくなるため、インストール要件の破壊的変更にあたる。
+1.x系は重大な不具合修正とセキュリティパッチのみを受け取るため、当該判断は定期的に見直す。
+
 ## ドキュメントサイト運用
 
 MkDocs + mkdocstrings + mkdocs-llmstxtでAPIリファレンスとllms.txtを自動生成し、GitHub Pagesにデプロイする。
