@@ -48,27 +48,20 @@
 変更した版指定に起因する依存解決不能を確認した場合は、配布物のインストールを不能にするため
 当該版指定を採用しない。
 
-### MCP SDKを1.x系へ据え置く判断
+### MCP SDK 2.0.0以上への移行
 
-コア依存の`mcp`は上限を設けて1.x系へ据え置き、MCP SDK 2.0系へは移行しない。根拠は次のとおり。
+コア依存の`mcp`は2.0.0以上を要求する。コア依存の版指定には、原則として上限を設けない。経緯と根拠は次のとおり。
 
-- 公式移行ガイド（<https://py.sdk.modelcontextprotocol.io/migration/>）は
-  「If your package depends on `mcp`, keep a `<2` upper bound until you've migrated.」と記す。
-  上限の維持は上流の推奨に沿う
-- 2.0は`mcp.server.fastmcp`を削除して`mcp.server.mcpserver`へ改称し、互換のための別名を提供しない。
-  `pytilpack/cli/mcp.py`は削除された側を直接importする
-- `pytilpack/cli/main.py`のサブコマンド登録は外部パッケージ起因のimport失敗をスタブとして登録する。
-  `mcp`はimport失敗時に当該サブコマンドのみ利用不可になり、CLI全体の起動は継続する。
-  ただし`mcp`サブコマンド自体が利用できなくなるため、版指定上限で未然防止を継続する
-- 2.0は`httpx2`・`mcp-types`・`starlette`・`uvicorn`・`pydantic`・`pyjwt`・`opentelemetry-api`・
+- 2.0.0では`mcp.server.fastmcp`を削除して`mcp.server.mcpserver`へ改称し、互換のための別名を提供しない。
+  `pytilpack/cli/mcp.py`は改称後の`MCPServer`を使う。1.x系では動作しないため下限を`2.0.0`とする
+- 2.0.0は`httpx2`・`mcp-types`・`starlette`・`uvicorn`・`pydantic`・`pyjwt`・`opentelemetry-api`・
   `jsonschema`・`python-multipart`・`sse-starlette`をコア依存として要求する。
-  `mcp`は本リポジトリのコア依存であるため、これらが全利用者へ無条件で入り、
-  コア依存を最小限に保つ方針と衝突する
-
-コア依存を最小限に保つ方針を維持したまま移行するには、`mcp`をextrasへ移し、
-`pytilpack/cli/main.py`のサブコマンド定義でextrasを指定する必要がある。
-`pip install pytilpack`だけではmcpサブコマンドを利用できなくなるため、インストール要件の破壊的変更にあたる。
-1.x系は重大な不具合修正とセキュリティパッチのみを受け取るため、当該判断は定期的に見直す。
+  `mcp`は本リポジトリのコア依存であるため、これらが全利用者へ無条件で入る。
+  MCPサーバー機能を`pip install pytilpack`だけで利用できる状態を保つ判断として当該増加を受け入れた
+- 移行前は1.x系へ据え置き`<2`の上限を設けていたが、上限を引き上げる契機が運用上存在せず、
+  上限が放置される。コア依存の版指定へ原則として上限を設けない方針へ改め、`werkzeug`の上限も併せて撤廃した
+- 上流のメジャー更新で`pytilpack/cli/mcp.py`のimportが失敗しても、
+  サブコマンド登録は当該サブコマンドのみを利用不可として扱い、CLI全体の起動は継続する
 
 ## ドキュメントサイト運用
 

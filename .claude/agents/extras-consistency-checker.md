@@ -47,8 +47,9 @@ pytilpackは多数のサードパーティに対するユーティリティ集�
    - 必要なら `Bash` で `uv tree --all-extras` を呼んで推移的依存を確認（時間がかかるためデフォルトはスキップしてよい）
 
 3. **コア依存の最小性検査**
-   - `[project.dependencies]` がCLAUDE.mdの宣言 (`httpx`, `typing-extensions`, `werkzeug`) と一致するか
-   - 増えていれば違反として報告
+   - `pyproject.toml`の`[project.dependencies]`を現在のコア依存一覧の正本として読み取る
+   - 各依存を利用するコア機能とimport箇所を確認し、不要な依存があれば違反として報告する
+   - コア依存の判定には`pyproject.toml`の一覧を使い、`AGENTS.md`や`CLAUDE.md`の一覧を比較対象から除外する
 
 4. **モジュール → extras マッピング (参考情報扱い)**
 
