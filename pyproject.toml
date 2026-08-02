@@ -193,6 +193,9 @@ ty-args = [
     "--ignore", "redundant-cast",
 ]
 pylint-args = ["--jobs=4"]
+# 口語的な日本語表現を検出する。対象は全ファイルで、
+# 既定の重大度は警告のためCI・pre-commitは失敗しない。
+colloquial-check = true
 # docs/apiはmkdocstringsが自動生成するAPIドキュメントのため検査対象から除外する
 extend-exclude = ["docs/api"]
 
