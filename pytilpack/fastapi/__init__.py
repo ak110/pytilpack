@@ -8,6 +8,7 @@ from .misc import *
 
 __all__ = [
     # asserts
+    "ResponseType",
     "assert_bytes",
     "assert_html",
     "assert_json",

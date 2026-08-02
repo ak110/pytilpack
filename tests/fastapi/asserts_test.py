@@ -5,6 +5,7 @@ import pathlib
 import fastapi
 import fastapi.responses
 import fastapi.testclient
+import httpx
 import pytest
 
 import pytilpack.fastapi
@@ -129,6 +130,14 @@ def test_assert_sse(client: fastapi.testclient.TestClient) -> None:
     response = client.get("/html")
     with pytest.raises(AssertionError):
         _ = pytilpack.fastapi.assert_sse(response)
+
+
+def test_response_type() -> None:
+    """httpxレスポンスが構造的型へ適合することを検証する。"""
+    response = httpx.Response(200)
+    typed_response: pytilpack.fastapi.ResponseType = response
+
+    assert pytilpack.fastapi.assert_response(typed_response) is response
 
 
 def test_assert_response(client: fastapi.testclient.TestClient) -> None:

@@ -3,11 +3,10 @@
 import pathlib
 import typing
 
-import httpx
-
 import pytilpack._web_asserts as _core
 
 __all__ = [
+    "ResponseType",
     "assert_bytes",
     "assert_html",
     "assert_json",
@@ -17,13 +16,51 @@ __all__ = [
 ]
 
 
-def _content_type(response: httpx.Response) -> str | None:
-    """httpxレスポンスのContent-Typeヘッダー値を返す。"""
+class _HeadersType(typing.Protocol):
+    """レスポンスヘッダーの構造的型。"""
+
+    def get(self, key: str, default: typing.Any = None) -> typing.Any:
+        """ヘッダー値を取得する。"""
+        raise NotImplementedError
+
+
+class ResponseType(typing.Protocol):
+    """レスポンスの構造的型。
+
+    starlette 1.2.0以降の`starlette/testclient.py`はhttpx2を優先してimportするため、
+    `fastapi.testclient.TestClient`が返すレスポンスの型はhttpx2の導入有無で変わる。
+    名目型で注釈すると一方の環境で静的型が不整合になるため、
+    本モジュールが実際に使う属性だけを構造的に宣言してどちらでも成立させる。
+    """
+
+    @property
+    def status_code(self) -> int:
+        """ステータスコード。"""
+        raise NotImplementedError
+
+    @property
+    def headers(self) -> _HeadersType:
+        """レスポンスヘッダー。"""
+        raise NotImplementedError
+
+    @property
+    def content(self) -> bytes:
+        """レスポンスボディのbytes表現。"""
+        raise NotImplementedError
+
+    @property
+    def text(self) -> str:
+        """レスポンスボディの文字列表現。"""
+        raise NotImplementedError
+
+
+def _content_type(response: ResponseType) -> str | None:
+    """レスポンスのContent-Typeヘッダー値を返す。"""
     return response.headers.get("content-type")
 
 
 def assert_bytes(
-    response: httpx.Response,
+    response: ResponseType,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = None,
 ) -> bytes:
@@ -47,7 +84,7 @@ def assert_bytes(
 
 
 def assert_html(
-    response: httpx.Response,
+    response: ResponseType,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "__default__",
     strict: bool = False,
@@ -87,7 +124,7 @@ def assert_html(
 
 
 def assert_json(
-    response: httpx.Response,
+    response: ResponseType,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "application/json",
 ) -> typing.Any:
@@ -110,7 +147,7 @@ def assert_json(
 
 
 def assert_xml(
-    response: httpx.Response,
+    response: ResponseType,
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "__default__",
 ) -> str:
@@ -133,10 +170,10 @@ def assert_xml(
     return response_body
 
 
-def assert_sse(
-    response: httpx.Response,
+def assert_sse[R: ResponseType](
+    response: R,
     status_code: int = 200,
-) -> httpx.Response:
+) -> R:
     """レスポンスのステータスコードとSSE用Content-Typeを検証して返す。
 
     Args:
@@ -154,10 +191,10 @@ def assert_sse(
     return response
 
 
-def assert_response(
-    response: httpx.Response,
+def assert_response[R: ResponseType](
+    response: R,
     status_code: int = 200,
-) -> httpx.Response:
+) -> R:
     """レスポンスのステータスコードを検証して返す。
 
     Args:
