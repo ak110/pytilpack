@@ -3,7 +3,7 @@
 import argparse
 import logging
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 import pytilpack.htmlrag
 
@@ -59,14 +59,14 @@ def _run_server(transport: str = "stdio", host: str = "localhost", port: int = 8
     if transport == "stdio":
         _create_server().run(transport="stdio")
     elif transport == "http":
-        _create_server(host=host, port=port).run(transport="streamable-http")
+        _create_server().run(transport="streamable-http", host=host, port=port)
     else:
         raise ValueError(f"サポートされていない通信方式です: {transport}")
 
 
-def _create_server(**kwargs) -> FastMCP:
+def _create_server() -> MCPServer:
     """MCPサーバーインスタンスを作成する。"""
-    mcp = FastMCP("pytilpack", instructions="pytilpackのユーティリティ機能を提供するMCPサーバー", **kwargs)
+    mcp = MCPServer("pytilpack", instructions="pytilpackのユーティリティ機能を提供するMCPサーバー")
 
     @mcp.tool()
     def fetch_url(

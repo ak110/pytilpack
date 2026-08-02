@@ -19,13 +19,10 @@ requires-python = ">=3.12,<4.0"
 dependencies = [
     "beautifulsoup4>=4.14.3",
     "httpx>=0.28.1",
-    # mcp 2.0で`mcp.server.fastmcp`が削除されており（`mcp.server.mcpserver`へ改称）、
-    # `pytilpack/cli/mcp.py`が動作しないため上限を設ける。
-    # 下限は3件のGHSA（下記override-dependenciesのコメント参照）の修正版に合わせる。
-    "mcp>=1.28.1,<2",
-    # `pytilpack/http.py`が`werkzeug.datastructures`・`werkzeug.http`を直接importしており、
-    # メジャー更新でモジュール構成が変わるとimportが失敗するため上限を設ける。
-    "werkzeug>=3.1.7,<4",
+    # 下限は`mcp.server.mcpserver`が導入された2.0.0に合わせる。
+    # 1.x系の`mcp.server.fastmcp`は2.0.0で削除されており、`pytilpack/cli/mcp.py`が動作しない。
+    "mcp>=2.0.0",
+    "werkzeug>=3.1.7",
 ]
 
 [project.urls]
@@ -158,13 +155,13 @@ pytilpack = "pytilpack.cli.main:main"
 [tool.uv]
 default-groups = ["dev"]
 exclude-newer = "1 day"
-# dev依存経由で入るsemgrepが`mcp==1.23.3`を厳密ピンしており（1.170.1時点）、
+# dev依存経由で入るsemgrepが`mcp==1.23.3`を厳密ピンしており（1.172.0時点）、
 # そのままではmcpのGHSA-vj7q-gjh5-988w / GHSA-jpw9-pfvf-9f58 / GHSA-hvrp-rf83-w775に
 # 相当する3件のDependabotアラート（いずれも1.28.1で修正済み）を解消できない。
 # semgrepはlinterとしてCLI起動するのみでMCPサーバー機能を使わないため、
-# overrideでピンを無視してmcpを修正済みバージョンへ更新する。
-# semgrep側のピンが1.28.1以上へ追従したら本行を削除する。
-override-dependencies = ["mcp>=1.28.1,<2"]
+# overrideでピンを無視してmcpをコア依存と同じ版へ揃える。
+# semgrep側のピンが2.0以上へ追従したら本行を削除する。
+override-dependencies = ["mcp>=2.0.0"]
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]

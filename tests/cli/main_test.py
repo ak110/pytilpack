@@ -97,8 +97,8 @@ def _fake_missing_mcp_dependency(monkeypatch: pytest.MonkeyPatch) -> None:
     def fake(name: str, package: str | None = None):
         if name == "pytilpack.cli.mcp":
             raise ModuleNotFoundError(
-                "No module named 'mcp.server.fastmcp'",
-                name="mcp.server.fastmcp",
+                "No module named 'mcp.server.mcpserver'",
+                name="mcp.server.mcpserver",
             )
         return real_import_module(name, package)
 
@@ -129,7 +129,7 @@ def _fake_incompatible_mcp_dependency(monkeypatch: pytest.MonkeyPatch) -> None:
         if name == "pytilpack.cli.mcp":
             raise ImportError(
                 "internal detail: FastMCP_REVIEW_SENTINEL from '/internal/mcp/_compat.py'",
-                name="mcp.server.fastmcp",
+                name="mcp.server.mcpserver",
             )
         return real_import_module(name, package)
 
@@ -148,7 +148,7 @@ def test_main_incompatible_core_dep_exits(capsys, argv: list[str]) -> None:
 
     captured = capsys.readouterr()
     assert "pytilpack mcp" in captured.err
-    assert "mcp.server.fastmcp" in captured.err
+    assert "mcp.server.mcpserver" in captured.err
     assert "ImportError" in captured.err
     assert "pip install -U pytilpack" in captured.err
     assert "FastMCP_REVIEW_SENTINEL" not in captured.err
