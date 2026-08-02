@@ -23,7 +23,9 @@ dependencies = [
     # `pytilpack/cli/mcp.py`が動作しないため上限を設ける。
     # 下限は3件のGHSA（下記override-dependenciesのコメント参照）の修正版に合わせる。
     "mcp>=1.28.1,<2",
-    "werkzeug>=3.1.7",
+    # `pytilpack/http.py`が`werkzeug.datastructures`・`werkzeug.http`を直接importしており、
+    # メジャー更新でモジュール構成が変わるとimportが失敗するため上限を設ける。
+    "werkzeug>=3.1.7,<4",
 ]
 
 [project.urls]

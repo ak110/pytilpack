@@ -8,7 +8,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-08-01T03:13:42.288928766Z"
+exclude-newer = "2026-08-01T04:21:49.531069373Z"
 exclude-newer-span = "P1D"
 
 [options.exclude-newer-package]
@@ -3025,7 +3025,7 @@ requires-dist = [
     { name = "tqdm", marker = "extra == 'tqdm'", specifier = ">=4.0" },
     { name = "uvicorn", marker = "extra == 'all'", specifier = ">=0.34.3" },
     { name = "uvicorn", marker = "extra == 'quart'", specifier = ">=0.34.3" },
-    { name = "werkzeug", specifier = ">=3.1.7" },
+    { name = "werkzeug", specifier = ">=3.1.7,<4" },
 ]
 provides-extras = ["all", "babel", "bleach", "environ", "fastapi", "flask", "htmlrag", "markdown", "mcp", "msal", "pycryptodome", "pydantic", "pytest", "pyyaml", "quart", "sqlalchemy", "tiktoken", "tqdm", "web"]
 
