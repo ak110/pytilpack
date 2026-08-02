@@ -65,7 +65,11 @@ class Test3(Base, pytilpack.sqlalchemy.SyncUniqueIDMixin):  # pylint: disable=to
     )
 
 
-@pytest.fixture(name="engine", scope="module", autouse=True)
+# Mixin.init()はクラス単位の初期化状態を保持し、二重呼び出しを拒否する。moduleスコープに
+# すると、pytest-xdistのworksteal分配で同一モジュールのテストが同一ワーカーへ非連続に
+# 割り当たった際にsetupが繰り返され、2回目のinit()が「すでに初期化されています」で失敗する。
+# sessionスコープではワーカーごとに1回だけ初期化されるため、分配のされ方によらず成立する。
+@pytest.fixture(name="engine", scope="session", autouse=True)
 def _engine() -> typing.Generator[sqlalchemy.engine.Engine, None, None]:
     """DB接続。"""
     # https://stackoverflow.com/questions/61678766/sqlalchemy-exc-operationalerror-sqlite3-operationalerror-no-such-table-items/61694048

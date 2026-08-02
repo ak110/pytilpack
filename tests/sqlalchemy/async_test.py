@@ -55,7 +55,13 @@ class Test2(Base):  # pylint: disable=too-many-ancestors
     value5 = sqlalchemy.Column(sqlalchemy.Text, nullable=False, default=lambda: "func")
 
 
-@pytest_asyncio.fixture(name="engine", scope="module", autouse=True)
+# AsyncMixin.term()はスレッド単位でengineを解放するのみで、クラス単位の初期化状態
+# （_init_args）は保持する。このためinit()→term()→init()の順では2回目のinit()が
+# 「すでに初期化されています」で失敗する。moduleスコープにすると、pytest-xdistの
+# worksteal分配で同一モジュールのテストが同一ワーカーへ非連続に割り当たった際に
+# setup/teardownが繰り返され、この再初期化に到達する。sessionスコープではワーカーごとに
+# 1回だけ初期化されるため、分配のされ方によらず成立する。
+@pytest_asyncio.fixture(name="engine", scope="session", autouse=True)
 async def _engine() -> typing.AsyncGenerator[sqlalchemy.ext.asyncio.AsyncEngine, None]:
     """DB接続。"""
     Base.init("sqlite+aiosqlite:///:memory:")
