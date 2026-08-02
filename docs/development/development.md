@@ -35,9 +35,13 @@
 `uv lock`・`uv sync`・`uv run`の成功だけでは配布経路の成立を確認できない。
 `override-dependencies`による上書きは本リポジトリの依存解決にのみ適用され、配布物のメタデータには含まれない。
 上書き設定が適用されない状態で依存解決が成立することを
-`uvx --from . pytilpack --help`で実測する。
+`uvx --exclude-newer "1 day" --from . pytilpack --help`で実測する。
 当該コマンドは利用者環境と同じ経路で配布物の依存を解決するため、
 上書き設定に依存した版指定を検出できる。
+`uvx`は`pyproject.toml`の`[tool.uv]`を読まないため`exclude-newer`が適用されない。
+公開待機を維持するため`--exclude-newer`を明示する。
+当該コマンドが解決するのは配布物のメタデータが宣言する実行時依存に限る。
+開発用の依存グループだけに適用される上書きは観測できない。
 `make test`は本リポジトリの依存解決のみを用いるため当該不整合を検出しない。
 実測が失敗した場合は原因を確認する。
 通信障害・パッケージ索引の障害・ビルド環境の不備など、版指定以外の原因を解消して再実測する。
@@ -53,8 +57,9 @@
   上限の維持は上流の推奨に沿う
 - 2.0は`mcp.server.fastmcp`を削除して`mcp.server.mcpserver`へ改称し、互換のための別名を提供しない。
   `pytilpack/cli/mcp.py`は削除された側を直接importする
-- `pytilpack/cli/main.py`のサブコマンド登録はextras指定を持たないサブコマンドのimport失敗をそのまま送出する。
-  `mcp`はextras指定を持たないため、importの失敗は`pytilpack --help`を含むCLI全体の起動不能へ波及する
+- `pytilpack/cli/main.py`のサブコマンド登録は外部パッケージ起因のimport失敗をスタブとして登録する。
+  `mcp`はimport失敗時に当該サブコマンドのみ利用不可になり、CLI全体の起動は継続する。
+  ただし`mcp`サブコマンド自体が利用できなくなるため、版指定上限で未然防止を継続する
 - 2.0は`httpx2`・`mcp-types`・`starlette`・`uvicorn`・`pydantic`・`pyjwt`・`opentelemetry-api`・
   `jsonschema`・`python-multipart`・`sse-starlette`をコア依存として要求する。
   `mcp`は本リポジトリのコア依存であるため、これらが全利用者へ無条件で入り、
