@@ -45,11 +45,12 @@ jobs:
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: /cache
-          # 固定キーでは一度保存されると更新されないため、run_idを含めて毎回保存させる。
-          # /cache配下にはmiseの導入済みツール実体（MISE_DATA_DIR）が含まれるため、固定キーのままでは
-          # コンテナーイメージ側でツールが更新されても復元内容が古い版のまま据え置かれ、
-          # 上流ツールの変更をCIで検知できなくなる。
-          key: pyfltr-cache-${{ runner.os }}-py${{ matrix.python-version }}-${{ github.run_id }}
+          # 固定キーでは一度保存されると更新されないため、run_idとrun_attemptを含めて毎回保存させる。
+          # restore-keysで直近のキャッシュを初期値として復元し、ジョブ中に変化した/cacheの内容を
+          # 新しいキーで保存して次の実行へ引き継ぐ。
+          # run_idは再実行（Re-run）で変化しないため、run_attemptを併記する。
+          # run_idだけでは再実行時にキーが完全一致し、当該再実行中に変化した/cacheの内容が保存されない。
+          key: pyfltr-cache-${{ runner.os }}-py${{ matrix.python-version }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: pyfltr-cache-${{ runner.os }}-py${{ matrix.python-version }}-
 
       - name: Install dependencies
@@ -80,9 +81,12 @@ jobs:
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: /cache
-          # testジョブが復元または保存したキャッシュを完全一致で復元する。
-          # 固定キーでは一度保存されると更新されないため、testジョブと揃えてrun_idを含める。
-          key: pyfltr-cache-${{ runner.os }}-py3.13-${{ github.run_id }}
+          # 固定キーでは一度保存されると更新されないため、testジョブと揃えてrun_idとrun_attemptを含める。
+          # run_idは再実行（Re-run）で変化しないため、run_attemptを併記する。
+          # 通常の実行ではtestジョブが保存したキャッシュを完全一致で復元する。
+          # 失敗ジョブのみの再実行ではtestジョブが再実行されずrun_attemptだけが増えるため、
+          # 完全一致ではなくrestore-keysで直近のキャッシュを復元する。
+          key: pyfltr-cache-${{ runner.os }}-py3.13-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: pyfltr-cache-${{ runner.os }}-py3.13-
 
       - name: Build wheel
