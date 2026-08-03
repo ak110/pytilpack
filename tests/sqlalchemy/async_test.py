@@ -71,11 +71,29 @@ async def _engine() -> typing.AsyncGenerator[sqlalchemy.ext.asyncio.AsyncEngine,
         await Base.term()
 
 
-@pytest_asyncio.fixture(name="session", scope="module")
+@pytest_asyncio.fixture(name="session", scope="function")
 async def _session() -> typing.AsyncGenerator[sqlalchemy.ext.asyncio.AsyncSession, None]:
     """セッション。"""
     async with Base.session_scope() as session:
         yield session
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def _clean_tables() -> typing.AsyncGenerator[None, None]:
+    """各テストの前に共有DBのテーブルを空にする。
+
+    engineはsessionスコープで共有されるため、コミットした行はテストをまたいで残る。
+    pytest-xdistのworksteal分配では同一ワーカー内の実行順が収集順と一致しないため、
+    他テストが挿入した行の有無に依存すると分配のされ方によって結果が変わる。
+    Sessionはfunctionスコープで閉じて未確定状態を破棄し、ここで全テーブルの行を削除する。
+
+    """
+    async with Base.connect() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+        for table in reversed(Base.metadata.sorted_tables):
+            await conn.execute(table.delete())
+        await conn.commit()
+    yield
 
 
 def test_repr() -> None:

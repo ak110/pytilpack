@@ -55,18 +55,51 @@ class Test2(Base, pytilpack.sqlalchemy.Mixin):
     value5 = sqlalchemy.Column(sqlalchemy.Text, nullable=False, default=lambda: "func")
 
 
-@pytest.fixture(name="engine", scope="module", autouse=True)
-def _engine():
+# register_ping()はグローバルなPoolクラスへリスナーを登録するため、呼ぶたびに蓄積する。
+# moduleスコープにすると、pytest-xdistのworksteal分配で同一モジュールのテストが同一ワーカーへ
+# 非連続に割り当たった際にsetupが繰り返され、リスナーが増え続ける。sessionスコープでは
+# ワーカーごとに1回だけ登録されるため、分配のされ方によらず一定となる。
+@pytest.fixture(name="engine", scope="session", autouse=True)
+def _engine() -> typing.Generator[sqlalchemy.engine.Engine, None, None]:
     """DB接続。"""
     engine = sqlalchemy.create_engine("sqlite:///:memory:")
     pytilpack.sqlalchemy.register_ping()
     yield engine
 
 
-@pytest.fixture(name="session", scope="module")
-def _session(engine: sqlalchemy.engine.Engine):
-    """セッション。"""
-    yield sqlalchemy.orm.Session(engine)
+@pytest.fixture(name="session", scope="function")
+def _session(engine: sqlalchemy.engine.Engine) -> typing.Generator[sqlalchemy.orm.Session, None, None]:
+    """セッション。
+
+    Mixin.get_by_id()などが参照するクラス変数queryを、ここで生成したSessionへ束縛する。
+    Sessionはfunctionスコープで閉じるため、束縛を残すとクローズ済みのSessionを
+    次のテストが参照する。終了時に解除し、Sessionを持たないテストからの利用は
+    エラーとして表面化させる。
+
+    """
+    with sqlalchemy.orm.Session(engine) as session:
+        Test1.query = session.query(Test1)
+        try:
+            yield session
+        finally:
+            Test1.query = None
+
+
+@pytest.fixture(autouse=True)
+def _clean_tables(engine: sqlalchemy.engine.Engine) -> typing.Generator[None, None, None]:
+    """各テストの前に共有DBのテーブルを空にする。
+
+    engineはsessionスコープで共有されるため、コミットした行はテストをまたいで残る。
+    pytest-xdistのworksteal分配では同一ワーカー内の実行順が収集順と一致しないため、
+    他テストが挿入した行の有無に依存すると分配のされ方によって結果が変わる。
+    Sessionはfunctionスコープで閉じて未確定状態を破棄し、ここで全テーブルの行を削除する。
+
+    """
+    with engine.begin() as conn:
+        Base.metadata.create_all(conn)
+        for table in reversed(Base.metadata.sorted_tables):
+            conn.execute(table.delete())
+    yield
 
 
 def test_repr() -> None:
@@ -99,8 +132,6 @@ def test_repr() -> None:
 
 
 def test_get_by_id(session: sqlalchemy.orm.Session) -> None:
-    Test1.query = session.query(Test1)  # 仮
-
     Base.metadata.create_all(session.bind)  # type: ignore
     session.add(Test1(id=1))
     session.commit()
@@ -116,10 +147,8 @@ def test_get_by_id_not_null(session: sqlalchemy.orm.Session) -> None:
     修正前は async def で定義されており、awaitせずに呼ぶとコルーチンオブジェクトが
     返り、ValueErrorが送出されなかった。修正後は同期的に値を返すことを検証する。
     """
-    Test1.query = session.query(Test1)  # 仮
     Base.metadata.create_all(session.bind)  # type: ignore
 
-    # id=10のレコードを作成（他テストとの衝突を避けるため大きな値を使用）
     session.add(Test1(id=10))
     session.commit()
 
@@ -133,8 +162,6 @@ def test_get_by_id_not_null(session: sqlalchemy.orm.Session) -> None:
 
 
 def test_get_by_unique_id(session: sqlalchemy.orm.Session) -> None:
-    Test1.query = session.query(Test1)  # 仮
-
     Base.metadata.create_all(session.bind)  # type: ignore
     test1 = Test1(id=2, unique_id=Test1.generate_unique_id())
     assert test1.unique_id is not None and len(test1.unique_id) == 43

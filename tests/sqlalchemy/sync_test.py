@@ -85,6 +85,24 @@ def _session() -> typing.Generator[sqlalchemy.orm.Session, None, None]:
         yield session
 
 
+@pytest.fixture(autouse=True)
+def _clean_tables() -> typing.Generator[None, None, None]:
+    """各テストの前に共有DBのテーブルを空にする。
+
+    engineはsessionスコープで共有されるため、テーブルの行はテストをまたいで残る。
+    pytest-xdistのworksteal分配では同一ワーカー内の実行順が収集順と一致しないため、
+    他テストが挿入した行の有無に依存すると分配のされ方によって結果が変わる。
+    各テストが同じ初期状態から開始できるよう、ここで全テーブルの行を削除する。
+
+    """
+    with Base.connect() as conn:
+        Base.metadata.create_all(conn)
+        for table in reversed(Base.metadata.sorted_tables):
+            conn.execute(table.delete())
+        conn.commit()
+    yield
+
+
 def test_repr() -> None:
     """__repr__のテスト。"""
     # pylint: disable=duplicate-code
