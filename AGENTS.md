@@ -41,7 +41,10 @@
   `init()`→`term()`→`init()`は成立しない。
   テスト規約（厳守規定）として、同一の`SyncMixin`または`AsyncMixin`サブクラスを複数回のfixture setupで再利用する場合、
   fixtureを`scope="session"`としワーカーごとに1回だけ初期化する必要がある
-  （`scope="module"`ではpytest-xdistの分配次第でsetupが繰り返され、同じクラスで2回目の`init()`が失敗する）
+  （`scope="module"`ではpytest-xdistの分配次第でsetupが繰り返され、同じクラスで2回目の`init()`が失敗する）。
+  sessionスコープで共有したengineはテストをまたいで行を残すため、当該fixtureを使うテストモジュールでは次の2点も厳守規定とする
+  - 各テストの前に全テーブルの行を削除するfunctionスコープのautouse fixtureを置く
+  - 検証対象を当該テストが挿入した行に限定し、他テストが残した行の有無で結果が変わる絶対値アサーションを書かない
 
 ### モジュール→extrasキーマッピング（要点）
 
