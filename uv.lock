@@ -8,7 +8,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-08-01T07:40:23.364995954Z"
+exclude-newer = "2026-08-02T03:21:58.639949463Z"
 exclude-newer-span = "P1D"
 
 [options.exclude-newer-package]
@@ -2967,6 +2967,7 @@ dev = [
     { name = "pyfltr" },
     { name = "pylint-pydantic" },
     { name = "pyright", extra = ["nodejs"] },
+    { name = "pytest-timeout" },
     { name = "pytest-xdist" },
     { name = "types-bleach" },
     { name = "types-markdown" },
@@ -3059,6 +3060,7 @@ dev = [
     { name = "pyfltr", extras = ["python"], specifier = ">=3.8.0" },
     { name = "pylint-pydantic", specifier = ">=0.4.1" },
     { name = "pyright", extras = ["nodejs"], specifier = ">=1.1.403" },
+    { name = "pytest-timeout", specifier = ">=2" },
     { name = "pytest-xdist", specifier = ">=3.5" },
     { name = "types-bleach", specifier = ">=6.2.0.20241123" },
     { name = "types-markdown", specifier = ">=3.7.0.20241204" },
