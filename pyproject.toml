@@ -283,9 +283,18 @@ acount = "acount"
 
 [tool.pytest.ini_options]
 # https://docs.pytest.org/en/latest/reference/reference.html#ini-options-ref
-# --dist=worksteal は未実行テストを動的分配し、特定ファイルへの偏りによる律速を回避する
-# -n 4 はコア数追従（-n auto 等）を採用せず固定値とする（CI環境での逆効果とメモリ消費増を避けるため）
-addopts = "--showlocals -p no:cacheprovider --maxfail=5 --durations=30 --durations-min=0.5 --timeout=60 -n 4 --dist=worksteal"
+addopts = [
+    "--showlocals",
+    "-p", "no:cacheprovider",
+    "--maxfail=5",
+    "--durations=30",
+    "--durations-min=0.5",
+    "--timeout=60",
+    # コア数追従（-n auto 等）を採用せず固定値とする（CI環境での逆効果とメモリ消費増を避けるため）
+    "-n", "4",
+    # 未実行テストを動的分配し、特定ファイルへの偏りによる律速を回避する
+    "--dist=worksteal",
+]
 log_level = "DEBUG"
 xfail_strict = true
 asyncio_mode = "strict"
