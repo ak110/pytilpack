@@ -162,7 +162,7 @@ exclude-newer = "1 day"
 # ただし`make test`・pre-commit・CI（`ghcr.io/ak110/pyfltr:latest`イメージ使用）は
 # 本リポジトリの`.venv`と独立した環境でpyfltrを解決するため影響を受けない。
 # dev依存の解決にのみ影響し配布物のメタデータへ波及しないため、
-# `docs/development/development.md`のサプライチェーン攻撃対策節が定める採否基準では許容側に当たる。
+# `docs/development/development.md`のサプライチェーン攻撃対策節が参照する採否基準では許容側に当たる。
 # semgrepとpyfltrの双方がMCP SDK 2.0系へ対応したら本行を削除する。
 override-dependencies = ["mcp>=2.0.0"]
 
