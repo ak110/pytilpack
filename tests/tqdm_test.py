@@ -10,9 +10,10 @@ def test_tqdm_stream_handler(capsys):
     """TqdmStreamHandlerのテスト。"""
     logger = logging.getLogger("test")
     logger.setLevel(logging.INFO)
-    logger.addHandler(pytilpack.tqdm.TqdmStreamHandler())
+    handler = pytilpack.tqdm.TqdmStreamHandler()
+    logger.addHandler(handler)
     try:
-        logger.handlers[-1].setFormatter(logging.Formatter("[%(levelname)-5s] %(message)s"))
+        handler.setFormatter(logging.Formatter("[%(levelname)-5s] %(message)s"))
 
         logger.debug("debug")
         logger.info("info")
@@ -22,7 +23,8 @@ def test_tqdm_stream_handler(capsys):
 
         assert capsys.readouterr().err == "[INFO ] info\n[WARNING] warning\n[ERROR] error\n[CRITICAL] critical\n"
     finally:
-        logger.removeHandler(pytilpack.tqdm.TqdmStreamHandler())
+        logger.removeHandler(handler)
+        handler.close()
 
 
 def test_capture(capsys):

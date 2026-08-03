@@ -35,6 +35,7 @@ def test_logging(tmp_path: pathlib.Path, capsys: pytest.CaptureFixture) -> None:
     finally:
         for handler in logger.handlers[:]:
             logger.removeHandler(handler)
+            handler.close()
 
 
 def test_timer(caplog: pytest.LogCaptureFixture) -> None:
