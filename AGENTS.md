@@ -36,6 +36,12 @@
   `os.open(..., mode=0o600)`等で作成時点から確定させる。
   `pathlib.Path.open`+`chmod`の二段では作成→`chmod`の隙間で他プロセスがファイルを開ける
   時間窓が生じる（`pytilpack/secrets.py`が該当）
+- `pytilpack.sqlalchemy`の`SyncMixin`と`AsyncMixin`は初期化状態をクラス変数で保持し、`init()`の二重呼び出しを拒否する。
+  `AsyncMixin.term()`はスレッド単位のengineを`dispose()`し、engineとsessionmakerの参照を`None`へ戻すのみで当該状態を戻さないため、
+  `init()`→`term()`→`init()`は成立しない。
+  テスト規約（厳守規定）として、同一の`SyncMixin`または`AsyncMixin`サブクラスを複数回のfixture setupで再利用する場合、
+  fixtureを`scope="session"`としワーカーごとに1回だけ初期化する必要がある
+  （`scope="module"`ではpytest-xdistの分配次第でsetupが繰り返され、同じクラスで2回目の`init()`が失敗する）
 
 ### モジュール→extrasキーマッピング（要点）
 

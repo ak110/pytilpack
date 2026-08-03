@@ -130,8 +130,11 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
     async def term(cls) -> None:
         """現在のスレッドのDB接続を終了する。
 
-        スレッドローカルなengineをdisposeして解放する。
+        スレッドローカルなengineを`dispose()`し、engineとsessionmakerの参照を`None`へ戻す。
         スレッド終了時やテスト後の後始末に使用する。
+
+        init()で設定したクラス単位の初期化状態は保持するため、term()の後にinit()を
+        呼び直すことはできない（init()は二重呼び出しをRuntimeErrorで拒否する）。
 
         """
         if cls._init_args is None:
