@@ -31,7 +31,7 @@ repos:
       - id: pyfltr
         name: pyfltr
         entry: uvx pyfltr fast
-        types_or: [python, markdown, toml]
+        types_or: [python, markdown, toml, yaml]
         require_serial: true
         language: system
       - id: check-docs-api
