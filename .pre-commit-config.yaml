@@ -19,7 +19,9 @@ repos:
       - id: debug-statements
       - id: detect-private-key
       - id: end-of-file-fixer
-        exclude: ^tests/data/
+        # core.symlinks=falseではsymlinkをリンク先文字列の通常ファイルとしてcheckoutする。
+        # 末尾改行がリンク先を変えるため、end-of-file-fixerから除外する。
+        exclude: '^tests/data/|(^|/)\.agents/skills$'
       - id: mixed-line-ending
         exclude: ^tests/data/
       - id: name-tests-test
