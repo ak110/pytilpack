@@ -351,7 +351,8 @@ def convert[T](
 
     try:
         # intなどを想定した型変換
-        value = target_type(value)  # type: ignore[call-arg]
+        constructor = typing.cast(typing.Callable[[typing.Any], T], target_type)
+        value = constructor(value)
         return value
     except Exception as e:
         if errors == "ignore":

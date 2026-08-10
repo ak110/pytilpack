@@ -17,9 +17,12 @@ __all__ = [
 
 
 class _HeadersType(typing.Protocol):
-    """レスポンスヘッダーの構造的型。"""
+    """Content-Type取得に必要な最小の構造的型。
 
-    def get(self, key: str, default: typing.Any = None) -> typing.Any:
+    外部ライブラリのget署名全体を複製せず、本モジュールが使うキー1引数の取得能力だけを要求する。
+    """
+
+    def get(self, key: str, /) -> typing.Any:
         """ヘッダー値を取得する。"""
         raise NotImplementedError
 

@@ -143,7 +143,8 @@ def test_response_type() -> None:
 def test_assert_response(client: fastapi.testclient.TestClient) -> None:
     """レスポンスアサーションのテスト。"""
     response = client.get("/html")
-    _ = pytilpack.fastapi.assert_response(response)
+    typed_response: pytilpack.fastapi.ResponseType = response
+    assert pytilpack.fastapi.assert_response(typed_response) is response
 
     response = client.get("/403")
     with pytest.raises(AssertionError):
