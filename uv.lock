@@ -15,9 +15,6 @@ exclude-newer-span = "P1D"
 pytilpack = false
 pyfltr = false
 
-[manifest]
-overrides = [{ name = "mcp", specifier = ">=2.0.0" }]
-
 [[package]]
 name = "aiofiles"
 version = "25.1.0"
