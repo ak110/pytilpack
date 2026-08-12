@@ -155,6 +155,7 @@ pytilpack = "pytilpack.cli.main:main"
 [tool.uv]
 default-groups = ["dev"]
 exclude-newer = "1 day"
+exclude-newer-package = { pyfltr = false, pytilpack = false }
 # dev依存経由で入るsemgrepが`mcp==1.23.3`を厳密ピンしており（1.172.0時点）、
 # コア依存の`mcp>=2.0.0`と両立しない。
 # 本行を外すとsemgrepを要求しない旧版のpyfltrへ依存解決が退行し、開発ツールチェインが劣化する。
