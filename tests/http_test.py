@@ -138,6 +138,12 @@ def test_parse_problem_details_rejects_invalid_body(body: str):
     assert pytilpack.http.parse_problem_details(body) is None
 
 
+@pytest.mark.parametrize("constant", ["NaN", "Infinity", "-Infinity"])
+def test_parse_problem_details_rejects_nonstandard_json_constants(constant: str):
+    """JSON標準で禁止された数値定数を含む本文を拒否する。"""
+    assert pytilpack.http.parse_problem_details(f'{{"value": {constant}}}') is None
+
+
 def test_parse_problem_details_resolves_relative_uris():
     """Problem Detailsの相対URIを指定された基底URIで解決する。"""
     body = json.dumps({"type": "types/invalid", "instance": "requests/123"})
@@ -152,6 +158,30 @@ def test_parse_problem_details_resolves_relative_uris():
         type="https://other.example/v1/types/invalid",
         instance="https://other.example/v1/requests/123",
     )
+
+
+@pytest.mark.parametrize(
+    ("body", "expected"),
+    [
+        (
+            '{"type": "http://[", "instance": "requests/123"}',
+            pytilpack.http.ProblemDetails(
+                type="http://[",
+                instance="https://example.com/api/requests/123",
+            ),
+        ),
+        (
+            '{"type": "types/invalid", "instance": "http://["}',
+            pytilpack.http.ProblemDetails(
+                type="https://example.com/api/types/invalid",
+                instance="http://[",
+            ),
+        ),
+    ],
+)
+def test_parse_problem_details_preserves_uri_that_cannot_be_resolved(body: str, expected: pytilpack.http.ProblemDetails):
+    """解決できないURIだけを生値のまま保持する。"""
+    assert pytilpack.http.parse_problem_details(body, "https://example.com/api/") == expected
 
 
 @pytest.mark.parametrize("type_", ["about:blank", "https://example.com/problems/invalid"])

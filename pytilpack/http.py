@@ -136,7 +136,7 @@ def parse_problem_details(body: str | bytes, base_url: str | None = None) -> Pro
     base_urlを省略した場合、相対URIのtypeとinstanceは生値のまま返す。
     """
     try:
-        data = json.loads(body)
+        data = json.loads(body, parse_constant=_reject_nonstandard_json_constant)
     except (json.JSONDecodeError, UnicodeDecodeError):
         return None
     if not isinstance(data, dict):
@@ -147,9 +147,11 @@ def parse_problem_details(body: str | bytes, base_url: str | None = None) -> Pro
     raw_instance = data.get("instance")
     instance = raw_instance if isinstance(raw_instance, str) else None
     if base_url is not None:
-        type_ = urllib.parse.urljoin(base_url, type_)
+        with contextlib.suppress(ValueError):
+            type_ = urllib.parse.urljoin(base_url, type_)
         if instance is not None:
-            instance = urllib.parse.urljoin(base_url, instance)
+            with contextlib.suppress(ValueError):
+                instance = urllib.parse.urljoin(base_url, instance)
 
     reserved_members = {"type", "title", "status", "detail", "instance"}
     return ProblemDetails(
@@ -194,6 +196,11 @@ def get_problem_details_from_exception(exc: Exception) -> ProblemDetails | None:
 def _is_valid_status(value: object) -> typing.TypeGuard[int]:
     """HTTPステータスコードの有効範囲に含まれる整数かを返す。"""
     return isinstance(value, int) and not isinstance(value, bool) and 100 <= value <= 599
+
+
+def _reject_nonstandard_json_constant(constant: str) -> typing.NoReturn:
+    """JSON標準で禁止された数値定数を拒否する。"""
+    raise json.JSONDecodeError("JSON標準外の数値定数", constant, 0)
 
 
 def get_status_code_from_exception(exc: Exception) -> int | None:
