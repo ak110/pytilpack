@@ -112,7 +112,7 @@ def test_parse_problem_details():
     assert pytilpack.http.parse_problem_details("{}") == pytilpack.http.ProblemDetails()
 
 
-@pytest.mark.parametrize("status", ["400", True, 99, 600])
+@pytest.mark.parametrize("status", ["400", True, -1, 99, 600])
 def test_parse_problem_details_ignores_invalid_status(status: object):
     """Problem Detailsの型または範囲が不正なstatusを無視する。"""
     body = json.dumps({"status": status})
@@ -144,9 +144,10 @@ def test_parse_problem_details_rejects_nonstandard_json_constants(constant: str)
     assert pytilpack.http.parse_problem_details(f'{{"value": {constant}}}') is None
 
 
-def test_parse_problem_details_rejects_integer_over_conversion_limit():
-    """整数文字列変換上限を超えるstatusを含む本文を拒否する。"""
-    assert pytilpack.http.parse_problem_details(f'{{"status": {"9" * 4301}}}') is None
+def test_parse_problem_details_ignores_integer_over_conversion_limit():
+    """整数文字列変換上限を超えるstatusだけを無視する。"""
+    body = f'{{"status": {"9" * 5000}, "title": "Validation failed"}}'
+    assert pytilpack.http.parse_problem_details(body) == pytilpack.http.ProblemDetails(title="Validation failed")
 
 
 def test_parse_problem_details_resolves_relative_uris():
@@ -283,15 +284,17 @@ def test_get_rate_limit_info(headers: collections.abc.Mapping[str, str], expecte
     assert pytilpack.http.get_rate_limit_info(headers) == expected
 
 
-def test_get_rate_limit_info_ignores_integer_over_conversion_limit():
-    """整数文字列変換上限を超えるX-RateLimit値を無視する。"""
-    value = "9" * 4301
+def test_get_rate_limit_info_parses_integer_over_conversion_limit():
+    """整数文字列変換上限を超えるX-RateLimit値を解析する。"""
+    digit_count = 5000
+    value = "9" * digit_count
+    expected = 10**digit_count - 1
     headers = {
         "X-RateLimit-Limit": value,
         "X-RateLimit-Remaining": value,
         "X-RateLimit-Reset": value,
     }
-    assert pytilpack.http.get_rate_limit_info(headers) == pytilpack.http.RateLimitInfo(None, None, None)
+    assert pytilpack.http.get_rate_limit_info(headers) == pytilpack.http.RateLimitInfo(expected, expected, expected)
 
 
 @pytest.mark.asyncio

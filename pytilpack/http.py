@@ -18,6 +18,8 @@ import werkzeug.http
 logger = logging.getLogger(__name__)
 
 PROBLEM_JSON_CONTENT_TYPE = "application/problem+json"
+# Pythonの整数文字列変換上限で許可される非0設定の下限値に収める。
+_INT_CONVERSION_CHUNK_SIZE = 640
 
 
 def select_accept(accept_header: str, candidates: collections.abc.Sequence[str]) -> str | None:
@@ -136,8 +138,12 @@ def parse_problem_details(body: str | bytes, base_url: str | None = None) -> Pro
     base_urlを省略した場合、相対URIのtypeとinstanceは生値のまま返す。
     """
     try:
-        data = json.loads(body, parse_constant=_reject_nonstandard_json_constant)
-    except (ValueError, UnicodeDecodeError):
+        data = json.loads(
+            body,
+            parse_int=_parse_json_int,
+            parse_constant=_reject_nonstandard_json_constant,
+        )
+    except (json.JSONDecodeError, UnicodeDecodeError):
         return None
     if not isinstance(data, dict):
         return None
@@ -202,6 +208,22 @@ def _is_valid_status(value: object) -> typing.TypeGuard[int]:
 def _reject_nonstandard_json_constant(constant: str) -> typing.NoReturn:
     """JSON標準で禁止された数値定数を拒否する。"""
     raise json.JSONDecodeError("JSON標準外の数値定数", constant, 0)
+
+
+def _parse_json_int(value: str) -> int:
+    """JSON整数を文字列変換上限に依存せず解析する。"""
+    if value.startswith("-"):
+        return -_decimal_digits_to_int(value[1:])
+    return _decimal_digits_to_int(value)
+
+
+def _decimal_digits_to_int(digits: str) -> int:
+    """10進数字列を文字列変換上限に依存せず整数化する。"""
+    result = 0
+    for start in range(0, len(digits), _INT_CONVERSION_CHUNK_SIZE):
+        chunk = digits[start : start + _INT_CONVERSION_CHUNK_SIZE]
+        result = result * 10 ** len(chunk) + int(chunk)
+    return result
 
 
 def get_status_code_from_exception(exc: Exception) -> int | None:
@@ -304,8 +326,5 @@ def get_rate_limit_info_from_exception(exc: Exception) -> RateLimitInfo | None:
 def _parse_nonnegative_int(value: typing.Any) -> int | None:
     """文字列の非負整数を解析する。"""
     if isinstance(value, str) and value.isdecimal():
-        try:
-            return int(value)
-        except ValueError:
-            return None
+        return _decimal_digits_to_int(value)
     return None
