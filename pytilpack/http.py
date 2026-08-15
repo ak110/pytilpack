@@ -189,7 +189,8 @@ def get_problem_details_from_exception(exc: Exception) -> ProblemDetails | None:
 
     base_url = str(response.url) if hasattr(response, "url") and response.url is not None else None
     if base_url is not None and (content_location := headers.get("Content-Location")) is not None:
-        base_url = urllib.parse.urljoin(base_url, str(content_location))
+        with contextlib.suppress(ValueError):
+            base_url = urllib.parse.urljoin(base_url, str(content_location))
     return parse_problem_details(content, base_url)
 
 

@@ -222,6 +222,22 @@ def test_get_problem_details_from_exception_uses_content_location():
     )
 
 
+def test_get_problem_details_from_exception_ignores_invalid_content_location():
+    """不正なContent-LocationではレスポンスURLを基底URIに使用する。"""
+    response = _ResponseStub(
+        headers={
+            "Content-Type": "application/problem+json",
+            "Content-Location": "http://[",
+        },
+        content=b'{"type": "types/invalid", "instance": "requests/123"}',
+        url="https://example.com/api/response",
+    )
+    assert pytilpack.http.get_problem_details_from_exception(_ResponseException(response)) == pytilpack.http.ProblemDetails(
+        type="https://example.com/api/types/invalid",
+        instance="https://example.com/api/requests/123",
+    )
+
+
 def test_get_problem_details_from_exception_propagates_content_error():
     """Problem Details本文の取得中に発生した通信例外を伝播する。"""
     error = requests.ConnectionError("connection lost")
