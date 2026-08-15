@@ -9,6 +9,7 @@ import http
 import json
 import logging
 import re
+import sys
 import typing
 import urllib.parse
 
@@ -18,8 +19,6 @@ import werkzeug.http
 logger = logging.getLogger(__name__)
 
 PROBLEM_JSON_CONTENT_TYPE = "application/problem+json"
-# Pythonの整数文字列変換上限で許可される非0設定の下限値に収める。
-_INT_CONVERSION_CHUNK_SIZE = 640
 
 
 def select_accept(accept_header: str, candidates: collections.abc.Sequence[str]) -> str | None:
@@ -140,7 +139,7 @@ def parse_problem_details(body: str | bytes, base_url: str | None = None) -> Pro
     try:
         data = json.loads(
             body,
-            parse_int=_parse_json_int,
+            parse_int=_parse_int_with_digit_limit,
             parse_constant=_reject_nonstandard_json_constant,
         )
     except (json.JSONDecodeError, UnicodeDecodeError):
@@ -210,20 +209,13 @@ def _reject_nonstandard_json_constant(constant: str) -> typing.NoReturn:
     raise json.JSONDecodeError("JSON標準外の数値定数", constant, 0)
 
 
-def _parse_json_int(value: str) -> int:
-    """JSON整数を文字列変換上限に依存せず解析する。"""
-    if value.startswith("-"):
-        return -_decimal_digits_to_int(value[1:])
-    return _decimal_digits_to_int(value)
-
-
-def _decimal_digits_to_int(digits: str) -> int:
-    """10進数字列を文字列変換上限に依存せず整数化する。"""
-    result = 0
-    for start in range(0, len(digits), _INT_CONVERSION_CHUNK_SIZE):
-        chunk = digits[start : start + _INT_CONVERSION_CHUNK_SIZE]
-        result = result * 10 ** len(chunk) + int(chunk)
-    return result
+def _parse_int_with_digit_limit(value: str) -> int | None:
+    """実行時の整数文字列変換上限内にある値を解析する。"""
+    digits = value[1:] if value.startswith("-") else value
+    max_digits = sys.get_int_max_str_digits()
+    if max_digits and len(digits) > max_digits:
+        return None
+    return int(value)
 
 
 def get_status_code_from_exception(exc: Exception) -> int | None:
@@ -326,5 +318,5 @@ def get_rate_limit_info_from_exception(exc: Exception) -> RateLimitInfo | None:
 def _parse_nonnegative_int(value: typing.Any) -> int | None:
     """文字列の非負整数を解析する。"""
     if isinstance(value, str) and value.isdecimal():
-        return _decimal_digits_to_int(value)
+        return _parse_int_with_digit_limit(value)
     return None

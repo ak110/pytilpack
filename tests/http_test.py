@@ -4,6 +4,7 @@ import collections.abc
 import datetime
 import email.utils
 import json
+import sys
 
 import httpx
 import pytest
@@ -42,6 +43,14 @@ class _ResponseException(Exception):
     def __init__(self, response: object) -> None:
         super().__init__()
         self.response = response
+
+
+def _integer_over_conversion_limit() -> str:
+    """実行時の整数文字列変換上限を1桁超える数字列を返す。"""
+    max_digits = sys.get_int_max_str_digits()
+    if max_digits == 0:
+        pytest.skip("整数文字列変換上限が無効")
+    return "9" * (max_digits + 1)
 
 
 def test_make_problem_details():
@@ -146,7 +155,7 @@ def test_parse_problem_details_rejects_nonstandard_json_constants(constant: str)
 
 def test_parse_problem_details_ignores_integer_over_conversion_limit():
     """整数文字列変換上限を超えるstatusだけを無視する。"""
-    body = f'{{"status": {"9" * 5000}, "title": "Validation failed"}}'
+    body = f'{{"status": {_integer_over_conversion_limit()}, "title": "Validation failed"}}'
     assert pytilpack.http.parse_problem_details(body) == pytilpack.http.ProblemDetails(title="Validation failed")
 
 
@@ -284,17 +293,15 @@ def test_get_rate_limit_info(headers: collections.abc.Mapping[str, str], expecte
     assert pytilpack.http.get_rate_limit_info(headers) == expected
 
 
-def test_get_rate_limit_info_parses_integer_over_conversion_limit():
-    """整数文字列変換上限を超えるX-RateLimit値を解析する。"""
-    digit_count = 5000
-    value = "9" * digit_count
-    expected = 10**digit_count - 1
+def test_get_rate_limit_info_ignores_integer_over_conversion_limit():
+    """整数文字列変換上限を超えるX-RateLimit値を無視する。"""
+    value = _integer_over_conversion_limit()
     headers = {
         "X-RateLimit-Limit": value,
         "X-RateLimit-Remaining": value,
         "X-RateLimit-Reset": value,
     }
-    assert pytilpack.http.get_rate_limit_info(headers) == pytilpack.http.RateLimitInfo(expected, expected, expected)
+    assert pytilpack.http.get_rate_limit_info(headers) == pytilpack.http.RateLimitInfo(None, None, None)
 
 
 @pytest.mark.asyncio
