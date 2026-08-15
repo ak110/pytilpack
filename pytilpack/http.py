@@ -1,15 +1,23 @@
 """HTTP関連。"""
 
 import collections.abc
+import contextlib
+import dataclasses
 import datetime
 import email.utils
+import http
+import json
 import logging
 import re
+import typing
+import urllib.parse
 
 import werkzeug.datastructures
 import werkzeug.http
 
 logger = logging.getLogger(__name__)
+
+PROBLEM_JSON_CONTENT_TYPE = "application/problem+json"
 
 
 def select_accept(accept_header: str, candidates: collections.abc.Sequence[str]) -> str | None:
@@ -63,6 +71,129 @@ def select_accept_language(
     accept = werkzeug.http.parse_accept_header(header, werkzeug.datastructures.LanguageAccept)
     result = accept.best_match(supported)
     return result if result is not None else default
+
+
+def make_problem_details(
+    status: int,
+    title: str | None = None,
+    *,
+    detail: str | None = None,
+    type_: str | None = None,
+    instance: str | None = None,
+    **extensions: typing.Any,
+) -> dict[str, typing.Any]:
+    """RFC 9457 Problem Detailsのレスポンスボディを組み立てる。
+
+    返り値をJSONレスポンスに変換する際は、Content-Typeへ
+    ``PROBLEM_JSON_CONTENT_TYPE``を設定し、HTTPステータスコードにも
+    ``status``と同じ値を設定する。
+
+    Example:
+        ``jsonify(make_problem_details(404)), 404, {"Content-Type": PROBLEM_JSON_CONTENT_TYPE}``
+
+    Raises:
+        ValueError: statusがHTTPステータスコードの範囲外か、extensionsにtypeが含まれる場合。
+
+    """
+    if not _is_valid_status(status):
+        raise ValueError(f"statusがHTTPステータスコードの範囲外: {status!r}")
+    if "type" in extensions:
+        raise ValueError("extensionsに予約メンバーtypeは指定できない")
+
+    effective_type = type_ if type_ is not None else "about:blank"
+    if effective_type == "about:blank" and title is None:
+        with contextlib.suppress(ValueError):
+            title = http.HTTPStatus(status).phrase
+
+    result: dict[str, typing.Any] = {"status": status}
+    if effective_type != "about:blank":
+        result["type"] = effective_type
+    if title is not None:
+        result["title"] = title
+    if detail is not None:
+        result["detail"] = detail
+    if instance is not None:
+        result["instance"] = instance
+    result.update(extensions)
+    return result
+
+
+@dataclasses.dataclass(frozen=True)
+class ProblemDetails:
+    """RFC 9457 Problem Detailsの解析結果。"""
+
+    type: str = "about:blank"
+    title: str | None = None
+    status: int | None = None
+    detail: str | None = None
+    instance: str | None = None
+    extensions: dict[str, typing.Any] = dataclasses.field(default_factory=dict)
+
+
+def parse_problem_details(body: str | bytes, base_url: str | None = None) -> ProblemDetails | None:
+    """Problem DetailsのJSONボディを解析する。
+
+    base_urlを省略した場合、相対URIのtypeとinstanceは生値のまま返す。
+    """
+    try:
+        data = json.loads(body)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return None
+    if not isinstance(data, dict):
+        return None
+
+    raw_type = data.get("type")
+    type_: str = raw_type if isinstance(raw_type, str) else "about:blank"
+    raw_instance = data.get("instance")
+    instance = raw_instance if isinstance(raw_instance, str) else None
+    if base_url is not None:
+        type_ = urllib.parse.urljoin(base_url, type_)
+        if instance is not None:
+            instance = urllib.parse.urljoin(base_url, instance)
+
+    reserved_members = {"type", "title", "status", "detail", "instance"}
+    return ProblemDetails(
+        type=type_,
+        title=data.get("title") if isinstance(data.get("title"), str) else None,
+        status=data.get("status") if _is_valid_status(data.get("status")) else None,
+        detail=data.get("detail") if isinstance(data.get("detail"), str) else None,
+        instance=instance,
+        extensions={key: value for key, value in data.items() if key not in reserved_members},
+    )
+
+
+def get_problem_details_from_exception(exc: Exception) -> ProblemDetails | None:
+    """例外のレスポンスからProblem Detailsを取得して解析する。
+
+    requestsでは本文取得時に同期読み込みが発生する場合がある。未読または消費済みで
+    本文を取得できない場合はNoneを返し、通信・デコード失敗は元の例外を伝播する。
+    """
+    if not hasattr(exc, "response") or (response := exc.response) is None:  # pyright: ignore[reportAttributeAccessIssue]
+        return None
+    if not hasattr(response, "headers") or (headers := response.headers) is None:
+        return None
+
+    content_type = headers.get("Content-Type")
+    if not isinstance(content_type, str):
+        return None
+    media_type, _ = werkzeug.http.parse_options_header(content_type)
+    if media_type.lower() != PROBLEM_JSON_CONTENT_TYPE:
+        return None
+
+    try:
+        content = response.content
+    except RuntimeError:
+        return None
+
+    base_url = str(response.url) if hasattr(response, "url") and response.url is not None else None
+    if base_url is not None and (content_location := headers.get("Content-Location")) is not None:
+        base_url = urllib.parse.urljoin(base_url, str(content_location))
+    return parse_problem_details(content, base_url)
+
+
+def _is_valid_status(value: object) -> typing.TypeGuard[int]:
+    """HTTPステータスコードの有効範囲に含まれる整数かを返す。"""
+    return isinstance(value, int) and not isinstance(value, bool) and 100 <= value <= 599
 
 
 def get_status_code_from_exception(exc: Exception) -> int | None:
@@ -128,3 +259,42 @@ def get_retry_after(retry_after_header: str | None) -> float | None:
         return max(delta, 0.0)
     except Exception:
         return None
+
+
+class RateLimitInfo(typing.NamedTuple):
+    """X-RateLimit系ヘッダーの解析結果。"""
+
+    limit: int | None
+    remaining: int | None
+    reset: int | None
+
+
+def get_rate_limit_info(headers: collections.abc.Mapping[str, typing.Any]) -> RateLimitInfo:
+    """X-RateLimit-Limit/-Remaining/-Resetヘッダーを解析する。
+
+    headersは大文字小文字を区別しないMappingを想定する。
+    """
+    return RateLimitInfo(
+        limit=_parse_nonnegative_int(headers.get("X-RateLimit-Limit")),
+        remaining=_parse_nonnegative_int(headers.get("X-RateLimit-Remaining")),
+        reset=_parse_nonnegative_int(headers.get("X-RateLimit-Reset")),
+    )
+
+
+def get_rate_limit_info_from_exception(exc: Exception) -> RateLimitInfo | None:
+    """例外のレスポンスからX-RateLimit系ヘッダーを取得して解析する。"""
+    if (
+        hasattr(exc, "response")
+        and (response := exc.response) is not None  # pyright: ignore[reportAttributeAccessIssue]
+        and hasattr(response, "headers")
+        and (headers := response.headers) is not None
+    ):
+        return get_rate_limit_info(headers)
+    return None
+
+
+def _parse_nonnegative_int(value: typing.Any) -> int | None:
+    """文字列の非負整数を解析する。"""
+    if isinstance(value, str) and value.isdecimal():
+        return int(value)
+    return None
