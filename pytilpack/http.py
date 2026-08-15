@@ -137,7 +137,7 @@ def parse_problem_details(body: str | bytes, base_url: str | None = None) -> Pro
     """
     try:
         data = json.loads(body, parse_constant=_reject_nonstandard_json_constant)
-    except (json.JSONDecodeError, UnicodeDecodeError):
+    except (ValueError, UnicodeDecodeError):
         return None
     if not isinstance(data, dict):
         return None
@@ -304,5 +304,8 @@ def get_rate_limit_info_from_exception(exc: Exception) -> RateLimitInfo | None:
 def _parse_nonnegative_int(value: typing.Any) -> int | None:
     """文字列の非負整数を解析する。"""
     if isinstance(value, str) and value.isdecimal():
-        return int(value)
+        try:
+            return int(value)
+        except ValueError:
+            return None
     return None
