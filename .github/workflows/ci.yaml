@@ -65,8 +65,14 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-groups --all-extras
 
-      - name: Test with pyfltr
+      # 静的解析は基準とする1つの版だけで実行し、他の版はpytestで実行時互換性だけを検証する。
+      - name: Test with pyfltr（全検査）
+        if: ${{ matrix.python-version == '3.14' }}
         run: pyfltr ci --output-format=github-annotations
+
+      - name: Test with pyfltr（pytestのみ）
+        if: ${{ matrix.python-version != '3.14' }}
+        run: pyfltr ci --commands=pytest --output-format=github-annotations
 
       - name: Prune uv cache for CI
         run: uv cache prune --ci
