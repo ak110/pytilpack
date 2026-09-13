@@ -266,22 +266,24 @@ async def test_login_user_set_cookie_false(
     client: quart.typing.TestClientProtocol,
 ) -> None:
     """set_cookie=Falseの場合は通常のCookieベースのログイン処理が行われない。"""
-    async with client.session_transaction():
-        # set_cookie=Falseでログイン（current_user経路を通す）
-        response = await client.get("/login_no_cookie")
-        assert response.status_code == 200
-        assert await response.get_data(as_text=True) == "logged in without cookie"
-        # renew_loginによるCookie上書きが起きないことを確認
-        assert "Set-Cookie" not in response.headers
+    # session_transaction()で囲まない。quart 0.23未満では囲むとリクエスト間でgが共有され、
+    # quart-auth 0.12以降がgへ保持するログイン状態が次のリクエストへ漏れる。
+    # Cookieの持ち越しはクライアントのcookie_jarだけで成立する。
+    # set_cookie=Falseでログイン（current_user経路を通す）
+    response = await client.get("/login_no_cookie")
+    assert response.status_code == 200
+    assert await response.get_data(as_text=True) == "logged in without cookie"
+    # renew_loginによるCookie上書きが起きないことを確認
+    assert "Set-Cookie" not in response.headers
 
-        # この時点では通常のCookieベースのログイン状態になっていない
-        response = await client.get("/user")
-        text = await response.get_data(as_text=True)
-        assert text == "User: &lt;anonymous&gt;"
+    # この時点では通常のCookieベースのログイン状態になっていない
+    response = await client.get("/user")
+    text = await response.get_data(as_text=True)
+    assert text == "User: &lt;anonymous&gt;"
 
-        # 非公開ページにもアクセスできない
-        response = await client.get("/private")
-        assert response.status_code == 401
+    # 非公開ページにもアクセスできない
+    response = await client.get("/private")
+    assert response.status_code == 401
 
 
 @pytest.mark.asyncio
