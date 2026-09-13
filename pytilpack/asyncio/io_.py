@@ -145,6 +145,8 @@ async def write_yaml(
     """YAMLファイルに非同期で書き込む。"""
     import pytilpack.yaml  # pylint: disable=import-outside-toplevel,redefined-outer-name
 
+    # arid: disable
+    # write_yaml_all（pytilpack.yaml.save_all）と引数転送だけが同じ並行実装のため許容する。
     if Dumper is None:
         Dumper = pytilpack.yaml.CustomDumper
     await asyncio.to_thread(
@@ -160,6 +162,7 @@ async def write_yaml(
         encoding,
         **kwargs,
     )
+    # arid: enable
 
 
 async def write_yaml_all(
@@ -177,6 +180,8 @@ async def write_yaml_all(
     """YAMLファイルに非同期で書き込む。"""
     import pytilpack.yaml  # pylint: disable=import-outside-toplevel,redefined-outer-name
 
+    # arid: disable
+    # write_yaml（pytilpack.yaml.save）と引数転送だけが同じ並行実装のため許容する。
     if Dumper is None:
         Dumper = pytilpack.yaml.CustomDumper
     await asyncio.to_thread(
@@ -192,6 +197,7 @@ async def write_yaml_all(
         encoding,
         **kwargs,
     )
+    # arid: enable
 
 
 async def read_text(path: pathlib.Path | str, encoding: str = "utf-8", errors: str = "strict") -> str:

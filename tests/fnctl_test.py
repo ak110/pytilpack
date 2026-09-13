@@ -10,6 +10,27 @@ import pytest
 import pytilpack.fnctl
 
 
+def _assert_lock_order(results: list[str]) -> None:
+    """ロックが正しく動作していれば、start_X -> end_X の順序が保たれることを検証する。"""
+    assert len(results) == 4
+    assert results[0].startswith("start_")
+    assert results[1].startswith("end_")
+    assert results[2].startswith("start_")
+    assert results[3].startswith("end_")
+
+    # 同じworkerのstart/endがペアになっている
+    worker_1_start = results[0] == "start_1"
+    if worker_1_start:
+        assert results[1] == "end_1"
+        assert results[2] == "start_2"
+        assert results[3] == "end_2"
+    else:
+        assert results[0] == "start_2"
+        assert results[1] == "end_2"
+        assert results[2] == "start_1"
+        assert results[3] == "end_1"
+
+
 def test_lock(tmp_path: pathlib.Path) -> None:
     """lock()のテスト。"""
     lock_file = tmp_path / "dir" / "test.lock"
@@ -31,24 +52,7 @@ def test_lock(tmp_path: pathlib.Path) -> None:
     thread1.join()
     thread2.join()
 
-    # ロックが正しく動作していれば、start_X -> end_X の順序が保たれる
-    assert len(results) == 4
-    assert results[0].startswith("start_")
-    assert results[1].startswith("end_")
-    assert results[2].startswith("start_")
-    assert results[3].startswith("end_")
-
-    # 同じworkerのstart/endがペアになっている
-    worker_1_start = results[0] == "start_1"
-    if worker_1_start:
-        assert results[1] == "end_1"
-        assert results[2] == "start_2"
-        assert results[3] == "end_2"
-    else:
-        assert results[0] == "start_2"
-        assert results[1] == "end_2"
-        assert results[2] == "start_1"
-        assert results[3] == "end_1"
+    _assert_lock_order(results)
 
 
 @pytest.mark.asyncio
@@ -69,21 +73,4 @@ async def test_alock(tmp_path: pathlib.Path) -> None:
         async_worker(2),
     )
 
-    # ロックが正しく動作していれば、start_X -> end_X の順序が保たれる
-    assert len(results) == 4
-    assert results[0].startswith("start_")
-    assert results[1].startswith("end_")
-    assert results[2].startswith("start_")
-    assert results[3].startswith("end_")
-
-    # 同じworkerのstart/endがペアになっている
-    worker_1_start = results[0] == "start_1"
-    if worker_1_start:
-        assert results[1] == "end_1"
-        assert results[2] == "start_2"
-        assert results[3] == "end_2"
-    else:
-        assert results[0] == "start_2"
-        assert results[1] == "end_2"
-        assert results[2] == "start_1"
-        assert results[3] == "end_1"
+    _assert_lock_order(results)

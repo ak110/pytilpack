@@ -47,6 +47,32 @@ ALL_MODELS = [
 ]
 
 
+# ここは定義によってはLiteLLMと計算が合わないが、
+# 何が正解か不明のため、偶然にも一致したこの定義のテストだけ通しておく
+_WEATHER_TOOL: openai.types.chat.ChatCompletionToolParam = {
+    "type": "function",
+    "function": {
+        "name": "get_current_weather",
+        "description": "Get the current weather in a given location",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "location": {
+                    "type": "string",
+                    "description": "The city and state, e.g. San Francisco, CA",
+                },
+                "unit": {
+                    "type": "string",
+                    "description": "The unit of temperature to return",
+                    "enum": ["celsius", "fahrenheit"],
+                },
+            },
+            "required": ["location"],
+        },
+    },
+}
+
+
 def test_get_encoding_for_model():
     """get_encoding_for_model()のテスト。"""
     encoding = pytilpack.tiktoken.get_encoding_for_model("gpt-3.5-turbo-0613")
@@ -92,30 +118,7 @@ def test_num_tokens_from_messages_with_tools(model: str, expected: int):
             },
             {"role": "user", "content": "What's the weather like in San Francisco?"},
         ],
-        tools=[
-            {
-                "type": "function",
-                "function": {
-                    "name": "get_current_weather",
-                    "description": "Get the current weather in a given location",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "location": {
-                                "type": "string",
-                                "description": "The city and state, e.g. San Francisco, CA",
-                            },
-                            "unit": {
-                                "type": "string",
-                                "description": "The unit of temperature to return",
-                                "enum": ["celsius", "fahrenheit"],
-                            },
-                        },
-                        "required": ["location"],
-                    },
-                },
-            }
-        ],
+        tools=[_WEATHER_TOOL],
     )
     assert num_tokens == expected
 
@@ -136,32 +139,7 @@ def test_vs_litellm(model: str):
     assert actual_tokens == litellm_tokens, "ツールなしトークン数の不一致"
 
     # ツールあり
-    tools: list[openai.types.chat.ChatCompletionToolParam] | None = [
-        # ここは定義によってはLiteLLMと計算が合わないが、
-        # 何が正解か不明のため、偶然にも一致したこの定義のテストだけ通しておく
-        {
-            "type": "function",
-            "function": {
-                "name": "get_current_weather",
-                "description": "Get the current weather in a given location",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "location": {
-                            "type": "string",
-                            "description": "The city and state, e.g. San Francisco, CA",
-                        },
-                        "unit": {
-                            "type": "string",
-                            "description": "The unit of temperature to return",
-                            "enum": ["celsius", "fahrenheit"],
-                        },
-                    },
-                    "required": ["location"],
-                },
-            },
-        }
-    ]
+    tools: list[openai.types.chat.ChatCompletionToolParam] | None = [_WEATHER_TOOL]
     actual_tokens = pytilpack.tiktoken.num_tokens_from_messages(model=model, messages=messages, tools=tools)
     litellm_tokens = litellm.utils.token_counter(
         model=model,

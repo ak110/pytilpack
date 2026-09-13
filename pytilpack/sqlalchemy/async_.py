@@ -222,7 +222,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
         cls, name: str | None = None, log_level: int = logging.DEBUG
     ) -> contextvars.Token[sqlalchemy.ext.asyncio.AsyncSession]:
         """セッションを開始する。"""
-        # pylint: disable=duplicate-code
+        # arid: disable
         # sync版（pytilpack.sqlalchemy.sync.SyncMixin.start_session）と並行実装のため許容する。
         session = cls.sessionmaker()()  # pylint: disable=not-callable
         token = cls.session_var.set(session)
@@ -234,6 +234,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
                 f" task={pytilpack.asyncio.get_task_id_hex()}",
             )
         return token
+        # arid: enable
 
     @classmethod
     async def close_session(
@@ -243,7 +244,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
         log_level: int = logging.DEBUG,
     ) -> None:
         """セッションを終了する。"""
-        # pylint: disable=duplicate-code
+        # arid: disable
         # sync版（pytilpack.sqlalchemy.sync.SyncMixin.close_session）と並行実装のため許容する。
         session = cls.session()
         if name is not None:
@@ -255,7 +256,10 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
             )
         await asafe_close(session)
         cls.session_var.reset(token)
+        # arid: enable
 
+    # arid: disable
+    # sync版（pytilpack.sqlalchemy.sync.SyncMixin）と並行実装のため許容する。
     @classmethod
     def session(cls) -> sqlalchemy.ext.asyncio.AsyncSession:
         """セッションを取得する。"""
@@ -284,6 +288,8 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
     def delete(cls) -> sqlalchemy.Delete:
         """sqlalchemy.Deleteを返す。"""
         return sqlalchemy.delete(cls)
+
+    # arid: enable
 
     @classmethod
     async def count(cls, query: sqlalchemy.Select | sqlalchemy.CompoundSelect) -> int:

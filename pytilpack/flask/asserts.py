@@ -78,6 +78,8 @@ def assert_html(
     """
     response_bytes = response.get_data()
     response_body = response_bytes.decode("utf-8")
+    # arid: disable
+    # Quart版（pytilpack.quart.asserts.assert_html）と並行実装のため許容する。
     _core.assert_html_core(
         response_body,
         response_bytes,
@@ -89,6 +91,7 @@ def assert_html(
         tmp_path,
     )
     return response_body
+    # arid: enable
 
 
 def assert_json(

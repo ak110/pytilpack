@@ -7,6 +7,7 @@ import os
 import pathlib
 import shutil
 import stat
+import typing
 
 logger = logging.getLogger(__name__)
 
@@ -132,23 +133,8 @@ def _remove_file(path: pathlib.Path, stats: _RmtreeStats, ignore_errors: bool) -
             return
         raise
 
-    try:
-        path.unlink()
-    except PermissionError:
-        # 読み取り専用属性をクリアしてリトライする
-        try:
-            os.chmod(path, stat.S_IWRITE)
-            path.unlink()
-        except OSError:
-            if ignore_errors:
-                stats.errors += 1
-                return
-            raise
-    except OSError:
-        if ignore_errors:
-            stats.errors += 1
-            return
-        raise
+    if not _remove_with_retry(path.unlink, path, stats, ignore_errors):
+        return
 
     stats.files += 1
     stats.total_size += size
@@ -156,24 +142,36 @@ def _remove_file(path: pathlib.Path, stats: _RmtreeStats, ignore_errors: bool) -
 
 def _remove_dir(path: pathlib.Path, stats: _RmtreeStats, ignore_errors: bool) -> None:
     """空ディレクトリを削除し統計を更新する。"""
+    if not _remove_with_retry(path.rmdir, path, stats, ignore_errors):
+        return
+
+    stats.dirs += 1
+
+
+def _remove_with_retry(remove: typing.Callable[[], None], path: pathlib.Path, stats: _RmtreeStats, ignore_errors: bool) -> bool:
+    """削除操作を実行し、PermissionErrorなら読み取り専用属性をクリアしてリトライする。
+
+    Returns:
+        削除できた場合はTrue。ignore_errors=Trueで失敗を統計へ計上した場合はFalse。
+
+    """
     try:
-        path.rmdir()
+        remove()
     except PermissionError:
         try:
             os.chmod(path, stat.S_IWRITE)
-            path.rmdir()
+            remove()
         except OSError:
             if ignore_errors:
                 stats.errors += 1
-                return
+                return False
             raise
     except OSError:
         if ignore_errors:
             stats.errors += 1
-            return
+            return False
         raise
-
-    stats.dirs += 1
+    return True
 
 
 def get_size(path: str | pathlib.Path) -> int:

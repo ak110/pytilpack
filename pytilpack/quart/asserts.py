@@ -75,6 +75,8 @@ async def assert_html(
     response = await _get_response(response)
     response_body = await response.get_data(as_text=True)
     response_bytes = await response.get_data(as_text=False)
+    # arid: disable
+    # Flask版（pytilpack.flask.asserts.assert_html）と並行実装のため許容する。
     _core.assert_html_core(
         response_body,
         response_bytes,
@@ -86,6 +88,7 @@ async def assert_html(
         tmp_path,
     )
     return response_body
+    # arid: enable
 
 
 async def assert_json(

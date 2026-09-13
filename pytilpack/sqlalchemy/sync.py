@@ -252,7 +252,7 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
         """セッションを開始する。"""
         if cls.sessionmaker is None:
             raise RuntimeError("init()が呼ばれていません。")
-        # pylint: disable=duplicate-code
+        # arid: disable
         # async版（pytilpack.sqlalchemy.async_.AsyncMixin.start_session）と並行実装のため許容する。
         session = cls.sessionmaker()  # pylint: disable=not-callable
         token = cls.session_var.set(session)
@@ -264,13 +264,14 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
                 f" task={pytilpack.asyncio.get_task_id_hex()}",
             )
         return token
+        # arid: enable
 
     @classmethod
     def close_session(
         cls, token: contextvars.Token[sqlalchemy.orm.Session], name: str | None = None, log_level: int = logging.DEBUG
     ) -> None:
         """セッションを終了する。"""
-        # pylint: disable=duplicate-code
+        # arid: disable
         # async版（pytilpack.sqlalchemy.async_.AsyncMixin.close_session）と並行実装のため許容する。
         session = cls.session()
         if name is not None:
@@ -282,7 +283,10 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
             )
         safe_close(session)
         cls.session_var.reset(token)
+        # arid: enable
 
+    # arid: disable
+    # async版（pytilpack.sqlalchemy.async_.AsyncMixin）と並行実装のため許容する。
     @classmethod
     def session(cls) -> sqlalchemy.orm.Session:
         """セッションを取得する。"""
@@ -311,6 +315,8 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
     def delete(cls) -> sqlalchemy.Delete:
         """sqlalchemy.Deleteを返す。"""
         return sqlalchemy.delete(cls)
+
+    # arid: enable
 
     @classmethod
     def count(cls, query: sqlalchemy.Select | sqlalchemy.CompoundSelect) -> int:

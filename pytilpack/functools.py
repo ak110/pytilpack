@@ -178,6 +178,8 @@ def retry[**P, R](
             @functools.wraps(func)
             async def async_wrapper(*args: P.args, **kwargs: P.kwargs):
                 # pylint: disable=catching-non-exception,raising-non-exception
+                # arid: disable
+                # sync版（sync_wrapper）と待機処理だけが異なる並行実装のため許容する。
                 # kwargs から retry 設定を取得してオーバーライド
                 retry_override = kwargs.pop("retry", None)
                 cfg = _apply_retry_override(
@@ -235,6 +237,7 @@ def retry[**P, R](
                             logger.log(cfg.loglevel, "Retry-After: %.1f", retry_after)
                             await asyncio.sleep(retry_after)
                             retry_after_total += retry_after
+                # arid: enable
 
             return typing.cast(typing.Callable[P, R], async_wrapper)
 
@@ -243,6 +246,8 @@ def retry[**P, R](
             @functools.wraps(func)
             def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
                 # pylint: disable=catching-non-exception,raising-non-exception
+                # arid: disable
+                # async版（async_wrapper）と待機処理だけが異なる並行実装のため許容する。
                 # kwargs から retry 設定を取得してオーバーライド
                 retry_override = kwargs.pop("retry", None)
                 cfg = _apply_retry_override(
@@ -300,6 +305,7 @@ def retry[**P, R](
                             logger.log(cfg.loglevel, "Retry-After: %.1f", retry_after)
                             time.sleep(retry_after)
                             retry_after_total += retry_after
+                # arid: enable
 
             return sync_wrapper
 

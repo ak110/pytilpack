@@ -31,7 +31,7 @@ class Test1(Base, pytilpack.sqlalchemy.SyncUniqueIDMixin):  # pylint: disable=to
 class Test2(Base):  # pylint: disable=too-many-ancestors
     """テストクラス。"""
 
-    # pylint: disable=duplicate-code
+    # arid: disable
     # async/flask版（tests.sqlalchemy.async_test.Test2・tests.sqlalchemy.flask_test.Test2）と
     # 並行実装のため許容する。
     __test__ = False
@@ -51,6 +51,7 @@ class Test2(Base):  # pylint: disable=too-many-ancestors
     value3 = sqlalchemy.Column("value0", sqlalchemy.Float, nullable=False, default=1.0)
     value4 = sqlalchemy.Column(sqlalchemy.DateTime, nullable=False)
     value5 = sqlalchemy.Column(sqlalchemy.Text, nullable=False, default=lambda: "func")
+    # arid: enable
 
 
 class Test3(Base, pytilpack.sqlalchemy.SyncUniqueIDMixin):  # pylint: disable=too-many-ancestors
@@ -105,7 +106,7 @@ def _clean_tables() -> typing.Generator[None, None, None]:
 
 def test_repr() -> None:
     """__repr__のテスト。"""
-    # pylint: disable=duplicate-code
+    # arid: disable
     # async版（tests.sqlalchemy.async_test.test_repr）と並行実装のため許容する。
     # デフォルト: idを表示
     test1 = Test1(id=1)
@@ -130,6 +131,7 @@ def test_repr() -> None:
     custom = CustomRepr(id=42, unique_id="abc")
     assert "id=42" in repr(custom)
     assert "unique_id='abc'" in repr(custom)
+    # arid: enable
 
 
 def test_mixin_basic_functionality() -> None:
@@ -376,7 +378,7 @@ def test_safe_close() -> None:
 
 def test_to_dict() -> None:
     """to_dictのテスト。"""
-    # pylint: disable=duplicate-code
+    # arid: disable
     # flask版（tests.sqlalchemy.flask_test.test_to_dict）と並行実装のため許容する。
     test2 = Test2(name="test2", enabled=True, value4=datetime.datetime(2021, 1, 1))
     assert test2.to_dict(excludes=["pass_hash"]) == {
@@ -391,11 +393,12 @@ def test_to_dict() -> None:
         "value5": None,
     }
     assert test2.to_dict(includes=["name", "value3"], exclude_none=True) == {"name": "test2"}
+    # arid: enable
 
 
 def test_describe() -> None:
     """describe()のテスト。"""
-    # pylint: disable=duplicate-code
+    # arid: disable
     # async/flask版（tests.sqlalchemy.async_test.test_describe・tests.sqlalchemy.flask_test.test_describe）と
     # 並行実装のため許容する。テスト対象モデルの構造が同一であるため出力アサーションも一致する。
     desc = pytilpack.sqlalchemy.describe(Base)
@@ -449,6 +452,7 @@ Table: test3
 +-----------+-------------+--------+-------+-----------+----------------+------------+
 """
     )
+    # arid: enable
 
 
 @pytest.mark.asyncio

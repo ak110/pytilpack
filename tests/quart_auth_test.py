@@ -92,6 +92,8 @@ def _app() -> quart.Quart:
         _ = await pytilpack.quart_auth.acurrent_user()
         return "logged in without cookie"
 
+    # arid: disable
+    # ログイン経路だけが異なる2つのテスト用アプリで同じ検証ルートを定義するため許容する。
     @app.route("/auser")
     async def auser():
         # acurrent_userのテスト用
@@ -107,6 +109,7 @@ def _app() -> quart.Quart:
         result = await pytilpack.quart_auth.ais_admin()
         return f"is_admin: {result}"
 
+    # arid: enable
     return app
 
 
@@ -392,6 +395,8 @@ def _app_async() -> quart.Quart:
         await pytilpack.quart_auth.ensure_user_loaded()
         return "logged in without cookie"
 
+    # arid: disable
+    # ログイン経路だけが異なる2つのテスト用アプリで同じ検証ルートを定義するため許容する。
     @app.route("/auser")
     async def auser():
         # acurrent_userのテスト用
@@ -407,6 +412,7 @@ def _app_async() -> quart.Quart:
         result = await pytilpack.quart_auth.ais_admin()
         return f"is_admin: {result}"
 
+    # arid: enable
     return app
 
 

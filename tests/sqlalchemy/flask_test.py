@@ -33,7 +33,7 @@ class Test1(Base, pytilpack.sqlalchemy.Mixin, pytilpack.sqlalchemy.UniqueIDMixin
 class Test2(Base, pytilpack.sqlalchemy.Mixin):
     """テストクラス。"""
 
-    # pylint: disable=duplicate-code
+    # arid: disable
     # async/sync版（tests.sqlalchemy.async_test.Test2・tests.sqlalchemy.sync_test.Test2）と
     # 並行実装のため許容する。
     __test__ = False
@@ -53,6 +53,7 @@ class Test2(Base, pytilpack.sqlalchemy.Mixin):
     value3 = sqlalchemy.Column("value0", sqlalchemy.Float, nullable=False, default=1.0)
     value4 = sqlalchemy.Column(sqlalchemy.DateTime, nullable=False)
     value5 = sqlalchemy.Column(sqlalchemy.Text, nullable=False, default=lambda: "func")
+    # arid: enable
 
 
 # register_ping()はグローバルなPoolクラスへリスナーを登録するため、呼ぶたびに蓄積する。
@@ -104,7 +105,7 @@ def _clean_tables(engine: sqlalchemy.engine.Engine) -> typing.Generator[None, No
 
 def test_repr() -> None:
     """__repr__のテスト。"""
-    # pylint: disable=duplicate-code
+    # arid: disable
     # async版（tests.sqlalchemy.async_test.test_repr）と並行実装のため許容する。
     # デフォルト: idを表示
     test1 = Test1(id=1)
@@ -129,6 +130,7 @@ def test_repr() -> None:
     custom = CustomRepr(id=42, unique_id="abc")
     assert "id=42" in repr(custom)
     assert "unique_id='abc'" in repr(custom)
+    # arid: enable
 
 
 def test_get_by_id(session: sqlalchemy.orm.Session) -> None:
@@ -178,7 +180,7 @@ def test_get_by_unique_id(session: sqlalchemy.orm.Session) -> None:
 
 def test_to_dict() -> None:
     """to_dictのテスト。"""
-    # pylint: disable=duplicate-code
+    # arid: disable
     # async/sync版（tests.sqlalchemy.async_test.test_to_dict・tests.sqlalchemy.sync_test.test_to_dict）と
     # 並行実装のため許容する。
     test2 = Test2(name="test2", enabled=True, value4=datetime.datetime(2021, 1, 1))
@@ -194,11 +196,12 @@ def test_to_dict() -> None:
         "value5": None,
     }
     assert test2.to_dict(includes=["name", "value3"], exclude_none=True) == {"name": "test2"}
+    # arid: enable
 
 
 def test_describe() -> None:
     """describe()のテスト。"""
-    # pylint: disable=duplicate-code
+    # arid: disable
     # async/sync版（tests.sqlalchemy.async_test.test_describe・tests.sqlalchemy.sync_test.test_describe）と
     # 並行実装のため許容する。テスト対象モデルの構造が同一であるため出力アサーションも一致する。
     desc = pytilpack.sqlalchemy.describe(Base)
@@ -243,6 +246,7 @@ Table: test2
 +-----------+--------------+--------+-------+------------+----------------+--------------+
 """
     )
+    # arid: enable
 
 
 def test_wait_for_connection() -> None:

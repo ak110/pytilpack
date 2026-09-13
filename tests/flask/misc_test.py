@@ -50,6 +50,8 @@ def test_run() -> None:
 
 def test_get_routes() -> None:
     """get_routesのテスト。"""
+    # arid: disable
+    # Flask/Quartの並行実装を同一ルート定義で検証する定型アサーションのため許容する。
     app = flask.Flask(__name__)
 
     @app.route("/")
@@ -75,8 +77,6 @@ def test_get_routes() -> None:
     with app.test_request_context():
         routes = pytilpack.flask.misc.get_routes(app)
 
-        # pylint: disable=duplicate-code
-        # Flask/Quartの並行実装を同一ルート定義で検証する定型アサーションのため許容する。
         # 引数の多い順にソートされることを確認
         assert len(routes[0].arg_names) >= len(routes[-1].arg_names)
 
@@ -107,6 +107,7 @@ def test_get_routes() -> None:
         api_item_route = route_dict["api_item"]
         assert api_item_route.url_parts == ["/api/v1/items/", ""]
         assert api_item_route.arg_names == ["item_id"]
+    # arid: enable
 
 
 def test_get_routes_application_root() -> None:
