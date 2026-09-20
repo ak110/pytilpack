@@ -49,11 +49,11 @@ pytilpackは多数のサードパーティに対するユーティリティ集�
 3. **コア依存の最小性検査**
    - `pyproject.toml`の`[project.dependencies]`を現在のコア依存一覧の正本として読み取る
    - 各依存を利用するコア機能とimport箇所を確認し、不要な依存があれば違反として報告する
-   - コア依存の判定には`pyproject.toml`の一覧を使い、`AGENTS.md`や`CLAUDE.md`の一覧を比較対象から除外する
+   - コア依存の判定には`pyproject.toml`の一覧を使い、`AGENTS.md`の一覧を比較対象から除外する
 
 4. **モジュール → extras マッピング (参考情報扱い)**
 
-   モジュール名とextrasキー名が異なる既知のケースは`CLAUDE.md`の「モジュール→extrasキーマッピング」表を参照する。
+   モジュール名とextrasキー名が異なる既知のケースは`AGENTS.md`の「モジュール→extrasキーマッピング」表を参照する。
    現在の既知マッピング:
 
    - `flask_login` → `flask` extra
@@ -82,7 +82,7 @@ pytilpackは多数のサードパーティに対するユーティリティ集�
    - `docs/api/<name>.md` の存在（サブパッケージも1ファイル）... verdict対象
    - `docs/api/<name>.md` に `!!! note "必要なextra"` ブロックがあるか/ないかを `Grep` で確認する
    - 各モジュールについて「note有 / note無」の事実だけを列挙する（この項目ではOK/NG判定をしない）
-   - モジュール名とextrasキー名の非1:1対応については`CLAUDE.md`の「モジュール→extrasキーマッピング」表を参照する
+   - モジュール名とextrasキー名の非1:1対応については`AGENTS.md`の「モジュール→extrasキーマッピング」表を参照する
    - noteの要否の最終判断は呼び出し元の人間が行い、本agentは判断材料を提供するに留める
    - `README.md` のextras一覧テーブルに `<name>` 行があるか ... verdict対象
    - `docs/index.md` のextras一覧に `<name>` 行があるか ... verdict対象

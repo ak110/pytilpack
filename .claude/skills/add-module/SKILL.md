@@ -6,7 +6,7 @@ description: >
   pytilpack/sqlalchemy/). Walks through the required extras, docs/api/<name>.md
   (one file per top-level module, with show_submodules for subpackages),
   tests/<name>_test.py or tests/<name>/, README/docs/index extras table,
-  and mkdocs.yml nav updates from CLAUDE.md so nothing is forgotten.
+  and mkdocs.yml nav updates from AGENTS.md so nothing is forgotten.
 ---
 
 # pytilpack 新モジュール追加チェックリスト
@@ -22,9 +22,9 @@ pytilpackに新モジュールを追加する際に更新が必要なポイン�
   - 複数ファイルに分割したい場合や、ライブラリごとに名前空間を分けたい場合はサブパッケージにする
   - 既存例: 単一ファイル `pytilpack/openai.py` / サブパッケージ `pytilpack/sqlalchemy/`, `pytilpack/asyncio/`
 - トップレベル名 `<name>` の確定
-  - Pythonキーワードと衝突する場合はファイル名を `<name>_.py` にする（テスト配置規約はCLAUDE.mdを参照）
+  - Pythonキーワードと衝突する場合はファイル名を `<name>_.py` にする（テスト配置規約はAGENTS.mdを参照）
 - 必要なサードパーティextras（ベース依存で済む場合はextras追加不要）
-- モジュール名とextrasキー名が異なる既知のケースはCLAUDE.mdの「モジュール→extrasキーマッピング」表を参照する
+- モジュール名とextrasキー名が異なる既知のケースはAGENTS.mdの「モジュール→extrasキーマッピング」表を参照する
 
 ## 1. 依存関係 (`pyproject.toml`)
 
@@ -73,7 +73,7 @@ extras不要ならば `!!! note` ブロックは省略する (既存の `docs/ap
 
 ## 3. テスト
 
-テスト配置規約はCLAUDE.mdの「テスト配置規約」を参照する。
+テスト配置規約はAGENTS.mdの「テスト配置規約」を参照する。
 
 新しいpublic関数には必ずテストを書く。CRUDのような一連の流れは1つのテスト関数にまとめることを優先する。
 既存の `tests/` ディレクトリから近い形式のものを選んで参考にする。
@@ -108,7 +108,7 @@ make test
 
 ## よく使う参考ファイル
 
-- `CLAUDE.md` — 実装上の不変条件・モジュール→extrasキーマッピング・テスト配置規約
+- `AGENTS.md` — 実装上の不変条件・モジュール→extrasキーマッピング・テスト配置規約
 - `scripts/check_docs_api.py` — 整合性チェックのロジック
 - 既存モジュール例（単一ファイル）: `pytilpack/openai.py` + `docs/api/openai.md` + `tests/openai_test.py`
 - 既存モジュール例（サブパッケージ）: `pytilpack/sqlalchemy/` + `docs/api/sqlalchemy.md` + `tests/sqlalchemy/`

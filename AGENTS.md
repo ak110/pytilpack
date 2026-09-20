@@ -1,4 +1,4 @@
-# CLAUDE.md: pytilpack
+# AGENTS.md: pytilpack
 
 主要Pythonライブラリ向けの軽量ユーティリティ集。
 モジュール単位の個別importとextras単位の依存管理を採用し、利用者は必要なモジュールだけ取り込む。

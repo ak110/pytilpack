@@ -40,7 +40,7 @@ pytilpackの既存モジュール編集時に、関連するドキュメント�
 ```
 
 `pyproject.toml` の `[project.optional-dependencies]` に対応するextrasキーが定義されていることを確認する。
-モジュール名とextrasキー名が異なる場合は`CLAUDE.md`の「モジュール→extrasキーマッピング」表を参照する。
+モジュール名とextrasキー名が異なる場合は`AGENTS.md`の「モジュール→extrasキーマッピング」表を参照する。
 extras不要モジュール（ベース依存のみで動く）ならばこの注記がないことを確認する。
 
 ### 3. `[project.optional-dependencies].all` の網羅
@@ -53,7 +53,7 @@ extras不要モジュール（ベース依存のみで動く）ならばこの�
 `pytilpack/<name>.py`（または `pytilpack/<name>/**/*.py`）の **トップレベル import** を
 `grep -E '^(import|from)' pytilpack/<name>...'` で抽出する。
 サードパーティ（`pytilpack` / 標準ライブラリ以外）が対応extrasに過不足なくマッピングされているか確認する。
-モジュール名とextrasキー名が異なる場合は`CLAUDE.md`の「モジュール→extrasキーマッピング」表を参照する。
+モジュール名とextrasキー名が異なる場合は`AGENTS.md`の「モジュール→extrasキーマッピング」表を参照する。
 
 `pyproject.toml`の`[tool.pylint."messages control"]`で`import-outside-toplevel`が有効なため、関数内importは基本的にない前提でOK。
 
