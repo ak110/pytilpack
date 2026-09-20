@@ -1,3 +1,11 @@
 [tools]
-actionlint = "latest"
 typos = "latest"
+
+# actionlintの配布物はインストールrootへ実行ファイルと並べて`man`・`docs`を展開する。
+# `symlink_bins`で実行ファイルだけを`.mise-bins`へ集め、`man`がPATH上で先に解決される事象を防ぐ。
+# インストール実体は同一マシンの全プロジェクトで共有されるため、宣言の有無は全プロジェクトでそろえる。
+# `mise upgrade --bump`がinline tableのoptionsを失うため別テーブル形式で書き、`[tools]`の最後のキーより後に置く。
+# 詳細はpyfltrの`docs/guide/recommended-nonpython.md`の「miseで配置を変えるツール設定」にある。
+[tools.actionlint]
+version = "latest"
+symlink_bins = true
