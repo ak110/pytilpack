@@ -75,20 +75,20 @@ async def test_mcp_http_fetch_url(page_url: str) -> None:
         stderr=subprocess.PIPE,
         text=True,
     )
+    assert process.stderr is not None
+    startup: list[str] = []
     try:
-        for _ in range(50):
-            if process.poll() is not None:
-                raise AssertionError(f"MCPサーバーが終了した: {process.stderr.read() if process.stderr else ''}")
-            try:
-                _reader, writer = await asyncio.open_connection("127.0.0.1", port)
-            except OSError:
-                await asyncio.sleep(0.1)
-            else:
-                writer.close()
-                await writer.wait_closed()
-                break
-        else:
-            raise AssertionError("MCPサーバーが起動しなかった")
+        try:
+            async with asyncio.timeout(30):
+                while True:
+                    line = await asyncio.to_thread(process.stderr.readline)
+                    if not line:
+                        raise AssertionError(f"MCPサーバーが終了した: {''.join(startup)}")
+                    startup.append(line)
+                    if "Uvicorn running on " in line:
+                        break
+        except TimeoutError as exc:
+            raise AssertionError(f"MCPサーバーの起動完了を確認できない: {''.join(startup)}") from exc
 
         async with contextlib.AsyncExitStack() as stack:
             read_stream, write_stream = await stack.enter_async_context(
