@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import os
 import pathlib
-import time
 import typing
 
 import pytest
@@ -72,8 +72,9 @@ def test_cached_file_loader(
     assert get_count() == 4
 
     # ファイル更新時のキャッシュ無効化
-    time.sleep(0.1)  # ファイルのタイムスタンプ更新のための待機
+    previous_stat = test_file.stat()
     test_file.write_text("updated")
+    os.utime(test_file, ns=(previous_stat.st_atime_ns, previous_stat.st_mtime_ns + 2_000_000_000))
     assert loader.load(test_file) == "updated"
 
     # ローダーオーバーライド

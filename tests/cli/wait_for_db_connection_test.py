@@ -1,24 +1,26 @@
-"""wait_for_db_connection.pyのテスト。"""
+"""DB接続待機CLIの入口テスト。"""
+
+import subprocess
+import sys
+from pathlib import Path
 
 import pytest
 
-import pytilpack.cli.wait_for_db_connection
 
-
-@pytest.mark.parametrize(
-    "url,expected",
-    [
-        ("postgresql://user:pass@localhost/db", False),
-        ("postgresql+psycopg2://user:pass@localhost/db", False),
-        ("mysql://user:pass@localhost/db", False),
-        ("sqlite:///path/to/db.sqlite", False),
-        ("postgresql+asyncpg://user:pass@localhost/db", True),
-        ("sqlite+aiosqlite:///path/to/db.sqlite", True),
-        ("mysql+aiomysql://user:pass@localhost/db", True),
-        ("mysql+asyncmy://user:pass@localhost/db", True),
-        ("postgresql+aiopg://user:pass@localhost/db", True),
-    ],
-)
-def test_is_async_url(url: str, expected: bool) -> None:
-    """is_async_urlのテスト。"""
-    assert pytilpack.cli.wait_for_db_connection.is_async_url(url) == expected
+@pytest.mark.parametrize("driver", ["sqlite", "sqlite+aiosqlite"])
+def test_wait_for_db_connection_cli(tmp_path: Path, driver: str) -> None:
+    """同期・非同期のSQLite接続成否をCLI終了コードで確認する。"""
+    for should_connect in (True, False):
+        database = tmp_path / "database.sqlite" if should_connect else tmp_path / "missing" / "database.sqlite"
+        url = f"{driver}:///{database}"
+        result = subprocess.run(
+            [sys.executable, "-m", "pytilpack.cli.main", "wait-for-db-connection", url, "--timeout", "0"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if should_connect:
+            assert result.returncode == 0, result.stderr
+        else:
+            assert result.returncode != 0
+            assert "DB接続タイムアウト" in result.stderr

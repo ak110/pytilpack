@@ -182,8 +182,9 @@ def test_sync(tmp_path: pathlib.Path) -> None:
     assert (dst / "test.txt").read_text() == "test1"
 
     # ファイルの更新テスト
-    time.sleep(0.1)  # 時間差をつけるためにスリープ
+    copied_mtime_ns = (dst / "test.txt").stat().st_mtime_ns
     src_file.write_text("test2")
+    os.utime(src_file, ns=(src_file.stat().st_atime_ns, copied_mtime_ns + 1_000_000_000))
     pytilpack.pathlib.sync(src, dst)
     assert (dst / "test.txt").read_text() == "test2"
 

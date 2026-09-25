@@ -1,76 +1,40 @@
-"""babel CLIのテスト。"""
+"""Babel CLIのカタログ操作を公開入口から確認する。"""
 
-import pathlib
-
-import pytilpack.cli.main
-
-
-def test_babel_extract_and_compile(tmp_path: pathlib.Path) -> None:
-    """extract → init → compile の一連の流れをテスト。"""
-    # テスト用Pythonファイルを作成
-    src_dir = tmp_path / "src"
-    src_dir.mkdir()
-    (src_dir / "app.py").write_text(
-        'from pytilpack.i18n import gettext_func as _\nprint(_("Hello"))\nprint(_("World"))\n',
-        encoding="utf-8",
-    )
-    pot_path = tmp_path / "messages.pot"
-    locale_dir = tmp_path / "locales"
-
-    # extract
-    pytilpack.cli.main.main(["babel", "extract", str(src_dir), "-o", str(pot_path)])
-    assert pot_path.exists()
-    pot_content = pot_path.read_text(encoding="utf-8")
-    assert "Hello" in pot_content
-    assert "World" in pot_content
-
-    # init
-    pytilpack.cli.main.main(
-        [
-            "babel",
-            "init",
-            "-l",
-            "ja",
-            "-i",
-            str(pot_path),
-            "-d",
-            str(locale_dir),
-        ]
-    )
-    po_path = locale_dir / "ja" / "LC_MESSAGES" / "messages.po"
-    assert po_path.exists()
-
-    # compile
-    pytilpack.cli.main.main(["babel", "compile", "-d", str(locale_dir)])
-    mo_path = locale_dir / "ja" / "LC_MESSAGES" / "messages.mo"
-    assert mo_path.exists()
+import subprocess
+import sys
+from pathlib import Path
 
 
-def test_babel_update(tmp_path: pathlib.Path) -> None:
-    """updateサブコマンドのテスト。"""
-    # 初期POTを作成
-    src_dir = tmp_path / "src"
-    src_dir.mkdir()
-    (src_dir / "app.py").write_text(
-        'from pytilpack.i18n import gettext_func as _\nprint(_("Hello"))\n',
-        encoding="utf-8",
-    )
-    pot_path = tmp_path / "messages.pot"
-    locale_dir = tmp_path / "locales"
+def test_babel_cli_catalog_lifecycle(tmp_path: Path) -> None:
+    """抽出、初期化、更新、コンパイルを順に実行する。"""
+    source = tmp_path / "source"
+    source.mkdir()
+    messages = source / "messages.py"
+    messages.write_text('_("hello")\n', encoding="utf-8")
+    template = tmp_path / "messages.pot"
+    locales = tmp_path / "locales"
 
-    # extract → init
-    pytilpack.cli.main.main(["babel", "extract", str(src_dir), "-o", str(pot_path)])
-    pytilpack.cli.main.main(["babel", "init", "-l", "ja", "-i", str(pot_path), "-d", str(locale_dir)])
+    def run(*args: str) -> None:
+        result = subprocess.run(
+            [sys.executable, "-m", "pytilpack.cli.main", "babel", *args],
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 0, result.stderr
 
-    # ソースを更新してextract
-    (src_dir / "app.py").write_text(
-        'from pytilpack.i18n import gettext_func as _\nprint(_("Hello"))\nprint(_("New message"))\n',
-        encoding="utf-8",
-    )
-    pytilpack.cli.main.main(["babel", "extract", str(src_dir), "-o", str(pot_path)])
+    run("extract", str(source), "--output", str(template))
+    assert 'msgid "hello"' in template.read_text(encoding="utf-8")
 
-    # update
-    pytilpack.cli.main.main(["babel", "update", "-i", str(pot_path), "-d", str(locale_dir)])
-    po_path = locale_dir / "ja" / "LC_MESSAGES" / "messages.po"
-    po_content = po_path.read_text(encoding="utf-8")
-    assert "New message" in po_content
+    run("init", "--locale", "ja", "--input-file", str(template), "--output-dir", str(locales))
+    catalog = locales / "ja" / "LC_MESSAGES" / "messages.po"
+    assert 'msgid "hello"' in catalog.read_text(encoding="utf-8")
+
+    messages.write_text('_("hello")\n_("welcome")\n', encoding="utf-8")
+    run("extract", str(source), "--output", str(template))
+    run("update", "--input-file", str(template), "--output-dir", str(locales))
+    assert 'msgid "welcome"' in catalog.read_text(encoding="utf-8")
+
+    run("compile", "--directory", str(locales))
+    assert catalog.with_suffix(".mo").is_file()
