@@ -205,7 +205,7 @@ def test_exception_with_dedup_count(caplog: pytest.LogCaptureFixture) -> None:
         pytilpack.logging.exception_with_dedup(logger, exc, dedup_count=3, now=now)
         assert caplog.records[-1].levelname == "INFO"
 
-        # 4回目: WARNING (3回目なのでリセット)
+        # 4回目: WARNING (前回のWARNINGより後の発生回数が2〜4回目の3回でdedup_count=3に達した)
         pytilpack.logging.exception_with_dedup(logger, exc, dedup_count=3, now=now)
         assert caplog.records[-1].levelname == "WARNING"
 
@@ -231,7 +231,7 @@ def test_exception_with_dedup_count_str(caplog: pytest.LogCaptureFixture) -> Non
         pytilpack.logging.exception_with_dedup(logger, "timeout", dedup_count=2, now=now)
         assert caplog.records[-1].levelname == "INFO"
 
-        # 3回目: WARNING (count=2 → reset)
+        # 3回目: WARNING (前回のWARNINGより後の発生回数が2〜3回目の2回でdedup_count=2に達した)
         pytilpack.logging.exception_with_dedup(logger, "timeout", dedup_count=2, now=now)
         assert caplog.records[-1].levelname == "WARNING"
         assert caplog.records[-1].exc_info is None
@@ -274,9 +274,57 @@ def test_exception_with_dedup_both_windows(caplog: pytest.LogCaptureFixture) -> 
             pytilpack.logging.exception_with_dedup(logger, exc, dedup_window=dedup_window, dedup_count=3, now=now)
             assert caplog.records[-1].levelname == "INFO"
 
-        # 個数窓が先に超過（時間窓内だが count=3 に到達）→ WARNING
+        # 個数窓が先に超過（時間窓内だが前回のWARNINGより後の発生回数がdedup_count=3に達した）→ WARNING
         pytilpack.logging.exception_with_dedup(logger, exc, dedup_window=dedup_window, dedup_count=3, now=now)
         assert caplog.records[-1].levelname == "WARNING"
+
+
+def _assert_second_call_warns(
+    caplog: pytest.LogCaptureFixture,
+    first: tuple[BaseException | str, str],
+    second: tuple[BaseException | str, str],
+) -> None:
+    """1回目の後に別の入力で呼んだ2回目がWARNINGになり、例外ならexc_infoが付くことを確認する。"""
+    logger = logging.getLogger("test_logger_fingerprint")
+    logger.setLevel(logging.DEBUG)
+    now = datetime.datetime(2023, 1, 1, 12, 0, 0)
+    pytilpack.logging.clear_exception_history()
+    caplog.clear()
+    with caplog.at_level(logging.INFO):
+        pytilpack.logging.exception_with_dedup(logger, first[0], msg=first[1], now=now)
+        pytilpack.logging.exception_with_dedup(logger, second[0], msg=second[1], now=now)
+    assert [r.levelname for r in caplog.records] == ["WARNING", "WARNING"]
+    if isinstance(second[0], BaseException):
+        assert caplog.records[-1].exc_info is not None
+    else:
+        assert caplog.records[-1].exc_info is None
+
+
+def test_exception_with_dedup_distinguishes_exception_and_str(caplog: pytest.LogCaptureFixture) -> None:
+    """例外と、同じ形の文字列を別々の履歴として扱う。"""
+    _assert_second_call_warns(caplog, (ValueError("x"), "y"), ("ValueError:x", "y"))
+    _assert_second_call_warns(caplog, ("ValueError:x", "y"), (ValueError("x"), "y"))
+
+
+def test_exception_with_dedup_distinguishes_element_boundaries(caplog: pytest.LogCaptureFixture) -> None:
+    """区切り文字の位置だけが異なる入力を別々の履歴として扱う。"""
+    _assert_second_call_warns(caplog, ("a:b", "c"), ("a", "b:c"))
+    _assert_second_call_warns(caplog, (ValueError("a:b"), "c"), (ValueError("a"), "b:c"))
+
+
+def test_exception_with_dedup_distinguishes_same_name_classes(caplog: pytest.LogCaptureFixture) -> None:
+    """__name__が同じで定義位置が異なる例外クラスを別々の履歴として扱う。"""
+
+    class _First:
+        class Error(Exception):
+            """例外クラス1。"""
+
+    class _Second:
+        class Error(Exception):
+            """例外クラス2。"""
+
+    assert _First.Error.__name__ == _Second.Error.__name__
+    _assert_second_call_warns(caplog, (_First.Error("e"), "m"), (_Second.Error("e"), "m"))
 
 
 @pytest.mark.asyncio

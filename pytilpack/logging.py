@@ -135,7 +135,9 @@ def exception_with_dedup(
         exc: 例外オブジェクトまたは文字列。fingerprint の生成に使用する。
         msg: ログメッセージ。fingerprint にも含まれる。
         dedup_window: 同一エラーとみなす時間幅。デフォルト 24 時間（dedup_count 指定時は None）。
-        dedup_count: 同一エラーとみなす回数。この回数分 INFO で抑制した後に再度 WARN で出力する。
+        dedup_count: 同一エラーとみなす回数。WARN の後は dedup_count - 1 回 INFO で出力し、
+            前回の WARN より後の発生回数が dedup_count に達した呼び出しで再度 WARN で出力する
+            （dedup_count=3 なら WARN → INFO → INFO → WARN）。
         now: 現在時刻。
     """
     if dedup_window is None and dedup_count is None:
@@ -144,7 +146,14 @@ def exception_with_dedup(
         now = datetime.datetime.now()
 
     is_exception = isinstance(exc, BaseException)
-    raw = f"{exc.__class__.__name__}:{str(exc)}:{msg}" if is_exception else f"{exc}:{msg}"
+    # 種別タグとJSON配列の要素境界により、例外と文字列の違い・区切り文字の位置・
+    # 別モジュールの同名クラスが異なる入力を、別々の履歴として扱う
+    parts = (
+        ["exception", f"{type(exc).__module__}.{type(exc).__qualname__}", str(exc), msg]
+        if is_exception
+        else ["str", str(exc), msg]
+    )
+    raw = json.dumps(parts)
     fingerprint = hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
     last = _exception_history.get(fingerprint)
