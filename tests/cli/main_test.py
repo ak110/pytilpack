@@ -226,3 +226,48 @@ def test_main_import_error_without_name_reraised(monkeypatch: pytest.MonkeyPatch
 
     with pytest.raises(ImportError):
         pytilpack.cli.main.main(["--help"])
+
+
+@pytest.fixture(name="fake_wrapped_missing_greenlet")
+def _fake_wrapped_missing_greenlet(monkeypatch: pytest.MonkeyPatch) -> None:
+    """SQLAlchemy 2.1 が greenlet 欠落を `name` の無い `ImportError` へ包み直す状況を再現する。"""
+    real_import_module = importlib.import_module
+
+    def fake(name: str, package: str | None = None):
+        if name == "pytilpack.cli.wait_for_db_connection":
+            try:
+                raise ModuleNotFoundError("No module named 'greenlet'", name="greenlet")
+            except ModuleNotFoundError as e:
+                raise ImportError(
+                    "The SQLAlchemy asyncio module requires that the Python 'greenlet' library is installed."
+                ) from e
+        return real_import_module(name, package)
+
+    monkeypatch.setattr(pytilpack.cli.main.importlib, "import_module", fake)
+    # basicConfig の副作用を隔離する。
+    monkeypatch.setattr(logging, "basicConfig", lambda *args, **kwargs: None)
+
+
+@pytest.mark.usefixtures("fake_wrapped_missing_greenlet")
+def test_main_help_survives_wrapped_missing_dep(capsys) -> None:
+    """原因に外部パッケージ欠落を持つ `ImportError` は CLI 全体を停止させない。"""
+    with pytest.raises(SystemExit) as exc_info:
+        pytilpack.cli.main.main(["--help"])
+    assert exc_info.value.code == 0
+
+    captured = capsys.readouterr()
+    assert "sync" in captured.out
+    assert "wait-for-db-connection" in captured.out
+    assert "未インストール" in captured.out
+
+
+@pytest.mark.usefixtures("fake_wrapped_missing_greenlet")
+def test_main_wrapped_missing_dep_exits(capsys) -> None:
+    """原因に外部パッケージ欠落を持つサブコマンドは extras の導入を案内して終了する。"""
+    with pytest.raises(SystemExit) as exc_info:
+        pytilpack.cli.main.main(["wait-for-db-connection", "sqlite:///x"])
+    assert exc_info.value.code == 2
+
+    captured = capsys.readouterr()
+    assert "extras [sqlalchemy]" in captured.err
+    assert "pytilpack[sqlalchemy]" in captured.err

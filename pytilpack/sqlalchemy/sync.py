@@ -43,39 +43,39 @@ class SyncAsyncBridgeMixin:
         return await run_sync_with_session(sync_cls.count.__func__)(sync_cls, query)  # type: ignore[attr-defined]
 
     @classmethod
-    async def ascalar_one[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T:
+    async def ascalar_one[T](cls, query: sqlalchemy.Select[T] | sqlalchemy.CompoundSelect[T]) -> T:
         """queryの結果を1件返す。非同期版。"""
         sync_cls = typing.cast("type[SyncMixin]", cls)
         return await run_sync_with_session(sync_cls.scalar_one.__func__)(sync_cls, query)  # type: ignore[attr-defined]
 
     @classmethod
-    async def ascalar_one_or_none[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T | None:
+    async def ascalar_one_or_none[T](cls, query: sqlalchemy.Select[T] | sqlalchemy.CompoundSelect[T]) -> T | None:
         """queryの結果を0件または1件返す。非同期版。"""
         sync_cls = typing.cast("type[SyncMixin]", cls)
         return await run_sync_with_session(sync_cls.scalar_one_or_none.__func__)(sync_cls, query)  # type: ignore[attr-defined]
 
     @classmethod
-    async def ascalars[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> list[T]:
+    async def ascalars[T](cls, query: sqlalchemy.Select[T] | sqlalchemy.CompoundSelect[T]) -> list[T]:
         """queryの結果を全件返す。非同期版。"""
         sync_cls = typing.cast("type[SyncMixin]", cls)
         return await run_sync_with_session(sync_cls.scalars.__func__)(sync_cls, query)  # type: ignore[attr-defined]
 
     @classmethod
-    async def aone[TT: tuple](cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT]:
+    async def aone[*Ts](cls, query: sqlalchemy.Select[*Ts] | sqlalchemy.CompoundSelect[*Ts]) -> sqlalchemy.Row[*Ts]:
         """queryの結果を1件返す。非同期版。"""
         sync_cls = typing.cast("type[SyncMixin]", cls)
         return await run_sync_with_session(sync_cls.one.__func__)(sync_cls, query)  # type: ignore[attr-defined]
 
     @classmethod
-    async def aone_or_none[TT: tuple](
-        cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]
-    ) -> sqlalchemy.Row[TT] | None:
+    async def aone_or_none[*Ts](
+        cls, query: sqlalchemy.Select[*Ts] | sqlalchemy.CompoundSelect[*Ts]
+    ) -> sqlalchemy.Row[*Ts] | None:
         """queryの結果を0件または1件返す。非同期版。"""
         sync_cls = typing.cast("type[SyncMixin]", cls)
         return await run_sync_with_session(sync_cls.one_or_none.__func__)(sync_cls, query)  # type: ignore[attr-defined]
 
     @classmethod
-    async def aall[TT: tuple](cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> list[sqlalchemy.Row[TT]]:
+    async def aall[*Ts](cls, query: sqlalchemy.Select[*Ts] | sqlalchemy.CompoundSelect[*Ts]) -> list[sqlalchemy.Row[*Ts]]:
         """queryの結果を全件返す。非同期版。"""
         sync_cls = typing.cast("type[SyncMixin]", cls)
         return await run_sync_with_session(sync_cls.all.__func__)(sync_cls, query)  # type: ignore[attr-defined]
@@ -296,7 +296,7 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
         return sess
 
     @classmethod
-    def select(cls) -> sqlalchemy.Select[tuple[typing.Self]]:
+    def select(cls) -> sqlalchemy.Select[typing.Self]:
         """sqlalchemy.Selectを返す。"""
         # cls.count()などでfrom句が消えないように明示的にfrom句を指定して返す。
         return sqlalchemy.select(cls).select_from(cls)
@@ -327,7 +327,7 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
         )
 
     @classmethod
-    def scalar_one[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T:
+    def scalar_one[T](cls, query: sqlalchemy.Select[T] | sqlalchemy.CompoundSelect[T]) -> T:
         """queryの結果を1件取得する。
 
         Args:
@@ -344,7 +344,7 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
         return cls.session().execute(query).scalar_one()
 
     @classmethod
-    def scalar_one_or_none[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> T | None:
+    def scalar_one_or_none[T](cls, query: sqlalchemy.Select[T] | sqlalchemy.CompoundSelect[T]) -> T | None:
         """queryの結果を0件または1件取得する。
 
         Args:
@@ -360,7 +360,7 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
         return cls.session().execute(query).scalar_one_or_none()
 
     @classmethod
-    def scalars[T](cls, query: sqlalchemy.Select[tuple[T]] | sqlalchemy.CompoundSelect[tuple[T]]) -> list[T]:
+    def scalars[T](cls, query: sqlalchemy.Select[T] | sqlalchemy.CompoundSelect[T]) -> list[T]:
         """queryの結果を全件取得する。
 
         Args:
@@ -373,7 +373,7 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
         return list(cls.session().execute(query).scalars().all())
 
     @classmethod
-    def one[TT: tuple](cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT]:
+    def one[*Ts](cls, query: sqlalchemy.Select[*Ts] | sqlalchemy.CompoundSelect[*Ts]) -> sqlalchemy.Row[*Ts]:
         """queryの結果を1件取得する。
 
         Args:
@@ -390,7 +390,7 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
         return cls.session().execute(query).one()
 
     @classmethod
-    def one_or_none[TT: tuple](cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> sqlalchemy.Row[TT] | None:
+    def one_or_none[*Ts](cls, query: sqlalchemy.Select[*Ts] | sqlalchemy.CompoundSelect[*Ts]) -> sqlalchemy.Row[*Ts] | None:
         """queryの結果を0件または1件取得する。
 
         Args:
@@ -406,7 +406,7 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
         return cls.session().execute(query).one_or_none()
 
     @classmethod
-    def all[TT: tuple](cls, query: sqlalchemy.Select[TT] | sqlalchemy.CompoundSelect[TT]) -> list[sqlalchemy.Row[TT]]:
+    def all[*Ts](cls, query: sqlalchemy.Select[*Ts] | sqlalchemy.CompoundSelect[*Ts]) -> list[sqlalchemy.Row[*Ts]]:
         """queryの結果を全件取得する。
 
         Args:

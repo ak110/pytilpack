@@ -12,7 +12,7 @@ import sqlalchemy.orm
 import pytilpack.sqlalchemy
 
 
-class Base(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.SyncMixin):
+class Base(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.SyncMixin):  # pylint: disable=too-many-ancestors
     """ベースクラス。"""
 
 
@@ -288,7 +288,7 @@ def test_init_already_called() -> None:
     assert文からRuntimeErrorに変更したため、`-O`実行時も検証が機能する。
     """
 
-    class TempBase(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.SyncMixin):
+    class TempBase(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.SyncMixin):  # pylint: disable=too-many-ancestors
         """テスト専用Base。グローバル状態を汚染しないよう個別クラスで検証する。"""
 
     TempBase.init("sqlite:///:memory:?check_same_thread=false", poolclass=sqlalchemy.pool.StaticPool)

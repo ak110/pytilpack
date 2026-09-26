@@ -84,7 +84,8 @@ def _register(
     """
     try:
         module = importlib.import_module(module_path)
-    except ImportError as e:
+    except ImportError as raised:
+        e = _resolve_import_error(raised)
         if not _is_external_import_failure(e, module_path):
             raise
         unavailable[name] = (extras, e)
@@ -104,6 +105,22 @@ def _register(
         return
     module.add_parser(subparsers)
     loaded[name] = module
+
+
+def _resolve_import_error(exc: ImportError) -> ImportError:
+    """`name` を持たない `ImportError` の原因をたどり、判別材料を持つ例外を返す。
+
+    SQLAlchemy 2.1 の asyncio モジュールのように、`ModuleNotFoundError` を
+    `name` の無い `ImportError` へ包み直して送出するパッケージがあるため、
+    `__cause__` が `name` を持つ `ImportError` であればそちらを返す。
+    見つからない場合は元の例外を返す。
+    """
+    current: BaseException | None = exc
+    while isinstance(current, ImportError):
+        if current.name is not None:
+            return current
+        current = current.__cause__
+    return exc
 
 
 def _is_external_import_failure(exc: ImportError, module_path: str) -> bool:

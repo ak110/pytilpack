@@ -14,7 +14,7 @@ import sqlalchemy.orm
 import pytilpack.sqlalchemy
 
 
-class Base(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.AsyncMixin):
+class Base(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.AsyncMixin):  # pylint: disable=too-many-ancestors
     """ベースクラス。"""
 
 
@@ -312,7 +312,7 @@ async def test_async_init_already_called() -> None:
     assert文からRuntimeErrorに変更したため、`-O`実行時も検証が機能する。
     """
 
-    class TempBase(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.AsyncMixin):
+    class TempBase(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.AsyncMixin):  # pylint: disable=too-many-ancestors
         """テスト専用Base。グローバル状態を汚染しないよう個別クラスで検証する。"""
 
     TempBase.init("sqlite+aiosqlite:///:memory:")
@@ -359,7 +359,7 @@ def test_to_dict() -> None:
 def _make_isolated_base() -> tuple[typing.Any, typing.Any]:
     """テストごとに独立したBaseクラスとItemクラスを生成する。"""
 
-    class IsolatedBase(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.AsyncMixin):
+    class IsolatedBase(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.AsyncMixin):  # pylint: disable=too-many-ancestors
         """テスト用ベースクラス。"""
 
     class Item(IsolatedBase):  # pylint: disable=too-many-ancestors

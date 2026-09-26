@@ -30,7 +30,7 @@ class Test1(Base, pytilpack.sqlalchemy.Mixin, pytilpack.sqlalchemy.UniqueIDMixin
     )
 
 
-class Test2(Base, pytilpack.sqlalchemy.Mixin):
+class Test2(Base, pytilpack.sqlalchemy.Mixin):  # pylint: disable=too-many-ancestors
     """テストクラス。"""
 
     # arid: disable

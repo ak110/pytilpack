@@ -41,7 +41,7 @@ uvx --from='pytilpack[sqlalchemy]' pytilpack wait-for-db-connection "$SQLALCHEMY
 | `pytest` | `pytilpack.pytest` | pytest, pytest-asyncio |
 | `pyyaml` | `pytilpack.yaml` | pyyaml |
 | `quart` | `pytilpack.quart`, `pytilpack.quart_auth` | quart, quart-auth, hypercorn, uvicorn |
-| `sqlalchemy` | `pytilpack.sqlalchemy` | sqlalchemy, tabulate |
+| `sqlalchemy` | `pytilpack.sqlalchemy` | sqlalchemy, greenlet, tabulate |
 | `tiktoken` | `pytilpack.tiktoken` | tiktoken, openai, pillow |
 | `tqdm` | `pytilpack.tqdm` | tqdm |
 | `web` | `pytilpack.web`（check_html） | html5lib |
