@@ -5,7 +5,7 @@
 
 ## 開発手順
 
-コミット前の検証方法: `make test`（特定ファイルに限定する場合は`uvx pyfltr run <path>`）
+コミット前の検証方法: `make test`（特定ファイルに限定する場合は`uvx --exclude-newer-package pyfltr=false pyfltr run <path>`）
 
 ## アーキテクチャの参照先
 

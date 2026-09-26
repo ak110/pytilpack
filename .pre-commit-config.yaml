@@ -32,7 +32,10 @@ repos:
     hooks:
       - id: pyfltr
         name: pyfltr
-        entry: uvx pyfltr fast
+        # pyfltrの推奨ガイドから意図して外れ、公開待機の例外を指定する。
+        # グローバルuv設定のexclude-newerは公開直後のpyfltrを除外するが、uvxはpyproject.tomlの[tool.uv]を読まないため、
+        # コマンドラインでpyfltrだけを例外にして公開直後の版を使う。
+        entry: uvx --exclude-newer-package pyfltr=false pyfltr fast
         types_or: [python, markdown, toml, yaml]
         require_serial: true
         language: system

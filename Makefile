@@ -25,13 +25,17 @@ update-actions:
 	@command -v mise >/dev/null 2>&1 || { echo "mise未検出、スキップ"; exit 0; }; \
 	GITHUB_TOKEN=$$(gh auth token) mise exec -- pinact run --update --min-age=1
 
+# pyfltrの呼び出しは推奨ガイドから意図して外れ、公開待機の例外を指定する。
+# グローバルuv設定のexclude-newerは公開直後のpyfltrを除外するが、uvxはpyproject.tomlの[tool.uv]を読まないため、
+# コマンドラインでpyfltrだけを例外にして公開直後の版を使う。
+
 # フォーマット + 軽量lint（開発時の手動実行用。自動修正あり）
 format:
-	uvx pyfltr fast
+	uvx --exclude-newer-package pyfltr=false pyfltr fast
 
 # 全チェック実行（これを通過すればコミット可能）
 test:
-	uvx pyfltr run
+	uvx --exclude-newer-package pyfltr=false pyfltr run
 
 docs:
 	uv run mkdocs serve
