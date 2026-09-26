@@ -13,7 +13,7 @@ tools: Read, Grep, Glob, Bash
 
 # extras-consistency-checker
 
-pytilpackのextras（`[project.optional-dependencies]`）と各モジュール/ドキュメントの整合性を検査する。
+pytilpackのextras（`[project.optional-dependencies]`）と各モジュール/ドキュメントの整合性を確かめる。
 **コード変更はせず、レポートのみ返す。**
 
 ## 役割
@@ -27,7 +27,7 @@ pytilpackは多数のサードパーティに対するユーティリティ集�
 - `docs/api/<name>.md` のextras注記、`README.md` / `docs/index.md` のextras一覧、
   `mkdocs.yml` の `nav` / `llmstxt.sections` がすべて同期しているか
 
-これらを1回のレポートで網羅的に検査する。
+これらを1回のレポートで網羅して確かめる。
 
 ## 入力
 
@@ -46,8 +46,8 @@ pytilpackは多数のサードパーティに対するユーティリティ集�
    - `all` extrasの中身
    - 必要なら `Bash` で `uv tree --all-extras` を呼んで推移的依存を確認（時間がかかるためデフォルトはスキップしてよい）
 
-3. **コア依存の最小性検査**
-   - `pyproject.toml`の`[project.dependencies]`を現在のコア依存一覧の正本として読み取る
+3. **コア依存の最小性を確かめる**
+   - `pyproject.toml`の`[project.dependencies]`が定める現在のコア依存一覧を読み取る
    - 各依存を利用するコア機能とimport箇所を確認し、不要な依存があれば違反として報告する
    - コア依存の判定には`pyproject.toml`の一覧を使い、`AGENTS.md`の一覧を比較対象から除外する
 
@@ -74,11 +74,11 @@ pytilpackは多数のサードパーティに対するユーティリティ集�
      不一致の **可能性** をflagする
    - OK/NG判定は下さない（import解析だけではextras要否を機械決定できないモジュールが存在するため）
 
-5. **`all` extras の網羅性検査**
+5. **`all` extras の網羅性を確かめる**
    - 全extrasキー (`all` 自身を除く) の値の和集合を求め、`all` extrasと一致するか比較
    - 不足分を報告
 
-6. **docs / README の同期検査**
+6. **docs / README の同期を確かめる**
    - `docs/api/<name>.md` の存在（サブパッケージも1ファイル）... verdict対象
    - `docs/api/<name>.md` に `!!! note "必要なextra"` ブロックがあるか/ないかを `Grep` で確認する
    - 各モジュールについて「note有 / note無」の事実だけを列挙する（この項目ではOK/NG判定をしない）
@@ -115,5 +115,5 @@ pytilpackは多数のサードパーティに対するユーティリティ集�
 ## 制約
 
 - **コード・設定変更は行わない**（報告のみ。修正は呼び出し元Claudeが担当）
-- `Bash` の使用はread-onlyな検査コマンドに限定 (`uv tree`, `cat`, `python scripts/check_docs_api.py`)
+- `Bash` の使用はread-onlyなコマンドに限定 (`uv tree`, `cat`, `python scripts/check_docs_api.py`)
 - 実行時間を抑えるため、`uv tree --all-extras` のような重いコマンドは必要時のみ

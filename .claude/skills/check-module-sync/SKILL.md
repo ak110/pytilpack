@@ -48,7 +48,7 @@ extras不要モジュール（ベース依存のみで動く）ならばこの�
 `<name>` extrasの各パッケージが `all` extrasにも含まれていることを `pyproject.toml` で確認。
 `uv add --optional all <library>` を打ち忘れているケースがある。
 
-### 4. トップレベル import との突き合わせ
+### 4. トップレベル import と extras の整合性
 
 `pytilpack/<name>.py`（または `pytilpack/<name>/**/*.py`）の **トップレベル import** を
 `grep -E '^(import|from)' pytilpack/<name>...'` で抽出する。
@@ -82,6 +82,6 @@ uv run --script scripts/check_docs_api.py
 
 ## 不整合が見つかったとき
 
-- 単純な追記漏れ (`README.md` / `docs/index.md` / `mkdocs.yml`) はそのまま修正
+- 単に追記されていない箇所 (`README.md` / `docs/index.md` / `mkdocs.yml`) はそのまま修正
 - extrasの構成変更が必要なら `uv add --optional ...` / `uv remove --optional ...` を使う（手編集禁止）
 - ドキュメント追加が必要なら `add-module` skillを参照

@@ -88,7 +88,7 @@ extras不要モジュールの場合も、ベースパッケージ側の箇条�
 
 ## 5. mkdocs.yml の更新 (2 か所)
 
-`mkdocs.yml` の以下の **両方** に `api/<name>.md` を追加する。`scripts/check_docs_api.py` が両方を検査する。
+`mkdocs.yml` の以下の **両方** に `api/<name>.md` を追加する。`scripts/check_docs_api.py` が両方を確かめる。
 
 - `nav:` → `APIリファレンス` の下
 - `plugins:` → `llmstxt.sections` の該当カテゴリ（extras別の分類）

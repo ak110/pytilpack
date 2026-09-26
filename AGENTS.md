@@ -9,7 +9,7 @@
 
 ## アーキテクチャの参照先
 
-[docs/development/architecture.md](docs/development/architecture.md)は、
+[docs/development/architecture.md](docs/development/architecture.md)は
 モジュール構成方針・extrasマッピング・テスト配置規約などを定める。
 
 ## 実装上の不変条件・コーディング規約
