@@ -67,7 +67,7 @@ class YearMonth:
 
     @property
     def this_month(self) -> datetime.date:
-        """当該月の1日を返す。"""
+        """指定した年月の1日を返す。"""
         return datetime.date(self.year, self.month, 1)
 
     @property
@@ -107,7 +107,7 @@ class YearMonthDay:
 
     @property
     def this_day(self) -> datetime.date:
-        """当該日を返す。"""
+        """指定した年月日を返す。"""
         return datetime.date(self.year, self.month, self.day)
 
     @property

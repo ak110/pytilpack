@@ -17,7 +17,7 @@
 - コア依存（`[project.dependencies]`）は最小限に保つ（現在: `beautifulsoup4`/`httpx`/`mcp`/`werkzeug`）。
   ただし`mcp`は多数の推移的依存（`httpx2`・`mcp-types`・`starlette`・`uvicorn`・`pydantic`・
   `pyjwt`・`opentelemetry-api`・`jsonschema`・`python-multipart`・`sse-starlette`）を持ち込む。
-  MCPサーバー機能を`pip install pytilpack`だけで利用できる状態を保つため、当該増加を受け入れている。
+  MCPサーバー機能を`pip install pytilpack`だけで利用できる状態を保つため、増加した依存を受け入れている。
   新規の依存追加ではこの例外を根拠にせず、最小限方針を適用する
 - サードパーティライブラリに依存するモジュールはextras（`[project.optional-dependencies]`）で管理する
 - コア依存（`[project.dependencies]`）の版指定には、原則として上限を設けない。
@@ -37,14 +37,14 @@
   `pathlib.Path.open`+`chmod`の二段では作成→`chmod`の隙間で他プロセスがファイルを開ける
   時間窓が生じる（`pytilpack/secrets.py`が該当）
 - `pytilpack.sqlalchemy`の`SyncMixin`と`AsyncMixin`は初期化状態をクラス変数で保持し、`init()`の二重呼び出しを拒否する。
-  `AsyncMixin.term()`はスレッド単位のengineを`dispose()`し、engineとsessionmakerの参照を`None`へ戻すのみで当該状態を戻さないため、
+  `AsyncMixin.term()`はスレッド単位のengineを`dispose()`し、engineとsessionmakerの参照を`None`へ戻すのみで、クラスの初期化状態は戻さないため、
   `init()`→`term()`→`init()`は成立しない。
   テスト規約（厳守規定）として、同一の`SyncMixin`または`AsyncMixin`サブクラスを複数回のfixture setupで再利用する場合、
   fixtureを`scope="session"`としワーカーごとに1回だけ初期化する必要がある
   （`scope="module"`ではpytest-xdistの分配次第でsetupが繰り返され、同じクラスで2回目の`init()`が失敗する）。
-  sessionスコープで共有したengineはテストをまたいで行を残すため、当該fixtureを使うテストモジュールでは次の2点も厳守規定とする
+  sessionスコープで共有したengineはテストをまたいで行を残すため、このfixtureを使うテストモジュールでは次の2点も厳守規定とする
   - 各テストの前に全テーブルの行を削除するfunctionスコープのautouse fixtureを置く
-  - 検証対象を当該テストが挿入した行に限定し、他テストが残した行の有無で結果が変わる絶対値アサーションを書かない
+  - 検証対象を各テスト自身が挿入した行に限定し、他テストが残した行の有無で結果が変わる絶対値アサーションを書かない
 
 ### モジュール→extrasキーマッピング（要点）
 

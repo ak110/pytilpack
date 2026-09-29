@@ -2,7 +2,7 @@ rules:
   preset-ja-technical-writing:
     # ラベル型見出し ("ポイント:", "例:" など) が多用されるため、文末句点の強制を無効化する
     ja-no-mixed-period: false
-    # 技術文書における自然な助詞連結 (「〜かどうかを検討するか」など) が頻出するため無効化する
+    # 技術文書では自然な助詞連結 (「〜かどうかを検討するか」など) が頻出するため無効化する
     no-doubled-joshi: false
     # 全角丸括弧の閉じが改行をまたぐ書き方をfalse positiveとして誤検出するため無効化する
     no-unmatched-pair: false

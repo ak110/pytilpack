@@ -31,7 +31,7 @@ pytilpackは主要Pythonライブラリ向けの軽量ユーティリティ集�
 
 `pytilpack/_web_asserts.py`のように複数のフレームワーク向けサブパッケージから共通利用される
 私的モジュールがある。
-これらが特定のサードパーティに依存する場合、当該パッケージは依存元の各フレームワークextras
+これらが特定のサードパーティに依存する場合、そのパッケージを依存元の各フレームワークextras
 （`flask`・`quart`・`fastapi`等）と`all` extrasの双方に含める。
 
 具体例: `pytilpack/_web_asserts.py`の`assert_xml_core`はXML外部実体攻撃を防ぐため
