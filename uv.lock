@@ -2929,6 +2929,7 @@ all = [
     { name = "hypercorn" },
     { name = "markdown" },
     { name = "msal" },
+    { name = "openai" },
     { name = "pillow" },
     { name = "pycryptodome" },
     { name = "pydantic" },
@@ -2959,6 +2960,7 @@ fastapi = [
     { name = "defusedxml" },
     { name = "fastapi" },
     { name = "html5lib" },
+    { name = "pytest" },
 ]
 flask = [
     { name = "defusedxml" },
@@ -3072,6 +3074,7 @@ requires-dist = [
     { name = "mcp", specifier = ">=2.0.0" },
     { name = "msal", marker = "extra == 'all'", specifier = ">=1.32.3" },
     { name = "msal", marker = "extra == 'msal'", specifier = ">=1.32.3" },
+    { name = "openai", marker = "extra == 'all'", specifier = ">=1.99.6" },
     { name = "openai", marker = "extra == 'tiktoken'", specifier = ">=1.99.6" },
     { name = "pillow", marker = "extra == 'all'" },
     { name = "pillow", marker = "extra == 'tiktoken'" },
@@ -3080,6 +3083,7 @@ requires-dist = [
     { name = "pydantic", marker = "extra == 'all'", specifier = ">=2.12.5" },
     { name = "pydantic", marker = "extra == 'pydantic'", specifier = ">=2.12.5" },
     { name = "pytest", marker = "extra == 'all'" },
+    { name = "pytest", marker = "extra == 'fastapi'" },
     { name = "pytest", marker = "extra == 'flask'" },
     { name = "pytest", marker = "extra == 'pytest'" },
     { name = "pytest", marker = "extra == 'quart'" },

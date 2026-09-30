@@ -32,7 +32,7 @@ uvx --from='pytilpack[sqlalchemy]' pytilpack wait-for-db-connection "$SQLALCHEMY
 | `babel` | `pytilpack.babel`, `pytilpack.i18n` | babel |
 | `bleach` | （`markdown` extraに含まれる） | bleach |
 | `environ` | `pytilpack.environ` | python-dotenv |
-| `fastapi` | `pytilpack.fastapi` | fastapi, html5lib |
+| `fastapi` | `pytilpack.fastapi` | fastapi, html5lib, pytest |
 | `flask` | `pytilpack.flask`, `pytilpack.flask_login` | flask, flask-login, html5lib |
 | `markdown` | `pytilpack.markdown` | bleach, markdown, tinycss2 |
 | `msal` | `pytilpack.msal` | azure-identity, cryptography, msal |

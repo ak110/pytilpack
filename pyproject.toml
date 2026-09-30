@@ -41,6 +41,7 @@ all = [
     "hypercorn>=0.18.0",
     "markdown>=3.6",
     "msal>=1.32.3",
+    "openai>=1.99.6",
     "pillow",
     "pycryptodome",
     "pydantic>=2.12.5",
@@ -64,6 +65,7 @@ fastapi = [
     "defusedxml>=0.7",
     "fastapi>=0.111",
     "html5lib",
+    "pytest",
 ]
 flask = [
     "defusedxml>=0.7",

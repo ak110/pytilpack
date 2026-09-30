@@ -104,6 +104,12 @@ jobs:
       - name: Build wheel
         run: uv build --wheel
 
+      - name: 各extra単独とallでモジュールをimportできること
+        run: |
+          set -euo pipefail
+          wheel=$(ls dist/pytilpack-*.whl)
+          uv run --no-project python scripts/check_extras_imports.py "$wheel"
+
       - name: ベースのみで CLI が動作すること
         run: |
           set -euo pipefail
