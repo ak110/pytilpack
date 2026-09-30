@@ -63,6 +63,10 @@ class JobRunner(metaclass=abc.ABCMeta):
                 self.semaphore.release()
                 break
             job = await self._poll()
+            # poll()の待機中にも停止できるため、タスク登録の直前に再確認する。
+            if not self.running:
+                self.semaphore.release()
+                break
             if job is None:
                 # ジョブがなければセマフォを解放して一定時間待機
                 self.semaphore.release()

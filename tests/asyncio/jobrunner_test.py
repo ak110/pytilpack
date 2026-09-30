@@ -62,6 +62,47 @@ class JobRunner(pytilpack.asyncio.JobRunner):
         return f"{self.__class__.__name__}({self.__dict__})"
 
 
+class EventJob(pytilpack.asyncio.Job):
+    """開始と終了をイベントで制御するジョブ。"""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.started = asyncio.Event()
+        self.finish = asyncio.Event()
+
+    @typing.override
+    async def run(self) -> None:
+        self.started.set()
+        await self.finish.wait()
+
+
+class PollingJobRunner(pytilpack.asyncio.JobRunner):
+    """取得待機の開始と返却を制御するランナー。"""
+
+    def __init__(self, first_job: EventJob | None = None) -> None:
+        super().__init__(max_job_concurrency=2, poll_interval=0)
+        self.first_job = first_job
+        self.poll_started = asyncio.Event()
+        self.result: asyncio.Future[pytilpack.asyncio.Job | None] = asyncio.get_running_loop().create_future()
+
+    @typing.override
+    async def poll(self) -> pytilpack.asyncio.Job | None:
+        if self.first_job is not None:
+            job = self.first_job
+            self.first_job = None
+            return job
+        self.poll_started.set()
+        return await self.result
+
+
+async def _shutdown(runner: PollingJobRunner) -> None:
+    runner.shutdown()
+
+
+async def _graceful_shutdown(runner: PollingJobRunner) -> None:
+    await runner.graceful_shutdown()
+
+
 def add_jobs_thread(
     queue_: queue.Queue[pytilpack.asyncio.Job],
     jobs: list[pytilpack.asyncio.Job],
@@ -196,3 +237,85 @@ async def test_job_runner_graceful_shutdown() -> None:
     assert jobs[0].status == "finished" and jobs[0].count == 1
     assert jobs[1].status == "finished" and jobs[1].count == 1
     assert jobs[2].status == "waiting" and jobs[2].count == 0
+
+
+@pytest.mark.parametrize("stop", [_shutdown, _graceful_shutdown], ids=["immediate", "graceful"])
+@pytest.mark.parametrize("return_job", [False, True], ids=["none", "job"])
+@pytest.mark.asyncio
+async def test_stop_while_polling(stop: typing.Callable[[PollingJobRunner], typing.Awaitable[None]], return_job: bool) -> None:
+    runner = PollingJobRunner()
+    job = EventJob()
+    task = asyncio.create_task(runner.run())
+    try:
+        await runner.poll_started.wait()
+        await stop(runner)
+        runner.result.set_result(job if return_job else None)
+        await task
+        assert not runner.tasks
+        assert not job.started.is_set()
+        assert job.status == "waiting"
+        # 全枠を再取得できれば、停止分岐での返却漏れと二重返却を検出できる。
+        async with asyncio.timeout(1):
+            await runner.semaphore.acquire()
+            await runner.semaphore.acquire()
+        assert runner.semaphore.locked()
+    finally:
+        job.finish.set()
+        runner.shutdown()
+        await asyncio.gather(task, *runner.tasks, return_exceptions=True)
+
+
+@pytest.mark.parametrize("stop", [_shutdown, _graceful_shutdown], ids=["immediate", "graceful"])
+@pytest.mark.asyncio
+async def test_stop_after_poll_error(stop: typing.Callable[[PollingJobRunner], typing.Awaitable[None]]) -> None:
+    runner = PollingJobRunner()
+    task = asyncio.create_task(runner.run())
+    await runner.poll_started.wait()
+    await stop(runner)
+    runner.result.set_exception(ValueError("poll failed"))
+    await task
+    assert not runner.tasks
+    async with asyncio.timeout(1):
+        await runner.semaphore.acquire()
+        await runner.semaphore.acquire()
+    assert runner.semaphore.locked()
+
+
+@pytest.mark.asyncio
+async def test_graceful_shutdown_while_polling_with_running_job() -> None:
+    active = EventJob()
+    pending = EventJob()
+    runner = PollingJobRunner(active)
+    task = asyncio.create_task(runner.run())
+    await active.started.wait()
+    await runner.poll_started.wait()
+    stop = asyncio.create_task(runner.graceful_shutdown())
+    # coroutine開始を確定し、既存ジョブの完了までは停止処理が戻らないことを確認する。
+    await asyncio.sleep(0)
+    assert not stop.done()
+    runner.result.set_result(pending)
+    await task
+    active.finish.set()
+    pending.finish.set()
+    await stop
+    assert active.status == "finished"
+    assert not pending.started.is_set()
+    assert pending.status == "waiting"
+
+
+@pytest.mark.asyncio
+async def test_shutdown_while_polling_with_running_job() -> None:
+    active = EventJob()
+    pending = EventJob()
+    runner = PollingJobRunner(active)
+    task = asyncio.create_task(runner.run())
+    await active.started.wait()
+    await runner.poll_started.wait()
+    runner.shutdown()
+    runner.result.set_result(pending)
+    await task
+    pending.finish.set()
+    await asyncio.gather(*runner.tasks, return_exceptions=True)
+    assert active.status == "canceled"
+    assert not pending.started.is_set()
+    assert pending.status == "waiting"
