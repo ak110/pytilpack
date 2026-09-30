@@ -1,6 +1,7 @@
 """テストコード。"""
 
 import datetime
+import functools
 import os
 import pathlib
 import shutil
@@ -166,6 +167,53 @@ def test_delete_empty_dirs(tmp_path: pathlib.Path) -> None:
     assert not test_dir.exists()
 
 
+@pytest.mark.parametrize("top_link", [False, True])
+@pytest.mark.parametrize("keep_root", [False, True])
+def test_delete_empty_dirs_preserve_external(tmp_path: pathlib.Path, top_link: bool, keep_root: bool) -> None:
+    target = tmp_path / "outside"
+    empty = target / "empty"
+    empty.mkdir(parents=True)
+    root = tmp_path / "root"
+    root.mkdir()
+    link = root / "link"
+    link.symlink_to(target, target_is_directory=True)
+
+    pytilpack.pathlib.delete_empty_dirs(link if top_link else root, keep_root=keep_root)
+
+    assert empty.is_dir()
+    assert link.is_symlink()
+    assert root.is_dir()
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [
+        functools.partial(pytilpack.pathlib.delete_empty_dirs, keep_root=False),
+        functools.partial(
+            pytilpack.pathlib.delete_old_files,
+            before=datetime.datetime(2100, 1, 1),
+            keep_root_empty_dir=False,
+        ),
+    ],
+    ids=["empty", "old"],
+)
+def test_deletion_directory_links(tmp_path: pathlib.Path, operation: typing.Callable[[pathlib.Path], None]) -> None:
+    root = tmp_path / "root"
+    internal = root / "internal"
+    internal.mkdir(parents=True)
+    link = root / "link"
+    link.symlink_to(internal, target_is_directory=True)
+    cycle = root / "cycle"
+    cycle.symlink_to(root, target_is_directory=True)
+
+    operation(root)
+
+    assert link.is_symlink()
+    assert cycle.is_symlink()
+    assert root.is_dir()
+    assert not internal.exists()
+
+
 def test_sync(tmp_path: pathlib.Path) -> None:
     """sync()のテスト。"""
     # テスト用のディレクトリ構造を作成
@@ -264,3 +312,43 @@ def test_delete_old_files(tmp_path: pathlib.Path) -> None:
 
     pytilpack.pathlib.delete_old_files(test_dir, before, keep_root_empty_dir=False)
     assert not test_dir.exists()
+
+
+@pytest.mark.parametrize("top_link", [False, True])
+@pytest.mark.parametrize("delete_empty_dirs", [False, True])
+def test_delete_old_files_preserve_external(tmp_path: pathlib.Path, top_link: bool, delete_empty_dirs: bool) -> None:
+    target = tmp_path / "outside"
+    empty = target / "empty"
+    empty.mkdir(parents=True)
+    protected = target / "old.txt"
+    protected.write_text("protected", encoding="utf-8")
+    root = tmp_path / "root"
+    root.mkdir()
+    link = root / "link"
+    link.symlink_to(target, target_is_directory=True)
+
+    pytilpack.pathlib.delete_old_files(
+        link if top_link else root,
+        datetime.datetime(2100, 1, 1),
+        delete_empty_dirs=delete_empty_dirs,
+        keep_root_empty_dir=False,
+    )
+
+    assert protected.read_text(encoding="utf-8") == "protected"
+    assert empty.is_dir()
+    assert link.is_symlink()
+    assert root.is_dir()
+
+
+def test_delete_old_files_file_symlink(tmp_path: pathlib.Path) -> None:
+    target = tmp_path / "target.txt"
+    target.write_text("protected", encoding="utf-8")
+    root = tmp_path / "root"
+    root.mkdir()
+    link = root / "link.txt"
+    link.symlink_to(target)
+
+    pytilpack.pathlib.delete_old_files(root, datetime.datetime(2100, 1, 1))
+
+    assert not link.is_symlink()
+    assert target.read_text(encoding="utf-8") == "protected"

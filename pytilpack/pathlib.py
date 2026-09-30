@@ -203,12 +203,14 @@ def get_size(path: str | pathlib.Path) -> int:
 def delete_empty_dirs(path: str | pathlib.Path, keep_root: bool = True) -> None:
     """指定したパス以下の空ディレクトリを削除する。
 
+    ディレクトリへのシンボリックリンクはたどらず、リンク自体も保持する。
+
     Args:
         path: 対象のパス
         keep_root: Trueの場合、指定したディレクトリ自体は削除しない
     """
     path = pathlib.Path(path)
-    if not path.is_dir():
+    if path.is_symlink() or not path.is_dir():
         return
 
     for item in list(path.iterdir()):
@@ -307,6 +309,9 @@ def delete_old_files(
 ) -> None:
     """指定した日時より古いファイルを削除し、空になったディレクトリも削除する。
 
+    ディレクトリへのシンボリックリンクはたどらず、リンク自体も保持する。
+    ファイルへのシンボリックリンクは、解決先の更新日時に応じてリンク自体を削除する。
+
     Args:
         path: 対象のパス
         before: この日時より前に更新されたファイルを削除
@@ -314,6 +319,8 @@ def delete_old_files(
         keep_root_empty_dir: Trueの場合、指定したディレクトリ自体は削除しない
     """
     path = pathlib.Path(path)
+    if path.is_symlink() and path.is_dir():
+        return
     if not path.exists():
         return
 

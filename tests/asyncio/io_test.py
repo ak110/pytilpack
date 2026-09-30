@@ -116,6 +116,26 @@ async def test_yaml_operations(tmp_path: pathlib.Path) -> None:
 
 
 @pytest.mark.asyncio
+async def test_deletion_preserve_external(tmp_path: pathlib.Path) -> None:
+    target = tmp_path / "outside"
+    empty = target / "empty"
+    empty.mkdir(parents=True)
+    protected = target / "old.txt"
+    protected.write_text("protected", encoding="utf-8")
+    root = tmp_path / "root"
+    root.mkdir()
+    link = root / "link"
+    link.symlink_to(target, target_is_directory=True)
+
+    await pytilpack.asyncio.delete_old_files(root, datetime.datetime(2100, 1, 1), keep_root_empty_dir=False)
+    await pytilpack.asyncio.delete_empty_dirs(root, keep_root=False)
+
+    assert protected.read_text(encoding="utf-8") == "protected"
+    assert empty.is_dir()
+    assert link.is_symlink()
+
+
+@pytest.mark.asyncio
 async def test_file_operations_with_encoding(tmp_path: pathlib.Path) -> None:
     """エンコーディングとエラーハンドリングのテスト。"""
     test_file = tmp_path / "test_encoding.txt"
