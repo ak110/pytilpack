@@ -11,7 +11,7 @@
 ```bash
 uvx pytilpack mcp
 uvx pytilpack fetch https://example.com/
-uvx --from='pytilpack[sqlalchemy]' pytilpack wait-for-db-connection "$SQLALCHEMY_DATABASE_URI"
+uvx --from='pytilpack[sqlalchemy]' pytilpack wait-for-db-connection 'sqlite:///:memory:'
 uvx --from='pytilpack[babel]' pytilpack babel extract .
 ```
 
@@ -84,12 +84,26 @@ pytilpack babel --help
 ## `pytilpack wait-for-db-connection`
 
 `pytilpack[sqlalchemy]`を導入し、指定URIでDB接続が可能になるまで待機する。
+SQLiteの標準ドライバ以外を使う場合は、URIに対応するDBドライバも同じ実行環境へ導入する。
 
 ```bash
 pip install 'pytilpack[sqlalchemy]'
-pytilpack wait-for-db-connection "$SQLALCHEMY_DATABASE_URI" --timeout=180 --verbose
+pytilpack wait-for-db-connection 'sqlite:///:memory:' --timeout=180 --verbose
 pytilpack wait-for-db-connection --help
 ```
 
 省略時の待機上限は180秒。
 非同期ドライバ（`+asyncpg`、`+aiosqlite`等）を含むURIの場合は自動で非同期処理を使用する。
+`sqlalchemy` extraにはこれらのDBドライバが含まれない。
+たとえば`sqlite+aiosqlite`の場合は次のように`aiosqlite`も導入する。
+
+```bash
+pip install 'pytilpack[sqlalchemy]' aiosqlite
+pytilpack wait-for-db-connection 'sqlite+aiosqlite:///:memory:'
+uvx --from='pytilpack[sqlalchemy]' --with=aiosqlite pytilpack wait-for-db-connection 'sqlite+aiosqlite:///:memory:'
+```
+
+`postgresql+asyncpg`の場合は`asyncpg`を導入し、接続先のURIを指定する。
+uvxはプロジェクトとは別の環境で動作するため、プロジェクトに導入済みでも`--with`で指定する。
+ドライバは[SQLAlchemyの各DBの説明](https://docs.sqlalchemy.org/en/20/dialects/)で確認できる。
+追加依存の指定は[uvのツール環境の説明](https://docs.astral.sh/uv/concepts/tools/#including-additional-dependencies)に従う。

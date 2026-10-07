@@ -23,8 +23,11 @@ pip install pytilpack[flask]     # pytilpack.flask 用
 
 ```bash
 uvx pytilpack mcp
-uvx --from='pytilpack[sqlalchemy]' pytilpack wait-for-db-connection "$SQLALCHEMY_DATABASE_URI"
+uvx --from='pytilpack[sqlalchemy]' pytilpack wait-for-db-connection 'sqlite:///:memory:'
 ```
+
+SQLiteの標準ドライバ以外は、URIに対応するDBドライバも同じ環境へ導入する。
+導入例は[CLIコマンドのDB接続待機](cli.md#pytilpack-wait-for-db-connection)を参照。
 
 ## extras一覧
 

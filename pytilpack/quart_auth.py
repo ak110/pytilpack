@@ -240,7 +240,11 @@ async def ais_admin(attr_name: str = "is_admin") -> bool:
 
 
 def admin_only[**P, R](func: typing.Callable[P, R]) -> typing.Callable[P, R]:
-    """管理者のみアクセス可能なルートを定義するデコレータ。"""
+    """管理者のみアクセス可能なルートを定義するデコレータ。
+
+    未認証の場合は401、認証済みの非管理者の場合は403を返す。
+    同期・非同期のルートに同じ認証条件を適用する。
+    """
     if inspect.iscoroutinefunction(func):
 
         @functools.wraps(func)
