@@ -1,6 +1,7 @@
 """テストコード。"""
 
 import dataclasses
+import io
 
 import pytest
 
@@ -100,6 +101,57 @@ def test_check_html_strict_error() -> None:
     with pytest.raises(AssertionError) as exc_info:
         pytilpack.web.check_html("<table><tr>Invalid table structure</div>", strict=True)
     assert "HTMLエラー:" in str(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    "html",
+    [
+        # select内のtemplate
+        '<!DOCTYPE html><title>t</title><select><template x-for="o in options"><option>x</option></template></select>',
+        # 表の中のtemplate
+        '<!DOCTYPE html><title>t</title><table><tbody><template x-for="r in rows">'
+        "<tr><td>x</td></tr></template></tbody></table>",
+        # div内のtemplateが行を内容に持つ（templateタグ自体へのエラーは出ない）
+        "<!DOCTYPE html><title>t</title><div><template><tr><td>x</td></tr></template></div>",
+        # 複数行・入れ子のtemplate（bytes入力）
+        b"<!DOCTYPE html><title>t</title>\n<table>\n<template x-if='a'>\n"
+        b"<template x-for='r in rows'><tr><td>x</td></tr></template>\n</template>\n</table>",
+    ],
+)
+def test_check_html_template_ok(html: str | bytes, caplog: pytest.LogCaptureFixture) -> None:
+    """template要素を含む正しいHTMLでエラーを報告しないことの確認。
+
+    html5lib 1.1はtemplate要素の構文規則を持たず、正しいHTMLにもエラーを記録するため。
+    """
+    pytilpack.web.check_html(html, strict=True)
+    pytilpack.web.check_html(html, strict=False)
+    assert "HTMLエラー:" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    "html",
+    [
+        # templateを含まない誤り
+        "<!DOCTYPE html><title>t</title><table><tr>bad</div></table>",
+        # templateの後ろの誤り
+        "<!DOCTYPE html><title>t</title><template><b>x</b></template><p>a</div>",
+        # script内の文字列<template>はtemplate要素として扱わない（後続の終了タグと組にしない）
+        '<!DOCTYPE html><title>t</title><script>var s = "<template>";</script><p>a</div></template>',
+        # 終了タグの無いtemplateは除外の対象にしない
+        "<!DOCTYPE html><title>t</title><p>a</div><template>",
+    ],
+)
+def test_check_html_template_outside_error(html: str) -> None:
+    """template要素の範囲外にある誤りを引き続き報告することの確認。"""
+    with pytest.raises(AssertionError) as exc_info:
+        pytilpack.web.check_html(html, strict=True)
+    assert "HTMLエラー:" in str(exc_info.value)
+
+
+def test_check_html_file_like_template_ok() -> None:
+    """ファイル風オブジェクトの入力でもtemplate範囲のエラーを報告しないことの確認。"""
+    html = b"<!DOCTYPE html><title>t</title><select><template><option>x</option></template></select>"
+    pytilpack.web.check_html(io.BytesIO(html), strict=True)
 
 
 def test_check_html_non_strict_error(caplog: pytest.LogCaptureFixture) -> None:

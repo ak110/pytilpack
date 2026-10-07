@@ -8,6 +8,7 @@ import typing
 import urllib.parse
 
 import html5lib
+import html5lib._tokenizer
 import html5lib.constants
 
 import pytilpack.http
@@ -339,15 +340,79 @@ def check_content_type(content_type: str, valid_content_types: str | typing.Iter
 
 
 def check_html(input_stream: typing.Any, strict: bool = False) -> None:
-    """HTMLのチェック。"""
+    """HTMLのチェック。
+
+    html5libのパースエラーをHTMLエラーとして報告する。
+    ただし``template``要素の範囲（最も外側の開始タグから対応する終了タグまで）にあるエラーは報告しない。
+    html5lib 1.1は``template``要素の構文規則を持たず、``select``や表の中の``template``、
+    行や列を内容に持つ``template``など、正しいHTMLに対してもエラーを記録するためである。
+    このため``template``の内容にある本物の構文誤りも報告されない。
+
+    Args:
+        input_stream: 検査するHTML（``str``・``bytes``・ファイル風オブジェクト）。
+        strict: Trueの場合はエラー時に``AssertionError``を送出し、Falseの場合は警告ログを出力する。
+
+    """
+    if hasattr(input_stream, "read"):
+        # パーサーとトークナイザーの双方で読むため、ファイル風オブジェクトは先に全体を読んでおく
+        input_stream = input_stream.read()
     parser = html5lib.HTMLParser(debug=True)
     _ = parser.parse(input_stream)
-    if len(parser.errors) > 0:
-        errors = [
-            f"{position}: {html5lib.constants.E[errorcode] % datavars}" for position, errorcode, datavars in parser.errors
-        ]
+    if len(parser.errors) == 0:
+        return
+    template_ranges = _get_template_ranges(input_stream)
+    errors = [
+        f"{position}: {html5lib.constants.E[errorcode] % datavars}"
+        for position, errorcode, datavars in parser.errors
+        if not any(start <= position <= end for start, end in template_ranges)
+    ]
+    if len(errors) > 0:
         if strict:
             error_str = "\n".join(errors)
             raise AssertionError(f"HTMLエラー: {error_str}")
         for error in errors:
             logger.warning(f"HTMLエラー: {error}")
+
+
+# パーサーがトークナイザーの状態を切り替える要素と切り替え先の状態名。
+# 内容に現れる文字列``<template>``を要素として数えないよう、パーサーと同じ切り替えを行う。
+_TOKENIZER_STATES = {
+    "script": "scriptDataState",
+    "style": "rawtextState",
+    "xmp": "rawtextState",
+    "iframe": "rawtextState",
+    "noembed": "rawtextState",
+    "noframes": "rawtextState",
+    "title": "rcdataState",
+    "textarea": "rcdataState",
+    "plaintext": "plaintextState",
+}
+
+
+def _get_template_ranges(input_stream: typing.Any) -> list[tuple[tuple[int, int], tuple[int, int]]]:
+    """最も外側の``template``要素ごとに、開始タグと終了タグの直後の位置（行, 列）の組を返す。
+
+    位置をパーサーのエラー位置とそろえるため、html5lib自身のトークナイザーで読む。
+    対応する終了タグの無い開始タグは範囲に含めない。
+    """
+    tokenizer = html5lib._tokenizer.HTMLTokenizer(input_stream)  # pylint: disable=protected-access
+    start_tag = html5lib.constants.tokenTypes["StartTag"]
+    end_tag = html5lib.constants.tokenTypes["EndTag"]
+    ranges: list[tuple[tuple[int, int], tuple[int, int]]] = []
+    depth = 0
+    start: tuple[int, int] = (0, 0)
+    for token in tokenizer:
+        token_type = token.get("type")
+        name = token.get("name")
+        if token_type == start_tag:
+            if name == "template":
+                if depth == 0:
+                    start = tokenizer.stream.position()
+                depth += 1
+            elif name in _TOKENIZER_STATES and not token.get("selfClosing"):
+                tokenizer.state = getattr(tokenizer, _TOKENIZER_STATES[name])
+        elif token_type == end_tag and name == "template" and depth > 0:
+            depth -= 1
+            if depth == 0:
+                ranges.append((start, tokenizer.stream.position()))
+    return ranges
