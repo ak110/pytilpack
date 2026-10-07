@@ -331,10 +331,10 @@ async def test_get_from_exception():
             },
         )
 
-    async with pytilpack.quart.misc.run(app, port=5003):
+    async with pytilpack.quart.misc.run(app, port=0) as port:
         # requestsの例外のテスト
         try:
-            r1 = requests.get("http://localhost:5003/retry_with_header", timeout=5)
+            r1 = requests.get(f"http://localhost:{port}/retry_with_header", timeout=5)
             print(f"{r1.status_code=}, {r1.headers=}")
             r1.raise_for_status()
             pytest.fail("Expected HTTPError was not raised")
@@ -345,7 +345,7 @@ async def test_get_from_exception():
         # httpxの例外のテスト
         try:
             async with httpx.AsyncClient() as client:
-                r2 = await client.get("http://localhost:5003/retry_with_header", timeout=5)
+                r2 = await client.get(f"http://localhost:{port}/retry_with_header", timeout=5)
                 print(f"{r2.status_code=}, {r2.headers=}")
                 r2.raise_for_status()
             pytest.fail("Expected HTTPStatusError was not raised")
@@ -354,7 +354,7 @@ async def test_get_from_exception():
             assert pytilpack.http.get_retry_after_from_exception(e) == 1.0
 
         try:
-            problem_response = requests.get("http://localhost:5003/problem", timeout=5)
+            problem_response = requests.get(f"http://localhost:{port}/problem", timeout=5)
             problem_response.raise_for_status()
             pytest.fail("Expected HTTPError was not raised")
         except requests.HTTPError as e:
@@ -369,7 +369,7 @@ async def test_get_from_exception():
 
         try:
             async with httpx.AsyncClient() as client:
-                problem_response_async = await client.get("http://localhost:5003/problem", timeout=5)
+                problem_response_async = await client.get(f"http://localhost:{port}/problem", timeout=5)
                 problem_response_async.raise_for_status()
             pytest.fail("Expected HTTPStatusError was not raised")
         except httpx.HTTPStatusError as e:
@@ -382,7 +382,7 @@ async def test_get_from_exception():
             )
             assert pytilpack.http.get_rate_limit_info_from_exception(e) == pytilpack.http.RateLimitInfo(100, 0, 1700000000)
 
-        with requests.get("http://localhost:5003/problem", timeout=5, stream=True) as streamed_response:
+        with requests.get(f"http://localhost:{port}/problem", timeout=5, stream=True) as streamed_response:
             list(streamed_response.iter_content())
             with pytest.raises(requests.HTTPError) as exc_info:
                 streamed_response.raise_for_status()

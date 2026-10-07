@@ -5,6 +5,8 @@ import sys
 
 import pytest
 
+from pytilpack.cli.main import _SUBCOMMANDS
+
 
 async def _run_help(command: str, expected_text: str) -> None:
     """ヘルプコマンドを実行して期待されるテキストを確認する。
@@ -30,12 +32,4 @@ async def _run_help(command: str, expected_text: str) -> None:
 @pytest.mark.asyncio
 async def test_all_cli_commands() -> None:
     """全CLIコマンドのヘルプを並行実行してテスト。"""
-    await asyncio.gather(
-        _run_help("delete-empty-dirs", "空のディレクトリを削除"),
-        _run_help("delete-old-files", "古いファイルを削除"),
-        _run_help("sync", "ディレクトリを同期"),
-        _run_help("fetch", "URL"),
-        _run_help("mcp", "Model Context Protocol"),
-        _run_help("wait-for-db-connection", "SQLALCHEMY_DATABASE_URI"),
-        _run_help("--help", "usage:"),
-    )
+    await asyncio.gather(*(_run_help(name, "usage:") for name, _, _ in _SUBCOMMANDS), _run_help("--help", "usage:"))

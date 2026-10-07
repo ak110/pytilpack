@@ -5,7 +5,6 @@ import contextlib
 import contextvars
 import dataclasses
 import logging
-import secrets
 import threading
 import typing
 
@@ -15,7 +14,19 @@ import sqlalchemy.sql.base
 
 import pytilpack.asyncio
 import pytilpack.paginator
-from pytilpack.sqlalchemy._base import _ReprMixin, _ToDictMixin, _WaitForConnectionState
+from pytilpack.sqlalchemy._base import (
+    _count_query,
+    _engine_kwargs,
+    _id_filter,
+    _page_query,
+    _query_options,
+    _QueryMixin,
+    _ReprMixin,
+    _require_instance,
+    _ToDictMixin,
+    _UniqueIDMixin,
+    _WaitForConnectionState,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,13 +41,13 @@ class _InitArgs:
     engine_kwargs: dict
 
 
-class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
+class AsyncMixin(_QueryMixin, sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
     """モデルのベースクラス。SQLAlchemy 2.0スタイル・async前提。
 
     Examples:
         モデル定義例::
 
-            class Base(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy_.AsyncMixin):
+            class Base(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.AsyncMixin):
                 pass
 
             class User(Base):
@@ -93,27 +104,20 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
             autoflush: セッションのautoflushフラグ。デフォルトはTrue。
             expire_on_commit: セッションのexpire_on_commitフラグ。デフォルトはFalse。
             eagerly_init: Trueの場合（デフォルト）、呼び出し元スレッドのengineとsessionmakerをすぐに生成する。
-            **kwargs: その他のsqlalchemy.create_async_engine()へのキーワード引数。
+            **kwargs: sqlalchemy.ext.asyncio.create_async_engine()へのキーワード引数。
 
         """
         if cls._init_args is not None:
             raise RuntimeError("DB接続はすでに初期化されています。")
 
-        if pool_size is not None and pool_size < 0:
-            engine_kwargs = kwargs.copy()
-            engine_kwargs["poolclass"] = sqlalchemy.pool.NullPool
-        else:
-            if pool_size is not None and max_overflow is None:
-                max_overflow = pool_size * 1  # デフォルトで倍まで許可
-            engine_kwargs = kwargs.copy()
-            if pool_size is not None:
-                engine_kwargs["pool_size"] = pool_size
-            if max_overflow is not None:
-                engine_kwargs["max_overflow"] = max_overflow
-        if pool_recycle is not None:
-            engine_kwargs["pool_recycle"] = pool_recycle
-        if pool_pre_ping is not None:
-            engine_kwargs["pool_pre_ping"] = pool_pre_ping
+        engine_kwargs = _engine_kwargs(
+            kwargs,
+            pool_size,
+            max_overflow,
+            pool_recycle,
+            pool_pre_ping,
+            disable_pool=pool_size is not None and pool_size < 0,
+        )
 
         cls._init_args = _InitArgs(
             url=url,
@@ -268,39 +272,13 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
             raise RuntimeError(f"セッションが開始されていません。{cls.__qualname__}.start_session()を呼び出してください。")
         return sess
 
-    @classmethod
-    def select(cls) -> sqlalchemy.Select[typing.Self]:
-        """sqlalchemy.Selectを返す。"""
-        # cls.count()などでfrom句が消えないように明示的にfrom句を指定して返す。
-        return sqlalchemy.select(cls).select_from(cls)
-
-    @classmethod
-    def insert(cls) -> sqlalchemy.Insert:
-        """sqlalchemy.Insertを返す。"""
-        return sqlalchemy.insert(cls)
-
-    @classmethod
-    def update(cls) -> sqlalchemy.Update:
-        """sqlalchemy.Updateを返す。"""
-        return sqlalchemy.update(cls)
-
-    @classmethod
-    def delete(cls) -> sqlalchemy.Delete:
-        """sqlalchemy.Deleteを返す。"""
-        return sqlalchemy.delete(cls)
-
     # arid: enable
 
     @classmethod
     async def count(cls, query: sqlalchemy.Select | sqlalchemy.CompoundSelect) -> int:
         """queryのレコード数を取得する。"""
         # pylint: disable=not-callable
-        return (
-            await cls.scalar_one_or_none(
-                sqlalchemy.select(sqlalchemy.func.count()).select_from(query.order_by(None).subquery())
-            )
-            or 0
-        )
+        return await cls.scalar_one_or_none(_count_query(query)) or 0
 
     @classmethod
     async def scalar_one[T](cls, query: sqlalchemy.Select[T] | sqlalchemy.CompoundSelect[T]) -> T:
@@ -413,9 +391,7 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
             ValueError: 見つからない場合。
         """
         instance = await cls.get_by_id(id_, for_update=for_update, options=options)
-        if instance is None:
-            raise ValueError(f"{cls.__qualname__}が見つかりませんでした。id={id_}")
-        return instance
+        return _require_instance(instance, cls, id_)
 
     @classmethod
     async def get_by_id(
@@ -432,11 +408,8 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
             インスタンス。
 
         """
-        q = cls.select().where(cls.id == id_)  # type: ignore  # pylint: disable=no-member
-        if options is not None:
-            q = q.options(options)
-        if for_update:
-            q = q.with_for_update()
+        q = cls.select().where(_id_filter(cls, id_))  # type: ignore  # pylint: disable=no-member
+        q = _query_options(q, for_update, options)
         return await cls.scalar_one_or_none(q)  # type: ignore[arg-type]
 
     @classmethod
@@ -458,12 +431,8 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
         Returns:
             ページネーションされた結果を返すpytilpack.paginator.Paginatorインスタンス。
         """
-        if page <= 0:
-            raise ValueError(f"ページ番号は1以上でなければなりません: page={page}")
-        if per_page <= 0:
-            raise ValueError(f"1ページあたりのアイテム数は1以上でなければなりません: per_page={per_page}")
+        page_query = _page_query(query, page, per_page)
         total = await cls.count(query)
-        page_query = query.offset((page - 1) * per_page).limit(per_page)
         items = await (cls.scalars(page_query) if scalar else cls.all(page_query))
         # pylint: disable=protected-access
         return pytilpack.paginator.Paginator(page=page, per_page=per_page, items=items, total=total)
@@ -488,13 +457,8 @@ class AsyncMixin(sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
         return pytilpack.asyncio.run(wrapper())
 
 
-class AsyncUniqueIDMixin:
+class AsyncUniqueIDMixin(_UniqueIDMixin):
     """self.unique_idを持つテーブルクラスにユニークID操作メソッドを付与するmixin。"""
-
-    @classmethod
-    def generate_unique_id(cls) -> str:
-        """ユニークIDを生成する。"""
-        return secrets.token_urlsafe(32)
 
     @classmethod
     async def get_by_unique_id(
@@ -515,12 +479,8 @@ class AsyncUniqueIDMixin:
 
         """
         assert issubclass(cls, AsyncMixin)
-        if allow_id and isinstance(unique_id, int):
-            q = cls.select().where(cls.id == unique_id)  # type: ignore
-        else:
-            q = cls.select().where(cls.unique_id == unique_id)  # type: ignore
-        if for_update:
-            q = q.with_for_update()
+        q = cls.select().where(_id_filter(cls, unique_id, not (allow_id and isinstance(unique_id, int))))
+        q = _query_options(q, for_update)
         return await cls.scalar_one_or_none(q)
 
 

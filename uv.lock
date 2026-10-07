@@ -16,6 +16,9 @@ exclude-newer-span = "P1D"
 pyfltr = false
 pytilpack = false
 
+[manifest]
+constraints = [{ name = "mypy", specifier = "!=2.4.0" }]
+
 [[package]]
 name = "aiofiles"
 version = "25.1.0"
@@ -3077,14 +3080,12 @@ fastapi = [
     { name = "defusedxml" },
     { name = "fastapi" },
     { name = "html5lib" },
-    { name = "pytest" },
 ]
 flask = [
     { name = "defusedxml" },
     { name = "flask" },
     { name = "flask-login" },
     { name = "html5lib" },
-    { name = "pytest" },
 ]
 markdown = [
     { name = "bleach" },
@@ -3113,7 +3114,6 @@ quart = [
     { name = "defusedxml" },
     { name = "html5lib" },
     { name = "hypercorn" },
-    { name = "pytest" },
     { name = "quart", version = "0.22.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13'" },
     { name = "quart", version = "0.23.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13'" },
     { name = "quart-auth" },
@@ -3148,6 +3148,7 @@ dev = [
     { name = "pyright", extra = ["nodejs"] },
     { name = "pytest-timeout" },
     { name = "pytest-xdist" },
+    { name = "requests" },
     { name = "types-bleach" },
     { name = "types-markdown" },
     { name = "types-pyyaml" },
@@ -3200,10 +3201,7 @@ requires-dist = [
     { name = "pydantic", marker = "extra == 'all'", specifier = ">=2.12.5" },
     { name = "pydantic", marker = "extra == 'pydantic'", specifier = ">=2.12.5" },
     { name = "pytest", marker = "extra == 'all'" },
-    { name = "pytest", marker = "extra == 'fastapi'" },
-    { name = "pytest", marker = "extra == 'flask'" },
     { name = "pytest", marker = "extra == 'pytest'" },
-    { name = "pytest", marker = "extra == 'quart'" },
     { name = "pytest-asyncio", marker = "extra == 'all'" },
     { name = "pytest-asyncio", marker = "extra == 'pytest'" },
     { name = "python-dotenv", marker = "extra == 'all'", specifier = ">=1.0.1" },
@@ -3243,6 +3241,7 @@ dev = [
     { name = "pyright", extras = ["nodejs"], specifier = ">=1.1.403" },
     { name = "pytest-timeout", specifier = ">=2" },
     { name = "pytest-xdist", specifier = ">=3.5" },
+    { name = "requests", specifier = ">=2.34.2" },
     { name = "types-bleach", specifier = ">=6.2.0.20241123" },
     { name = "types-markdown", specifier = ">=3.7.0.20241204" },
     { name = "types-pyyaml", specifier = ">=6.0.12.20241230" },

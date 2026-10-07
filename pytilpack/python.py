@@ -1,4 +1,4 @@
-"""Pythonのユーティリティ集。"""
+"""非推奨警告、オブジェクトの検査・変換などのPython支援。"""
 
 import functools
 import inspect

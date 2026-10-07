@@ -28,7 +28,7 @@ def _try_acquire(fp: typing.IO) -> bool:
 def lock(lock_path: pathlib.Path, retry_interval: float = 0.1) -> typing.Generator[None, None, None]:
     """プロセス間で共有するファイルロックを取得する。
 
-    引数:
+    Args:
         lock_path: ロックファイルのパス。
         retry_interval: ロックが使用中の場合に再試行するまでの待機時間（秒単位）。
     """
@@ -46,7 +46,7 @@ def lock(lock_path: pathlib.Path, retry_interval: float = 0.1) -> typing.Generat
 async def alock(lock_path: pathlib.Path, retry_interval: float = 0.1) -> typing.AsyncGenerator[None, None]:
     """プロセス間で共有するファイルロックを取得する（async版）。
 
-    引数:
+    Args:
         lock_path: ロックファイルのパス。
         retry_interval: ロックが使用中の場合に再試行するまでの待機時間（秒単位）。
     """

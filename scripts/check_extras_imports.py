@@ -13,7 +13,7 @@ import zipfile
 
 # 対応名が異なるモジュールと、複数モジュールを提供するextraも検証する。
 EXTRA_MODULES = {
-    "babel": ("pytilpack.babel", "pytilpack.i18n"),
+    "babel": ("pytilpack.babel",),
     "bleach": ("bleach",),
     "environ": ("pytilpack.environ",),
     "fastapi": ("pytilpack.fastapi",),
@@ -98,6 +98,23 @@ def main() -> int:
                 f"{result.stdout}{result.stderr}",
                 file=sys.stderr,
             )
+        if extra in ("fastapi", "flask", "quart"):
+            assertion_command = command[: command.index("-c")] + [
+                str(pathlib.Path(__file__).with_name("check_web_extra.py").resolve()),
+                extra,
+            ]
+            result = subprocess.run(assertion_command, check=False, capture_output=True, text=True, timeout=180)
+            if result.returncode:
+                failed = True
+                print(f"extra {extra} のpytestなしasserts検証に失敗しました。\n{result.stdout}{result.stderr}", file=sys.stderr)
+        cli_command = command[: command.index("-c")] + [
+            str(pathlib.Path(__file__).with_name("check_cli_extra.py").resolve()),
+            extra,
+        ]
+        result = subprocess.run(cli_command, check=False, capture_output=True, text=True, timeout=180)
+        if result.returncode:
+            failed = True
+            print(f"extra {extra or 'ベース'} のCLI検証に失敗しました。\n{result.stdout}{result.stderr}", file=sys.stderr)
     return int(failed)
 
 

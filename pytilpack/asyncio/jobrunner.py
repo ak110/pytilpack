@@ -1,4 +1,4 @@
-"""非同期I/O関連。"""
+"""同時実行数を制限して非同期ジョブを処理するランナー。"""
 
 import abc
 import asyncio
@@ -6,6 +6,8 @@ import logging
 import typing
 
 logger = logging.getLogger(__name__)
+
+__all__ = ["JobStatus", "Job", "JobRunner"]
 
 
 JobStatus = typing.Literal["waiting", "running", "finished", "canceled", "errored"]

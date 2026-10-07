@@ -1,9 +1,12 @@
 """Flask miscのテスト。"""
 
 import pathlib
+import socket
+import types
 
 import flask
 import httpx
+import pytest
 
 import pytilpack.flask
 import pytilpack.flask.misc
@@ -42,10 +45,36 @@ def test_run() -> None:
     def index():
         return "Hello, World!"
 
-    with pytilpack.flask.run(app):
-        response = httpx.get("http://localhost:5000/hello")
+    with pytilpack.flask.run(app, port=0) as port:
+        assert port > 0
+        response = httpx.get(f"http://localhost:{port}/hello", timeout=5)
         assert response.read() == b"Hello, World!"
         assert response.status_code == 200
+
+    with socket.socket() as client:
+        client.settimeout(0.2)
+        assert client.connect_ex(("localhost", port)) != 0
+    assert not flask.has_app_context()
+
+
+def test_run_bind_failure() -> None:
+    """使用中のポートを指定すると起動へ進まず有限時間で失敗する。"""
+    app = flask.Flask(__name__)
+    with socket.socket() as occupied:
+        occupied.bind(("127.0.0.1", 0))
+        occupied.listen()
+        with pytest.raises(SystemExit), pytilpack.flask.run(app, host="127.0.0.1", port=occupied.getsockname()[1]):
+            pytest.fail("使用中のポートで起動した")
+    assert not flask.has_app_context()
+
+
+def test_run_startup_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    """起動待ち上限に達するとサーバーとアプリコンテキストを回収する。"""
+    ticks = iter((0.0, 11.0))
+    monkeypatch.setattr(pytilpack.flask.misc, "time", types.SimpleNamespace(monotonic=lambda: next(ticks)))
+    with pytest.raises(TimeoutError, match="10秒"), pytilpack.flask.run(flask.Flask(__name__), host="127.0.0.1", port=0):
+        pytest.fail("上限を超えて起動した")
+    assert not flask.has_app_context()
 
 
 def test_get_routes() -> None:

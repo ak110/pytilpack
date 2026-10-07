@@ -21,6 +21,25 @@ class User(pytilpack.quart_auth.UserMixin):
         self.is_admin = is_admin
 
 
+def _add_admin_routes(app: quart.Quart) -> None:
+    """両ローダーへ同じ同期・非同期の管理者ルートを登録する。"""
+
+    @app.route("/admin")
+    @pytilpack.quart_auth.admin_only
+    async def admin():
+        return "admin page"
+
+    @app.route("/admin-sync")
+    @pytilpack.quart_auth.admin_only
+    def admin_sync():
+        return "admin sync page"
+
+    @app.route("/login_admin")
+    async def login_admin():
+        pytilpack.quart_auth.login_user("admin1")
+        return "admin logged in"
+
+
 @pytest.fixture(name="app", scope="module")
 def _app() -> quart.Quart:
     """テスト用アプリケーション。"""
@@ -29,6 +48,7 @@ def _app() -> quart.Quart:
 
     # Quart-Authの設定
     auth_manager = pytilpack.quart_auth.QuartAuth[User]()
+    app.config["QUART_AUTH_COOKIE_SECURE"] = False  # HTTPのテストクライアントでCookieを使う。
     auth_manager.init_app(app)
 
     # ユーザーローダーの設定
@@ -68,21 +88,7 @@ def _app() -> quart.Quart:
             "User: {{ current_user.name if current_user.is_authenticated else '<anonymous>' }}"
         )
 
-    @app.route("/admin")
-    @pytilpack.quart_auth.admin_only
-    async def admin():
-        return "admin page"
-
-    @app.route("/admin-sync")
-    @pytilpack.quart_auth.admin_only
-    def admin_sync():
-        return "admin sync page"
-
-    @app.route("/login_admin")
-    async def login_admin():
-        # 管理者ログイン処理
-        pytilpack.quart_auth.login_user("admin1")
-        return "admin logged in"
+    _add_admin_routes(app)
 
     @app.route("/login_no_cookie")
     async def login_no_cookie():
@@ -201,13 +207,13 @@ async def test_logout(client: quart.typing.TestClientProtocol) -> None:
 
 @pytest.mark.asyncio
 async def test_admin_only(client: quart.typing.TestClientProtocol) -> None:
-    # 未認証状態でadmin_onlyデコレータ付きの非同期関数にアクセスすると403エラー。
+    # 未認証状態でadmin_onlyデコレータ付きの非同期関数にアクセスすると401エラー。
     response = await client.get("/admin")
-    assert response.status_code == 403
+    assert response.status_code == 401
 
-    # 未認証状態でadmin_onlyデコレータ付きの同期関数にアクセスすると403エラー。
+    # 未認証状態でadmin_onlyデコレータ付きの同期関数にアクセスすると401エラー。
     response = await client.get("/admin-sync")
-    assert response.status_code == 403
+    assert response.status_code == 401
 
     # 一般ユーザーでadmin_onlyデコレータ付きの非同期関数にアクセスすると403エラー。
     async with client.session_transaction():
@@ -339,6 +345,7 @@ def _app_async() -> quart.Quart:
 
     # Quart-Authの設定
     auth_manager = pytilpack.quart_auth.QuartAuth[User]()
+    app.config["QUART_AUTH_COOKIE_SECURE"] = False  # HTTPのテストクライアントでCookieを使う。
     auth_manager.init_app(app)
 
     # ユーザーローダーの設定(非同期版)
@@ -379,16 +386,7 @@ def _app_async() -> quart.Quart:
     async def private():
         return "private page"
 
-    @app.route("/admin")
-    @pytilpack.quart_auth.admin_only
-    async def admin():
-        return "admin page"
-
-    @app.route("/login_admin")
-    async def login_admin():
-        # 管理者ログイン処理
-        pytilpack.quart_auth.login_user("admin1")
-        return "admin logged in"
+    _add_admin_routes(app)
 
     @app.route("/login_no_cookie")
     async def login_no_cookie():
@@ -478,11 +476,17 @@ async def test_async_login_no_cookie_no_set_cookie(client_async: quart.typing.Te
 
 
 @pytest.mark.asyncio
-async def test_async_user_loader_admin_only(client_async: quart.typing.TestClientProtocol) -> None:
+@pytest.mark.parametrize("route", ["/admin", "/admin-sync"])
+async def test_async_user_loader_admin_only(client_async: quart.typing.TestClientProtocol, route: str) -> None:
     """非同期user_loader: 管理者ユーザーでadmin_onlyデコレータ付きページにアクセスできる。"""
-    # 未認証状態では403エラー
-    response = await client_async.get("/admin")
-    assert response.status_code == 403
+    # 未認証状態では401エラー。
+    response = await client_async.get(route)
+    assert response.status_code == 401
+
+    async with client_async.session_transaction():
+        await client_async.get("/login")
+        response = await client_async.get(route)
+        assert response.status_code == 403
 
     # 管理者ユーザーでログイン
     async with client_async.session_transaction():
@@ -490,9 +494,9 @@ async def test_async_user_loader_admin_only(client_async: quart.typing.TestClien
         assert response.status_code == 200
 
         # 管理者専用ページにアクセス
-        response = await client_async.get("/admin")
+        response = await client_async.get(route)
         assert response.status_code == 200
-        assert await response.get_data(as_text=True) == "admin page"
+        assert await response.get_data(as_text=True) == ("admin page" if route == "/admin" else "admin sync page")
 
 
 @pytest.mark.asyncio

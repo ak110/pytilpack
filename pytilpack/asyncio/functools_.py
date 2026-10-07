@@ -1,4 +1,4 @@
-"""非同期I/O関連。"""
+"""同期・非同期関数とイベントループの橋渡し。"""
 
 import asyncio
 import concurrent.futures
@@ -10,6 +10,8 @@ import logging
 import typing
 
 logger = logging.getLogger(__name__)
+
+__all__ = ["ensure_async", "run_sync", "run_in_thread", "acquire_with_timeout", "run"]
 
 
 def ensure_async[**P, R](

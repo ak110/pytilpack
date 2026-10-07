@@ -1,6 +1,7 @@
 """レートリミッター。
 
-httpx.py（429リトライ）やfunctools.py（retry/max_concurrency）とは独立して
+pytilpack.httpxの429リトライ、pytilpack.functools.retry、
+pytilpack.quart.set_max_concurrencyとは独立して
 リクエスト送信前にレートを制御するトークンバケット実装。
 """
 
@@ -12,13 +13,12 @@ import typing
 class RateLimiter:
     """トークンバケット方式のレートリミッター。
 
-    使用例::
+    Examples:
+        毎秒10リクエストに制限する::
 
-        ```python
-        limiter = RateLimiter(rate=10, per=1.0)  # 10リクエスト/秒
-        async with limiter:
-            await make_request()
-        ```
+            limiter = RateLimiter(rate=10, per=1.0)
+            async with limiter:
+                await make_request()
     """
 
     def __init__(self, rate: float, per: float = 1.0) -> None:

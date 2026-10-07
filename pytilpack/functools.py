@@ -1,16 +1,16 @@
-"""Pythonのユーティリティ集。"""
+"""デコレーターとリトライのユーティリティ集。"""
 
 import asyncio
 import dataclasses
 import functools
 import inspect
 import logging
-import random
 import time
 import typing
-import warnings
 
 import pytilpack.http
+import pytilpack.python
+from pytilpack import _retry
 
 
 class _Unset:
@@ -60,6 +60,46 @@ class _RetryConfig:
     retry_status_codes: typing.Iterable[int] | None
     should_retry: typing.Callable[[Exception], bool] | None
     total_delay: float
+
+
+@dataclasses.dataclass
+class _RetryState:
+    """同期・非同期リトライの判定と待機状態。"""
+
+    cfg: _RetryConfig
+    backoff: _retry.Backoff
+    attempt: int = 0
+    retry_after_total: float = 0.0
+    retry_after: float | None = None
+
+    def next_wait(self, exc: Exception, logger: logging.Logger, name: str) -> float:
+        """元の判定順で次の待機時間を返し、打切り時は元例外を送出する。"""
+        cfg = self.cfg
+        if isinstance(exc, tuple(cfg.excludes)):
+            raise exc
+        self.attempt += 1
+        if self.attempt > cfg.max_retries:
+            raise exc
+        if cfg.should_retry is not None and not cfg.should_retry(exc):
+            raise exc
+        if cfg.retry_status_codes is not None:
+            status = pytilpack.http.get_status_code_from_exception(exc)
+            if status is not None and status not in cfg.retry_status_codes:
+                raise exc
+        if self.retry_after_total >= cfg.total_delay:
+            raise exc
+        logger.log(cfg.loglevel, "%s: %s (retry %d/%d)", name, exc, self.attempt, cfg.max_retries)
+        self.retry_after = pytilpack.http.get_retry_after_from_exception(exc)
+        if self.retry_after is not None:
+            logger.log(cfg.loglevel, "Retry-After: %.1f", self.retry_after)
+        return self.backoff.wait(self.retry_after)
+
+    def slept(self) -> None:
+        """待機完了後だけ累積時間か指数バックオフを進める。"""
+        if self.retry_after is None:
+            self.backoff.advance()
+        else:
+            self.retry_after_total += self.retry_after
 
 
 def _apply_retry_override(
@@ -173,145 +213,52 @@ def retry[**P, R](
     def decorator(func: typing.Callable[P, R]) -> typing.Callable[P, R]:
         logger = logging.getLogger(func.__module__)
 
+        def state_for(kwargs: typing.Any) -> _RetryState:
+            cfg = _apply_retry_override(
+                kwargs.pop("retry", None),
+                max_retries,
+                initial_delay,
+                exponential_base,
+                max_delay,
+                max_jitter,
+                includes,
+                excludes,
+                loglevel,
+                retry_status_codes,
+                should_retry,
+            )
+            return _RetryState(cfg, _retry.Backoff(cfg.initial_delay, cfg.exponential_base, cfg.max_delay, cfg.max_jitter))
+
         if inspect.iscoroutinefunction(func):
 
             @functools.wraps(func)
             async def async_wrapper(*args: P.args, **kwargs: P.kwargs):
-                # pylint: disable=catching-non-exception,raising-non-exception
-                # arid: disable
-                # sync版（sync_wrapper）と待機処理だけが異なる並行実装のため許容する。
-                # kwargs から retry 設定を取得してオーバーライド
-                retry_override = kwargs.pop("retry", None)
-                cfg = _apply_retry_override(
-                    retry_override,
-                    max_retries,
-                    initial_delay,
-                    exponential_base,
-                    max_delay,
-                    max_jitter,
-                    includes,
-                    excludes,
-                    loglevel,
-                    retry_status_codes,
-                    should_retry,
-                )
-
-                attempt = 0
-                delay = cfg.initial_delay
-                retry_after_total = 0.0
+                state = state_for(kwargs)
                 while True:
                     try:
                         return await func(*args, **kwargs)
-                    except tuple(cfg.includes) as e:
-                        if isinstance(e, tuple(cfg.excludes)):
-                            raise
-                        attempt += 1
-                        if attempt > cfg.max_retries:
-                            raise
-                        # should_retryが指定されている場合はそれを使用
-                        if cfg.should_retry is not None and not cfg.should_retry(e):
-                            raise
-                        # HTTPエラーの場合、ステータスコードを確認してリトライするか判定
-                        if cfg.retry_status_codes is not None:
-                            status_code = pytilpack.http.get_status_code_from_exception(e)
-                            if status_code is not None and status_code not in cfg.retry_status_codes:
-                                raise
-                        # Retry-Afterヘッダーがある場合、累積待機時間が本来の設定を超えるならエラーにする
-                        if retry_after_total >= cfg.total_delay:
-                            raise
-                        logger.log(
-                            cfg.loglevel,
-                            "%s: %s (retry %d/%d)",
-                            func.__name__,
-                            e,
-                            attempt,
-                            cfg.max_retries,
-                        )
-                        retry_after = pytilpack.http.get_retry_after_from_exception(e)
-                        if retry_after is None:
-                            # Exponential backoff with jitter
-                            await asyncio.sleep(delay * random.uniform(1.0, 1.0 + cfg.max_jitter))
-                            delay = min(delay * cfg.exponential_base, cfg.max_delay)
-                        else:
-                            # Retry-Afterヘッダーに従い待機
-                            logger.log(cfg.loglevel, "Retry-After: %.1f", retry_after)
-                            await asyncio.sleep(retry_after)
-                            retry_after_total += retry_after
-                # arid: enable
+                    except tuple(state.cfg.includes) as exc:  # pylint: disable=catching-non-exception
+                        await asyncio.sleep(state.next_wait(exc, logger, func.__name__))
+                        state.slept()
 
             return typing.cast(typing.Callable[P, R], async_wrapper)
 
-        else:
+        @functools.wraps(func)
+        def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            state = state_for(kwargs)
+            while True:
+                try:
+                    return func(*args, **kwargs)
+                except tuple(state.cfg.includes) as exc:  # pylint: disable=catching-non-exception
+                    time.sleep(state.next_wait(exc, logger, func.__name__))
+                    state.slept()
 
-            @functools.wraps(func)
-            def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-                # pylint: disable=catching-non-exception,raising-non-exception
-                # arid: disable
-                # async版（async_wrapper）と待機処理だけが異なる並行実装のため許容する。
-                # kwargs から retry 設定を取得してオーバーライド
-                retry_override = kwargs.pop("retry", None)
-                cfg = _apply_retry_override(
-                    retry_override,
-                    max_retries,
-                    initial_delay,
-                    exponential_base,
-                    max_delay,
-                    max_jitter,
-                    includes,
-                    excludes,
-                    loglevel,
-                    retry_status_codes,
-                    should_retry,
-                )
-
-                attempt = 0
-                delay = cfg.initial_delay
-                retry_after_total = 0.0
-                while True:
-                    try:
-                        return func(*args, **kwargs)
-                    except tuple(cfg.includes) as e:
-                        if isinstance(e, tuple(cfg.excludes)):
-                            raise
-                        attempt += 1
-                        if attempt > cfg.max_retries:
-                            raise
-                        # should_retryが指定されている場合はそれを使用
-                        if cfg.should_retry is not None and not cfg.should_retry(e):
-                            raise
-                        # HTTPエラーの場合、ステータスコードを確認してリトライするか判定
-                        if cfg.retry_status_codes is not None:
-                            status_code = pytilpack.http.get_status_code_from_exception(e)
-                            if status_code is not None and status_code not in cfg.retry_status_codes:
-                                raise
-                        # Retry-Afterヘッダーがある場合、累積待機時間が本来の設定を超えるならエラーにする
-                        if retry_after_total >= cfg.total_delay:
-                            raise
-                        logger.log(
-                            cfg.loglevel,
-                            "%s: %s (retry %d/%d)",
-                            func.__name__,
-                            e,
-                            attempt,
-                            cfg.max_retries,
-                        )
-                        retry_after = pytilpack.http.get_retry_after_from_exception(e)
-                        if retry_after is None:
-                            # Exponential backoff with jitter
-                            time.sleep(delay * random.uniform(1.0, 1.0 + cfg.max_jitter))
-                            delay = min(delay * cfg.exponential_base, cfg.max_delay)
-                        else:
-                            # Retry-Afterヘッダーに従い待機
-                            logger.log(cfg.loglevel, "Retry-After: %.1f", retry_after)
-                            time.sleep(retry_after)
-                            retry_after_total += retry_after
-                # arid: enable
-
-            return sync_wrapper
+        return sync_wrapper
 
     return decorator
 
 
+@pytilpack.python.deprecated("Use pytilpack.functools.retry instead.")
 def aretry[**P, R](
     max_retries: int = 3,
     initial_delay: float = 1.0,
@@ -328,7 +275,6 @@ def aretry[**P, R](
     if excludes is None:
         excludes = ()
 
-    warnings.warn("aretry is deprecated. Use retry instead.", DeprecationWarning, stacklevel=2)
     return retry(
         max_retries=max_retries,
         initial_delay=initial_delay,

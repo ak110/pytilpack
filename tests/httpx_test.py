@@ -57,35 +57,35 @@ async def test_retry_async_client():
         return "", 500
 
     async with (
-        pytilpack.quart.misc.run(app, port=5001),
+        pytilpack.quart.misc.run(app, port=0) as port,
         pytilpack.httpx.RetryAsyncClient(max_retries=5, initial_delay=0.01) as client,
     ):
         # 正常系のテスト
-        response = await client.get("http://localhost:5001/success")
+        response = await client.get(f"http://localhost:{port}/success")
         assert response.status_code == 200
         assert response.json() == {"message": "success"}
         assert counters["success"]["count"] == 1
 
         # Retry-Afterヘッダーありの429エラーリトライテスト
-        response = await client.get("http://localhost:5001/retry_with_header")
+        response = await client.get(f"http://localhost:{port}/retry_with_header")
         assert response.status_code == 200
         assert response.json() == {"message": "success"}
         assert counters["retry_with_header"]["count"] == 3
 
         # Retry-Afterヘッダーなしの429エラーリトライテスト（指数バックオフ）
-        response = await client.get("http://localhost:5001/retry_without_header")
+        response = await client.get(f"http://localhost:{port}/retry_without_header")
         assert response.status_code == 200
         assert response.json() == {"message": "success"}
         assert counters["retry_without_header"]["count"] == 3
 
         # 最大リトライ回数を超えた場合のテスト
         async with pytilpack.httpx.RetryAsyncClient(max_retries=3, initial_delay=0.01) as limited_client:
-            response = await limited_client.get("http://localhost:5001/max_retries")
+            response = await limited_client.get(f"http://localhost:{port}/max_retries")
             assert response.status_code == 429
             assert counters["max_retries"]["count"] == 3
 
         # 429以外のエラーの場合はリトライしないテスト
-        response = await client.get("http://localhost:5001/other_error")
+        response = await client.get(f"http://localhost:{port}/other_error")
         assert response.status_code == 500
         assert counters["other_error"]["count"] == 1
 
@@ -104,9 +104,9 @@ async def test_arequest_with_retry_direct():
             return "", 429, {"Retry-After": "0.01"}
         return {"message": "success"}, 200
 
-    async with pytilpack.quart.misc.run(app, port=5002), httpx.AsyncClient() as client:
+    async with pytilpack.quart.misc.run(app, port=0) as port, httpx.AsyncClient() as client:
         response = await pytilpack.httpx.arequest_with_retry(
-            client, "GET", "http://localhost:5002/test", max_retries=3, initial_delay=0.01
+            client, "GET", f"http://localhost:{port}/test", max_retries=3, initial_delay=0.01
         )
         assert response.status_code == 200
         assert response.json() == {"message": "success"}

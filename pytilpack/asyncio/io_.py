@@ -1,4 +1,4 @@
-"""非同期I/O関連。"""
+"""ファイルとディレクトリを扱う非同期I/O。"""
 
 import asyncio
 import datetime
@@ -18,6 +18,32 @@ import pytilpack.pathlib
 # pyyaml 不在時に動作しなくなっていた)。
 
 logger = logging.getLogger(__name__)
+
+__all__ = [
+    "read_json",
+    "write_json",
+    "read_jsonc",
+    "read_yaml",
+    "read_yaml_all",
+    "write_yaml",
+    "write_yaml_all",
+    "read_text",
+    "write_text",
+    "append_text",
+    "read_bytes",
+    "write_bytes",
+    "append_bytes",
+    "copy2",
+    "copytree",
+    "move",
+    "delete_file",
+    "rmtree",
+    "disk_usage",
+    "get_size",
+    "delete_empty_dirs",
+    "sync",
+    "delete_old_files",
+]
 
 
 async def read_json(

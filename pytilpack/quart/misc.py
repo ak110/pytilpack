@@ -6,6 +6,7 @@ import dataclasses
 import functools
 import logging
 import threading
+import time
 import typing
 
 import httpx
@@ -225,7 +226,10 @@ def get_routes(app: quart.Quart) -> list[RouteInfo]:
 
 @contextlib.asynccontextmanager
 async def run(app: quart.Quart, host: str = "localhost", port: int = 5000):
-    """Quartアプリを実行するコンテキストマネージャ。テストコードなど用。"""
+    """Quartアプリを実行し、実際のポート番号を返す。
+
+    port=0ではOSが空きポートを割り当てる。起動待ちは最大10秒。
+    """
     # ダミーエンドポイントが存在しない場合は追加
     if not any(rule.endpoint == "_pytilpack_quart_dummy" for rule in app.url_map.iter_rules()):
 
@@ -234,12 +238,17 @@ async def run(app: quart.Quart, host: str = "localhost", port: int = 5000):
             return "OK"
 
     # Uvicornサーバーの設定
-    config = uvicorn.Config(app=app, host=host, port=port)
+    config = uvicorn.Config(app=app, host=host, port=port, timeout_graceful_shutdown=1)
     server = uvicorn.Server(config)
 
     # 別スレッドでサーバーを起動
+    failures: list[BaseException] = []
+
     def run_server():
-        asyncio.run(server.serve())
+        try:
+            asyncio.run(server.serve())
+        except BaseException as exc:
+            failures.append(exc)
 
     thread = threading.Thread(target=run_server, daemon=True)
     thread.start()
@@ -247,18 +256,34 @@ async def run(app: quart.Quart, host: str = "localhost", port: int = 5000):
     try:
         # サーバーが起動するまで待機
         async with httpx.AsyncClient() as client:
+            deadline = time.monotonic() + 10.0
             while True:
+                if not thread.is_alive():
+                    raise RuntimeError("Quartサーバーの起動に失敗しました") from (failures[0] if failures else None)
+                if time.monotonic() >= deadline:
+                    raise TimeoutError("Quartサーバーの起動待ちが10秒を超えました")
+                servers = getattr(server, "servers", [])
+                sockets = [sock for srv in servers for sock in (srv.sockets or [])]
+                if not server.started or not sockets:
+                    await asyncio.sleep(0.05)
+                    continue
+                actual_port = int(sockets[0].getsockname()[1])
                 try:
-                    response = await client.get(f"http://{host}:{port}/_pytilpack_quart_dummy")
+                    response = await client.get(f"http://{host}:{actual_port}/_pytilpack_quart_dummy", timeout=0.2)
                     response.raise_for_status()
                     break
-                except Exception:
+                except httpx.HTTPError:
                     await asyncio.sleep(0.1)  # 少し待機
 
         # 制御を戻す
-        yield
+        yield actual_port
 
     finally:
         # サーバーを停止
         server.should_exit = True
-        thread.join(timeout=5.0)  # タイムアウトを設定
+        await asyncio.to_thread(thread.join, 5.0)
+        if thread.is_alive():
+            server.force_exit = True
+            await asyncio.to_thread(thread.join, 2.0)
+        if thread.is_alive():
+            raise RuntimeError("Quartサーバーの停止に失敗しました")

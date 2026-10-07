@@ -157,15 +157,7 @@ class ProxyFix:
         headers: typing.Iterable[tuple[bytes, bytes]],
         trusted_hops: int,
     ) -> str | None:
-        if trusted_hops == 0:
-            return None
-
-        values = []
-        for header_name, header_value in headers:
-            if header_name.lower() == name:
-                values.extend([value.decode("utf-8", errors="replace").strip() for value in header_value.split(b",")])
-
-        if len(values) >= trusted_hops:
-            return values[-trusted_hops]
-
-        return None
+        return pytilpack.web.get_trusted_header_value(
+            (value.decode("utf-8", errors="replace") for header_name, value in headers if header_name.lower() == name),
+            trusted_hops,
+        )

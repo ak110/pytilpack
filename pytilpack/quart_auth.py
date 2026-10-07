@@ -4,10 +4,11 @@ import functools
 import inspect
 import logging
 import typing
-import warnings
 
 import quart
 import quart_auth
+
+import pytilpack.python
 
 logger = logging.getLogger(__name__)
 
@@ -120,6 +121,10 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
         else:
             raise RuntimeError("user_loaderが設定されていません")
 
+        return self._finish_user_load(auth_id)
+
+    def _finish_user_load(self, auth_id: str | None) -> UserType | AnonymousUser:
+        """ロード結果のキャッシュ、ログアウトとCookie更新を処理する。"""
         if auth_id is not None and quart.g.quart_auth_current_user is None:
             # ユーザーが見つからない場合はAnonymousUserにする
             logger.error(f"ユーザーロードエラー: {auth_id}")
@@ -150,17 +155,7 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
             # 認証済みの場合はuser_loader_funcを実行する
             assert auth_id is not None
             quart.g.quart_auth_current_user = self.user_loader_func(auth_id)
-            if quart.g.quart_auth_current_user is None:
-                # ユーザーが見つからない場合はAnonymousUserにする
-                logger.error(f"ユーザーロードエラー: {auth_id}")
-                quart.g.quart_auth_current_user = AnonymousUser()
-                quart_auth.logout_user()
-            else:
-                # ログイン状態を更新する
-                if getattr(quart.g, "quart_auth_set_cookie", True):
-                    quart_auth.renew_login()
-
-        return quart.g.quart_auth_current_user
+        return self._finish_user_load(auth_id)
 
 
 def reset_user(user: UserMixin) -> None:
@@ -208,16 +203,12 @@ def is_authenticated() -> bool:
     return quart_auth.current_user.auth_id is not None
 
 
+@pytilpack.python.deprecated("Use pytilpack.quart_auth.acurrent_user instead.")
 def current_user() -> UserMixin:
     """現在のユーザーを取得する。
 
-    .. deprecated:: acurrent_user() を使用すること。
+    .. deprecated:: pytilpack.quart_auth.acurrent_user を使用すること。
     """
-    warnings.warn(
-        "current_user()は非推奨です。acurrent_user()を使用してください。",
-        DeprecationWarning,
-        stacklevel=2,
-    )
     return _find_extension().current_user
 
 
@@ -226,19 +217,15 @@ async def acurrent_user() -> UserMixin:
     return await _find_extension().ensure_user_loaded()
 
 
+@pytilpack.python.deprecated("Use pytilpack.quart_auth.ais_admin instead.")
 def is_admin(attr_name: str = "is_admin") -> bool:
     """現在のユーザーが認証済みかつ管理者であるか否かを取得する。
 
-    .. deprecated:: ais_admin() を使用すること。
+    .. deprecated:: pytilpack.quart_auth.ais_admin を使用すること。
 
     Args:
         attr_name: 管理者かどうかを判定する属性名。デフォルトは "is_admin"。
     """
-    warnings.warn(
-        "is_admin()は非推奨です。ais_admin()を使用してください。",
-        DeprecationWarning,
-        stacklevel=2,
-    )
     return is_authenticated() and getattr(_find_extension().current_user, attr_name)
 
 
@@ -258,6 +245,8 @@ def admin_only[**P, R](func: typing.Callable[P, R]) -> typing.Callable[P, R]:
 
         @functools.wraps(func)
         async def async_wrapper(*args: P.args, **kwargs: P.kwargs):
+            if not is_authenticated():
+                quart.abort(401)
             if not await ais_admin():
                 quart.abort(403)
             return await func(*args, **kwargs)
@@ -268,8 +257,10 @@ def admin_only[**P, R](func: typing.Callable[P, R]) -> typing.Callable[P, R]:
 
         @functools.wraps(func)
         def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            if not is_authenticated():
+                quart.abort(401)
             ext = _find_extension()
-            if not (is_authenticated() and getattr(ext.current_user, "is_admin", False)):
+            if not getattr(ext.current_user, "is_admin", False):
                 quart.abort(403)
             return func(*args, **kwargs)
 

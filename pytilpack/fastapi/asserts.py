@@ -109,7 +109,7 @@ def assert_html(
         AssertionError: ステータスコードが異なる場合
 
     Returns:
-        レスポンスボディ (bs4.BeautifulSoup)
+        HTMLレスポンスボディ (str)
 
     """
     response_body = response.text

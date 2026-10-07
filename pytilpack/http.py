@@ -169,15 +169,28 @@ def parse_problem_details(body: str | bytes, base_url: str | None = None) -> Pro
     )
 
 
+def _exception_response(exc: Exception) -> typing.Any:
+    """例外のresponse属性を取得する。エラーレスポンスの真偽値は評価しない。"""
+    return getattr(exc, "response", None)
+
+
+def _exception_headers(exc: Exception) -> typing.Any:
+    """responseのヘッダーを取得する。属性がない場合はNone。"""
+    response = _exception_response(exc)
+    return getattr(response, "headers", None) if response is not None else None
+
+
 def get_problem_details_from_exception(exc: Exception) -> ProblemDetails | None:
     """例外のレスポンスからProblem Detailsを取得して解析する。
 
     requestsでは本文取得時に同期読み込みが発生する場合がある。未読または消費済みで
     本文を取得できない場合はNoneを返し、通信・デコード失敗は元の例外を伝播する。
     """
-    if not hasattr(exc, "response") or (response := exc.response) is None:  # pyright: ignore[reportAttributeAccessIssue]
+    response = _exception_response(exc)
+    if response is None:
         return None
-    if not hasattr(response, "headers") or (headers := response.headers) is None:
+    headers = _exception_headers(exc)
+    if headers is None:
         return None
 
     content_type = headers.get("Content-Type")
@@ -223,16 +236,11 @@ def get_status_code_from_exception(exc: Exception) -> int | None:
 
     少なくともrequestsとhttpxのraise_for_status()で発生する例外に対応している。
     """
-    if (
-        (
-            hasattr(exc, "response")
-            and (response := exc.response) is not None  # pyright: ignore[reportAttributeAccessIssue]
-            and hasattr(response, "status_code")
-            and (status_code := response.status_code) is not None  # pyright: ignore[reportAttributeAccessIssue]
-        )
-        or hasattr(exc, "status_code")
-        and (status_code := exc.status_code) is not None  # pyright: ignore[reportAttributeAccessIssue]
-    ):
+    response = _exception_response(exc)
+    status_code = getattr(response, "status_code", None) if response is not None else None
+    if status_code is None:
+        status_code = getattr(exc, "status_code", None)
+    if status_code is not None:
         status_code = str(status_code)
         if status_code.isdigit():
             int_status_code = int(status_code)
@@ -246,12 +254,7 @@ def get_retry_after_from_exception(exc: Exception) -> float | None:
 
     少なくともrequestsとhttpxのraise_for_status()で発生する例外に対応している。
     """
-    if (
-        hasattr(exc, "response")
-        and (response := exc.response) is not None  # pyright: ignore[reportAttributeAccessIssue]
-        and hasattr(response, "headers")
-        and (headers := response.headers) is not None  # pyright: ignore[reportAttributeAccessIssue]
-    ):
+    if (headers := _exception_headers(exc)) is not None:
         retry_after_header = headers.get("Retry-After")
         logger.info(f"Retry-After: {retry_after_header}")
         return get_retry_after(retry_after_header)
@@ -305,12 +308,7 @@ def get_rate_limit_info(headers: collections.abc.Mapping[str, typing.Any]) -> Ra
 
 def get_rate_limit_info_from_exception(exc: Exception) -> RateLimitInfo | None:
     """例外のレスポンスからX-RateLimit系ヘッダーを取得して解析する。"""
-    if (
-        hasattr(exc, "response")
-        and (response := exc.response) is not None  # pyright: ignore[reportAttributeAccessIssue]
-        and hasattr(response, "headers")
-        and (headers := response.headers) is not None
-    ):
+    if (headers := _exception_headers(exc)) is not None:
         return get_rate_limit_info(headers)
     return None
 

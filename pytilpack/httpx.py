@@ -2,12 +2,12 @@
 
 import asyncio
 import logging
-import random
 import typing
 
 import httpx
 
 import pytilpack.http
+from pytilpack import _retry
 
 logger = logging.getLogger(__name__)
 
@@ -67,17 +67,17 @@ async def arequest_with_retry(
 ) -> httpx.Response:
     """429 Too Many Requests に対してリトライする非同期リクエスト関数。"""
     last_response: httpx.Response | None = None
-    delay = initial_delay
+    backoff = _retry.Backoff(initial_delay, exponential_base, max_delay, max_jitter)
     for attempt in range(1, max_retries + 1):
         resp = await client.request(method, url, **kwargs)
         last_response = resp
         if resp.status_code != 429:
             break
-        wait = pytilpack.http.get_retry_after(resp.headers.get("Retry-After"))
-        if wait is None:
+        retry_after = pytilpack.http.get_retry_after(resp.headers.get("Retry-After"))
+        wait = backoff.wait(retry_after)
+        if retry_after is None:
             # ヘッダーがなければ指数バックオフ
-            wait = delay * random.uniform(1.0, 1.0 + max_jitter)
-            delay = min(delay * exponential_base, max_delay)
+            backoff.advance()
         logger.info(
             "arequest_with_retry: %s %s (retry %d/%d)",
             method,

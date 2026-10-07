@@ -10,6 +10,7 @@ import urllib.parse
 import html5lib
 import html5lib._tokenizer
 import html5lib.constants
+import werkzeug.http
 
 import pytilpack.http
 
@@ -20,6 +21,17 @@ logger = logging.getLogger(__name__)
 _FORWARDED_PREFIX_ALLOWED = re.compile(r"^[a-zA-Z0-9\-_.~/:%@!$&'()*+,;=]*$")
 # 制御文字（CR/LF/NUL等）の検出用
 _CONTROL_CHAR = re.compile(r"[\x00-\x1f\x7f]")
+
+
+def get_trusted_header_value(values: typing.Iterable[str], trusted_hops: int) -> str | None:
+    """複数行のカンマ区切りヘッダーから信頼ホップの値を取得する。
+
+    quoted-string内のカンマとエスケープはWerkzeugのHTTPパーサーで扱う。
+    """
+    if trusted_hops == 0:
+        return None
+    parsed = [item for value in values for item in werkzeug.http.parse_list_header(value)]
+    return parsed[-trusted_hops] if len(parsed) >= trusted_hops else None
 
 
 def validate_forwarded_prefix(value: str) -> str | None:

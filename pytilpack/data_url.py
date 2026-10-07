@@ -21,8 +21,7 @@ class DataURL:
     def to_url(self) -> str:
         """データURLを文字列として返す。"""
         if self.encoding == "base64":
-            b64 = base64.b64encode(self.data).decode("ascii")
-            return f"data:{self.mime_type};base64,{b64}"
+            return create(self.mime_type, self.data)
         else:
             encoded_data = urllib.parse.quote(self.data.decode("utf-8"))
             return f"data:{self.mime_type},{encoded_data}"

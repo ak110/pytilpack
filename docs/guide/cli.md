@@ -17,64 +17,79 @@ uvx --from='pytilpack[babel]' pytilpack babel extract .
 
 extrasが足りない状態で該当サブコマンドを呼ぶと、必要なextras名を含むエラーメッセージが表示される。
 
-## 空のディレクトリを削除
+## `pytilpack delete-empty-dirs`
+
+空のディレクトリを削除する。ルートディレクトリは省略時に保持する。
 
 ```bash
-pytilpack delete-empty-dirs path/to/dir [--no-keep-root] [--verbose]
+pytilpack delete-empty-dirs ./work --verbose
+pytilpack delete-empty-dirs --help
 ```
 
-空のディレクトリを削除する。デフォルトでルートディレクトリを保持する。
+`--no-keep-root`で空になったルートも削除する。
 
-## 古いファイルを削除
+## `pytilpack delete-old-files`
+
+指定した日数より古いファイルと空ディレクトリを削除する。
 
 ```bash
-pytilpack delete-old-files path/to/dir --days=7 [--no-delete-empty-dirs] [--verbose]
+pytilpack delete-old-files ./work --days=7 --verbose
+pytilpack delete-old-files --help
 ```
 
-指定した日数より古いファイルを削除する。デフォルトで空ディレクトリも削除する。
+`--no-delete-empty-dirs`で空ディレクトリを保持する。
 
-## ディレクトリを同期
+## `pytilpack sync`
 
 ```bash
-pytilpack sync src dst [--delete] [--verbose]
+pytilpack sync ./source ./destination --delete --verbose
+pytilpack sync --help
 ```
 
 コピー元からコピー先へファイル・ディレクトリを同期する。
 `--delete`でコピー元に存在しないコピー先のファイル・ディレクトリを削除する。
 
-## URLの内容を取得
+## `pytilpack fetch`
 
 ```bash
-pytilpack fetch url [--no-verify] [--accept=CONTENT_TYPE] [--user-agent=USER_AGENT] [--verbose]
+pytilpack fetch https://example.com/ --accept=text/html
+pytilpack fetch --help
 ```
 
 URLからHTMLを取得し、簡略化して標準出力に出力する。
 
-## MCPサーバーを起動
+## `pytilpack mcp`
 
 ```bash
-pytilpack mcp [--transport=stdio|http] [--host=localhost] [--port=8000] [--verbose]
+pytilpack mcp --transport=stdio
+pytilpack mcp --help
 ```
 
 Model Context ProtocolサーバーとしてpytilpackのFetch機能を提供する。
 `--transport`でstdio（デフォルト）またはhttp通信方式を選択できる。
 
-## Babelメッセージ管理
+## `pytilpack babel`
+
+`pytilpack[babel]`を導入し、gettextメッセージの抽出・初期化・更新・コンパイルを行う。
 
 ```bash
-pytilpack babel extract input_dirs... [-o messages.pot] [-k KEYWORDS...]
-pytilpack babel init -l LOCALE [-i messages.pot] [-d locales]
-pytilpack babel update [-i messages.pot] [-d locales]
-pytilpack babel compile [-d locales]
+pip install 'pytilpack[babel]'
+pytilpack babel extract ./src -o messages.pot
+pytilpack babel init -l ja -i messages.pot -d locales
+pytilpack babel update -i messages.pot -d locales
+pytilpack babel compile -d locales
+pytilpack babel --help
 ```
 
-gettextメッセージの抽出・初期化・更新・コンパイルを行う。
+## `pytilpack wait-for-db-connection`
 
-## DB接続待機
+`pytilpack[sqlalchemy]`を導入し、指定URIでDB接続が可能になるまで待機する。
 
 ```bash
-pytilpack wait-for-db-connection SQLALCHEMY_DATABASE_URI [--timeout=180] [--verbose]
+pip install 'pytilpack[sqlalchemy]'
+pytilpack wait-for-db-connection "$SQLALCHEMY_DATABASE_URI" --timeout=180 --verbose
+pytilpack wait-for-db-connection --help
 ```
 
-指定URIでDB接続が可能になるまで待機する（デフォルトタイムアウト: 180秒）。
+省略時の待機上限は180秒。
 非同期ドライバ（`+asyncpg`、`+aiosqlite`等）を含むURIの場合は自動で非同期処理を使用する。

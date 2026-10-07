@@ -6,12 +6,13 @@ import logging
 import math
 import re
 import typing
-import warnings
 
 import httpx
 import openai.types.chat
 import PIL.Image
 import tiktoken
+
+import pytilpack.python
 
 logger = logging.getLogger(__name__)
 
@@ -153,13 +154,9 @@ def num_tokens_from_texts(model: str, texts: list[str] | str) -> int:
     return sum(len(enc.encode(text)) for text in texts)
 
 
+@pytilpack.python.deprecated("Use pytilpack.tiktoken.num_tokens_for_tools instead.")
 def num_tokens_from_tools(encoding: tiktoken.Encoding, tools: list[openai.types.chat.ChatCompletionToolParam]) -> int:
     """Function calling部分のトークン数を算出する。（非推奨）"""
-    warnings.warn(
-        "num_tokens_from_tools is deprecated. Use num_tokens_for_tools instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
     return num_tokens_for_tools(model="gpt-4o", tools=tools, encoding=encoding)
 
 

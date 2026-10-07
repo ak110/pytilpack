@@ -2,14 +2,111 @@
 
 import datetime
 import logging
+import secrets
 import time
 import typing
 
 import sqlalchemy
+import sqlalchemy.sql.base
 
 _SENTINEL = object()
 
 logger = logging.getLogger(__name__)
+
+
+def _engine_kwargs(
+    kwargs: dict[str, typing.Any],
+    pool_size: int | None,
+    max_overflow: int | None,
+    pool_recycle: int | None,
+    pool_pre_ping: bool,
+    disable_pool: bool = False,
+) -> dict[str, typing.Any]:
+    """接続オプションを組み立てる。プール無効化の判断は呼出側が行う。"""
+    result = kwargs.copy()
+    if disable_pool:
+        result["poolclass"] = sqlalchemy.pool.NullPool
+    else:
+        if pool_size is not None:
+            result["pool_size"] = pool_size
+            if max_overflow is None:
+                max_overflow = pool_size
+        if max_overflow is not None:
+            result["max_overflow"] = max_overflow
+    if pool_recycle is not None:
+        result["pool_recycle"] = pool_recycle
+    if pool_pre_ping is not None:
+        result["pool_pre_ping"] = pool_pre_ping
+    return result
+
+
+class _QueryMixin:
+    """セッションに依存しないクエリ生成。"""
+
+    @classmethod
+    def select(cls) -> sqlalchemy.Select[typing.Self]:
+        """FROM句を保持したSELECTを返す。"""
+        return sqlalchemy.select(cls).select_from(cls)
+
+    @classmethod
+    def insert(cls) -> sqlalchemy.Insert:
+        """INSERTを返す。"""
+        return sqlalchemy.insert(cls)
+
+    @classmethod
+    def update(cls) -> sqlalchemy.Update:
+        """UPDATEを返す。"""
+        return sqlalchemy.update(cls)
+
+    @classmethod
+    def delete(cls) -> sqlalchemy.Delete:
+        """DELETEを返す。"""
+        return sqlalchemy.delete(cls)
+
+
+class _UniqueIDMixin:
+    """各SQL実装に同じ長さのユニークID生成を提供する。"""
+
+    @classmethod
+    def generate_unique_id(cls) -> str:
+        """ユニークIDを生成する。"""
+        return secrets.token_urlsafe(32)
+
+
+def _count_query(query: sqlalchemy.Select | sqlalchemy.CompoundSelect) -> sqlalchemy.Select:
+    """ソートを除いた副問合せの件数クエリを返す。"""
+    return sqlalchemy.select(sqlalchemy.func.count()).select_from(query.order_by(None).subquery())  # pylint: disable=not-callable
+
+
+def _id_filter(model: type, id_: str | int, unique: bool = False):
+    """IDまたはユニークIDの比較条件を返す。"""
+    return (model.unique_id if unique else model.id) == id_  # type: ignore[attr-defined]
+
+
+def _query_options[T](query: T, for_update: bool, options: sqlalchemy.sql.base.ExecutableOption | None = None) -> T:
+    """ID検索のオプションと更新ロックを同じ順番で適用する。"""
+    configured: typing.Any = query
+    if options is not None:
+        configured = configured.options(options)
+    if for_update:
+        configured = configured.with_for_update()
+    return typing.cast(T, configured)
+
+
+def _require_instance[T](instance: T | None, model: type, id_: int) -> T:
+    """ID検索が0件の場合のエラーをそろえる。"""
+    if instance is None:
+        raise ValueError(f"{model.__qualname__}が見つかりませんでした。id={id_}")
+    return instance
+
+
+def _page_query[T: sqlalchemy.Select | sqlalchemy.CompoundSelect](query: T, page: int, per_page: int) -> T:
+    """ページ引数を検証し、取得範囲を指定したクエリを返す。"""
+    if page <= 0:
+        raise ValueError(f"ページ番号は1以上でなければなりません: page={page}")
+    if per_page <= 0:
+        raise ValueError(f"1ページあたりのアイテム数は1以上でなければなりません: per_page={per_page}")
+    return typing.cast(T, query.offset((page - 1) * per_page).limit(per_page))
 
 
 class _ReprMixin:

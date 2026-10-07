@@ -297,3 +297,20 @@ async def test_static_prefix_scope_root_path_is_set():
     assert received_scopes[0]["root_path"] == "/myapp"
     # app.configは初期化時から変わらない
     assert app.config["APPLICATION_ROOT"] == "/myapp"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("hops", "expected"), [(0, ""), (1, "/last"), (2, "/app,part"), (3, "/first"), (4, "")])
+async def test_quoted_prefix_across_header_lines(hops: int, expected: str) -> None:
+    """複数行の順序と引用符内のカンマを保って信頼ホップ数で選ぶ。"""
+    _, middleware = _make_app({"x_prefix": hops})
+    captured: list[dict] = []
+
+    async def capture(scope: typing.Any, receive: typing.Any, send: typing.Any) -> None:
+        del receive, send
+        captured.append(scope)
+
+    middleware.asgi_app = capture
+    scope = _make_scope([(b"x-forwarded-prefix", b"/first"), (b"x-forwarded-prefix", b'"/app,part", /last')])
+    await middleware(scope, _noop_receive, _noop_send)  # type: ignore[arg-type]
+    assert captured[0]["root_path"] == expected

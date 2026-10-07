@@ -24,8 +24,6 @@ __all__ = [
     "Mixin",
     "UniqueIDMixin",
     "register_ping",
-    "safe_close",
-    "wait_for_connection",
     # 非同期版
     "AsyncMixin",
     "AsyncUniqueIDMixin",
@@ -36,6 +34,8 @@ __all__ = [
     "SyncAsyncBridgeMixin",
     "SyncUniqueIDMixin",
     "run_sync_with_session",
+    "safe_close",
+    "wait_for_connection",
     # ユーティリティ
     "describe",
     "describe_table",

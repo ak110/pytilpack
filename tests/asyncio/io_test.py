@@ -1,12 +1,19 @@
 """テストコード。"""
 
+import collections.abc
 import datetime
+import inspect
 import pathlib
+import typing
 
 import pytest
+import yaml
 
 import pytilpack.asyncio
+import pytilpack.json
+import pytilpack.jsonc
 import pytilpack.pathlib
+import pytilpack.yaml
 
 
 @pytest.mark.asyncio
@@ -241,3 +248,49 @@ async def test_asyncio_io_helpers(tmp_path: pathlib.Path) -> None:
     # disk_usage
     usage = await pytilpack.asyncio.disk_usage(tmp_path)
     assert usage.total > 0
+
+
+_SYNC_FUNCTIONS: dict[str, collections.abc.Callable[..., typing.Any]] = {
+    "read_json": pytilpack.json.load,
+    "write_json": pytilpack.json.save,
+    "read_jsonc": pytilpack.jsonc.load,
+    "read_yaml": pytilpack.yaml.load,
+    "read_yaml_all": pytilpack.yaml.load_all,
+    "write_yaml": pytilpack.yaml.save,
+    "write_yaml_all": pytilpack.yaml.save_all,
+}
+
+
+def _assert_io_signature(name: str) -> None:
+    sync = inspect.signature(_SYNC_FUNCTIONS[name])
+    asynchronous = inspect.signature(getattr(pytilpack.asyncio, name))
+    sync_params = list(sync.parameters.values())[1:]
+    async_params = list(asynchronous.parameters.values())[1:]
+    # 任意依存を遅延importするYAML版は、Noneを同期版と同じクラスへ解決する。
+    defaults = {"Loader": yaml.SafeLoader, "Dumper": pytilpack.yaml.CustomDumper}
+    async_params = [
+        param.replace(default=defaults[param.name]) if param.name in defaults and param.default is None else param
+        for param in async_params
+    ]
+    assert [(param.name, param.kind, param.default) for param in sync_params] == [
+        (param.name, param.kind, param.default) for param in async_params
+    ]
+
+
+@pytest.mark.parametrize("name", list(_SYNC_FUNCTIONS))
+def test_io_signature_matches_sync(name: str) -> None:
+    """第1引数を除く引数名・順序・省略時に使う値を同期版へ追随させる。"""
+    _assert_io_signature(name)
+
+
+def test_signature_check_rejects_sync_only_argument(monkeypatch: pytest.MonkeyPatch) -> None:
+    """同期版だけに増えた引数を同じ検査が拒否する。"""
+    original = inspect.signature(pytilpack.json.load)
+    parameters = list(original.parameters.values())
+    position = next(
+        (index for index, param in enumerate(parameters) if param.kind == inspect.Parameter.VAR_KEYWORD), len(parameters)
+    )
+    parameters.insert(position, inspect.Parameter("future_option", inspect.Parameter.KEYWORD_ONLY, default=None))
+    monkeypatch.setattr(pytilpack.json.load, "__signature__", original.replace(parameters=parameters), raising=False)
+    with pytest.raises(AssertionError):
+        _assert_io_signature("read_json")

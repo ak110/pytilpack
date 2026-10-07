@@ -1,87 +1,23 @@
 ---
 name: check-module-sync
-description: >
-  Use when editing any file under pytilpack/<name>.py or pytilpack/<name>/ (subpackages like
-  pytilpack/asyncio/, pytilpack/sqlalchemy/ count as a single module <name>). Verifies
-  docs/api/<name>.md exists, its 必要なextra note matches pyproject.toml,
-  [project.optional-dependencies].all includes every optional package the module pulls in,
-  README/docs/index extras tables are current, and mkdocs.yml nav and llmstxt sections contain it.
+description: pytilpackのモジュール、依存宣言、CLIまたはAPI文書の対応情報を変更するときに使う。
 ---
 
-# check-module-sync
+# モジュールと依存・文書の整合確認
 
-pytilpackの既存モジュール編集時に、関連するドキュメント・extras・テストの整合性を確認するチェックリスト。
-編集ファイルから **トップレベル名** を特定し、その単位で同期を確認する。
+本スキルは既存の実装に変更した依存・テスト・文書が追随しているかを確認する手順を提供する。
+実行主体は着手時に`AGENTS.md`を読み、次の資料を全文読む。
 
-## トップレベル名の特定方法
+- `docs/development/architecture.md`: 依存、公開API、テストと文書の規約
+- `docs/development/development.md`: 「モジュールの追加・変更」の作業手順と検証
+- `docs/guide/index.md`: 現在のextras対応表と8分類のモジュール一覧
 
-編集対象パス → トップレベル名 `<name>` の対応:
+## 実施
 
-- `pytilpack/<name>.py` → `<name>`（単一ファイルモジュール）
-- `pytilpack/<name>/...` → `<name>` (サブパッケージ。例: `pytilpack/sqlalchemy/types.py` → `sqlalchemy`)
-- `pytilpack/cli/...` → `cli`（`docs/guide/cli.md` が別管理。本skillのチェック対象外）
-- `pytilpack/__init__.py` → 対象外
+1. 呼出元が指定した変更ファイルから公開モジュールと利用側を特定する。単独起動で指定がない場合はHEADに対する未コミット差分と未追跡ファイルを対象にする。サブパッケージはトップレベル名を1単位とし、私的モジュールはその公開利用側を対象にする。
+2. architectureの規約に照らして、直接使う外部依存と、内部の共通モジュールが使う外部依存を利用側のextraへ宣言しているか確かめる。allには各extraの直接依存の和集合を保持する。任意依存の関数内importも対象にする。
+3. developmentの「モジュールの追加・変更」に従い、定義、ガイド、API注記、MkDocsの分類と対応テストが一致するか確かめ、不整合を修正する。
+4. 同節のコマンドで実装と文書を検証し、失敗を是正する。CLIの名前と必要extraは`pytilpack/cli/main.py:_SUBCOMMANDS`と`docs/guide/cli.md`を比較する。
 
-## チェック項目
-
-### 1. `docs/api/<name>.md` の存在
-
-サブパッケージでも1ファイルにまとめる規約 (`show_submodules: true` 付き)。
-存在しなければ `add-module` skillの手順に従って作成する。
-
-### 2. extras 注記の整合性
-
-サードパーティに依存するモジュールであれば `docs/api/<name>.md` に以下のような注記が入っているはず:
-
-```markdown
-!!! note "必要なextra"
-
-    `pip install pytilpack[<extrasキー>]`
-```
-
-`pyproject.toml` の `[project.optional-dependencies]` に対応するextrasキーが定義されていることを確認する。
-モジュール名とextrasキー名が異なる場合は`AGENTS.md`の「モジュール→extrasキーマッピング」表を参照する。
-extras不要モジュール（ベース依存のみで動く）ならばこの注記がないことを確認する。
-
-### 3. `[project.optional-dependencies].all` の網羅
-
-`<name>` extrasの各パッケージが `all` extrasにも含まれていることを `pyproject.toml` で確認。
-`uv add --optional all <library>` を打ち忘れているケースがある。
-
-### 4. トップレベル import と extras の整合性
-
-`pytilpack/<name>.py`（または `pytilpack/<name>/**/*.py`）の **トップレベル import** を
-`grep -E '^(import|from)' pytilpack/<name>...'` で抽出する。
-サードパーティ（`pytilpack` / 標準ライブラリ以外）が対応extrasに過不足なくマッピングされているか確認する。
-モジュール名とextrasキー名が異なる場合は`AGENTS.md`の「モジュール→extrasキーマッピング」表を参照する。
-
-`pyproject.toml`の`[tool.pylint."messages control"]`で`import-outside-toplevel`が有効なため、関数内importは基本的にない前提でOK。
-
-### 5. extras 一覧テーブル
-
-- `README.md` のextras一覧テーブルに `<name>` 行があるか
-- `docs/index.md` のextras一覧に `<name>` 行があるか
-
-### 6. mkdocs.yml の同期
-
-- `nav:` → `APIリファレンス` 下に `api/<name>.md` があるか
-- `plugins:` → `llmstxt.sections` のカテゴリに `api/<name>.md` があるか
-
-### 7. テストの存在
-
-- `tests/<name>_test.py` または `tests/<name>/` があるか
-- 編集したpublic関数に対応するテストがあるか（新規publicは必ずテスト追加）
-
-### 8. 整合性チェックスクリプトの実行
-
-```bash
-uv run --script scripts/check_docs_api.py
-```
-
-警告が出力されなければ最低限の整合性は確保されている。
-
-## 不整合が見つかったとき
-
-- 単に追記されていない箇所 (`README.md` / `docs/index.md` / `mkdocs.yml`) はそのまま修正
-- extrasの構成変更が必要なら `uv add --optional ...` / `uv remove --optional ...` を使う（手編集禁止）
-- ドキュメント追加が必要なら `add-module` skillを参照
+公開モジュールの新設が必要な場合は、実行主体が`add-module`スキルを起動し、追加するモジュールの責務と公開名を渡す。同スキルの追加・検証が完了した結果を受けて確認を続ける。
+完了時は対象モジュール、修正した不整合と検証結果を呼出元へ返す。

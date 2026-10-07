@@ -1,18 +1,18 @@
 """Flask関連のその他のユーティリティ。"""
 
-import base64
 import contextlib
 import logging
 import pathlib
 import threading
+import time
 import typing
-import warnings
 
 import flask
 import httpx
 import werkzeug.serving
 
-import pytilpack.secrets
+import pytilpack.data_url
+import pytilpack.python
 import pytilpack.web
 
 __all__ = [
@@ -33,13 +33,12 @@ _TIMESTAMP_CACHE: dict[str, int] = {}
 """静的ファイルの最終更新日時をキャッシュするための辞書。プロセス単位でキャッシュされる。"""
 
 
+@pytilpack.python.deprecated("Use pytilpack.secrets.generate_secret_key instead.")
 def generate_secret_key(cache_path: str | pathlib.Path) -> bytes:
-    """Deprecated."""
-    warnings.warn(
-        "pytilpack.flask_.generate_secret_key is deprecated. Use pytilpack.secrets_.generate_secret_key instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
+    """鍵の生成をpytilpack.secrets.generate_secret_keyへ移譲する。"""
+    # secretsはUnix専用fcntlを使うため、この機能を呼ぶ場合だけ読み込む。
+    import pytilpack.secrets  # pylint: disable=import-outside-toplevel,redefined-outer-name
+
     return pytilpack.secrets.generate_secret_key(cache_path)
 
 
@@ -51,8 +50,7 @@ def data_url(data: bytes, mime_type: str) -> str:
         mime_type: 例：'image/png'
 
     """
-    b64 = base64.b64encode(data).decode("ascii")
-    return f"data:{mime_type};base64,{b64}"
+    return pytilpack.data_url.create(mime_type, data)
 
 
 def get_next_url() -> str:
@@ -110,13 +108,9 @@ def static_url_for(
     )
 
 
+@pytilpack.python.deprecated("Use pytilpack.web.get_safe_url instead.")
 def get_safe_url(target: str | None, host_url: str, default_url: str) -> str:
-    """Deprecated."""
-    warnings.warn(
-        "pytilpack.flask_.get_safe_url is deprecated. Use pytilpack.web.get_safe_url instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
+    """安全なURLの選択をpytilpack.web.get_safe_urlへ移譲する。"""
     return pytilpack.web.get_safe_url(target, host_url, default_url)
 
 
@@ -135,7 +129,10 @@ def get_routes(app: flask.Flask) -> list[RouteInfo]:
 
 @contextlib.contextmanager
 def run(app: flask.Flask, host: str = "localhost", port: int = 5000):
-    """Flaskアプリを実行するコンテキストマネージャ。テストコードなど用。"""
+    """Flaskアプリを実行し、実際のポート番号を返す。
+
+    port=0ではOSが空きポートを割り当てる。起動待ちは最大10秒。
+    """
     if not any(m.endpoint == "_pytilpack_flask_dummy" for m in app.url_map.iter_rules()):
 
         @app.route("/_pytilpack_flask_dummy")
@@ -145,18 +142,36 @@ def run(app: flask.Flask, host: str = "localhost", port: int = 5000):
     server = werkzeug.serving.make_server(host, port, app, threaded=True)
     ctx = app.app_context()
     ctx.push()
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    failures: list[BaseException] = []
+
+    def serve():
+        try:
+            server.serve_forever()
+        except BaseException as exc:
+            failures.append(exc)
+
+    thread = threading.Thread(target=serve, daemon=True)
     thread.start()
     try:
         # サーバーが起動するまで待機
+        deadline = time.monotonic() + 10.0
         while True:
+            if not thread.is_alive():
+                raise RuntimeError("Flaskサーバーの起動に失敗しました") from (failures[0] if failures else None)
+            if time.monotonic() >= deadline:
+                raise TimeoutError("Flaskサーバーの起動待ちが10秒を超えました")
             try:
-                httpx.get(f"http://{host}:{port}/_pytilpack_flask_dummy").raise_for_status()
+                httpx.get(f"http://{host}:{server.server_port}/_pytilpack_flask_dummy", timeout=0.2).raise_for_status()
                 break
-            except Exception:
-                pass
+            except httpx.HTTPError:
+                time.sleep(0.05)
         # 制御を戻す
-        yield
+        yield server.server_port
     finally:
-        server.shutdown()
-        thread.join()
+        if thread.is_alive():
+            server.shutdown()
+        thread.join(timeout=5.0)
+        server.server_close()
+        ctx.pop()
+        if thread.is_alive():
+            raise RuntimeError("Flaskサーバーの停止に失敗しました")

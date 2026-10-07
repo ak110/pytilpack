@@ -69,7 +69,7 @@ async def assert_html(
         AssertionError: ステータスコードが異なる場合など
 
     Returns:
-        レスポンスボディ (bs4.BeautifulSoup)
+        HTMLレスポンスボディ (str)
 
     """
     response = await _get_response(response)

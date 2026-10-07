@@ -1,4 +1,4 @@
-"""非同期I/O関連。"""
+"""専用スレッド上のイベントループで非同期処理を実行するプール。"""
 
 import asyncio
 import concurrent.futures
@@ -7,6 +7,8 @@ import threading
 import typing
 
 logger = logging.getLogger(__name__)
+
+__all__ = ["ThreadPool"]
 
 
 class ThreadPool:

@@ -17,7 +17,7 @@ class _DumpOptions:
     default_style: str | None = None
     default_flow_style: bool | None = False
     sort_keys: bool = False
-    Dumper: typing.Any = None  # CustomDumperは後方定義のため後段で差し替える
+    Dumper: typing.Any = None  # 未指定時は書込関数のCustomDumper既定値を使う
 
     def to_kwargs(self) -> dict[str, typing.Any]:
         """yaml.dump/dump_allに渡すキーワード引数辞書を返す。"""

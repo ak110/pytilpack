@@ -1,7 +1,6 @@
 """SQLAlchemy用のユーティリティ集（Flask-SQLAlchemy版）。"""
 
 import logging
-import secrets
 import typing
 
 import sqlalchemy
@@ -10,7 +9,7 @@ import sqlalchemy.exc
 import sqlalchemy.pool
 import sqlalchemy.sql.base
 
-from pytilpack.sqlalchemy._base import _ReprMixin, _ToDictMixin
+from pytilpack.sqlalchemy._base import _id_filter, _query_options, _ReprMixin, _require_instance, _ToDictMixin, _UniqueIDMixin
 
 logger = logging.getLogger(__name__)
 
@@ -51,9 +50,7 @@ class Mixin(_ReprMixin, _ToDictMixin):
             ValueError: 見つからない場合。
         """
         instance = cls.get_by_id(id_, for_update=for_update, options=options)
-        if instance is None:
-            raise ValueError(f"{cls.__qualname__}が見つかりませんでした。id={id_}")
-        return instance
+        return _require_instance(instance, cls, id_)
 
     @classmethod
     def get_by_id(
@@ -70,21 +67,13 @@ class Mixin(_ReprMixin, _ToDictMixin):
             インスタンス。
 
         """
-        q = cls.query.filter(cls.id == id_)  # type: ignore
-        if options is not None:
-            q = q.options(options)
-        if for_update:
-            q = q.with_for_update()
+        q = cls.query.filter(_id_filter(cls, id_))  # type: ignore
+        q = _query_options(q, for_update, options)
         return q.one_or_none()
 
 
-class UniqueIDMixin:
+class UniqueIDMixin(_UniqueIDMixin):
     """self.unique_idを持つテーブルクラスにユニークID操作メソッドを付与するmixin。"""
-
-    @classmethod
-    def generate_unique_id(cls) -> str:
-        """ユニークIDを生成する。"""
-        return secrets.token_urlsafe(32)
 
     @classmethod
     def get_by_unique_id(
@@ -104,10 +93,6 @@ class UniqueIDMixin:
             インスタンス。
 
         """
-        if allow_id and isinstance(unique_id, int):
-            q = cls.query.filter(cls.id == unique_id)  # type: ignore
-        else:
-            q = cls.query.filter(cls.unique_id == unique_id)  # type: ignore
-        if for_update:
-            q = q.with_for_update()
+        q = cls.query.filter(_id_filter(cls, unique_id, not (allow_id and isinstance(unique_id, int))))  # type: ignore[attr-defined]
+        q = _query_options(q, for_update)
         return q.one_or_none()

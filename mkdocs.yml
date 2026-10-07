@@ -43,82 +43,69 @@ plugins:
   - llmstxt:
       full_output: llms-full.txt
       markdown_description: |
-        Python 3.12以上が必要。コア依存: beautifulsoup4, httpx, mcp, werkzeug。
-
-        ## インストール
-
-        ```bash
-        pip install pytilpack
-        ```
-
-        オプション依存: `pytilpack[all]`, `pytilpack[babel]`, `pytilpack[bleach]`, `pytilpack[environ]`, `pytilpack[fastapi]`, `pytilpack[flask]`, `pytilpack[markdown]`, `pytilpack[msal]`, `pytilpack[pycryptodome]`, `pytilpack[pydantic]`, `pytilpack[pytest]`, `pytilpack[pyyaml]`, `pytilpack[quart]`, `pytilpack[sqlalchemy]`, `pytilpack[tiktoken]`, `pytilpack[tqdm]`, `pytilpack[web]`
-
-        ## 主な使い方
-
-        各モジュールを個別に import して利用する。
-
-        ```python
-        import pytilpack.xxx
-        ```
-
-        `xxx` には対象ライブラリ名（`httpx` や `pathlib` など）が入る。
+        Python 3.12以上が必要。導入・extras・モジュール分類は利用者向けガイドを参照する。
       sections:
         ドキュメント:
           - index.md: ドキュメント入口
           - guide/index.md: インストール・extras一覧・モジュール一覧
           - guide/cli.md: CLIコマンド
-        ライブラリ用ユーティリティ:
-          - api/asyncio.md: 非同期I/O、ジョブランナー、スレッドプール
-          - api/babel.md: Babel多言語メッセージ管理
-          - api/base64.md: Base64エンコードとデコード
-          - api/cli.md: CLIコマンド
-          - api/csv.md: CSV読み書き
-          - api/dataclasses.md: dataclass操作
-          - api/datetime.md: 日時ユーティリティ
-          - api/fastapi.md: FastAPIアサーション、i18n
-          - api/flask.md: Flaskアサーション、プロキシー修正
-          - api/flask_login.md: Flask-Login拡張
-          - api/fnctl.md: ファイルロック
-          - api/functools.md: retryデコレータ、キャッシュ
-          - api/httpx.md: httpx拡張
-          - api/importlib.md: 動的モジュールインポート
-          - api/json.md: JSON読み書き
-          - api/logging.md: ロギング設定、ログチェッカー
-          - api/markdown.md: Markdownレンダリング
-          - api/msal.md: Microsoft認証(MSAL/Entra ID)
-          - api/pathlib.md: パス操作拡張
-          - api/pycrypto.md: AES-GCM暗号化
-          - api/pydantic.md: Pydantic v2ユーティリティ
-          - api/pytest.md: テスト用アサーション
-          - api/python.md: 型変換、辞書マージ、None判定
-          - api/quart.md: Quartアサーション、i18n
-          - api/quart_auth.md: Quart認証拡張
-          - api/sqlalchemy.md: 非同期ORM基盤、セッション管理
-          - api/threading.md: スレッド関連ユーティリティ
-          - api/threadinga.md: asyncio版スレッドユーティリティ
-          - api/tiktoken.md: トークンカウント、画像処理
-          - api/tqdm.md: プログレスバー拡張
-          - api/typing.md: 型ヒント関連
-          - api/yaml.md: YAML読み書き
-          - api/zipfile.md: ZIPエントリ名復号、Zip Slip検証
-        汎用モジュール:
-          - api/cache.md: ファイルキャッシュ関連
-          - api/crypto.md: 署名・トークン関連
-          - api/data_url.md: データURL関連
-          - api/environ.md: 環境変数関連
-          - api/healthcheck.md: ヘルスチェック処理関連
-          - api/htmlrag.md: HtmlRAG関連
-          - api/http.md: HTTP関連
-          - api/i18n.md: 国際化(i18n)関連
-          - api/io.md: IO関連のユーティリティ
-          - api/jsonc.md: JSON with Comments関連
-          - api/paginator.md: ページネーション関連
-          - api/random.md: 疑似乱数関連
-          - api/ratelimit.md: レートリミッター
-          - api/secrets.md: シークレットキー関連
-          - api/sse.md: Server-Sent Events関連
-          - api/validator.md: バリデーション関連
-          - api/web.md: Web関連
+        Webフレームワーク:
+          - api/fastapi.md
+          - api/flask.md
+          - api/flask_login.md
+          - api/quart.md
+          - api/quart_auth.md
+        データ処理・シリアライゼーション:
+          - api/csv.md
+          - api/dataclasses.md
+          - api/json.md
+          - api/jsonc.md
+          - api/pydantic.md
+          - api/sqlalchemy.md
+          - api/yaml.md
+        セキュリティ・暗号:
+          - api/crypto.md
+          - api/msal.md
+          - api/pycrypto.md
+          - api/secrets.md
+        HTTP・Web:
+          - api/data_url.md
+          - api/healthcheck.md
+          - api/htmlrag.md
+          - api/http.md
+          - api/httpx.md
+          - api/sse.md
+          - api/web.md
+        国際化・テキスト処理:
+          - api/babel.md
+          - api/base64.md
+          - api/i18n.md
+          - api/markdown.md
+          - api/tiktoken.md
+        非同期・並行処理:
+          - api/asyncio.md
+          - api/ratelimit.md
+          - api/threading.md
+          - api/threadinga.md
+        ファイルシステム・OS:
+          - api/cache.md
+          - api/fnctl.md
+          - api/io.md
+          - api/pathlib.md
+          - api/zipfile.md
+        開発・テスト支援:
+          - api/datetime.md
+          - api/environ.md
+          - api/functools.md
+          - api/importlib.md
+          - api/logging.md
+          - api/paginator.md
+          - api/pytest.md
+          - api/python.md
+          - api/random.md
+          - api/tqdm.md
+          - api/typing.md
+          - api/validator.md
 
 markdown_extensions:
   - admonition
@@ -136,58 +123,63 @@ nav:
       - 概要: guide/index.md
       - CLIコマンド: guide/cli.md
   - APIリファレンス:
-      - ライブラリ用ユーティリティ:
-          - pytilpack.asyncio: api/asyncio.md
-          - pytilpack.babel: api/babel.md
-          - pytilpack.base64: api/base64.md
-          - pytilpack.cli: api/cli.md
-          - pytilpack.csv: api/csv.md
-          - pytilpack.dataclasses: api/dataclasses.md
-          - pytilpack.datetime: api/datetime.md
+      - Webフレームワーク:
           - pytilpack.fastapi: api/fastapi.md
           - pytilpack.flask: api/flask.md
           - pytilpack.flask_login: api/flask_login.md
-          - pytilpack.fnctl: api/fnctl.md
-          - pytilpack.functools: api/functools.md
-          - pytilpack.httpx: api/httpx.md
-          - pytilpack.importlib: api/importlib.md
-          - pytilpack.json: api/json.md
-          - pytilpack.logging: api/logging.md
-          - pytilpack.markdown: api/markdown.md
-          - pytilpack.msal: api/msal.md
-          - pytilpack.pathlib: api/pathlib.md
-          - pytilpack.pycrypto: api/pycrypto.md
-          - pytilpack.pydantic: api/pydantic.md
-          - pytilpack.pytest: api/pytest.md
-          - pytilpack.python: api/python.md
           - pytilpack.quart: api/quart.md
           - pytilpack.quart_auth: api/quart_auth.md
+      - データ処理・シリアライゼーション:
+          - pytilpack.csv: api/csv.md
+          - pytilpack.dataclasses: api/dataclasses.md
+          - pytilpack.json: api/json.md
+          - pytilpack.jsonc: api/jsonc.md
+          - pytilpack.pydantic: api/pydantic.md
           - pytilpack.sqlalchemy: api/sqlalchemy.md
-          - pytilpack.threading: api/threading.md
-          - pytilpack.threadinga: api/threadinga.md
-          - pytilpack.tiktoken: api/tiktoken.md
-          - pytilpack.tqdm: api/tqdm.md
-          - pytilpack.typing: api/typing.md
           - pytilpack.yaml: api/yaml.md
-          - pytilpack.zipfile: api/zipfile.md
-      - 汎用モジュール:
-          - pytilpack.cache: api/cache.md
+      - セキュリティ・暗号:
           - pytilpack.crypto: api/crypto.md
+          - pytilpack.msal: api/msal.md
+          - pytilpack.pycrypto: api/pycrypto.md
+          - pytilpack.secrets: api/secrets.md
+      - HTTP・Web:
           - pytilpack.data_url: api/data_url.md
-          - pytilpack.environ: api/environ.md
           - pytilpack.healthcheck: api/healthcheck.md
           - pytilpack.htmlrag: api/htmlrag.md
           - pytilpack.http: api/http.md
-          - pytilpack.i18n: api/i18n.md
-          - pytilpack.io: api/io.md
-          - pytilpack.jsonc: api/jsonc.md
-          - pytilpack.paginator: api/paginator.md
-          - pytilpack.random: api/random.md
-          - pytilpack.ratelimit: api/ratelimit.md
-          - pytilpack.secrets: api/secrets.md
+          - pytilpack.httpx: api/httpx.md
           - pytilpack.sse: api/sse.md
-          - pytilpack.validator: api/validator.md
           - pytilpack.web: api/web.md
+      - 国際化・テキスト処理:
+          - pytilpack.babel: api/babel.md
+          - pytilpack.base64: api/base64.md
+          - pytilpack.i18n: api/i18n.md
+          - pytilpack.markdown: api/markdown.md
+          - pytilpack.tiktoken: api/tiktoken.md
+      - 非同期・並行処理:
+          - pytilpack.asyncio: api/asyncio.md
+          - pytilpack.ratelimit: api/ratelimit.md
+          - pytilpack.threading: api/threading.md
+          - pytilpack.threadinga: api/threadinga.md
+      - ファイルシステム・OS:
+          - pytilpack.cache: api/cache.md
+          - pytilpack.fnctl: api/fnctl.md
+          - pytilpack.io: api/io.md
+          - pytilpack.pathlib: api/pathlib.md
+          - pytilpack.zipfile: api/zipfile.md
+      - 開発・テスト支援:
+          - pytilpack.datetime: api/datetime.md
+          - pytilpack.environ: api/environ.md
+          - pytilpack.functools: api/functools.md
+          - pytilpack.importlib: api/importlib.md
+          - pytilpack.logging: api/logging.md
+          - pytilpack.paginator: api/paginator.md
+          - pytilpack.pytest: api/pytest.md
+          - pytilpack.python: api/python.md
+          - pytilpack.random: api/random.md
+          - pytilpack.tqdm: api/tqdm.md
+          - pytilpack.typing: api/typing.md
+          - pytilpack.validator: api/validator.md
   - 開発:
       - 概要: development/index.md
       - 開発手順: development/development.md

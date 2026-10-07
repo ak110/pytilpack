@@ -1,4 +1,4 @@
-"""Pythonのユーティリティ集。"""
+"""Unixのファイルロックでシークレットキーを生成・保存する支援。"""
 
 import fcntl
 import os

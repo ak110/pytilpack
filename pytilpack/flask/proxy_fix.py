@@ -4,7 +4,6 @@ import logging
 import typing
 
 import flask
-import werkzeug.http
 import werkzeug.middleware.proxy_fix
 
 import pytilpack.web
@@ -87,15 +86,8 @@ class ProxyFix(werkzeug.middleware.proxy_fix.ProxyFix):
         werkzeug標準の_get_real_valueと同等の処理を行う。
         _get_real_valueは内部APIであるため、自前で実装してバージョン互換性を確保する。
         """
-        if trusted_hops == 0:
-            return None
         value = environ.get(header_key)
-        if not value:
-            return None
-        values = werkzeug.http.parse_list_header(value)
-        if len(values) >= trusted_hops:
-            return values[-trusted_hops]
-        return None
+        return pytilpack.web.get_trusted_header_value([value] if value else [], trusted_hops)
 
     @typing.override
     def __call__(self, environ, start_response):

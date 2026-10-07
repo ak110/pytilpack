@@ -2,7 +2,9 @@
 
 ## インストール
 
-ベースパッケージ（stdlib系ユーティリティ + beautifulsoup4/httpx/mcp/werkzeug）:
+標準ライブラリ用の支援と、ベース依存を使うモジュールを導入する:
+
+コア依存: `beautifulsoup4`、`httpx`、`mcp`、`werkzeug`。
 
 ```bash
 pip install pytilpack
@@ -26,25 +28,27 @@ uvx --from='pytilpack[sqlalchemy]' pytilpack wait-for-db-connection "$SQLALCHEMY
 
 ## extras一覧
 
-| Extra | 対象モジュール | 主な依存パッケージ |
+| Extra | 対象モジュール | 直接依存パッケージ（版指定を除く） |
 | --- | --- | --- |
-| `all` | 全モジュール | （全依存） |
-| `babel` | `pytilpack.babel`, `pytilpack.i18n` | babel |
-| `bleach` | （`markdown` extraに含まれる） | bleach |
-| `environ` | `pytilpack.environ` | python-dotenv |
-| `fastapi` | `pytilpack.fastapi` | fastapi, html5lib, pytest |
-| `flask` | `pytilpack.flask`, `pytilpack.flask_login` | flask, flask-login, html5lib |
-| `markdown` | `pytilpack.markdown` | bleach, markdown, tinycss2 |
-| `msal` | `pytilpack.msal` | azure-identity, cryptography, msal |
-| `pycryptodome` | `pytilpack.pycrypto` | pycryptodome |
-| `pydantic` | `pytilpack.pydantic` | pydantic |
-| `pytest` | `pytilpack.pytest` | pytest, pytest-asyncio |
-| `pyyaml` | `pytilpack.yaml` | pyyaml |
-| `quart` | `pytilpack.quart`, `pytilpack.quart_auth` | quart, quart-auth, hypercorn, uvicorn |
-| `sqlalchemy` | `pytilpack.sqlalchemy` | sqlalchemy, greenlet, tabulate |
-| `tiktoken` | `pytilpack.tiktoken` | tiktoken, openai, pillow |
-| `tqdm` | `pytilpack.tqdm` | tqdm |
-| `web` | `pytilpack.web`（check_html） | html5lib |
+| `all` | 全モジュール | `azure-identity`、`babel`、`bleach`、`cryptography`、`defusedxml`、`fastapi`、`flask-login`、`flask`、`html5lib`、`hypercorn`、`markdown`、`msal`、`openai`、`pillow`、`pycryptodome`、`pydantic`、`pytest`、`pytest-asyncio`、`python-dotenv`、`pyyaml`、`quart-auth`、`quart`、`sqlalchemy[asyncio]`、`tabulate[widechars]`、`tiktoken`、`tinycss2`、`tqdm`、`uvicorn` |
+| `babel` | `pytilpack.babel` | `babel` |
+| `bleach` | `bleach` | `bleach` |
+| `environ` | `pytilpack.environ` | `python-dotenv` |
+| `fastapi` | `pytilpack.fastapi` | `defusedxml`、`fastapi`、`html5lib` |
+| `flask` | `pytilpack.flask`、`pytilpack.flask_login` | `defusedxml`、`flask-login`、`flask`、`html5lib` |
+| `htmlrag` | `pytilpack.htmlrag`（ベース依存で利用可能） | なし（後方互換用の空extra） |
+| `markdown` | `pytilpack.markdown` | `bleach`、`markdown`、`tinycss2` |
+| `mcp` | `pytilpack.cli.mcp`（ベース依存で利用可能） | なし（後方互換用の空extra） |
+| `msal` | `pytilpack.msal` | `azure-identity`、`cryptography`、`msal` |
+| `pycryptodome` | `pytilpack.pycrypto` | `pycryptodome` |
+| `pydantic` | `pytilpack.pydantic` | `pydantic` |
+| `pytest` | `pytilpack.pytest` | `pytest`、`pytest-asyncio` |
+| `pyyaml` | `pytilpack.yaml` | `pyyaml` |
+| `quart` | `pytilpack.quart`、`pytilpack.quart_auth` | `defusedxml`、`html5lib`、`hypercorn`、`quart-auth`、`quart`、`uvicorn` |
+| `sqlalchemy` | `pytilpack.sqlalchemy` | `sqlalchemy[asyncio]`、`tabulate[widechars]` |
+| `tiktoken` | `pytilpack.tiktoken` | `openai`、`pillow`、`tiktoken` |
+| `tqdm` | `pytilpack.tqdm` | `tqdm` |
+| `web` | `pytilpack.web` | `html5lib` |
 
 ## 主な使い方
 
@@ -64,9 +68,9 @@ import pytilpack.xxx
 
 - [pytilpack.fastapi](../api/fastapi.md)
 - [pytilpack.flask](../api/flask.md)
-- [pytilpack.flask_login](../api/flask_login.md)（`flask` extra）
+- [pytilpack.flask_login](../api/flask_login.md)
 - [pytilpack.quart](../api/quart.md)
-- [pytilpack.quart_auth](../api/quart_auth.md)（`quart` extra）
+- [pytilpack.quart_auth](../api/quart_auth.md)
 
 ### データ処理・シリアライゼーション
 
@@ -76,13 +80,13 @@ import pytilpack.xxx
 - [pytilpack.jsonc](../api/jsonc.md): JSON with Comments関連
 - [pytilpack.pydantic](../api/pydantic.md)
 - [pytilpack.sqlalchemy](../api/sqlalchemy.md)
-- [pytilpack.yaml](../api/yaml.md)（`pyyaml` extra）
+- [pytilpack.yaml](../api/yaml.md)
 
 ### セキュリティ・暗号
 
 - [pytilpack.crypto](../api/crypto.md): 署名・トークン関連
 - [pytilpack.msal](../api/msal.md)
-- [pytilpack.pycrypto](../api/pycrypto.md): AES-GCM暗号化（`pycryptodome` extra）
+- [pytilpack.pycrypto](../api/pycrypto.md): AES-GCM暗号化
 - [pytilpack.secrets](../api/secrets.md): シークレットキー関連
 
 ### HTTP・Web
@@ -99,7 +103,7 @@ import pytilpack.xxx
 
 - [pytilpack.babel](../api/babel.md)
 - [pytilpack.base64](../api/base64.md)
-- [pytilpack.i18n](../api/i18n.md): 国際化(i18n)関連（`babel` extra）
+- [pytilpack.i18n](../api/i18n.md): 国際化(i18n)関連（ベース依存で利用可能）
 - [pytilpack.markdown](../api/markdown.md)
 - [pytilpack.tiktoken](../api/tiktoken.md)
 
@@ -120,7 +124,6 @@ import pytilpack.xxx
 
 ### 開発・テスト支援
 
-- [pytilpack.cli](../api/cli.md): CLIコマンド実装
 - [pytilpack.datetime](../api/datetime.md)
 - [pytilpack.environ](../api/environ.md): 環境変数関連
 - [pytilpack.functools](../api/functools.md)

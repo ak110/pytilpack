@@ -6,7 +6,6 @@ import contextlib
 import contextvars
 import functools
 import logging
-import secrets
 import threading
 import time
 import typing
@@ -18,7 +17,19 @@ import sqlalchemy.sql.base
 
 import pytilpack.asyncio
 import pytilpack.paginator
-from pytilpack.sqlalchemy._base import _ReprMixin, _ToDictMixin, _WaitForConnectionState
+from pytilpack.sqlalchemy._base import (
+    _count_query,
+    _engine_kwargs,
+    _id_filter,
+    _page_query,
+    _query_options,
+    _QueryMixin,
+    _ReprMixin,
+    _require_instance,
+    _ToDictMixin,
+    _UniqueIDMixin,
+    _WaitForConnectionState,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -99,13 +110,13 @@ class SyncAsyncBridgeMixin:
         return await run_sync_with_session(sync_cls.paginate.__func__)(sync_cls, query, page, per_page, scalar)  # type: ignore[attr-defined]
 
 
-class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
+class SyncMixin(_QueryMixin, _ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
     """モデルのベースクラス。SQLAlchemy 2.0スタイル・同期前提。
 
     Examples:
         モデル定義例::
 
-            class Base(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy_.sync_.SyncMixin):
+            class Base(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.SyncMixin):
                 pass
 
             class User(Base):
@@ -163,19 +174,8 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
         if cls.engine is not None:
             raise RuntimeError("DB接続はすでに初期化されています。")
 
-        if pool_size is not None and max_overflow is None:
-            max_overflow = pool_size * 1  # デフォルトで倍まで許可
-        kwargs = kwargs.copy()
-        if pool_size is not None:
-            kwargs["pool_size"] = pool_size
-        if max_overflow is not None:
-            kwargs["max_overflow"] = max_overflow
-        if pool_recycle is not None:
-            kwargs["pool_recycle"] = pool_recycle
-        if pool_pre_ping is not None:
-            kwargs["pool_pre_ping"] = pool_pre_ping
-
-        cls.engine = sqlalchemy.create_engine(url, **kwargs)
+        engine_kwargs = _engine_kwargs(kwargs, pool_size, max_overflow, pool_recycle, pool_pre_ping)
+        cls.engine = sqlalchemy.create_engine(url, **engine_kwargs)
         atexit.register(cls.engine.dispose)
 
         cls.sessionmaker = sqlalchemy.orm.sessionmaker(cls.engine, autoflush=autoflush, expire_on_commit=expire_on_commit)
@@ -295,36 +295,13 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
             raise RuntimeError(f"セッションが開始されていません。{cls.__qualname__}.start_session()を呼び出してください。")
         return sess
 
-    @classmethod
-    def select(cls) -> sqlalchemy.Select[typing.Self]:
-        """sqlalchemy.Selectを返す。"""
-        # cls.count()などでfrom句が消えないように明示的にfrom句を指定して返す。
-        return sqlalchemy.select(cls).select_from(cls)
-
-    @classmethod
-    def insert(cls) -> sqlalchemy.Insert:
-        """sqlalchemy.Insertを返す。"""
-        return sqlalchemy.insert(cls)
-
-    @classmethod
-    def update(cls) -> sqlalchemy.Update:
-        """sqlalchemy.Updateを返す。"""
-        return sqlalchemy.update(cls)
-
-    @classmethod
-    def delete(cls) -> sqlalchemy.Delete:
-        """sqlalchemy.Deleteを返す。"""
-        return sqlalchemy.delete(cls)
-
     # arid: enable
 
     @classmethod
     def count(cls, query: sqlalchemy.Select | sqlalchemy.CompoundSelect) -> int:
         """queryのレコード数を取得する。"""
         # pylint: disable=not-callable
-        return (
-            cls.scalar_one_or_none(sqlalchemy.select(sqlalchemy.func.count()).select_from(query.order_by(None).subquery())) or 0
-        )
+        return cls.scalar_one_or_none(_count_query(query)) or 0
 
     @classmethod
     def scalar_one[T](cls, query: sqlalchemy.Select[T] | sqlalchemy.CompoundSelect[T]) -> T:
@@ -435,9 +412,7 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
             ValueError: 見つからない場合。
         """
         instance = cls.get_by_id(id_, for_update=for_update, options=options)
-        if instance is None:
-            raise ValueError(f"{cls.__qualname__}が見つかりませんでした。id={id_}")
-        return instance
+        return _require_instance(instance, cls, id_)
 
     @classmethod
     def get_by_id(
@@ -454,11 +429,8 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
             インスタンス。
 
         """
-        q = cls.select().where(cls.id == id_)  # type: ignore  # pylint: disable=no-member
-        if options is not None:
-            q = q.options(options)
-        if for_update:
-            q = q.with_for_update()
+        q = cls.select().where(_id_filter(cls, id_))  # type: ignore  # pylint: disable=no-member
+        q = _query_options(q, for_update, options)
         return cls.scalar_one_or_none(q)
 
     @classmethod
@@ -480,12 +452,8 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
         Returns:
             ページネーションされた結果を返すpytilpack.paginator.Paginatorインスタンス。
         """
-        if page <= 0:
-            raise ValueError(f"ページ番号は1以上でなければなりません: page={page}")
-        if per_page <= 0:
-            raise ValueError(f"1ページあたりのアイテム数は1以上でなければなりません: per_page={per_page}")
+        page_query = _page_query(query, page, per_page)
         total = cls.count(query)
-        page_query = query.offset((page - 1) * per_page).limit(per_page)
         items = cls.scalars(page_query) if scalar else cls.all(page_query)
         # pylint: disable=protected-access
         return pytilpack.paginator.Paginator(page=page, per_page=per_page, items=items, total=total)
@@ -496,13 +464,8 @@ class SyncMixin(_ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
         cls.session().commit()
 
 
-class SyncUniqueIDMixin:
+class SyncUniqueIDMixin(_UniqueIDMixin):
     """self.unique_idを持つテーブルクラスにユニークID操作メソッドを付与するmixin。"""
-
-    @classmethod
-    def generate_unique_id(cls) -> str:
-        """ユニークIDを生成する。"""
-        return secrets.token_urlsafe(32)
 
     @classmethod
     def get_by_unique_id(
@@ -523,12 +486,8 @@ class SyncUniqueIDMixin:
 
         """
         assert issubclass(cls, SyncMixin)
-        if allow_id and isinstance(unique_id, int):
-            q = cls.select().where(cls.id == unique_id)  # type: ignore
-        else:
-            q = cls.select().where(cls.unique_id == unique_id)  # type: ignore
-        if for_update:
-            q = q.with_for_update()
+        q = cls.select().where(_id_filter(cls, unique_id, not (allow_id and isinstance(unique_id, int))))
+        q = _query_options(q, for_update)
         return cls.scalar_one_or_none(q)
 
 

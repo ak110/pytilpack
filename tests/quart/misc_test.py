@@ -3,6 +3,8 @@
 import asyncio
 import contextlib
 import pathlib
+import socket
+import types
 import typing
 
 import httpx
@@ -68,12 +70,36 @@ async def test_run(tmp_path: pathlib.Path) -> None:
     def index():
         return "Hello, World!"
 
-    # tests/flask/misc_test.py::test_run が既定の5000を使うため、xdist並列実行時の
-    # ポート衝突を避けるためQuart側は5004を使う。
-    async with pytilpack.quart.run(app, port=5004):
-        response = httpx.get("http://localhost:5004/hello")
+    async with pytilpack.quart.run(app, port=0) as port:
+        assert port > 0
+        response = httpx.get(f"http://localhost:{port}/hello", timeout=5)
         assert response.read() == b"Hello, World!"
         assert response.status_code == 200
+
+    with socket.socket() as client:
+        client.settimeout(0.2)
+        assert client.connect_ex(("localhost", port)) != 0
+
+
+@pytest.mark.asyncio
+async def test_run_bind_failure() -> None:
+    """使用中のポートによる起動失敗を呼出元へ返す。"""
+    with socket.socket() as occupied:
+        occupied.bind(("127.0.0.1", 0))
+        occupied.listen()
+        with pytest.raises(RuntimeError, match="起動に失敗"):
+            async with pytilpack.quart.run(quart.Quart(__name__), host="127.0.0.1", port=occupied.getsockname()[1]):
+                pytest.fail("使用中のポートで起動した")
+
+
+@pytest.mark.asyncio
+async def test_run_startup_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    """起動待ち上限に達するとバックグラウンドサーバーを停止する。"""
+    ticks = iter((0.0, 11.0))
+    monkeypatch.setattr(pytilpack.quart.misc, "time", types.SimpleNamespace(monotonic=lambda: next(ticks)))
+    with pytest.raises(TimeoutError, match="10秒"):
+        async with pytilpack.quart.run(quart.Quart(__name__), host="127.0.0.1", port=0):
+            pytest.fail("上限を超えて起動した")
 
 
 @pytest.mark.asyncio

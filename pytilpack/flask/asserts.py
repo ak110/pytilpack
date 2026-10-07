@@ -2,12 +2,12 @@
 
 import pathlib
 import typing
-import warnings
 
 import flask
 import werkzeug.test
 
 import pytilpack._web_asserts as _core
+import pytilpack.python
 import pytilpack.web
 
 __all__ = [
@@ -73,7 +73,7 @@ def assert_html(
         AssertionError: ステータスコードが異なる場合
 
     Returns:
-        レスポンスボディ (bs4.BeautifulSoup)
+        HTMLレスポンスボディ (str)
 
     """
     response_bytes = response.get_data()
@@ -183,21 +183,13 @@ def assert_response(
     return response
 
 
+@pytilpack.python.deprecated("Use pytilpack.web.check_status_code instead.")
 def check_status_code(status_code: int, valid_status_code: int) -> None:
-    """Deprecated."""
-    warnings.warn(
-        "pytilpack.flask_.check_status_code is deprecated. Use pytilpack.web.check_status_code instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
+    """ステータスコードの検査をpytilpack.web.check_status_codeへ移譲する。"""
     pytilpack.web.check_status_code(status_code, valid_status_code)
 
 
+@pytilpack.python.deprecated("Use pytilpack.web.check_content_type instead.")
 def check_content_type(content_type: str, valid_content_types: str | typing.Iterable[str] | None) -> None:
-    """Deprecated."""
-    warnings.warn(
-        "pytilpack.flask_.check_content_type is deprecated. Use pytilpack.web.check_content_type instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
+    """Content-Typeの検査をpytilpack.web.check_content_typeへ移譲する。"""
     pytilpack.web.check_content_type(content_type, valid_content_types)

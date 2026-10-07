@@ -50,4 +50,4 @@ repos:
         entry: uv run --frozen mkdocs build --strict --quiet --site-dir=/tmp/mkdocs-check
         language: system
         pass_filenames: false
-        files: ^(docs/|mkdocs\.yml|README\.md|CLAUDE\.md)
+        files: ^(docs/|mkdocs\.yml|README\.md|AGENTS\.md)

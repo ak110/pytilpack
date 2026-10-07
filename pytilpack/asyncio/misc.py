@@ -2,6 +2,8 @@
 
 import asyncio
 
+__all__ = ["get_task_id", "get_task_id_hex"]
+
 
 def get_task_id() -> int | None:
     """現在のタスクIDを取得する。

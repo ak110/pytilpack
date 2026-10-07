@@ -1,12 +1,16 @@
 """pytest用のユーティリティ集。"""
 
+from __future__ import annotations
+
 import getpass
 import logging
 import os
 import pathlib
 import tempfile
+import typing
 
-import pytest
+if typing.TYPE_CHECKING:
+    import pytest
 
 logger = logging.getLogger(__name__)
 

@@ -278,3 +278,20 @@ def test_path_info_prefix_stripped():
 
     assert captured_environs[0]["SCRIPT_NAME"] == "/app"
     assert captured_environs[0]["PATH_INFO"] == "/test"
+
+
+@pytest.mark.parametrize(("hops", "expected"), [(0, ""), (1, "/last"), (2, "/app,part"), (3, "/first"), (4, "")])
+def test_quoted_prefix_trust_hops(hops: int, expected: str) -> None:
+    """引用符内のカンマを1つの値として信頼ホップ数で選ぶ。"""
+    _, middleware = _make_app({"x_prefix": hops})
+    captured: list[dict] = []
+
+    def capture(environ, start_response):
+        del start_response
+        captured.append(dict(environ))
+        return [b"OK"]
+
+    middleware.app = capture
+    environ = _make_environ(prefix='/first, "/app,part", /last')
+    list(middleware(environ, _noop_start_response))
+    assert captured[0]["SCRIPT_NAME"] == expected

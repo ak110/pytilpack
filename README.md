@@ -39,6 +39,6 @@ import pytilpack.xxx
 
 ## ドキュメント
 
-- [利用者向けガイド](https://ak110.github.io/pytilpack/guide/) — インストール・extras一覧・モジュール一覧・CLI
-- [APIリファレンス](https://ak110.github.io/pytilpack/api/asyncio/) — 各モジュールのAPIリファレンス
-- [開発者向け情報](docs/development/development.md) — セットアップ・リリース手順
+- [利用者向けガイド](https://ak110.github.io/pytilpack/guide/)、インストール・extras一覧・モジュール一覧・CLI
+- [APIリファレンス](https://ak110.github.io/pytilpack/api/asyncio/)、各モジュールのAPIリファレンス
+- [開発者向け情報](https://github.com/ak110/pytilpack/blob/master/docs/development/development.md)、セットアップ・モジュール追加・リリース手順
