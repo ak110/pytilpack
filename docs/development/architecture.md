@@ -56,6 +56,8 @@ importは原則トップレベルに置く。ベースのモジュールが任�
 たとえば`asyncio.io_`のYAML操作は、呼び出す場合だけ`pytilpack.yaml`を読み込む。
 Unix専用依存については後掲のプラットフォーム依存の規則を適用する。
 
+任意extraを要するモジュールをトップレベルでimportする側は、そのextraの直接依存も自分のextraと`all`へ含める。
+
 ### サブパッケージ共通モジュールの依存
 
 `pytilpack/_web_asserts.py`のように複数のフレームワーク向けサブパッケージから共通利用される
@@ -99,6 +101,9 @@ umaskによらず厳密な権限が必要なファイルは、`os.open(..., mode
 - `pytilpack/xxx/yyy.py` → `tests/xxx/yyy_test.py`
 - `xxx`がPythonキーワード等と衝突する場合は`xxx_.py`となる。テストは`xxx_test.py`（末尾アンダースコアは除く）
 - 既存モジュールへ公開関数・公開クラスを追加した場合は、対応する`tests/.../xxx_test.py`に単体テストも追加する
+
+リポジトリの設定を検証するテストは、この配置規約の対象外とする。
+たとえば`tests/precommit_test.py`は`.pre-commit-config.yaml`の設定を検証する。
 
 ### SQLAlchemyのfixture（厳守規定）
 
