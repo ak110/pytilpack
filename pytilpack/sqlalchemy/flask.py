@@ -1,5 +1,16 @@
 """SQLAlchemy用のユーティリティ集（Flask-SQLAlchemy版）。"""
 
+__lazy_modules__ = [
+    "logging",
+    "pytilpack.sqlalchemy._base",
+    "sqlalchemy",
+    "sqlalchemy.event",
+    "sqlalchemy.exc",
+    "sqlalchemy.pool",
+    "sqlalchemy.sql.base",
+    "typing",
+]
+
 import logging
 import typing
 

@@ -1,5 +1,24 @@
 """SQLAlchemy用のユーティリティ集（同期版）。"""
 
+__lazy_modules__ = [
+    "asyncio",
+    "atexit",
+    "contextlib",
+    "contextvars",
+    "functools",
+    "logging",
+    "pytilpack.asyncio",
+    "pytilpack.paginator",
+    "pytilpack.sqlalchemy._base",
+    "sqlalchemy",
+    "sqlalchemy.engine",
+    "sqlalchemy.orm",
+    "sqlalchemy.sql.base",
+    "threading",
+    "time",
+    "typing",
+]
+
 import asyncio
 import atexit
 import contextlib

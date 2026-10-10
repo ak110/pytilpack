@@ -1,5 +1,7 @@
 """typing関連のユーティリティ。"""
 
+__lazy_modules__ = ["dataclasses", "types", "typing"]
+
 import dataclasses
 import types
 import typing

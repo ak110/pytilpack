@@ -1,5 +1,7 @@
 """空のディレクトリを削除するCLIユーティリティ。"""
 
+__lazy_modules__ = ["argparse", "pathlib", "pytilpack.pathlib"]
+
 import argparse
 import pathlib
 

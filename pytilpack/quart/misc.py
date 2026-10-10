@@ -1,5 +1,21 @@
 """Quart関連のその他のユーティリティ。"""
 
+__lazy_modules__ = [
+    "asyncio",
+    "contextlib",
+    "dataclasses",
+    "functools",
+    "httpx",
+    "logging",
+    "pytilpack.web",
+    "quart",
+    "quart.utils",
+    "threading",
+    "time",
+    "typing",
+    "uvicorn",
+]
+
 import asyncio
 import contextlib
 import dataclasses

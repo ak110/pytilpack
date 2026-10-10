@@ -1,5 +1,22 @@
 """HTTP関連。"""
 
+__lazy_modules__ = [
+    "collections.abc",
+    "contextlib",
+    "dataclasses",
+    "datetime",
+    "email.utils",
+    "http",
+    "json",
+    "logging",
+    "re",
+    "sys",
+    "typing",
+    "urllib.parse",
+    "werkzeug.datastructures",
+    "werkzeug.http",
+]
+
 import collections.abc
 import contextlib
 import dataclasses

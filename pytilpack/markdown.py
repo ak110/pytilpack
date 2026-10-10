@@ -1,5 +1,7 @@
 """markdown関連。"""
 
+__lazy_modules__ = ["bleach", "bleach.css_sanitizer", "markdown", "re", "typing"]
+
 import re
 import typing
 

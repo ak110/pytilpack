@@ -1,5 +1,7 @@
 """dataclasses関連のユーティリティ。"""
 
+__lazy_modules__ = ["dataclasses", "pathlib", "pytilpack.json", "pytilpack.typing", "typing"]
+
 import dataclasses
 import pathlib
 import typing

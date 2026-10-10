@@ -1,5 +1,7 @@
 """ZIP関連のユーティリティ集。"""
 
+__lazy_modules__ = ["pathlib", "typing", "zipfile"]
+
 import pathlib
 import typing
 import zipfile

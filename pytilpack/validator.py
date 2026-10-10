@@ -1,5 +1,7 @@
 """HTML input属性ライクなバリデーション用ユーティリティ。"""
 
+__lazy_modules__ = ["re", "typing", "urllib.parse"]
+
 import re
 import typing
 import urllib.parse

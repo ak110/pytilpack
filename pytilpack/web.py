@@ -1,5 +1,19 @@
 """Web関連のユーティリティ集。"""
 
+__lazy_modules__ = [
+    "html5lib",
+    "html5lib._tokenizer",
+    "html5lib.constants",
+    "logging",
+    "pathlib",
+    "pytilpack.http",
+    "re",
+    "threading",
+    "typing",
+    "urllib.parse",
+    "werkzeug.http",
+]
+
 import logging
 import pathlib
 import re

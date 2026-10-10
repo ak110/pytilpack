@@ -4,6 +4,8 @@
 nonceはデフォルトで12バイトとし、暗号文の先頭に付加する前提とする。
 """
 
+__lazy_modules__ = ["Crypto.Cipher.AES", "json", "pytilpack.base64", "secrets", "typing"]
+
 import json
 import secrets
 import typing

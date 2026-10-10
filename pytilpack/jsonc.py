@@ -1,5 +1,7 @@
 """JSONC(JSON with Comments)関連。"""
 
+__lazy_modules__ = ["dataclasses", "json", "pytilpack.io", "re", "typing"]
+
 import dataclasses
 import json
 import re

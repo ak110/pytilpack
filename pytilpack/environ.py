@@ -1,5 +1,7 @@
 """環境変数ユーティリティ。"""
 
+__lazy_modules__ = ["collections.abc", "decimal", "dotenv", "os", "pathlib", "pytilpack.python", "typing"]
+
 import collections.abc
 import decimal
 import os

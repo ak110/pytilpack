@@ -1,5 +1,7 @@
 """ファイルの最終更新日時に基づいてキャッシュを管理するモジュール。"""
 
+__lazy_modules__ = ["dataclasses", "pathlib", "typing"]
+
 import dataclasses
 import pathlib
 import typing

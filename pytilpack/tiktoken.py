@@ -1,5 +1,19 @@
 """tiktoken関連のユーティリティ集。"""
 
+__lazy_modules__ = [
+    "PIL.Image",
+    "base64",
+    "httpx",
+    "io",
+    "logging",
+    "math",
+    "openai.types.chat",
+    "pytilpack.python",
+    "re",
+    "tiktoken",
+    "typing",
+]
+
 import base64
 import io
 import logging

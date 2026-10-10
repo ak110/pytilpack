@@ -1,5 +1,7 @@
 """MCPサーバーコマンド。"""
 
+__lazy_modules__ = ["argparse", "logging", "mcp.server.mcpserver", "pytilpack.htmlrag"]
+
 import argparse
 import logging
 

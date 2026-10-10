@@ -1,5 +1,7 @@
 """JSON関連。"""
 
+__lazy_modules__ = ["base64", "datetime", "json", "pytilpack.io", "pytilpack.jsonc", "typing"]
+
 import base64
 import datetime
 import json

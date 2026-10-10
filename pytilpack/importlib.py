@@ -1,5 +1,7 @@
 """import関連。"""
 
+__lazy_modules__ = ["importlib", "logging", "pathlib"]
+
 import importlib
 import logging
 import pathlib

@@ -1,5 +1,7 @@
 """ディレクトリ同期コマンド。"""
 
+__lazy_modules__ = ["argparse", "pathlib", "pytilpack.pathlib"]
+
 import argparse
 import pathlib
 

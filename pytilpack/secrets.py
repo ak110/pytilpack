@@ -1,5 +1,7 @@
 """Unixのファイルロックでシークレットキーを生成・保存する支援。"""
 
+__lazy_modules__ = ["fcntl", "os", "pathlib", "pytilpack.functools", "secrets", "threading"]
+
 import fcntl
 import os
 import pathlib

@@ -1,5 +1,7 @@
 """リバースプロキシ対応。"""
 
+__lazy_modules__ = ["flask", "logging", "pytilpack.web", "typing", "werkzeug.middleware.proxy_fix"]
+
 import logging
 import typing
 

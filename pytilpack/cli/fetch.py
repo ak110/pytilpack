@@ -1,5 +1,7 @@
 """URLアクセスコマンド。"""
 
+__lazy_modules__ = ["argparse", "logging", "pytilpack.htmlrag"]
+
 import argparse
 import logging
 

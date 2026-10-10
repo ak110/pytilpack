@@ -8,6 +8,8 @@
 `threading.Semaphore`で同時実行スレッド数を制御する二重構造になっている。
 """
 
+__lazy_modules__ = ["asyncio", "multiprocessing", "threading", "typing"]
+
 import asyncio
 import multiprocessing
 import threading

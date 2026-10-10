@@ -1,5 +1,7 @@
 """datetime関連。"""
 
+__lazy_modules__ = ["dataclasses", "datetime", "zoneinfo"]
+
 import dataclasses
 import datetime
 import zoneinfo

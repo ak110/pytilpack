@@ -1,5 +1,19 @@
 """MSAL関連のユーティリティ集。"""
 
+__lazy_modules__ = [
+    "azure.core",
+    "azure.core.credentials",
+    "binascii",
+    "cryptography",
+    "cryptography.hazmat.backends",
+    "cryptography.hazmat.primitives.hashes",
+    "cryptography.x509",
+    "datetime",
+    "msal",
+    "pathlib",
+    "threading",
+]
+
 import binascii
 import datetime
 import pathlib

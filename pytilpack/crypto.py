@@ -4,6 +4,8 @@ pycrypto.py (AES-GCM暗号化) やsecrets.py (秘密鍵生成) を補完する
 HMAC署名・タイムスタンプ付きトークン機能。
 """
 
+__lazy_modules__ = ["base64", "hashlib", "hmac", "json", "struct", "time", "typing"]
+
 import base64
 import hashlib
 import hmac

@@ -1,5 +1,7 @@
 """DB接続待機コマンド。"""
 
+__lazy_modules__ = ["argparse", "asyncio", "logging"]
+
 import argparse
 import asyncio
 import logging

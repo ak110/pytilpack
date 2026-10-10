@@ -8,6 +8,8 @@ clean_html だけを使用したい場合に依存関係が厳しいため、切
 <https://github.com/plageon/HtmlRAG/blob/main/toolkit/htmlrag/html_utils.py>
 """
 
+__lazy_modules__ = ["bs4", "httpx", "importlib.metadata", "re", "warnings"]
+
 import importlib.metadata
 import re
 import warnings

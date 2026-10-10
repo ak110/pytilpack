@@ -1,5 +1,7 @@
 """専用スレッド上のイベントループで非同期処理を実行するプール。"""
 
+__lazy_modules__ = ["asyncio", "concurrent.futures", "logging", "threading", "typing"]
+
 import asyncio
 import concurrent.futures
 import logging

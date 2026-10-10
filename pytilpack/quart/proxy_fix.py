@@ -1,5 +1,7 @@
 """リバースプロキシ対応。"""
 
+__lazy_modules__ = ["copy", "hypercorn.typing", "logging", "pytilpack.web", "quart", "quart_auth", "typing"]
+
 import copy
 import logging
 import typing

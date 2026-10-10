@@ -1,5 +1,7 @@
 """同時実行数を制限して非同期ジョブを処理するランナー。"""
 
+__lazy_modules__ = ["abc", "asyncio", "logging", "typing"]
+
 import abc
 import asyncio
 import logging

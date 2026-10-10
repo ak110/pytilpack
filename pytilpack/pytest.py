@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+__lazy_modules__ = ["getpass", "logging", "os", "pathlib", "tempfile", "typing"]
+
 import getpass
 import logging
 import os

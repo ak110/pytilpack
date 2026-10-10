@@ -1,5 +1,20 @@
 """Flask関連のその他のユーティリティ。"""
 
+__lazy_modules__ = [
+    "contextlib",
+    "flask",
+    "httpx",
+    "logging",
+    "pathlib",
+    "pytilpack.data_url",
+    "pytilpack.python",
+    "pytilpack.web",
+    "threading",
+    "time",
+    "typing",
+    "werkzeug.serving",
+]
+
 import contextlib
 import logging
 import pathlib

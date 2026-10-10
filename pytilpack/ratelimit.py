@@ -5,6 +5,8 @@ pytilpack.quart.set_max_concurrencyとは独立して
 リクエスト送信前にレートを制御するトークンバケット実装。
 """
 
+__lazy_modules__ = ["asyncio", "time", "typing"]
+
 import asyncio
 import time
 import typing

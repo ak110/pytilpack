@@ -1,5 +1,7 @@
 """fcntl関連。"""
 
+__lazy_modules__ = ["asyncio", "contextlib", "errno", "fcntl", "pathlib", "time", "typing"]
+
 import asyncio
 import contextlib
 import errno

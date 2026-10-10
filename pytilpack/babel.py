@@ -1,5 +1,7 @@
 """Babel関連。"""
 
+__lazy_modules__ = ["babel.dates", "babel.numbers", "datetime", "decimal", "pytilpack.i18n"]
+
 import datetime
 import decimal
 

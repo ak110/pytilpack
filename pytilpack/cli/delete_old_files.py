@@ -1,5 +1,7 @@
 """古いファイルを削除するCLIユーティリティ。"""
 
+__lazy_modules__ = ["argparse", "datetime", "pathlib", "pytilpack.pathlib"]
+
 import argparse
 import datetime
 import pathlib

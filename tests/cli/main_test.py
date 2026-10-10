@@ -2,6 +2,8 @@
 
 import importlib
 import logging
+import subprocess
+import sys
 
 import pytest
 
@@ -271,3 +273,20 @@ def test_main_wrapped_missing_dep_exits(capsys) -> None:
     captured = capsys.readouterr()
     assert "extras [sqlalchemy]" in captured.err
     assert "pytilpack[sqlalchemy]" in captured.err
+
+
+@pytest.mark.parametrize(
+    ("missing", "command", "extras"),
+    [("sqlalchemy", "wait-for-db-connection", "sqlalchemy"), ("babel", "babel", "babel")],
+)
+def test_main_help_lists_really_missing_command(missing: str, command: str, extras: str) -> None:
+    """実際のimportで依存が欠落しても、--helpが(未インストール)を列挙する。
+
+    Python 3.15以降は`__lazy_modules__`でimportを遅延するため、
+    サブコマンドの登録時に依存の欠落を検出できることを別プロセスの実際のimportで確かめる。
+    """
+    code = f"import sys\nsys.modules[{missing!r}] = None\nimport pytilpack.cli.main\npytilpack.cli.main.main(['--help'])\n"
+    result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+    assert command in result.stdout
+    assert f"(未インストール: extras [{extras}] が必要)" in result.stdout

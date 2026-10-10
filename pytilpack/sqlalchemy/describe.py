@@ -1,5 +1,16 @@
 """SQLAlchemy用のユーティリティ集。"""
 
+__lazy_modules__ = [
+    "logging",
+    "pytilpack.python",
+    "sqlalchemy",
+    "sqlalchemy.orm",
+    "sqlalchemy.sql.elements",
+    "sqlalchemy.sql.schema",
+    "tabulate",
+    "typing",
+]
+
 import logging
 import typing
 

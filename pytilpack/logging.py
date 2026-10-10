@@ -1,5 +1,21 @@
 """ログ関連。"""
 
+__lazy_modules__ = [
+    "contextlib",
+    "contextvars",
+    "datetime",
+    "hashlib",
+    "io",
+    "json",
+    "logging",
+    "logging.handlers",
+    "pathlib",
+    "pytilpack.python",
+    "time",
+    "typing",
+    "uuid",
+]
+
 # pylint: disable=redefined-builtin
 
 import contextlib

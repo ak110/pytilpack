@@ -19,6 +19,9 @@ pip install pytilpack[flask]     # pytilpack.flask 用
 # ...
 ```
 
+Python 3.15以降では、各モジュールは関数内でだけ使う依存ライブラリを最初の利用時まで読み込まない（lazy import）。
+このため必要なextrasが未導入の場合、`ImportError`がモジュールのimport時ではなく該当機能の初回呼び出し時に発生することがある。
+
 `uvx`でCLIを使う場合、サブコマンドが要求するextrasを`--from`で明示する:
 
 ```bash

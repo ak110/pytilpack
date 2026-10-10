@@ -1,5 +1,7 @@
 """FastAPI関連のその他のユーティリティ。"""
 
+__lazy_modules__ = ["fastapi.encoders", "json", "starlette.responses", "typing"]
+
 import json
 import typing
 

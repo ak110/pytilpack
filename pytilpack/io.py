@@ -1,5 +1,7 @@
 """IO関連のユーティリティ。"""
 
+__lazy_modules__ = ["io", "pathlib", "typing"]
+
 import io
 import pathlib
 import typing

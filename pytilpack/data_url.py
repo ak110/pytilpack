@@ -4,6 +4,8 @@
 
 """
 
+__lazy_modules__ = ["base64", "dataclasses", "typing", "urllib.parse"]
+
 import base64
 import dataclasses
 import typing

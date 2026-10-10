@@ -1,5 +1,7 @@
 """Babelメッセージ管理CLIユーティリティ。"""
 
+__lazy_modules__ = ["argparse", "logging", "pathlib"]
+
 import argparse
 import logging
 import pathlib

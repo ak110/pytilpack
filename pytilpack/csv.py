@@ -1,5 +1,7 @@
 """CSV関連のユーティリティ集。"""
 
+__lazy_modules__ = ["csv", "pathlib", "typing"]
+
 import csv
 import pathlib
 import typing

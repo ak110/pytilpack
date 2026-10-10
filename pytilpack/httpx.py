@@ -1,5 +1,7 @@
 """httpx関連。"""
 
+__lazy_modules__ = ["asyncio", "httpx", "logging", "pytilpack", "pytilpack.http", "typing"]
+
 import asyncio
 import logging
 import typing

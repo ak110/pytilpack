@@ -58,6 +58,16 @@ Unix専用依存については後掲のプラットフォーム依存の規則�
 
 任意extraを要するモジュールをトップレベルでimportする側は、そのextraの直接依存も自分のextraと`all`へ含める。
 
+Python 3.15以降でimport時間を短縮するため、各モジュールはdocstringの直後に`__lazy_modules__`を置き、トップレベルでimportするモジュール名を列挙する。
+3.15未満では無視されるため、`lazy`構文と異なり対応版の下限を変えずに使える。
+列挙しないのは次のimportに限る。
+
+- 名前を参照しない副作用目的のimport、`from __future__`、`*`によるimport
+- CLIのサブコマンドがextras未導入の判定に使うimport（`pytilpack.cli.babel`の`babel`、`pytilpack.cli.wait_for_db_connection`の`pytilpack.sqlalchemy`）。`pytilpack.cli.main`は登録時の`ImportError`で未導入を判定するため、遅延すると`--help`の「未インストール」表示が失われる
+
+モジュール定義時に評価する箇所（基底クラス、デコレーター、型エイリアスの代入など）で使う依存は列挙しても読み込み時に解決されるため、短縮は依存を関数内でだけ使うモジュールで得られる。
+列挙したextraの依存が欠けている場合、3.15以降は`ImportError`がimport時ではなく最初の利用時に発生する。
+
 ### サブパッケージ共通モジュールの依存
 
 `pytilpack/_web_asserts.py`のように複数のフレームワーク向けサブパッケージから共通利用される

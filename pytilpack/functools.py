@@ -1,5 +1,18 @@
 """デコレーターとリトライのユーティリティ集。"""
 
+__lazy_modules__ = [
+    "asyncio",
+    "dataclasses",
+    "functools",
+    "inspect",
+    "logging",
+    "pytilpack",
+    "pytilpack.http",
+    "pytilpack.python",
+    "time",
+    "typing",
+]
+
 import asyncio
 import dataclasses
 import functools

@@ -1,5 +1,7 @@
 """Base64エンコーディング/デコーディングユーティリティ。"""
 
+__lazy_modules__ = ["base64"]
+
 import base64
 
 

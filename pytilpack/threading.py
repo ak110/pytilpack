@@ -1,5 +1,7 @@
 """スレッド関連。"""
 
+__lazy_modules__ = ["concurrent.futures", "contextlib", "typing"]
+
 import concurrent.futures
 import contextlib
 import typing

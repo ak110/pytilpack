@@ -1,5 +1,7 @@
 """Server-Sent Eventsメッセージ生成ユーティリティ。"""
 
+__lazy_modules__ = ["asyncio", "contextlib", "dataclasses", "functools", "logging", "re", "typing"]
+
 import asyncio
 import contextlib
 import dataclasses

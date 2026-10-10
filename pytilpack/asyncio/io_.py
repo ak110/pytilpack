@@ -1,5 +1,18 @@
 """ファイルとディレクトリを扱う非同期I/O。"""
 
+__lazy_modules__ = [
+    "asyncio",
+    "datetime",
+    "logging",
+    "pathlib",
+    "pytilpack.io",
+    "pytilpack.json",
+    "pytilpack.jsonc",
+    "pytilpack.pathlib",
+    "shutil",
+    "typing",
+]
+
 import asyncio
 import datetime
 import logging

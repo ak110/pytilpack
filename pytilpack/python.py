@@ -1,5 +1,7 @@
 """非推奨警告、オブジェクトの検査・変換などのPython支援。"""
 
+__lazy_modules__ = ["functools", "inspect", "re", "threading", "typing", "warnings"]
+
 import functools
 import inspect
 import re

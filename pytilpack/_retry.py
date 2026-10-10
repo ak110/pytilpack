@@ -1,5 +1,7 @@
 """リトライ待機時間の共通計算。"""
 
+__lazy_modules__ = ["dataclasses", "random"]
+
 import dataclasses
 import random
 

@@ -1,5 +1,7 @@
 """pydantic関連。"""
 
+__lazy_modules__ = ["pydantic", "sys", "traceback", "types"]
+
 import sys
 import traceback
 import types

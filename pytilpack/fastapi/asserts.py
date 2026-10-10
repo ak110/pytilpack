@@ -1,5 +1,7 @@
 """FastAPIのテストコード用アサーション関数。"""
 
+__lazy_modules__ = ["pathlib", "pytilpack._web_asserts", "typing"]
+
 import pathlib
 import typing
 

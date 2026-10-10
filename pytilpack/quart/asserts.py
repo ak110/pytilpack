@@ -1,5 +1,7 @@
 """Quartのテストコード用アサーション関数。"""
 
+__lazy_modules__ = ["pathlib", "pytilpack._web_asserts", "quart", "typing"]
+
 import pathlib
 import typing
 

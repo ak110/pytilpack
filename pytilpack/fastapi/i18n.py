@@ -1,5 +1,7 @@
 """FastAPI用i18n統合。"""
 
+__lazy_modules__ = ["pathlib", "pytilpack.http", "pytilpack.i18n", "starlette.datastructures", "starlette.types"]
+
 import pathlib
 
 import starlette.datastructures

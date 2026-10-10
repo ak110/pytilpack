@@ -1,5 +1,7 @@
 """Quart用i18n統合。"""
 
+__lazy_modules__ = ["pathlib", "pytilpack.http", "pytilpack.i18n", "quart"]
+
 import pathlib
 
 import quart

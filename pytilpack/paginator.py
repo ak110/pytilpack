@@ -1,5 +1,7 @@
 """ページネーション用ユーティリティ。"""
 
+__lazy_modules__ = ["typing"]
+
 import typing
 
 

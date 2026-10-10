@@ -1,5 +1,7 @@
 """国際化(i18n)関連。"""
 
+__lazy_modules__ = ["contextvars", "gettext", "logging", "pathlib"]
+
 import contextvars
 import gettext
 import logging

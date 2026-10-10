@@ -1,5 +1,7 @@
 """tqdm用のユーティリティ集。"""
 
+__lazy_modules__ = ["contextlib", "io", "logging", "sys", "tqdm", "typing"]
+
 import contextlib
 import io
 import logging

@@ -1,5 +1,15 @@
 """Flaskのテストコード用アサーション関数。"""
 
+__lazy_modules__ = [
+    "flask",
+    "pathlib",
+    "pytilpack._web_asserts",
+    "pytilpack.python",
+    "pytilpack.web",
+    "typing",
+    "werkzeug.test",
+]
+
 import pathlib
 import typing
 

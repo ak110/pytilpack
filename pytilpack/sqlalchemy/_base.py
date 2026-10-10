@@ -1,5 +1,7 @@
 """SQLAlchemy Mixin共通の基底クラス。"""
 
+__lazy_modules__ = ["datetime", "logging", "secrets", "sqlalchemy", "sqlalchemy.sql.base", "time", "typing"]
+
 import datetime
 import logging
 import secrets

@@ -1,5 +1,7 @@
 """同期・非同期関数とイベントループの橋渡し。"""
 
+__lazy_modules__ = ["asyncio", "concurrent.futures", "contextlib", "contextvars", "functools", "inspect", "logging", "typing"]
+
 import asyncio
 import concurrent.futures
 import contextlib

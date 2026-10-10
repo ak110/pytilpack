@@ -1,5 +1,7 @@
 """asyncio用のユーティリティ集。"""
 
+__lazy_modules__ = ["asyncio"]
+
 import asyncio
 
 __all__ = ["get_task_id", "get_task_id_hex"]

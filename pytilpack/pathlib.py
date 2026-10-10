@@ -1,5 +1,7 @@
 """ファイル関連のユーティリティ集。"""
 
+__lazy_modules__ = ["dataclasses", "datetime", "logging", "os", "pathlib", "shutil", "stat", "typing"]
+
 import dataclasses
 import datetime
 import logging

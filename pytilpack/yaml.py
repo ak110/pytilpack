@@ -1,5 +1,7 @@
 """YAML関連。"""
 
+__lazy_modules__ = ["dataclasses", "pytilpack.io", "typing", "yaml"]
+
 import dataclasses
 import typing
 

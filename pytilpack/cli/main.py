@@ -1,5 +1,7 @@
 """pytilpackメインCLIエントリーポイント。"""
 
+__lazy_modules__ = ["argparse", "importlib", "logging", "sys", "types"]
+
 import argparse
 import importlib
 import logging

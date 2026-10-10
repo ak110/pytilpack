@@ -11,6 +11,8 @@ quart: `await response.get_data()`、fastapi: `response.content`）。
 
 from __future__ import annotations
 
+__lazy_modules__ = ["defusedxml.ElementTree", "json", "pathlib", "pytilpack.pytest", "pytilpack.web", "typing"]
+
 import json
 import pathlib
 import typing

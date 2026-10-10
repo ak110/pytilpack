@@ -1,5 +1,7 @@
 """ヘルスチェック機能の実装用ヘルパー。"""
 
+__lazy_modules__ = ["asyncio", "datetime", "functools", "inspect", "logging", "pytilpack.logging", "time", "typing"]
+
 import asyncio
 import datetime
 import functools

@@ -1,5 +1,7 @@
 """Quart-Auth関連のユーティリティ。"""
 
+__lazy_modules__ = ["functools", "inspect", "logging", "pytilpack.python", "quart", "quart_auth", "typing"]
+
 import functools
 import inspect
 import logging

@@ -4,6 +4,8 @@
 
 """
 
+__lazy_modules__ = ["flask", "flask_login", "functools"]
+
 import functools
 
 import flask
