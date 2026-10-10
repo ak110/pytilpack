@@ -1,10 +1,9 @@
 """テストコード。"""
 
+import sys
 import typing
 import warnings
 
-import litellm.types.llms.openai
-import litellm.utils
 import openai.types.chat
 import pytest
 
@@ -123,51 +122,58 @@ def test_num_tokens_from_messages_with_tools(model: str, expected: int):
     assert num_tokens == expected
 
 
-@pytest.mark.parametrize("model", ALL_MODELS)
-def test_vs_litellm(model: str):
-    """litellmとの比較テスト。"""
-    messages: list[openai.types.chat.ChatCompletionMessageParam] = [
-        {"role": "system", "content": "てすと"},
-        {"role": "user", "content": "1+1=？"},
-        {"role": "assistant", "content": "2です。"},
-        {"role": "user", "content": "2+2=？"},
-    ]
+# litellmが依存するfastuuidは3.15用のwheelを公開しておらず、ソースからもビルドできない（PyO3が3.14までの対応）。
+# このためlitellmは開発依存で3.15未満に限定しており、比較テストも3.15未満だけで定義する。
+# fastuuidが3.15へ対応したら、pyproject.tomlの環境マーカーと併せてこの分岐を外す。
+if sys.version_info < (3, 15):
+    import litellm.types.llms.openai  # ty: ignore[unresolved-import]
+    import litellm.utils  # ty: ignore[unresolved-import]
 
-    # ツールなし
-    actual_tokens = pytilpack.tiktoken.num_tokens_from_messages(model=model, messages=messages, tools=None)
-    litellm_tokens = litellm.utils.token_counter(model=model, messages=messages, tools=None)
-    assert actual_tokens == litellm_tokens, "ツールなしトークン数の不一致"
+    @pytest.mark.parametrize("model", ALL_MODELS)
+    def test_vs_litellm(model: str):
+        """litellmとの比較テスト。"""
+        messages: list[openai.types.chat.ChatCompletionMessageParam] = [
+            {"role": "system", "content": "てすと"},
+            {"role": "user", "content": "1+1=？"},
+            {"role": "assistant", "content": "2です。"},
+            {"role": "user", "content": "2+2=？"},
+        ]
 
-    # ツールあり
-    tools: list[openai.types.chat.ChatCompletionToolParam] | None = [_WEATHER_TOOL]
-    actual_tokens = pytilpack.tiktoken.num_tokens_from_messages(model=model, messages=messages, tools=tools)
-    litellm_tokens = litellm.utils.token_counter(
-        model=model,
-        messages=messages,
-        tools=typing.cast(list[litellm.types.llms.openai.ChatCompletionToolParam], tools),
-    )
+        # ツールなし
+        actual_tokens = pytilpack.tiktoken.num_tokens_from_messages(model=model, messages=messages, tools=None)
+        litellm_tokens = litellm.utils.token_counter(model=model, messages=messages, tools=None)
+        assert actual_tokens == litellm_tokens, "ツールなしトークン数の不一致"
 
-    # LiteLLMは現在以下のモデルがgpt-3.5-turboなどと同じ扱いになっている
-    # (おそらく不具合)
-    if actual_tokens != litellm_tokens and model in [
-        "o1-mini",
-        "o1-mini-2024-09-12",
-        "o1-preview",
-        "o1-preview-2024-09-12",
-        "o4-mini",
-        "o4-mini-2025-04-16",
-        "gpt-4.1-nano",
-        "gpt-4.1-mini",
-        "gpt-4.1",
-        "gpt-4.1-nano-2025-04-14",
-        "gpt-4.1-mini-2025-04-14",
-        "gpt-4.1-2025-04-14",
-    ]:
-        warnings.warn("LiteLLMのバグのため対症療法", UserWarning, stacklevel=1)
+        # ツールあり
+        tools: list[openai.types.chat.ChatCompletionToolParam] | None = [_WEATHER_TOOL]
+        actual_tokens = pytilpack.tiktoken.num_tokens_from_messages(model=model, messages=messages, tools=tools)
         litellm_tokens = litellm.utils.token_counter(
-            model="gpt-4o",
+            model=model,
             messages=messages,
             tools=typing.cast(list[litellm.types.llms.openai.ChatCompletionToolParam], tools),
         )
 
-    assert actual_tokens == litellm_tokens, "ツールありトークン数の不一致"
+        # LiteLLMは現在以下のモデルがgpt-3.5-turboなどと同じ扱いになっている
+        # (おそらく不具合)
+        if actual_tokens != litellm_tokens and model in [
+            "o1-mini",
+            "o1-mini-2024-09-12",
+            "o1-preview",
+            "o1-preview-2024-09-12",
+            "o4-mini",
+            "o4-mini-2025-04-16",
+            "gpt-4.1-nano",
+            "gpt-4.1-mini",
+            "gpt-4.1",
+            "gpt-4.1-nano-2025-04-14",
+            "gpt-4.1-mini-2025-04-14",
+            "gpt-4.1-2025-04-14",
+        ]:
+            warnings.warn("LiteLLMのバグのため対症療法", UserWarning, stacklevel=1)
+            litellm_tokens = litellm.utils.token_counter(
+                model="gpt-4o",
+                messages=messages,
+                tools=typing.cast(list[litellm.types.llms.openai.ChatCompletionToolParam], tools),
+            )
+
+        assert actual_tokens == litellm_tokens, "ツールありトークン数の不一致"

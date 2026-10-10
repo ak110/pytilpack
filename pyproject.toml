@@ -13,6 +13,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
 ]
 requires-python = ">=3.12,<4.0"
 dependencies = [
@@ -130,7 +131,7 @@ web = [
 [dependency-groups]
 dev = [
     "aiosqlite<0.22", # 0.22 系には不具合があるようで pytest が終わらなくなる
-    "litellm>=1.83.7",
+    "litellm>=1.83.7; python_version < '3.15'",  # 依存先のfastuuidが3.15未対応のため。対応後にマーカーを外す（tests/tiktoken_test.py参照）
     "mkdocs-llmstxt>=0.2",
     "mkdocs-material>=9.6",
     "mkdocs>=1.6",
@@ -188,7 +189,9 @@ ty-args = [
     "--ignore", "unused-type-ignore-comment",
     "--ignore", "redundant-cast",
 ]
-pylint-args = ["--jobs=4"]
+# 推奨ガイドの`pylint-args = ["--jobs=4"]`は指定しない。
+# 全検査の基準版であるPython 3.15では、pylintの並列実行が用いるdill（0.4.1時点）が未対応で、
+# pylintが`co_lnotab`の参照で異常終了するため。dillの対応版の公開後に戻す。
 # 口語的な日本語表現を検出する。対象は全ファイルで、
 # 既定の重大度は警告のためCI・pre-commitは失敗しない。
 colloquial-check = true
