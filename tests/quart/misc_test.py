@@ -1,11 +1,9 @@
 """Quart miscのテスト。"""
 
 import asyncio
-import contextlib
 import pathlib
 import socket
 import types
-import typing
 
 import httpx
 import pytest
@@ -258,43 +256,26 @@ async def test_set_max_concurrency_duplicate() -> None:
 
 
 @pytest.mark.asyncio
-async def test_set_max_concurrency_cancel_releases_semaphore() -> None:
-    """キャンセル時にセマフォが解放されることのテスト。
-
-    before_request に登録された _acquire を Quart のリクエストコンテキスト下で
-    直接キャンセルし、セマフォが漏洩しないことを確認する。
-    """
+async def test_set_max_concurrency_cancel_releases_semaphore(monkeypatch: pytest.MonkeyPatch) -> None:
+    """取得後のトークン設定で中断しても、セマフォを解放して例外を伝播する。"""
     app = quart.Quart(__name__)
     pytilpack.quart.set_max_concurrency(app, 1, timeout=None)
     state: pytilpack.quart.misc.ConcurrencyState = app.extensions["pytilpack_concurrency"]
 
-    # set_max_concurrency が before_request に登録した _acquire を取り出す
-    (acquire_func,) = app.before_request_funcs[None]
+    class CancelOnToken:
+        """取得済みのセマフォを確認してトークン設定を中断する。"""
 
-    async with app.test_request_context("/"):
-        assert not state.semaphore.locked()  # 初期値（解放済み）
+        def __setattr__(self, name: str, value: object) -> None:
+            del value
+            assert name == "quart__concurrency_token"
+            assert state.semaphore.locked()
+            raise asyncio.CancelledError
 
-        # セマフォを枯渇させて _acquire が待機状態に入るよう準備する
-        await state.semaphore.acquire()
-        assert state.semaphore.locked()
-
-        # _acquire をタスクとして起動（セマフォ待機に入る）。
-        # before_request_funcs から取り出した関数の戻り値型はQuartの汎用型のため、
-        # Coroutine[Any, Any, None] としてキャストして型検査を通す。
-        task: asyncio.Task[None] = asyncio.create_task(
-            typing.cast("typing.Coroutine[typing.Any, typing.Any, None]", acquire_func())
-        )
-        # イベントループに制御を渡して _acquire が待機状態へ移行するまで進める
-        await asyncio.sleep(0)
-
-        # タスクをキャンセルして CancelledError を発行する
-        task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await task
-
-        # 手動取得分を解放する
-        state.semaphore.release()
-        # セマフォが漏洩していなければ解放済みのまま（_acquire は未取得でキャンセル）
+    async with app.test_request_context("/") as request_context:
+        with monkeypatch.context() as patch:
+            patch.setattr(quart, "g", CancelOnToken())
+            with pytest.raises(asyncio.CancelledError):
+                await app.preprocess_request(request_context)
         assert not state.semaphore.locked()
 
 

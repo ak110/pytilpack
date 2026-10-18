@@ -117,26 +117,6 @@ async def test_first_request_pins_prefix():
 
 
 @pytest.mark.asyncio
-async def test_pin_does_not_change_on_second_request_with_same_prefix():
-    """pin後に同じprefixを受信してもapp.configが変わらないことのテスト。"""
-    app, middleware = _make_app({"x_prefix": 1})
-
-    async def fake_asgi(scope: typing.Any, receive: typing.Any, send: typing.Any) -> None:
-        del scope, receive, send
-
-    middleware.asgi_app = fake_asgi
-
-    scope1 = _make_scope([(b"x-forwarded-prefix", b"/app")])
-    await middleware(scope1, _noop_receive, _noop_send)  # type: ignore[arg-type]
-    assert app.config["APPLICATION_ROOT"] == "/app"
-
-    # 2回目も同じ値
-    scope2 = _make_scope([(b"x-forwarded-prefix", b"/app")])
-    await middleware(scope2, _noop_receive, _noop_send)  # type: ignore[arg-type]
-    assert app.config["APPLICATION_ROOT"] == "/app"
-
-
-@pytest.mark.asyncio
 async def test_pin_does_not_change_on_different_prefix(caplog):
     """pin後に異なるprefixを受信してもapp.configが変わらず、scopeだけ書き換わることのテスト。"""
     app, middleware = _make_app({"x_prefix": 1})
@@ -280,8 +260,9 @@ async def test_forwarded_host_crlf_rejected(caplog):
 
 @pytest.mark.asyncio
 async def test_static_prefix_scope_root_path_is_set():
-    """static_prefix指定時にリクエストのroot_pathが設定されることのテスト。"""
+    """static_prefixで設定を初期化し、異なるヘッダーでも設定を保持する。"""
     app, middleware = _make_app({"static_prefix": "/myapp", "x_prefix": 1})
+    assert app.config["APPLICATION_ROOT"] == "/myapp"
 
     received_scopes: list[dict] = []
 
@@ -291,10 +272,10 @@ async def test_static_prefix_scope_root_path_is_set():
 
     middleware.asgi_app = fake_asgi
 
-    scope = _make_scope([(b"x-forwarded-prefix", b"/myapp")])
+    scope = _make_scope([(b"x-forwarded-prefix", b"/other")])
     await middleware(scope, _noop_receive, _noop_send)  # type: ignore[arg-type]
 
-    assert received_scopes[0]["root_path"] == "/myapp"
+    assert received_scopes[0]["root_path"] == "/other"
     # app.configは初期化時から変わらない
     assert app.config["APPLICATION_ROOT"] == "/myapp"
 

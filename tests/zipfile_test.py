@@ -68,6 +68,8 @@ def test_decode_sjis_backslash_byte_kept_as_single_string(tmp_path: pathlib.Path
     archive = tmp_path / "s.zip"
     _build_zip(archive, [(_Cp932ZipInfo("ソート/メモ.txt"), b"x")])
     info = _read_first_orig(archive)
+    # WindowsのZipInfoが行う区切り文字の正規化を再現する。
+    info.filename = info.orig_filename.replace("\\", "/")
     decoded = pytilpack.zipfile.decode_zipinfo_filename(info)
     assert decoded == "ソート/メモ.txt"
     assert "\\" not in decoded
@@ -97,9 +99,9 @@ def test_decode_all_fallbacks_fail_returns_orig_filename(tmp_path: pathlib.Path)
     archive = tmp_path / "ff.zip"
     _build_zip(archive, [(_RawBytesZipInfo(raw_invalid), b"x")])
     info = _read_first_orig(archive)
-    # cp932・cp437とも失敗するエンコーディングのみを与えた場合（cp437は失敗しないので
-    # 現実には必ずどこかで成功するが、空タプルを与えるとフォールバックは全失敗扱い）。
-    result = pytilpack.zipfile.decode_zipinfo_filename(info, fallback_encodings=())
+    # CP932なら復号できるバイト列で、指定したASCIIの失敗後に原名へ戻ることを確かめる。
+    info.orig_filename = "ソート.txt".encode("cp932").decode("cp437")
+    result = pytilpack.zipfile.decode_zipinfo_filename(info, fallback_encodings=("ascii",))
     assert result == info.orig_filename
 
 

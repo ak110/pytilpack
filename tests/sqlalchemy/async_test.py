@@ -403,13 +403,20 @@ async def test_thread_local_engine_isolation(tmp_path) -> None:
 
     engines: list = []
     errors: list[Exception] = []
+    barrier = threading.Barrier(2, timeout=5)
 
     def run_in_thread() -> None:
         async def inner() -> None:
             engine = IsolatedBase.engine()
             assert engine is not None
             engines.append(engine)
-            await IsolatedBase.term()
+            try:
+                barrier.wait()
+                assert len(engines) == 2
+                assert engines[0] is not engines[1], "異なるスレッドが同じengineを共有している"
+                barrier.wait()
+            finally:
+                await IsolatedBase.term()
 
         try:
             asyncio.run(inner())
@@ -420,7 +427,8 @@ async def test_thread_local_engine_isolation(tmp_path) -> None:
     for t in threads:
         t.start()
     for t in threads:
-        t.join()
+        t.join(timeout=10)
+        assert not t.is_alive()
 
     assert not errors, f"スレッド内でエラーが発生: {errors}"
     assert len(engines) == 2

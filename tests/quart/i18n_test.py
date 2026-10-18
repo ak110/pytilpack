@@ -71,20 +71,26 @@ async def test_jinja2_template(app: quart.Quart) -> None:
 
 
 @pytest.mark.asyncio
-async def test_i18n_state_deactivated_after_request(app: quart.Quart) -> None:
-    """リクエスト完了後にis_active()がFalseに戻ることを確認。
+async def test_i18n_state_deactivated_after_request() -> None:
+    """ロケールのteardown後、同じリクエスト文脈で翻訳状態が解除される。"""
+    app = quart.Quart(__name__)
+    states: list[bool] = []
 
-    teardown_requestでdeactivate()まで到達することで、
-    i18n状態がリクエストスコープを超えてリークしないことを保証する。
-    """
-    # リクエスト前: 未activate
-    assert not pytilpack.i18n.is_active()
+    @app.teardown_request
+    async def observe_locale(error: BaseException | None) -> None:
+        del error
+        states.append(pytilpack.i18n.is_active())
+
+    pytilpack.quart.i18n.init_app(app, LOCALES_DIR, default_locale="en")
+
+    @app.route("/hello")
+    async def hello() -> str:
+        assert pytilpack.i18n.is_active()
+        return pytilpack.i18n.gettext_func("Hello")
 
     async with app.test_client() as client:
         response = await client.get("/hello", headers={"Accept-Language": "ja"})
         assert response.status_code == 200
 
-    # リクエスト完了後: 未activate状態に戻っていることを確認
-    # Quartはリクエストごとにcontextvarsコンテキストを分離するため、
-    # テストコンテキストの未activate状態はリクエスト処理の影響を受けない
-    assert not pytilpack.i18n.is_active()
+    assert states
+    assert not any(states)

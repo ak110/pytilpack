@@ -1,48 +1,51 @@
 """テストコード。"""
 
-import time
+import threading
 
 import pytest
 
 import pytilpack.threadinga
 
 
+@pytest.fixture(autouse=True)
+def _three_workers(monkeypatch: pytest.MonkeyPatch) -> None:
+    """CPU数にかかわらず、同時実行を観測する処理数にワーカー数をそろえる。"""
+    monkeypatch.setattr(pytilpack.threadinga.multiprocessing, "cpu_count", lambda: 3)
+
+
 @pytest.mark.asyncio
 async def test_parallel():
-    """parallelのテスト。"""
+    """parallelが3つの処理を同時に実行する。"""
+    barrier = threading.Barrier(3, timeout=5)
 
     async def func(x: int) -> int:
+        barrier.wait()
         return x + 1
 
-    start = time.time()
     assert await pytilpack.threadinga.parallel(
         [lambda x=x: func(x) for x in range(3)]  # type: ignore[misc]
     ) == [1, 2, 3]
-    duration = time.time() - start
-    assert duration < 2  # 3つの処理が並列実行されるので2秒未満で完了するはず
 
 
 @pytest.mark.asyncio
 async def test_parallel_for():
-    """parallel_forのテスト。"""
+    """parallel_forが3つの処理を同時に実行する。"""
+    barrier = threading.Barrier(3, timeout=5)
 
     async def func(x: int) -> int:
+        barrier.wait()
         return x + 1
 
-    start = time.time()
     assert await pytilpack.threadinga.parallel_for(func, 3) == [1, 2, 3]
-    duration = time.time() - start
-    assert duration < 2  # 3つの処理が並列実行されるので2秒未満で完了するはず
 
 
 @pytest.mark.asyncio
 async def test_parallel_foreach():
-    """parallel_foreachのテスト。"""
+    """parallel_foreachが3つの処理を同時に実行する。"""
+    barrier = threading.Barrier(3, timeout=5)
 
     async def func(x: int) -> int:
+        barrier.wait()
         return x + 1
 
-    start = time.time()
     assert await pytilpack.threadinga.parallel_foreach(func, range(3)) == [1, 2, 3]
-    duration = time.time() - start
-    assert duration < 2  # 3つの処理が並列実行されるので2秒未満で完了するはず

@@ -155,6 +155,7 @@ async def test_file_operations_with_encoding(tmp_path: pathlib.Path) -> None:
 
     # Shift_JISでの書き込み・読み込み
     await pytilpack.asyncio.write_text(test_file, test_text, encoding="shift_jis")
+    assert test_file.read_bytes() == "Hello, 日本語".encode("shift_jis")
     result = await pytilpack.asyncio.read_text(test_file, encoding="shift_jis")
     assert result == test_text
 

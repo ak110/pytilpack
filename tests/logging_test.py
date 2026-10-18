@@ -340,8 +340,11 @@ async def test_capture_context() -> None:
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter("[%(levelname)s] %(message)s")
 
+    original_handlers = logger.handlers[:]
     captured_content = ""
     async with pytilpack.logging.capture_context(logger, formatter, logging.INFO) as get_value:
+        capture_handlers = [handler for handler in logger.handlers if handler not in original_handlers]
+        assert len(capture_handlers) == 1
         # キャプチャ開始時は空
         assert get_value() == ""
 
@@ -356,10 +359,7 @@ async def test_capture_context() -> None:
         assert "[WARNING] テストメッセージ2\n" in captured_content
         assert "デバッグメッセージ" not in captured_content
 
-    # コンテキスト終了後は新しいログはキャプチャされない
-    logger.info("コンテキスト外のメッセージ")
-    # コンテキスト終了前にキャプチャした内容には、コンテキスト外のメッセージは含まれない
-    assert "コンテキスト外のメッセージ" not in captured_content
+    assert all(handler not in logger.handlers for handler in capture_handlers)
 
 
 @pytest.mark.asyncio

@@ -40,8 +40,8 @@ def test_read_to_dict_skipinitialspace(tmp_path: pathlib.Path) -> None:
     assert result_false == [{"name": "Alice", "age": " 20"}, {"name": "Bob", "age": " 30"}]
 
 
-def test_read_to_dict_lineterminator(tmp_path: pathlib.Path) -> None:
-    """lineterminatorが実際に適用されることを確認するテスト。"""
+def test_read_to_dict_crlf(tmp_path: pathlib.Path) -> None:
+    """CRLF改行のCSVを読み込める。"""
     # \r\n改行のCSV
     path = tmp_path / "test.csv"
     path.write_bytes(b"Alice,20\r\nBob,30\r\n")

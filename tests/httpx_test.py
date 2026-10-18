@@ -1,5 +1,8 @@
 """テストコード。"""
 
+import types
+import typing
+
 import httpx
 import pytest
 import quart
@@ -9,8 +12,15 @@ import pytilpack.quart.misc
 
 
 @pytest.mark.asyncio
-async def test_retry_async_client():
-    """RetryAsyncClientの包括的テスト。"""
+async def test_retry_async_client(monkeypatch: pytest.MonkeyPatch):
+    """応答別の再試行回数とRetry-After・指数バックオフの待機値を確認する。"""
+    waits: list[float] = []
+
+    async def record_sleep(delay: float, **kwargs: typing.Any) -> None:
+        del kwargs
+        waits.append(delay)
+
+    monkeypatch.setattr(pytilpack.httpx, "asyncio", types.SimpleNamespace(sleep=record_sleep))
     app = quart.Quart(__name__)
 
     # テスト用のカウンター
@@ -33,7 +43,7 @@ async def test_retry_async_client():
         """Retry-Afterヘッダーありの429エラーエンドポイント。"""
         counters["retry_with_header"]["count"] += 1
         if counters["retry_with_header"]["count"] <= 2:
-            return "", 429, {"Retry-After": "0.01"}
+            return "", 429, {"Retry-After": "0.07"}
         return {"message": "success"}, 200
 
     @app.route("/retry_without_header")
@@ -58,25 +68,29 @@ async def test_retry_async_client():
 
     async with (
         pytilpack.quart.misc.run(app, port=0) as port,
-        pytilpack.httpx.RetryAsyncClient(max_retries=5, initial_delay=0.01) as client,
+        pytilpack.httpx.RetryAsyncClient(max_retries=5, initial_delay=0.01, max_jitter=0) as client,
     ):
         # 正常系のテスト
         response = await client.get(f"http://localhost:{port}/success")
         assert response.status_code == 200
         assert response.json() == {"message": "success"}
         assert counters["success"]["count"] == 1
+        assert not waits
 
         # Retry-Afterヘッダーありの429エラーリトライテスト
         response = await client.get(f"http://localhost:{port}/retry_with_header")
         assert response.status_code == 200
         assert response.json() == {"message": "success"}
         assert counters["retry_with_header"]["count"] == 3
+        assert waits == pytest.approx([0.07, 0.07])
+        waits.clear()
 
         # Retry-Afterヘッダーなしの429エラーリトライテスト（指数バックオフ）
         response = await client.get(f"http://localhost:{port}/retry_without_header")
         assert response.status_code == 200
         assert response.json() == {"message": "success"}
         assert counters["retry_without_header"]["count"] == 3
+        assert waits == pytest.approx([0.01, 0.02])
 
         # 最大リトライ回数を超えた場合のテスト
         async with pytilpack.httpx.RetryAsyncClient(max_retries=3, initial_delay=0.01) as limited_client:
@@ -91,8 +105,16 @@ async def test_retry_async_client():
 
 
 @pytest.mark.asyncio
-async def test_arequest_with_retry_direct():
-    """arequest_with_retry関数の直接テスト。"""
+@pytest.mark.parametrize("with_header", [True, False])
+async def test_arequest_with_retry_direct(monkeypatch: pytest.MonkeyPatch, with_header: bool):
+    """直接呼出しでもヘッダーの待機値と指数バックオフを使い分ける。"""
+    waits: list[float] = []
+
+    async def record_sleep(delay: float, **kwargs: typing.Any) -> None:
+        del kwargs
+        waits.append(delay)
+
+    monkeypatch.setattr(pytilpack.httpx, "asyncio", types.SimpleNamespace(sleep=record_sleep))
     app = quart.Quart(__name__)
     request_count = {"count": 0}
 
@@ -100,14 +122,15 @@ async def test_arequest_with_retry_direct():
     async def test_endpoint():
         """テスト用エンドポイント。"""
         request_count["count"] += 1
-        if request_count["count"] <= 1:
-            return "", 429, {"Retry-After": "0.01"}
+        if request_count["count"] <= 2:
+            return "", 429, {"Retry-After": "0.07"} if with_header else {}
         return {"message": "success"}, 200
 
     async with pytilpack.quart.misc.run(app, port=0) as port, httpx.AsyncClient() as client:
         response = await pytilpack.httpx.arequest_with_retry(
-            client, "GET", f"http://localhost:{port}/test", max_retries=3, initial_delay=0.01
+            client, "GET", f"http://localhost:{port}/test", max_retries=3, initial_delay=0.01, max_jitter=0
         )
         assert response.status_code == 200
         assert response.json() == {"message": "success"}
-        assert request_count["count"] == 2
+        assert request_count["count"] == 3
+        assert waits == pytest.approx([0.07, 0.07] if with_header else [0.01, 0.02])

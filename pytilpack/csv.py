@@ -20,7 +20,7 @@ def read_to_dict(
         path: CSVファイルのパス。
         fieldnames: CSVファイルのフィールド名。
         skipinitialspace: 先頭の空白をスキップするか。
-        lineterminator: 行の終端文字。
+        lineterminator: 互換性のため受け取る引数。読み込みでは使われず、改行はCRまたはLFで認識する。
         encoding: ファイルの文字エンコーディング。
 
     Returns:

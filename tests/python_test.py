@@ -1,8 +1,10 @@
 """テストコード。"""
 
 import asyncio
+import concurrent.futures
 import threading
-import time
+import types
+import typing
 import warnings
 
 import pytest
@@ -256,7 +258,7 @@ def test_convert_error(value, target_type, errors):
         pytilpack.python.convert(value, target_type, None, errors=errors)
 
 
-def test_singleton_mixin():
+def test_singleton_mixin(monkeypatch: pytest.MonkeyPatch):
     """SingletonMixinのテスト。"""
 
     # テスト用クラス
@@ -301,22 +303,61 @@ def test_singleton_mixin():
     with pytest.raises(TypeError, match="は直接インスタンス化できません"):
         MyConfig()
 
-    # スレッドセーフ性の確認（簡易）
-    MyConfig.reset()
-    instances = []
+    # 全スレッドが取得へ到達するまで最初の初期化を保留する。
+    all_attempted = threading.Event()
+    start = threading.Barrier(10, timeout=5)
+    original_lock = pytilpack.python.SingletonMixin._lock  # pylint: disable=protected-access
+    count_lock = threading.Lock()
+    attempts = 0
+    initializations = 0
+    creations = threading.Barrier(10, timeout=5)
 
-    def get_instance():
-        time.sleep(0.001)  # 競合を起こしやすくする
-        instance = MyConfig.get_singleton()
-        instances.append(instance)
+    def new_instance(cls: type, **kwargs: typing.Any) -> object:
+        del kwargs
+        # 排他を外した変異でも、全スレッドが生成判定を終えてから生成する。
+        if not all_attempted.is_set():
+            creations.wait()
+        return object.__new__(cls)
 
-    threads = [threading.Thread(target=get_instance) for _ in range(10)]
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join()
+    class ObservedLock:
+        """元の排他を保ち、全取得要求の到達を通知する。"""
 
-    # すべて同じインスタンス
+        def __enter__(self) -> None:
+            nonlocal attempts
+            with count_lock:
+                attempts += 1
+                if attempts == 10:
+                    all_attempted.set()
+            assert all_attempted.wait(timeout=5), "全スレッドの取得要求がそろわなかった"
+            original_lock.acquire()
+
+        def __exit__(self, *args: typing.Any) -> None:
+            del args
+            original_lock.release()
+
+    class ConcurrentConfig(pytilpack.python.SingletonMixin):
+        """競合中の初期化回数を観測するクラス。"""
+
+        def __init__(self) -> None:
+            nonlocal initializations
+            with count_lock:
+                initializations += 1
+                if initializations == 10:
+                    all_attempted.set()
+            assert all_attempted.wait(timeout=5), "取得要求が同期点へ到達しなかった"
+
+    monkeypatch.setattr(pytilpack.python.SingletonMixin, "_lock", ObservedLock())
+    monkeypatch.setattr(pytilpack.python, "object", types.SimpleNamespace(__new__=new_instance), raising=False)
+
+    def get_instance() -> ConcurrentConfig:
+        start.wait()
+        return ConcurrentConfig.get_singleton()
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(get_instance) for _ in range(10)]
+        instances = [future.result(timeout=10) for future in futures]
+
+    assert initializations == 1
     assert len(instances) == 10
     assert all(inst is instances[0] for inst in instances)
 

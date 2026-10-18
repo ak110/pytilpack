@@ -22,14 +22,28 @@ def test_delete_file(tmp_path: pathlib.Path) -> None:
     assert not path.exists()
 
 
-def test_rmtree_readonly_file(tmp_path: pathlib.Path) -> None:
-    """rmtree(): 読み取り専用ファイルを含むディレクトリの削除。"""
+def test_rmtree_readonly_file(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """PermissionError後に権限を変更して再試行し、ファイルを削除する。"""
     d = tmp_path / "dir"
     d.mkdir()
     f = d / "readonly.txt"
     f.write_text("test")
     f.chmod(0o444)
+    original_unlink = pathlib.Path.unlink
+    attempts = 0
+
+    def unlink(path: pathlib.Path, *args: typing.Any, **kwargs: typing.Any) -> None:
+        nonlocal attempts
+        if path == f:
+            attempts += 1
+            if attempts == 1:
+                raise PermissionError("読み取り専用ファイル")
+            assert path.stat().st_mode & 0o200
+        original_unlink(path, *args, **kwargs)
+
+    monkeypatch.setattr(pathlib.Path, "unlink", unlink)
     result = pytilpack.pathlib.rmtree(d)
+    assert attempts == 2
     assert not d.exists()
     assert result.files == 1
     assert result.dirs == 1

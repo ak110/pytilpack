@@ -4,6 +4,9 @@ import concurrent.futures
 import multiprocessing
 import os
 import pathlib
+import typing
+
+import pytest
 
 import pytilpack.secrets
 
@@ -20,13 +23,22 @@ def test_generate_secret_key(tmp_path: pathlib.Path) -> None:
     assert (os.stat(path).st_mode & 0o777) == 0o600
 
 
-def test_generate_secret_key_permission_with_open_umask(tmp_path: pathlib.Path) -> None:
+def test_generate_secret_key_permission_with_open_umask(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """umaskがゆるい環境でも作成時点から0o600で作成されることを確認。"""
     path = tmp_path / "secret_key"
+    original_open = os.open
+    modes: list[int] = []
+
+    def record_open(file: typing.Any, flags: int, mode: int = 0o777, **kwargs: typing.Any) -> int:
+        if pathlib.Path(file) == path and flags & os.O_CREAT:
+            modes.append(mode)
+        return original_open(file, flags, mode, **kwargs)
+
+    monkeypatch.setattr(pytilpack.secrets.os, "open", record_open)
     old_umask = os.umask(0o000)
     try:
         pytilpack.secrets.generate_secret_key(path)
-        # 作成直後の時点で0o600であること
+        assert modes == [0o600]
         assert (os.stat(path).st_mode & 0o777) == 0o600
     finally:
         os.umask(old_umask)

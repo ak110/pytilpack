@@ -1,6 +1,7 @@
 """SSE モジュールのテスト。"""
 
 import asyncio
+import contextlib
 import typing
 
 import pytest
@@ -121,28 +122,51 @@ async def test_generator() -> None:
 
 
 @pytest.mark.asyncio
-async def test_generator_cancel() -> None:
-    """キャンセルのテスト。"""
+async def test_generator_cancel(monkeypatch: pytest.MonkeyPatch) -> None:
+    """切断すると待機中の次要素取得へキャンセルが伝わる。"""
     cleanup_called = False
+    cancelled = False
+    waiting = asyncio.Event()
+    release = asyncio.Event()
+    original_wait_for = asyncio.wait_for
+    waits = 0
+
+    async def wait_for(awaitable: typing.Any, timeout: float, **kwargs: typing.Any) -> typing.Any:
+        del kwargs
+        nonlocal waits
+        waits += 1
+        if waits > 1:
+            await original_wait_for(waiting.wait(), timeout=5)
+            raise TimeoutError
+        return await original_wait_for(awaitable, timeout=timeout)
+
+    monkeypatch.setattr(pytilpack.sse.asyncio, "wait_for", wait_for)
 
     @pytilpack.sse.generator(interval=0.15)
     async def generate() -> typing.AsyncGenerator[str, None]:
-        nonlocal cleanup_called
+        nonlocal cleanup_called, cancelled
         try:
             yield "data: msg1\n\n"
-            await asyncio.sleep(1.0)  # 長い待機（キャンセルされる）
+            waiting.set()
+            await release.wait()
             yield "data: msg2\n\n"
+        except asyncio.CancelledError:
+            cancelled = True
+            raise
         finally:
             cleanup_called = True
 
-    messages: list[str] = []
     gen = generate()
-    async for msg in gen:
-        messages.append(msg)
-        if len(messages) == 1:
-            # 最初のメッセージ受信後にキャンセル
-            await gen.aclose()
-            break
-
-    assert messages == ["data: msg1\n\n"]
+    assert await anext(gen) == "data: msg1\n\n"
+    next_message = asyncio.create_task(anext(gen))
+    await original_wait_for(waiting.wait(), timeout=5)
+    assert await original_wait_for(next_message, timeout=5) == ": ping\n\n"
+    close_task = asyncio.create_task(gen.aclose())
+    try:
+        await asyncio.wait({close_task}, timeout=1)
+        assert cancelled
+    finally:
+        release.set()
+        with contextlib.suppress(asyncio.CancelledError):
+            await original_wait_for(close_task, timeout=5)
     assert cleanup_called
