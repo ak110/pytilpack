@@ -88,9 +88,10 @@ async def test_i18n_state_deactivated_after_request() -> None:
         assert pytilpack.i18n.is_active()
         return pytilpack.i18n.gettext_func("Hello")
 
-    async with app.test_client() as client:
-        response = await client.get("/hello", headers={"Accept-Language": "ja"})
-        assert response.status_code == 200
+    # 文脈保持付きのクライアントは実リクエストのteardownを保留するため、保持なしで完了させる
+    client = app.test_client()
+    response = await client.get("/hello", headers={"Accept-Language": "ja"})
+    assert response.status_code == 200
 
     assert states
     assert not any(states)

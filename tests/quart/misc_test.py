@@ -198,7 +198,9 @@ async def test_set_max_concurrency() -> None:
 
     pytilpack.quart.set_max_concurrency(app, 2, timeout=0.01)
 
-    async with app.test_client() as client:
+    # 文脈保持なしのクライアントでteardownまで完了させ、上限を超える逐次要求で解放を確かめる
+    client = app.test_client()
+    for _ in range(3):
         assert (await client.get("/test")).status_code == 200
 
     # ConcurrencyStateがextensionsに保存されていること
@@ -218,9 +220,12 @@ async def test_set_max_concurrency_no_timeout() -> None:
         return "OK"
 
     pytilpack.quart.set_max_concurrency(app, 1, timeout=None)
+    state: pytilpack.quart.misc.ConcurrencyState = app.extensions["pytilpack_concurrency"]
 
-    async with app.test_client() as client:
-        assert (await client.get("/test")).status_code == 200
+    # 文脈保持なしのクライアントでteardownまで完了させ、唯一の枠が解放されたことを確かめる
+    client = app.test_client()
+    assert (await client.get("/test")).status_code == 200
+    assert not state.semaphore.locked()
 
 
 @pytest.mark.asyncio
@@ -234,15 +239,17 @@ async def test_exhaust_concurrency() -> None:
 
     pytilpack.quart.set_max_concurrency(app, 2, timeout=1.0)
 
-    async with app.test_client() as client:
-        # 通常は通る
-        assert (await client.get("/test")).status_code == 200
+    # 文脈保持なしのクライアントでteardownまで完了させる
+    client = app.test_client()
+    # 通常は通る
+    assert (await client.get("/test")).status_code == 200
 
-        # exhaust中は503
-        async with pytilpack.quart.exhaust_concurrency(app):
-            assert (await client.get("/test")).status_code == 503
+    # exhaust中は503
+    async with pytilpack.quart.exhaust_concurrency(app):
+        assert (await client.get("/test")).status_code == 503
 
-        # exhaust後は復帰
+    # exhaust後は元のセマフォへ復帰し、上限を超える逐次要求も解放により通る
+    for _ in range(3):
         assert (await client.get("/test")).status_code == 200
 
 
