@@ -11,7 +11,7 @@ import pytilpack.typing
 
 # https://stackoverflow.com/questions/77071473/where-can-i-import-dataclassinstance-for-mypy-check
 if typing.TYPE_CHECKING:
-    from _typeshed import DataclassInstance
+    from _typeshed import DataclassInstance  # noqa: TID254  # 型チェック専用で実行時に読み込まれないため列挙しない
 
     TDataClass = typing.TypeVar("TDataClass", bound=DataclassInstance)
 

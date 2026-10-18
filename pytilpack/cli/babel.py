@@ -6,10 +6,10 @@ import argparse
 import logging
 import pathlib
 
-import babel.messages.catalog
-import babel.messages.extract
-import babel.messages.mofile
-import babel.messages.pofile
+import babel.messages.catalog  # noqa: TID254  # CLIのextras未導入をimport時に判定するため即時に読み込む
+import babel.messages.extract  # noqa: TID254  # CLIのextras未導入をimport時に判定するため即時に読み込む
+import babel.messages.mofile  # noqa: TID254  # CLIのextras未導入をimport時に判定するため即時に読み込む
+import babel.messages.pofile  # noqa: TID254  # CLIのextras未導入をimport時に判定するため即時に読み込む
 
 logger = logging.getLogger(__name__)
 

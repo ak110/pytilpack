@@ -64,6 +64,11 @@ Python 3.15以降でimport時間を短縮するため、各モジュールはdoc
 
 - 名前を参照しない副作用目的のimport、`from __future__`、`*`によるimport
 - CLIのサブコマンドがextras未導入の判定に使うimport（`pytilpack.cli.babel`の`babel`、`pytilpack.cli.wait_for_db_connection`の`pytilpack.sqlalchemy`）。`pytilpack.cli.main`は登録時の`ImportError`で未導入を判定するため、遅延すると`--help`の「未インストール」表示が失われる
+- `typing.TYPE_CHECKING`の内側に置く型チェック専用のimport。実行時には読み込まれないため遅延の対象にならない
+
+`__lazy_modules__`へ列挙していないimportはRuffのTID254が報告する。`pyproject.toml`で`require-lazy = "all"`を設定し、`__lazy_modules__`を宣言したモジュールで遅延化できるトップレベルのimportが列挙されていなければ失敗する。
+前掲の例外のうちCLIのextras判定と型チェック専用のimportは、理由付きの`# noqa: TID254`で行単位に除外する。
+宣言の無いファイル、関数内・クラス内・`try`配下のimport、`from __future__`、`*`によるimportはTID254の対象外のため、宣言自体の削除はTID254では検出できない。
 
 モジュール定義時に評価する箇所（基底クラス、デコレーター、型エイリアスの代入など）で使う依存は列挙しても読み込み時に解決されるため、短縮は依存を関数内でだけ使うモジュールで得られる。
 列挙したextraの依存が欠けている場合、3.15以降は`ImportError`がimport時ではなく最初の利用時に発生する。

@@ -251,12 +251,18 @@ select = [
     "ICN",
     # isort
     "I",
+    # flake8-tidy-imports: __lazy_modules__の列挙漏れを検出する（docs/development/architecture.md「依存の向きとimport」）
+    "TID254",
 ]
 ignore = [
     "D107", # Missing docstring in `__init__`
     "D415", # First line should end with a period
     "D403", # First word of the first line should be properly capitalized（日本語docstringにそぐわないため）
 ]
+
+[tool.ruff.lint.flake8-tidy-imports]
+# __lazy_modules__を宣言したモジュールで、遅延化できるimportを全て列挙することを求める
+require-lazy = "all"
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

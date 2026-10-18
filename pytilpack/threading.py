@@ -7,7 +7,7 @@ import contextlib
 import typing
 
 if typing.TYPE_CHECKING:
-    import threading
+    import threading  # noqa: TID254  # 型チェック専用で実行時に読み込まれないため列挙しない
 
 
 @contextlib.contextmanager

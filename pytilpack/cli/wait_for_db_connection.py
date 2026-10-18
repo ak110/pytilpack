@@ -6,7 +6,7 @@ import argparse
 import asyncio
 import logging
 
-import pytilpack.sqlalchemy
+import pytilpack.sqlalchemy  # noqa: TID254  # CLIのextras未導入をimport時に判定するため即時に読み込む
 
 logger = logging.getLogger(__name__)
 
