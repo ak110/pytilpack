@@ -7,6 +7,114 @@ import pytest
 
 import pytilpack.web
 
+# HTML Standardのin body解析規則と名前空間規則から導いた公開入口共通の入力。
+# https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inbody
+HTML_VALID_CASES = [
+    pytest.param("<select><option>日本語</option><hr><option>b</option></select>", id="select-hr"),
+    pytest.param("<select><button><selectedcontent></selectedcontent></button><option>a</option></select>", id="select-button"),
+    pytest.param("<select><option><span>a</span></option></select>", id="select-option-span"),
+    pytest.param("<select><optgroup><legend>group</legend><option>a</option></optgroup></select>", id="select-legend"),
+    pytest.param("<select><div><option>a</option><option>b</option></div></select>", id="select-div"),
+    pytest.param(
+        "<select><optgroup label='a'><option>a<option>b<hr><optgroup label='b'><option>c</select>", id="select-implied"
+    ),
+    pytest.param(
+        "<select><optgroup label='a'><option>a</option><option>b</option></optgroup><hr>"
+        "<optgroup label='b'><option>c</option></optgroup></select>",
+        id="select-explicit",
+    ),
+    pytest.param("<table><tr><td><select><option>a<hr><option>b</select></td></tr></table>", id="table-select"),
+    pytest.param("<select><option>a</option></select>", id="ordinary-select"),
+    pytest.param("<svg><circle r='1'/></svg><math><mi>x</mi></math><search><dialog open>x</dialog></search>", id="controls"),
+    pytest.param("<template><template><tr><td>x</td></tr></template></template>", id="nested-template"),
+    pytest.param("<svg><script/><template/></svg><template><tr><td>x</td></tr></template>", id="svg-self-closing"),
+    pytest.param("<svg><![CDATA[<template>]]></svg><template><tr><td>x</td></tr></template>", id="svg-cdata"),
+    pytest.param("<svg><foreignObject><template><tr><td>x</td></tr></template></foreignObject></svg>", id="svg-integration"),
+    pytest.param(
+        "<math><annotation-xml encoding='text/html'><template><tr><td>x</td></tr></template></annotation-xml></math>",
+        id="math-integration",
+    ),
+    pytest.param("<math><mtext><template><tr><td>x</td></tr></template></mtext></math>", id="math-text-integration"),
+    *[
+        pytest.param(f"<{tag}>text &lt;template&gt;</{tag}><template><tr><td>x</td></tr></template>", id=f"text-{tag}")
+        for tag in ("script", "style", "xmp", "iframe", "noembed", "noframes", "title", "textarea")
+    ],
+]
+
+HTML_INVALID_CASES = [
+    pytest.param("<select><option>a</div></option></select>", ("div",), id="select-end-tag"),
+    pytest.param("<select><input></select>", ("input",), id="select-input"),
+    pytest.param("<select><select></select>", ("select",), id="nested-select"),
+    pytest.param("<select><option>a", ("end of file",), id="unclosed-select"),
+    pytest.param("<select id='a' id='b'></select>", ("duplicate attribute",), id="duplicate-attribute"),
+    pytest.param("<select></select><p>a</div>", ("div",), id="outside-select"),
+    pytest.param("<select><option><span>a<option>b</select>", ("option",), id="option-scope"),
+    pytest.param("<select><optgroup><div><optgroup></select>", ("optgroup",), id="optgroup-scope"),
+    pytest.param("<select><option><span>a<hr></select>", ("hr",), id="hr-scope"),
+    pytest.param("<select><div></select>", ("select",), id="select-close-scope"),
+    *[
+        pytest.param(
+            f'<template><{tag}{solidus}>var s="<template>";</{tag}></template><p>a</div></template>',
+            ("div", "template"),
+            id=f"boundary-{tag}-{'solidus' if solidus else 'normal'}",
+        )
+        for tag in ("script", "style", "xmp", "iframe", "noembed", "noframes", "title", "textarea")
+        for solidus in ("", "/")
+    ],
+    pytest.param("<template><plaintext>text</template><p>a</div></template>", ("end of file",), id="plaintext"),
+    pytest.param("<svg><template><p>a</div></template></svg>", ("div",), id="foreign-template"),
+    pytest.param("<math><template><p>a</div></template></math>", ("div",), id="math-template"),
+    pytest.param("<svg><script/><template/><p>a</div>", ("div",), id="foreign-self-closing"),
+    pytest.param("<svg><![CDATA[<template>]]><p>a</div></template>", ("div",), id="cdata-outside"),
+    pytest.param(
+        "<svg><foreignObject><template>x</template><p>a</div></template></foreignObject></svg>",
+        ("div", "template"),
+        id="integration-outside",
+    ),
+    pytest.param("<template><template>x</template></template><p>a</div>", ("div",), id="nested-outside"),
+    pytest.param("<template><p>a</div>", ("div",), id="unclosed-template"),
+    pytest.param("<frameset><script><template></script></frameset></template>", ("script",), id="ignored-script"),
+    pytest.param("<svg><script><template/></script></svg><p>a</div></template>", ("div",), id="svg-script"),
+]
+
+
+@pytest.mark.parametrize("fragment", HTML_VALID_CASES)
+@pytest.mark.parametrize("input_kind", ["str", "bytes", "text-file", "binary-file"])
+def test_check_html_current_syntax(fragment: str, input_kind: str, caplog: pytest.LogCaptureFixture) -> None:
+    """現行select・template・名前空間の正例を各入力型と両strict値で検査する。"""
+    html = f"<!doctype html><meta charset='utf-8'><title>t</title>\n{fragment}"
+    for strict in (True, False):
+        value = {"str": html, "bytes": html.encode(), "text-file": io.StringIO(html), "binary-file": io.BytesIO(html.encode())}
+        pytilpack.web.check_html(value[input_kind], strict=strict)
+    assert not [record for record in caplog.records if record.name == "pytilpack.web" and "HTMLエラー:" in record.message]
+
+
+@pytest.mark.parametrize("fragment,expected", HTML_INVALID_CASES)
+def test_check_html_diagnostics_retained(fragment: str, expected: tuple[str, ...], caplog: pytest.LogCaptureFixture) -> None:
+    """selectの不正構文と本パーサーのtemplate境界外の診断を保持する。"""
+    html = f"<!doctype html><meta charset='utf-8'><title>t</title>\n{fragment}"
+    with pytest.raises(AssertionError) as exc_info:
+        pytilpack.web.check_html(html, strict=True)
+    pytilpack.web.check_html(html.encode(), strict=False)
+    for diagnostic in expected:
+        assert diagnostic in str(exc_info.value).lower()
+        assert diagnostic in caplog.text.lower()
+
+
+@pytest.mark.parametrize("file_like", [False, True])
+def test_check_html_reparsed_bytes(file_like: bool, caplog: pytest.LogCaptureFixture) -> None:
+    """先読み範囲より後のcharset宣言による再解析でもtemplate境界を初期化する。"""
+    # charsetの先読み（1024 bytes）の外で、未終了のtemplateを持つ解析をやり直す。
+    html = "<!doctype html><title>t</title><!--" + "x" * 1024 + "-->"
+    html += "<template><meta charset='utf-8'><tr><td>日本語</td></tr></template>"
+    for strict in (True, False):
+        data = html.encode()
+        pytilpack.web.check_html(io.BytesIO(data) if file_like else data, strict=strict)
+    assert "HTMLエラー:" not in caplog.text
+    with pytest.raises(AssertionError, match="div"):
+        data = (html + "<p>a</div>").encode()
+        pytilpack.web.check_html(io.BytesIO(data) if file_like else data, strict=True)
+
 
 @pytest.mark.parametrize(
     "target,host_url,default_url,expected",

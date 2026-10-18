@@ -69,6 +69,10 @@ def assert_html(
 ) -> str:
     """レスポンスを検証してHTMLボディを文字列で返す。html5libが必要。
 
+    html5libの字句・木構築時の構文診断に現行のselect解析規則を補って検査する。
+    templateの最も外側の開始・終了タグ間は診断対象から除外するため、内容の構文誤りも報告されない。
+    対応する終了タグのないtemplateは除外しない。内容モデルや属性値などの仕様適合全体は検証しない。
+
     strict・tmp_pathはキーワード引数での指定を推奨する。flask/quart/fastapi間で
     位置引数順を揃えているが、将来の引数追加時の後方互換性を保つためである。
 
@@ -76,7 +80,7 @@ def assert_html(
         response: レスポンス
         status_code: 期待するステータスコード
         content_type: 期待するContent-Type
-        strict: Trueの場合、HTML5の仕様に従ったパースを行う
+        strict: TrueではHTMLの構文診断をAssertionErrorで通知し、Falseでは警告して処理を継続する。
         tmp_path: 一時ファイルを保存するディレクトリ
 
     Raises:

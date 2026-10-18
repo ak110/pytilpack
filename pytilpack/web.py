@@ -2,7 +2,6 @@
 
 __lazy_modules__ = [
     "html5lib",
-    "html5lib._tokenizer",
     "html5lib.constants",
     "logging",
     "pathlib",
@@ -22,7 +21,6 @@ import typing
 import urllib.parse
 
 import html5lib
-import html5lib._tokenizer
 import html5lib.constants
 import werkzeug.http
 
@@ -372,79 +370,115 @@ def check_content_type(content_type: str, valid_content_types: str | typing.Iter
 
 
 def check_html(input_stream: typing.Any, strict: bool = False) -> None:
-    """HTMLのチェック。
+    """HTMLの字句・木構築時の構文エラーを診断する。
 
-    html5libのパースエラーをHTMLエラーとして報告する。
+    html5libの診断に現行のselect解析規則を補って報告する。
+    内容モデルや属性値など、HTML仕様への適合全体の検証は行わない。
     ただし``template``要素の範囲（最も外側の開始タグから対応する終了タグまで）にあるエラーは報告しない。
     html5lib 1.1は``template``要素の構文規則を持たず、``select``や表の中の``template``、
     行や列を内容に持つ``template``など、正しいHTMLに対してもエラーを記録するためである。
     このため``template``の内容にある本物の構文誤りも報告されない。
+    対応する終了タグのない``template``は除外しない。
 
     Args:
         input_stream: 検査するHTML（``str``・``bytes``・ファイル風オブジェクト）。
-        strict: Trueの場合はエラー時に``AssertionError``を送出し、Falseの場合は警告ログを出力する。
+        strict: Trueの場合はエラー時に``AssertionError``を送出し、Falseの場合は警告ログを出力して処理を継続する。
 
     """
-    if hasattr(input_stream, "read"):
-        # パーサーとトークナイザーの双方で読むため、ファイル風オブジェクトは先に全体を読んでおく
-        input_stream = input_stream.read()
-    parser = html5lib.HTMLParser(debug=True)
+    parser = _HTMLDiagnosticParser()
     _ = parser.parse(input_stream)
     if len(parser.errors) == 0:
         return
-    template_ranges = _get_template_ranges(input_stream)
     errors = [
         f"{position}: {html5lib.constants.E[errorcode] % datavars}"
         for position, errorcode, datavars in parser.errors
-        if not any(start <= position <= end for start, end in template_ranges)
+        if not any(start <= position <= end for start, end in parser.template_ranges)
     ]
     if len(errors) > 0:
         if strict:
             error_str = "\n".join(errors)
-            raise AssertionError(f"HTMLエラー: {error_str}")
+            raise AssertionError(f"HTMLエラー: 報告位置のHTMLを修正してください。\n{error_str}")
         for error in errors:
-            logger.warning(f"HTMLエラー: {error}")
+            logger.warning(f"HTMLエラー: 処理を継続しました。報告位置のHTMLを修正してください。{error}")
 
 
-# パーサーがトークナイザーの状態を切り替える要素と切り替え先の状態名。
-# 内容に現れる文字列``<template>``を要素として数えないよう、パーサーと同じ切り替えを行う。
-_TOKENIZER_STATES = {
-    "script": "scriptDataState",
-    "style": "rawtextState",
-    "xmp": "rawtextState",
-    "iframe": "rawtextState",
-    "noembed": "rawtextState",
-    "noframes": "rawtextState",
-    "title": "rcdataState",
-    "textarea": "rcdataState",
-    "plaintext": "plaintextState",
-}
+class _HTMLDiagnosticParser(html5lib.HTMLParser):
+    """html5lib 1.1のphase・tree・tokenizer位置を共有する診断用パーサー。"""
+
+    def __init__(self) -> None:
+        self.template_ranges: list[tuple[tuple[int, int], tuple[int, int]]] = []
+        self.template_starts: list[tuple[int, int]] = []
+        super().__init__()
+        self.phases["inBody"] = _InBodyPhase(self, self.phases["inBody"])
+        # resetInsertionModeも現行のin body解析へ戻す。
+        self.phases["inSelect"] = self.phases["inBody"]
+        self.phases["inSelectInTable"] = self.phases["inBody"]
+
+    def reset(self) -> None:
+        """文字コード変更による再解析でも診断と境界を同時に初期化する。"""
+        self.template_ranges.clear()
+        self.template_starts.clear()
+        super().reset()
 
 
-def _get_template_ranges(input_stream: typing.Any) -> list[tuple[tuple[int, int], tuple[int, int]]]:
-    """最も外側の``template``要素ごとに、開始タグと終了タグの直後の位置（行, 列）の組を返す。
+class _InBodyPhase:
+    """現行select規則を補い、HTMLとして処理されたtemplateの位置を記録する。
 
-    位置をパーサーのエラー位置とそろえるため、html5lib自身のトークナイザーで読む。
-    対応する終了タグの無い開始タグは範囲に含めない。
+    html5lib 1.1のmainLoopによる名前空間・挿入モードの選択と再処理に従う。
+    phaseの内部メソッド、treeのスコープと暗黙終了、tokenizer.streamへ依存する。
+    仕様: https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inbody
     """
-    tokenizer = html5lib._tokenizer.HTMLTokenizer(input_stream)  # pylint: disable=protected-access
-    start_tag = html5lib.constants.tokenTypes["StartTag"]
-    end_tag = html5lib.constants.tokenTypes["EndTag"]
-    ranges: list[tuple[tuple[int, int], tuple[int, int]]] = []
-    depth = 0
-    start: tuple[int, int] = (0, 0)
-    for token in tokenizer:
-        token_type = token.get("type")
-        name = token.get("name")
-        if token_type == start_tag:
-            if name == "template":
-                if depth == 0:
-                    start = tokenizer.stream.position()
-                depth += 1
-            elif name in _TOKENIZER_STATES and not token.get("selfClosing"):
-                tokenizer.state = getattr(tokenizer, _TOKENIZER_STATES[name])
-        elif token_type == end_tag and name == "template" and depth > 0:
-            depth -= 1
-            if depth == 0:
-                ranges.append((start, tokenizer.stream.position()))
-    return ranges
+
+    def __init__(self, parser: _HTMLDiagnosticParser, phase: typing.Any) -> None:
+        self.parser = parser
+        self.phase = phase
+        self.tree = phase.tree
+
+    def __getattr__(self, name: str) -> typing.Any:
+        return getattr(self.phase, name)
+
+    def processStartTag(self, token: dict[str, typing.Any]) -> typing.Any:
+        """HTMLの開始タグへselectのスコープと暗黙終了を適用する。"""
+        name = token["name"]
+        in_select = self.tree.elementInScope("select")
+        if name == "template":
+            self.parser.template_starts.append(self.parser.tokenizer.stream.position())
+        if name == "select":
+            if in_select:
+                self.parser.parseError("unexpected-select-in-select")
+                self._pop_select()
+            else:
+                self.tree.reconstructActiveFormattingElements()
+                self.tree.insertElement(token)
+                self.parser.framesetOK = False
+            return None
+        if in_select and name == "input":
+            self.parser.parseError("unexpected-input-in-select")
+            self._pop_select()
+        if in_select and name in ("option", "optgroup", "hr"):
+            self.tree.generateImpliedEndTags(exclude="optgroup" if name == "option" else None)
+            if self.tree.elementInScope("option") or (name != "option" and self.tree.elementInScope("optgroup")):
+                self.parser.parseError("unexpected-start-tag", {"name": name})
+        return self.phase.processStartTag(token)
+
+    def processEndTag(self, token: dict[str, typing.Any]) -> typing.Any:
+        """HTMLの終了タグへselectスコープとtemplate境界を適用する。"""
+        name = token["name"]
+        if name == "template" and self.parser.template_starts:
+            start = self.parser.template_starts.pop()
+            if not self.parser.template_starts:
+                self.parser.template_ranges.append((start, self.parser.tokenizer.stream.position()))
+        if name == "select":
+            if not self.tree.elementInScope("select"):
+                self.parser.parseError("unexpected-end-tag", {"name": name})
+                return None
+            self.tree.generateImpliedEndTags()
+            if self.tree.openElements[-1].name != name:
+                self.parser.parseError("end-tag-too-early", {"name": name})
+            self._pop_select()
+            return None
+        return self.phase.processEndTag(token)
+
+    def _pop_select(self) -> None:
+        while self.tree.openElements.pop().name != "select":
+            pass

@@ -8,6 +8,7 @@ import flask.testing
 import pytest
 
 import pytilpack.flask
+import tests.web_test
 
 
 @pytest.fixture(name="app")
@@ -29,6 +30,10 @@ def _app() -> typing.Generator[flask.Flask, None, None]:
             200,
             {"Content-Type": "text/html"},
         )
+
+    @app.post("/html-case")
+    def html_case():
+        return flask.Response(flask.request.get_data(), content_type="text/html; charset=utf-8")
 
     @app.route("/json")
     def json():
@@ -89,6 +94,34 @@ def test_assert_html(client: flask.testing.FlaskClient, tmp_path: pathlib.Path) 
     response = client.get("/html-invalid")
     with pytest.raises(AssertionError):
         _ = pytilpack.flask.assert_html(response, strict=True)
+
+
+@pytest.mark.parametrize("fragment", tests.web_test.HTML_VALID_CASES)
+def test_assert_html_current_syntax(client: flask.testing.FlaskClient, fragment: str, caplog: pytest.LogCaptureFixture) -> None:
+    """現行HTMLの正例をレスポンスbytesから検査してボディを返す。"""
+    html = f"<!doctype html><meta charset='utf-8'><title>t</title>\n{fragment}"
+    response = client.post("/html-case", data=html.encode())
+    for strict in (True, False):
+        assert pytilpack.flask.assert_html(response, strict=strict) == html
+    assert not [record for record in caplog.records if record.name == "pytilpack.web" and "HTMLエラー:" in record.message]
+
+
+@pytest.mark.parametrize("fragment,expected", tests.web_test.HTML_INVALID_CASES)
+def test_assert_html_diagnostics_retained(
+    client: flask.testing.FlaskClient, fragment: str, expected: tuple[str, ...], caplog: pytest.LogCaptureFixture
+) -> None:
+    """レスポンスbytesの構文診断を通知し、警告時もボディを返す。"""
+    html = f"<!doctype html><meta charset='utf-8'><title>t</title>\n{fragment}"
+    response = client.post("/html-case", data=html.encode())
+    with pytest.raises(AssertionError) as exc_info:
+        pytilpack.flask.assert_html(response, strict=True)
+    caplog.clear()
+    assert pytilpack.flask.assert_html(response, strict=False) == html
+    # AssertBlockが短縮した見出しに加え、例外チェーンに残る構文診断を確認する。
+    assert exc_info.value.__cause__ is not None
+    for diagnostic in expected:
+        assert diagnostic in str(exc_info.value.__cause__).lower()
+        assert diagnostic in caplog.text.lower()
 
 
 def test_assert_json(client: flask.testing.FlaskClient) -> None:
