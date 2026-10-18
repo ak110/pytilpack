@@ -99,11 +99,17 @@ class ProxyFix(werkzeug.middleware.proxy_fix.ProxyFix):
             if x_host:
                 validated_host = pytilpack.web.validate_forwarded_host(x_host)
                 if validated_host is None:
-                    logger.warning(f"X-Forwarded-Hostに不正な値が含まれています: {x_host!r}")
+                    logger.warning(
+                        f"X-Forwarded-Hostに不正な値が含まれています: {x_host!r}。"
+                        "このヘッダーを無視して処理を続ける。プロキシが送るX-Forwarded-Hostの設定を見直す"
+                    )
                 elif self.trusted_hosts is not None and not pytilpack.web.is_host_in_trusted(
                     validated_host, self.trusted_hosts
                 ):
-                    logger.warning(f"X-Forwarded-Hostが許可リスト外です: {validated_host!r}")
+                    logger.warning(
+                        f"X-Forwarded-Hostが許可リスト外です: {validated_host!r}。"
+                        "このヘッダーを無視して処理を続ける。正当なホストならProxyFixのtrusted_hostsへ追加する"
+                    )
                 else:
                     environ["HTTP_HOST"] = validated_host
 
@@ -113,7 +119,10 @@ class ProxyFix(werkzeug.middleware.proxy_fix.ProxyFix):
             if x_prefix:
                 prefix = pytilpack.web.validate_forwarded_prefix(x_prefix)
                 if prefix is None:
-                    logger.warning(f"X-Forwarded-Prefixに不正な値が含まれています: {x_prefix!r}")
+                    logger.warning(
+                        f"X-Forwarded-Prefixに不正な値が含まれています: {x_prefix!r}。"
+                        "このヘッダーを無視して処理を続ける。プロキシが送るX-Forwarded-Prefixの設定を見直す"
+                    )
                 else:
                     environ["SCRIPT_NAME"] = prefix
                     path_info = environ.get("PATH_INFO", "")

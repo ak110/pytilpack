@@ -60,7 +60,7 @@ class AssertBlock:
             path = create_temp_view(
                 tmp_path=self.tmp_path, data=self.data, suffix=self.suffix, encoding=self.encoding, errors=self.errors
             )
-            logger.error(f"アサーションエラー: {exc_val}, <{path}>")
+            logger.error(f"アサーションエラー: {exc_val}, <{path}>。保存したファイルを開いて応答の内容を確かめる")
             msg = str(exc_val)
             if len(msg) > 24:
                 matches = [(i, p) for p in ("' in '", "' in b'") if (i := msg.find(p)) != -1]
@@ -69,7 +69,7 @@ class AssertBlock:
                     msg = msg[: i + len(p)] + "..."
                 else:
                     msg = msg[:24] + "..."
-            raise AssertionError(f"{msg}, <{path}>") from exc_val
+            raise AssertionError(f"{msg}, <{path}> (open the saved file to inspect the response)") from exc_val
 
     async def __aenter__(self) -> None:
         """非同期コンテキストマネージャーのenter。"""

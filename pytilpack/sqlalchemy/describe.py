@@ -42,7 +42,10 @@ def get_class_by_table(
     for mapper in base.registry.mappers:
         if mapper.local_table is table:
             return typing.cast(type[sqlalchemy.orm.DeclarativeBase], mapper.class_)
-    raise ValueError(f"テーブル {table.name} に対応するクラスが見つかりませんでした。")
+    raise ValueError(
+        f"テーブル {table.name} に対応するクラスが見つかりませんでした。"
+        f"テーブルを定義したモデルが{base.__qualname__}を継承してマッピングされているか、渡したBaseが正しいかを確かめる"
+    )
 
 
 def describe_table(
@@ -54,7 +57,7 @@ def describe_table(
     try:
         class_field_comments = pytilpack.python.class_field_comments(orm_class)
     except Exception as e:
-        logger.warning(f"クラスフィールドコメント取得失敗: {e}")
+        logger.warning(f"クラスフィールドコメント取得失敗: {e}。コメント欄を空にして処理を続ける（対応不要）")
         class_field_comments = {}
 
     headers = ["Field", "Type", "Null", "Key", "Default", "Extra", "Comment"]

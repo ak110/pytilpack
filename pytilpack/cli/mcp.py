@@ -96,7 +96,11 @@ def _create_server() -> MCPServer:
                 user_agent=user_agent,
             )
         except Exception as e:
-            logger.error(f"URL {url} の取得中にエラーが発生しました: {e}")
-            return f"Error: URL {url} の取得中にエラーが発生しました: {e}"
+            message = (
+                f"URL {url} の取得中にエラーが発生しました: {e}。"
+                "URLとアクセス可否を確かめて再試行するか、no_verify・accept・user_agentの指定を見直す"
+            )
+            logger.error(message)
+            return f"Error: {message}"
 
     return mcp

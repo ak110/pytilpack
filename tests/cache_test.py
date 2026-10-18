@@ -81,3 +81,11 @@ def test_cached_file_loader(
     loader_upper = cache.CachedFileLoader(lambda p: p.read_text().upper())
     assert loader_upper.load(test_file) == "UPDATED"
     assert loader_upper.load(test_file, lambda p: p.read_text().lower()) == "updated"
+
+
+def test_cached_file_loader_error_messages() -> None:
+    """失敗の文面に次の操作が含まれる。"""
+    with pytest.raises(ValueError, match="load\\(\\)のloader引数か、CachedFileLoader\\(\\)のloader引数で指定する"):
+        cache.CachedFileLoader[str]().load(pathlib.Path(__file__))
+    with pytest.raises(FileNotFoundError, match="パスの指定を見直すか、ファイルを作成してから呼び出す"):
+        cache.CachedFileLoader(lambda p: p.read_text()).load(pathlib.Path("not_exists"))

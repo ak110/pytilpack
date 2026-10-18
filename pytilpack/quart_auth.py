@@ -72,7 +72,11 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
             template_context["current_user"] = self.current_user  # type: ignore[assignment]
             return template_context
         except Exception:
-            logger.warning("テンプレートコンテキストのユーザーロードに失敗しました", exc_info=True)
+            logger.warning(
+                "テンプレートコンテキストのユーザーロードに失敗しました。current_userをAnonymousUserとして描画を続ける。"
+                "原因は付記した例外を参照し、user_loaderの実装を見直す",
+                exc_info=True,
+            )
             return {"current_user": AnonymousUser()}  # type: ignore[dict-item]
 
     @typing.overload
@@ -121,7 +125,7 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
             # sync版loaderで読み込む
             quart.g.quart_auth_current_user = self.user_loader_func(auth_id)
         else:
-            raise RuntimeError("user_loaderが設定されていません")
+            raise RuntimeError("user_loaderが設定されていません。@auth_manager.user_loaderでユーザーを読み込む関数を登録する")
 
         return self._finish_user_load(auth_id)
 
@@ -129,7 +133,10 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
         """ロード結果のキャッシュ、ログアウトとCookie更新を処理する。"""
         if auth_id is not None and quart.g.quart_auth_current_user is None:
             # ユーザーが見つからない場合はAnonymousUserにする
-            logger.error(f"ユーザーロードエラー: {auth_id}")
+            logger.error(
+                f"ユーザーロードエラー: {auth_id}。user_loaderがNoneを返したため、ログアウトして未認証として処理を続ける。"
+                "ユーザーが削除されていないか、user_loaderの実装を確かめる"
+            )
             quart.g.quart_auth_current_user = AnonymousUser()
             quart_auth.logout_user()
         elif auth_id is not None:

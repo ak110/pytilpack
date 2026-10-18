@@ -321,7 +321,8 @@ def warn_if_slow[**P, R](
                 duration = time.perf_counter() - start
                 if duration >= threshold_seconds:
                     logger.warning(
-                        "Function %s took %.3f s (threshold %.3f s)",
+                        "Function %s took %.3f s (threshold %.3f s). Processing continued;"
+                        " investigate the slow call, or raise threshold_seconds if this duration is expected.",
                         func.__qualname__,
                         duration,
                         threshold_seconds,
@@ -339,7 +340,8 @@ def warn_if_slow[**P, R](
                 duration = time.perf_counter() - start
                 if duration >= threshold_seconds:
                     logger.warning(
-                        "Function %s took %.3f s (threshold %.3f s)",
+                        "Function %s took %.3f s (threshold %.3f s). Processing continued;"
+                        " investigate the slow call, or raise threshold_seconds if this duration is expected.",
                         func.__qualname__,
                         duration,
                         threshold_seconds,

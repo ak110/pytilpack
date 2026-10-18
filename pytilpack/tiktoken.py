@@ -36,7 +36,10 @@ def get_encoding_for_model(model_name: str) -> tiktoken.Encoding:
     try:
         encoding = tiktoken.encoding_for_model(model_name)
     except KeyError:
-        logger.warning(f"model '{model_name}' not found. Using o200k_base encoding.")
+        logger.warning(
+            f"model '{model_name}' not found. Using o200k_base encoding and continuing."
+            " No action is needed if the approximation is acceptable; otherwise pass a model name known to tiktoken."
+        )
         encoding = tiktoken.get_encoding("o200k_base")
     return encoding
 
@@ -204,7 +207,10 @@ def num_tokens_for_tools(
     num_tokens = 0
     for tool in tools:
         if tool.get("type") != "function":
-            logger.warning(f"Tool type {tool.get('type')} is not supported. Only 'function' type is supported.")
+            logger.warning(
+                f"Tool type {tool.get('type')} is not supported. Only 'function' type is supported."
+                " Excluded this tool from the token count and continued."
+            )
             continue
         function = tool["function"]
         try:
@@ -234,7 +240,11 @@ def num_tokens_for_tools(
                             num_tokens += len(encoding.encode(item))
 
         except Exception:
-            logger.exception("Failed to calculate tokens from tools.", exc_info=True)
+            logger.exception(
+                "Failed to calculate tokens from tools. Excluded the rest of this tool from the token count and continued;"
+                " check that the tool definition follows the function tool schema.",
+                exc_info=True,
+            )
     num_tokens += func_end
 
     # If tool_choice is 'none', add one token.

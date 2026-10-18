@@ -121,3 +121,11 @@ def test_load_dotenv(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) ->
     assert pytilpack.environ.get_or_none("DOTENV_TEST_VAR") == "dotenv_value"
     # クリーンアップ
     monkeypatch.delenv("DOTENV_TEST_VAR", raising=False)
+
+
+def test_missing_messages() -> None:
+    """未設定の文面に次の操作が含まれる。"""
+    with pytest.raises(ValueError, match="環境変数 X が設定されていません。環境変数を設定するか、default引数を指定する"):
+        pytilpack.environ.get_str("X", environ={})
+    with pytest.raises(ValueError, match="環境変数 X が設定されていません。環境変数を設定するか、default引数を指定する"):
+        pytilpack.environ.get_list("X", environ={})

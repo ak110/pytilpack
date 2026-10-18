@@ -85,7 +85,7 @@ class Paginator[T]:
     def next(self) -> typing.Self:
         """次ページのPaginatorオブジェクト。"""
         if not self.has_next:
-            raise ValueError("No next page")
+            raise ValueError("No next page. Check has_next before calling next().")
         return self.__class__(
             page=self.next_num,
             per_page=self.per_page,
@@ -96,7 +96,7 @@ class Paginator[T]:
     def prev(self) -> typing.Self:
         """前ページのPaginatorオブジェクト。"""
         if not self.has_prev:
-            raise ValueError("No previous page")
+            raise ValueError("No previous page. Check has_prev before calling prev().")
         return self.__class__(
             page=self.prev_num,
             per_page=self.per_page,

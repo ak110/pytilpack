@@ -104,7 +104,12 @@ def main() -> int:
     try:
         errors = check(pathlib.Path.cwd())
     except (OSError, ValueError, KeyError, StopIteration, yaml.YAMLError) as exc:
-        print(f"整合検査の入力を確認してください: {exc}", file=sys.stderr)
+        print(
+            f"整合検査の入力を読み込めません: {exc}。"
+            "例外が示すファイル（pyproject.toml、docs/guide/index.md、docs/guide/cli.md、mkdocs.yml、"
+            "scripts/check_extras_imports.pyのEXTRA_MODULES、pytilpack/cli/main.pyの_SUBCOMMANDS）の記載を修正して再実行する",
+            file=sys.stderr,
+        )
         return 2
     for error in errors:
         print(error, file=sys.stderr)

@@ -134,3 +134,31 @@ def test_load_io() -> None:
     # BytesIO
     buf_b = io.BytesIO(text.encode("utf-8"))
     assert pytilpack.jsonc.load(buf_b) == {"key": "value"}
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ('{"a": 1} x', "only whitespace and comments may follow the top-level value"),
+        ('{"a": 1 /* x', "close it with '\\*/'"),
+        ("", "expected a value"),
+        ('{"a": ?}', "unexpected character '\\?' at offset 6; expected a value"),
+        ('{"a": 1,', "unterminated object starting at offset 0; close it with '}'"),
+        ("[1,", "unterminated array starting at offset 0; close it with ']'"),
+        ('{"a": "x', "unterminated string starting at offset 6; close it with '\"'"),
+    ],
+)
+def test_edit_parse_error_messages(text: str, expected: str) -> None:
+    """構文エラーの文面に期待する形式が含まれる。"""
+    with pytest.raises(ValueError, match=expected):
+        pytilpack.jsonc.edit(text, {})
+
+
+def test_edit_path_error_messages() -> None:
+    """パスの誤りの文面に指定できる範囲が含まれる。"""
+    with pytest.raises(ValueError, match="specify paths that do not contain one another"):
+        pytilpack.jsonc.edit('{"a": {"b": 1}}', {("a",): {"c": 3}, ("a", "b"): 2})
+    with pytest.raises(KeyError, match="path \\('b',\\) does not exist; specify an existing key \\(available: \\['a'\\]\\)"):
+        pytilpack.jsonc.edit('{"a": 1}', {("b",): 2})
+    with pytest.raises(IndexError, match="specify an index from -2 to 1"):
+        pytilpack.jsonc.edit("[1, 2]", {(2,): 3})

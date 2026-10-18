@@ -189,3 +189,11 @@ def test_year_month_day(
             _ = ymd.this_day
         with pytest.raises(ValueError):
             _ = ymd.next_day
+
+
+def test_invalid_date_messages() -> None:
+    """無効な日付の文面に有効な範囲が含まれる。"""
+    with pytest.raises(ValueError, match="Invalid date: year=2024, month=13. Specify month in 1-12"):
+        _ = pytilpack.datetime.YearMonth(2024, 13).next_month
+    with pytest.raises(ValueError, match="Invalid date: year=2024, month=2, day=30. Specify an existing date"):
+        _ = pytilpack.datetime.YearMonthDay(2024, 2, 30).prev_day

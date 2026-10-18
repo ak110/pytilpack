@@ -1,5 +1,9 @@
 """テストコード。"""
 
+import re
+
+import pytest
+
 import pytilpack.data_url
 
 
@@ -23,3 +27,9 @@ def test_data_url() -> None:
     # get_base64_data: plain/base64どちらのdata URLからもbase64文字列を取得
     assert pytilpack.data_url.get_base64_data("data:,Hello%2C%20World%21") == "SGVsbG8sIFdvcmxkIQ=="
     assert pytilpack.data_url.get_base64_data("data:text/plain;base64,SGVsbG8sIFdvcmxkIQ==") == "SGVsbG8sIFdvcmxkIQ=="
+
+
+def test_parse_invalid_message() -> None:
+    """不正なdata URLの文面に受理形式が含まれる。"""
+    with pytest.raises(ValueError, match=re.escape("(expected format: data:[<mediatype>][;base64],<data>)")):
+        pytilpack.data_url.parse("http://example.com/")

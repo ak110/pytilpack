@@ -54,7 +54,13 @@ def test_timer(caplog: pytest.LogCaptureFixture) -> None:
                 raise ValueError()
         except ValueError:
             pass
-    assert caplog.record_tuples == [("pytilpack.logging", logging.WARNING, "[test] failed in 0 s")]
+    assert caplog.record_tuples == [
+        (
+            "pytilpack.logging",
+            logging.WARNING,
+            "[test] failed in 0 s. The exception was re-raised; see its traceback for the cause.",
+        )
+    ]
 
 
 def test_exception_with_dedup(caplog: pytest.LogCaptureFixture) -> None:

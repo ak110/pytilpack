@@ -55,6 +55,12 @@ def main(sys_args: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
     if args.command is None:
         parser.print_help()
+        print(
+            "pytilpack: サブコマンドが指定されていません。使い方に示したサブコマンドのいずれかを指定して再実行してください。\n"
+            "  例: pytilpack delete-empty-dirs <ディレクトリ>\n"
+            "  各サブコマンドの使い方: pytilpack <サブコマンド> --help",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     # ログの基本設定

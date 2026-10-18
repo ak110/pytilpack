@@ -172,9 +172,13 @@ def run(app: flask.Flask, host: str = "localhost", port: int = 5000):
         deadline = time.monotonic() + 10.0
         while True:
             if not thread.is_alive():
-                raise RuntimeError("Flaskサーバーの起動に失敗しました") from (failures[0] if failures else None)
+                raise RuntimeError(
+                    "Flaskサーバーの起動に失敗しました。原因は連鎖した例外を参照し、host・portの指定（使用中のポートなど）を見直す"
+                ) from (failures[0] if failures else None)
             if time.monotonic() >= deadline:
-                raise TimeoutError("Flaskサーバーの起動待ちが10秒を超えました")
+                raise TimeoutError(
+                    "Flaskサーバーの起動待ちが10秒を超えました。host・portへ接続できるか（ファイアウォール、名前解決）を確かめて再実行する"
+                )
             try:
                 httpx.get(f"http://{host}:{server.server_port}/_pytilpack_flask_dummy", timeout=0.2).raise_for_status()
                 break
@@ -189,4 +193,7 @@ def run(app: flask.Flask, host: str = "localhost", port: int = 5000):
         server.server_close()
         ctx.pop()
         if thread.is_alive():
-            raise RuntimeError("Flaskサーバーの停止に失敗しました")
+            raise RuntimeError(
+                "Flaskサーバーの停止に失敗しました。サーバースレッドが5秒以内に終了せずdaemonスレッドとして残っている。"
+                "終了しないリクエスト処理が無いかを確かめる"
+            )

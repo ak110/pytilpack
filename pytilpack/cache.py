@@ -61,7 +61,7 @@ class CachedFileLoader[T]:
             FileNotFoundError: ファイルが存在しない場合。
         """
         if not path.exists():
-            raise FileNotFoundError(str(path))
+            raise FileNotFoundError(f"ファイルが存在しません: {path}。パスの指定を見直すか、ファイルを作成してから呼び出す")
 
         # 現在のファイル情報を取得
         stats = path.stat()
@@ -77,7 +77,7 @@ class CachedFileLoader[T]:
         # 使用するローダーを決定
         effective_loader = loader if loader is not None else self._loader
         if effective_loader is None:
-            raise ValueError("ローダー関数が指定されていません")
+            raise ValueError("ローダー関数が指定されていません。load()のloader引数か、CachedFileLoader()のloader引数で指定する")
 
         # データを読み込みキャッシュに保存
         data = effective_loader(path)

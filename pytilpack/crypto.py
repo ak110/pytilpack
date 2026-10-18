@@ -68,19 +68,19 @@ class TimestampSigner:
 
         # 最小長チェック: version(1) + timestamp(8) + type(1) + hmac(32) = 42
         if len(raw) < 1 + 8 + 1 + _HMAC_SIZE:
-            raise ValueError("トークンが短すぎます")
+            raise ValueError("トークンが短すぎます。sign()が返したトークン全体を渡す")
 
         # 署名を分離して検証
         message = raw[:-_HMAC_SIZE]
         sig = raw[-_HMAC_SIZE:]
         expected = hmac.new(self.derived_key, message, hashlib.sha256).digest()
         if not hmac.compare_digest(sig, expected):
-            raise ValueError("署名が一致しません")
+            raise ValueError("署名が一致しません。発行時と同じkey・purposeのTimestampSignerで検証するか、トークンを再発行する")
 
         # ヘッダ解析
         version = message[0]
         if version != _VERSION:
-            raise ValueError(f"未対応のバージョン: {version}")
+            raise ValueError(f"未対応のバージョン: {version}（対応: {_VERSION}）。現在のsign()でトークンを再発行する")
 
         timestamp = struct.unpack(">d", message[1:9])[0]
         type_byte = message[9]
@@ -90,7 +90,9 @@ class TimestampSigner:
         if max_age is not None:
             age = self.get_time() - timestamp
             if age > max_age:
-                raise ValueError(f"トークンが期限切れです (経過: {age:.1f}秒)")
+                raise ValueError(
+                    f"トークンが期限切れです (経過: {age:.1f}秒、上限: {max_age}秒)。トークンを再発行するか、max_ageを見直す"
+                )
 
         return _decode_payload(type_byte, payload)
 

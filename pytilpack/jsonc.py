@@ -99,7 +99,7 @@ def edit(
         curr_start = replacements[i][0]
         next_end = replacements[i + 1][1]
         if curr_start < next_end:
-            raise ValueError("updates contains overlapping paths")
+            raise ValueError("updates contains overlapping paths; specify paths that do not contain one another")
     result = text
     for start, end, new_text in replacements:
         result = result[:start] + new_text + result[end:]
@@ -148,7 +148,9 @@ class _Parser:
         node = self._parse_value()
         self._skip_ws()
         if self.pos != len(self.text):
-            raise ValueError(f"unexpected trailing content at offset {self.pos}")
+            raise ValueError(
+                f"unexpected trailing content at offset {self.pos}; only whitespace and comments may follow the top-level value"
+            )
         return node
 
     def _skip_ws(self) -> None:
@@ -168,7 +170,7 @@ class _Parser:
                 if nxt == "*":
                     end = text.find("*/", self.pos + 2)
                     if end == -1:
-                        raise ValueError("unterminated block comment")
+                        raise ValueError(f"unterminated block comment at offset {self.pos}; close it with '*/'")
                     self.pos = end + 2
                     continue
             return
@@ -176,7 +178,7 @@ class _Parser:
     def _parse_value(self) -> _Node:
         self._skip_ws()
         if self.pos >= len(self.text):
-            raise ValueError("unexpected end of input")
+            raise ValueError("unexpected end of input; expected a value (object, array, string, number, true, false or null)")
         ch = self.text[self.pos]
         if ch == "{":
             return self._parse_object()
@@ -198,7 +200,10 @@ class _Parser:
             node = _Node("null", self.pos, self.pos + 4)
             self.pos += 4
             return node
-        raise ValueError(f"unexpected character {ch!r} at offset {self.pos}")
+        raise ValueError(
+            f"unexpected character {ch!r} at offset {self.pos};"
+            " expected a value (object, array, string, number, true, false or null)"
+        )
 
     def _parse_object(self) -> _Node:
         start = self.pos
@@ -207,7 +212,7 @@ class _Parser:
         while True:
             self._skip_ws()
             if self.pos >= len(self.text):
-                raise ValueError("unterminated object")
+                raise ValueError(f"unterminated object starting at offset {start}; close it with '}}'")
             ch = self.text[self.pos]
             if ch == "}":
                 self.pos += 1
@@ -237,7 +242,7 @@ class _Parser:
         while True:
             self._skip_ws()
             if self.pos >= len(self.text):
-                raise ValueError("unterminated array")
+                raise ValueError(f"unterminated array starting at offset {start}; close it with ']'")
             if self.text[self.pos] == "]":
                 self.pos += 1
                 return _Node("array", start, self.pos, items=items)
@@ -269,7 +274,7 @@ class _Parser:
                 self.pos += 1
                 return _Node("string", start, self.pos)
             self.pos += 1
-        raise ValueError("unterminated string")
+        raise ValueError(f"unterminated string starting at offset {start}; close it with '\"'")
 
     def _parse_number(self) -> _Node:
         start = self.pos
@@ -300,15 +305,21 @@ def _resolve(root: _Node, path: tuple[_PathKey, ...]) -> _Node:
             if node.kind != "object" or node.members is None:
                 raise TypeError(f"path {path[: i + 1]!r} expects an object but got {node.kind}")
             if key not in node.members:
-                raise KeyError(key)
+                raise KeyError(
+                    f"path {path[: i + 1]!r} does not exist; specify an existing key (available: {sorted(node.members)!r})"
+                )
             node = node.members[key]
         elif isinstance(key, int) and not isinstance(key, bool):
             if node.kind != "array" or node.items is None:
                 raise TypeError(f"path {path[: i + 1]!r} expects an array but got {node.kind}")
+            items = node.items
             try:
-                node = node.items[key]
+                node = items[key]
             except IndexError as exc:
-                raise IndexError(f"array index out of range: {key}") from exc
+                raise IndexError(
+                    f"array index out of range at path {path[: i + 1]!r}: {key};"
+                    f" specify an index from {-len(items)} to {len(items) - 1}"
+                ) from exc
         else:
             raise TypeError(f"path key must be str or int, got {type(key).__name__}")
     return node

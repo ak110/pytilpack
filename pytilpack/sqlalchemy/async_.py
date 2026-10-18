@@ -124,7 +124,10 @@ class AsyncMixin(_QueryMixin, sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _To
 
         """
         if cls._init_args is not None:
-            raise RuntimeError("DB接続はすでに初期化されています。")
+            raise RuntimeError(
+                f"DB接続はすでに初期化されています。{cls.__qualname__}.init()はクラスごとに1回だけ呼び、"
+                "初期化済みの接続をそのまま使う（term()の後も再初期化はできない）"
+            )
 
         engine_kwargs = _engine_kwargs(
             kwargs,
@@ -158,7 +161,7 @@ class AsyncMixin(_QueryMixin, sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _To
 
         """
         if cls._init_args is None:
-            logger.warning("未初期化時のterm()呼び出し")
+            logger.warning(f"未初期化時のterm()呼び出し。{cls.__qualname__}.init()前のため何もせずに戻った（対応不要）")
             return
         if cls._thread_local is None:
             return
@@ -176,9 +179,9 @@ class AsyncMixin(_QueryMixin, sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _To
     ]:
         """現在のスレッドのengineとsessionmakerを取得する（なければ遅延生成）。"""
         if cls._init_args is None:
-            raise RuntimeError("init()が呼ばれていません。")
+            raise RuntimeError(f"init()が呼ばれていません。先に{cls.__qualname__}.init()でDB接続を初期化する")
         if cls._thread_local is None:
-            raise RuntimeError("init()が呼ばれていません。")
+            raise RuntimeError(f"init()が呼ばれていません。先に{cls.__qualname__}.init()でDB接続を初期化する")
         if not hasattr(cls._thread_local, "engine") or cls._thread_local.engine is None:
             cls._thread_local.engine = sqlalchemy.ext.asyncio.create_async_engine(
                 cls._init_args.url, **cls._init_args.engine_kwargs

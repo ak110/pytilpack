@@ -55,7 +55,9 @@ def fetch_url(
     )
 
     if r.status_code != 200:
-        raise RuntimeError(f"URL {url} の取得に失敗しました。Status: {r.status_code}\n{r.text}")
+        raise RuntimeError(
+            f"URL {url} の取得に失敗しました。Status: {r.status_code}。URLとアクセス権を確かめて再試行する\n{r.text}"
+        )
 
     content_type = r.headers.get("Content-Type", "text/html")
     if (
@@ -68,7 +70,9 @@ def fetch_url(
         return r.text
 
     if "html" not in content_type:
-        raise RuntimeError(f"URL {url} はHTMLではありません。Content-Type: {content_type}\n{r.text[:100]}...")
+        raise RuntimeError(
+            f"URL {url} はHTMLではありません。Content-Type: {content_type}。HTMLを返すURLを指定する\n{r.text[:100]}..."
+        )
 
     content = r.text
     output = clean_html(

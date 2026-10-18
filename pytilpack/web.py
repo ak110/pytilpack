@@ -124,7 +124,10 @@ class PrefixPinner:
             return
         validated = validate_forwarded_prefix(static_prefix)
         if validated is None:
-            raise ValueError(f"static_prefixが不正: {static_prefix!r}")
+            raise ValueError(
+                f"static_prefixが不正: {static_prefix!r}。"
+                "/で始まり（//は不可）、制御文字やquery・fragmentを含まないパス（例: /app）を指定する"
+            )
         self._apply(validated)
         self._pinned_prefix = validated
         self._prefix_pinned = True
@@ -139,7 +142,10 @@ class PrefixPinner:
                     self._prefix_pinned = True
                     return
         if self._pinned_prefix != prefix:
-            self._warn(f"X-Forwarded-Prefixがpin済みの値と異なります: pinned={self._pinned_prefix!r}, received={prefix!r}")
+            self._warn(
+                f"X-Forwarded-Prefixがpin済みの値と異なります: pinned={self._pinned_prefix!r}, received={prefix!r}。"
+                "pin済みの値を維持して処理を続ける。プロキシが送るX-Forwarded-Prefixの設定を見直す"
+            )
 
 
 def validate_forwarded_host(value: str) -> str | None:
@@ -342,7 +348,7 @@ def get_safe_url(target: str | None, host_url: str, default_url: str) -> str:
     ref_url = urllib.parse.urlparse(host_url)
     test_url = urllib.parse.urlparse(urllib.parse.urljoin(host_url, target))
     if test_url.scheme not in ("http", "https") or ref_url.netloc != test_url.netloc:
-        logger.warning(f"Invalid next url: {target}")
+        logger.warning(f"Invalid next url: {target}. Redirecting to default_url instead (no action needed).")
         return default_url
     return target
 

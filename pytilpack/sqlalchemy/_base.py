@@ -98,7 +98,10 @@ def _query_options[T](query: T, for_update: bool, options: sqlalchemy.sql.base.E
 def _require_instance[T](instance: T | None, model: type, id_: int) -> T:
     """ID検索が0件の場合のエラーをそろえる。"""
     if instance is None:
-        raise ValueError(f"{model.__qualname__}が見つかりませんでした。id={id_}")
+        raise ValueError(
+            f"{model.__qualname__}が見つかりませんでした。id={id_}。"
+            "存在するIDを指定するか、見つからない場合にNoneを返すget_by_id()を使う"
+        )
     return instance
 
 
@@ -168,12 +171,16 @@ class _ToDictMixin:
             if excludes is not None:
                 unknown = set(excludes) - set(all_columns)
                 if unknown:
-                    raise ValueError(f"excludesに未知のフィールドが含まれています: {sorted(unknown)}")
+                    raise ValueError(
+                        f"excludesに未知のフィールドが含まれています: {sorted(unknown)}。指定できるフィールド: {all_columns}"
+                    )
                 includes = list(filter(lambda x: x not in excludes, includes))
         else:
             unknown = set(includes) - set(all_columns)
             if unknown:
-                raise ValueError(f"includesに未知のフィールドが含まれています: {sorted(unknown)}")
+                raise ValueError(
+                    f"includesに未知のフィールドが含まれています: {sorted(unknown)}。指定できるフィールド: {all_columns}"
+                )
 
         def convert_value(value: typing.Any) -> typing.Any:
             """値を変換する関数。"""
@@ -215,5 +222,8 @@ class _WaitForConnectionState:
             logger.info(f"DB接続待機中 . . . (URL: {self.url})")
         remain_time = self.timeout - (time.time() - self.start_time)
         if remain_time <= 0:
-            raise RuntimeError(f"DB接続タイムアウト (URL: {self.url})") from exc
+            raise RuntimeError(
+                f"DB接続タイムアウト (URL: {self.url}、待機: {self.timeout}秒)。"
+                "DBサーバーが起動して接続を受け付けるかを確かめるか、timeout（CLIでは--timeout）を延ばして再実行する"
+            ) from exc
         return min(1, remain_time)

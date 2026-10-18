@@ -35,7 +35,7 @@ def _get_typed[T](
     value = (os.environ if environ is None else environ).get(key)
     if value is None:
         if isinstance(default, _Unset):
-            raise ValueError(f"環境変数 {key} が設定されていません")
+            raise ValueError(f"環境変数 {key} が設定されていません。環境変数を設定するか、default引数を指定する")
         return default
     return converter(value)
 
@@ -209,7 +209,7 @@ def get_list(
     value = (os.environ if environ is None else environ).get(key)
     if value is None:
         if isinstance(default, _Unset):
-            raise ValueError(f"環境変数 {key} が設定されていません")
+            raise ValueError(f"環境変数 {key} が設定されていません。環境変数を設定するか、default引数を指定する")
         return default
     return [s for s in (item.strip() for item in value.split(separator)) if s]
 

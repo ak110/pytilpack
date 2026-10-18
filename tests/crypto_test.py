@@ -1,6 +1,8 @@
 """テストコード。"""
 
 import base64
+import hashlib
+import hmac
 
 import pytest
 
@@ -69,3 +71,27 @@ def test_timestamp_signer() -> None:
     tampered = base64.urlsafe_b64encode(tampered_raw).rstrip(b"=").decode()
     with pytest.raises(ValueError, match="署名が一致しません"):
         signer.unsign(tampered)
+
+
+def test_timestamp_signer_error_messages() -> None:
+    """unsignの失敗の文面に次の操作が含まれる。"""
+    current_time = 1000.0
+    signer = pytilpack.crypto.TimestampSigner("key", get_time=lambda: current_time)
+    token = signer.sign("data")
+
+    with pytest.raises(ValueError, match="sign\\(\\)が返したトークン全体を渡す"):
+        signer.unsign(token[:8])
+    with pytest.raises(ValueError, match="同じkey・purposeのTimestampSignerで検証するか、トークンを再発行する"):
+        pytilpack.crypto.TimestampSigner("other").unsign(token)
+
+    # 署名は正しく、バージョンだけが異なるトークン
+    raw = base64.urlsafe_b64decode(token + "==")
+    message = bytes([0x02]) + raw[1 : -pytilpack.crypto._HMAC_SIZE]  # pylint: disable=protected-access
+    sig = hmac.new(signer.derived_key, message, hashlib.sha256).digest()
+    other_version = base64.urlsafe_b64encode(message + sig).rstrip(b"=").decode()
+    with pytest.raises(ValueError, match="現在のsign\\(\\)でトークンを再発行する"):
+        signer.unsign(other_version)
+
+    current_time = 1060.0
+    with pytest.raises(ValueError, match="上限: 10.0秒\\)。トークンを再発行するか、max_ageを見直す"):
+        signer.unsign(token, max_age=10.0)

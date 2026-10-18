@@ -74,13 +74,13 @@ def check_pattern(value: str, pattern: str) -> None:
 def check_email(value: str) -> None:
     """メールアドレスの形式を検証する。"""
     if not is_email(value):
-        raise ValueError(f"メールアドレスの形式が不正です。(実際: {value!r})")
+        raise ValueError(f"メールアドレスの形式が不正です。user@example.comの形式で指定する。(実際: {value!r})")
 
 
 def check_url(value: str) -> None:
     """URLの形式を検証する。"""
     if not is_url(value):
-        raise ValueError(f"URLの形式が不正です。(実際: {value!r})")
+        raise ValueError(f"URLの形式が不正です。http://またはhttps://で始まりホスト名を含む形式で指定する。(実際: {value!r})")
 
 
 # --- is_* 関数 (判定してboolを返す) ---

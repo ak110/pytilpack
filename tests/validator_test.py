@@ -135,3 +135,11 @@ def test_check_email_url() -> None:
     pytilpack.validator.check_pattern("abc", r"[a-z]+")
     with pytest.raises(ValueError):
         pytilpack.validator.check_pattern("abc", r"\d+")
+
+
+def test_check_format_messages() -> None:
+    """形式エラーの文面に受理形式が含まれる。"""
+    with pytest.raises(ValueError, match="user@example.comの形式で指定する"):
+        pytilpack.validator.check_email("x")
+    with pytest.raises(ValueError, match="http://またはhttps://で始まりホスト名を含む形式で指定する"):
+        pytilpack.validator.check_url("x")

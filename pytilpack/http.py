@@ -114,7 +114,7 @@ def make_problem_details(
 
     """
     if not _is_valid_status(status):
-        raise ValueError(f"statusがHTTPステータスコードの範囲外: {status!r}")
+        raise ValueError(f"statusがHTTPステータスコードの範囲外: {status!r}。100以上599以下の整数を指定する")
     if "type" in extensions:
         raise ValueError("extensionsに予約メンバーtypeは指定できない")
 

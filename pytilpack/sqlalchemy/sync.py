@@ -191,7 +191,10 @@ class SyncMixin(_QueryMixin, _ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
 
         """
         if cls.engine is not None:
-            raise RuntimeError("DB接続はすでに初期化されています。")
+            raise RuntimeError(
+                f"DB接続はすでに初期化されています。{cls.__qualname__}.init()はクラスごとに1回だけ呼び、"
+                "初期化済みの接続をそのまま使う（term()の後も再初期化はできない）"
+            )
 
         engine_kwargs = _engine_kwargs(kwargs, pool_size, max_overflow, pool_recycle, pool_pre_ping)
         cls.engine = sqlalchemy.create_engine(url, **engine_kwargs)
@@ -209,7 +212,7 @@ class SyncMixin(_QueryMixin, _ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
 
         """
         if cls.engine is None:
-            raise RuntimeError("init()が呼ばれていません。")
+            raise RuntimeError(f"init()が呼ばれていません。先に{cls.__qualname__}.init()でDB接続を初期化する")
         return cls.engine.connect()
 
     @classmethod
@@ -231,7 +234,7 @@ class SyncMixin(_QueryMixin, _ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
 
         """
         if cls.sessionmaker is None:
-            raise RuntimeError("init()が呼ばれていません。")
+            raise RuntimeError(f"init()が呼ばれていません。先に{cls.__qualname__}.init()でDB接続を初期化する")
         token = cls.start_session(name=name, log_level=log_level)
         try:
             yield cls.session()
@@ -257,7 +260,7 @@ class SyncMixin(_QueryMixin, _ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
 
         """
         if cls.sessionmaker is None:
-            raise RuntimeError("init()が呼ばれていません。")
+            raise RuntimeError(f"init()が呼ばれていません。先に{cls.__qualname__}.init()でDB接続を初期化する")
         token = cls.start_session(name=name, log_level=log_level)
         try:
             yield cls.session()
@@ -270,7 +273,7 @@ class SyncMixin(_QueryMixin, _ReprMixin, _ToDictMixin, SyncAsyncBridgeMixin):
     ) -> contextvars.Token[sqlalchemy.orm.Session]:
         """セッションを開始する。"""
         if cls.sessionmaker is None:
-            raise RuntimeError("init()が呼ばれていません。")
+            raise RuntimeError(f"init()が呼ばれていません。先に{cls.__qualname__}.init()でDB接続を初期化する")
         # arid: disable
         # async版（pytilpack.sqlalchemy.async_.AsyncMixin.start_session）と並行実装のため許容する。
         session = cls.sessionmaker()  # pylint: disable=not-callable

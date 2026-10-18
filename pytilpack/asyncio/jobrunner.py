@@ -85,7 +85,10 @@ class JobRunner(metaclass=abc.ABCMeta):
         try:
             return await self.poll()
         except Exception:
-            logger.warning("ジョブ取得エラー", exc_info=True)
+            logger.warning(
+                "ジョブ取得エラー。次回のポーリングで取得し直して処理を続ける。繰り返す場合はpoll()の実装と取得元の状態を確かめる",
+                exc_info=True,
+            )
             return None
 
     async def _run_job(self, job: Job) -> None:
@@ -96,19 +99,26 @@ class JobRunner(metaclass=abc.ABCMeta):
             try:
                 await asyncio.shield(job.on_canceled())
             except Exception:
-                logger.warning("ジョブキャンセル処理エラー", exc_info=True)
+                logger.warning(
+                    "ジョブキャンセル処理エラー。キャンセルは呼び出し元へ伝搬して処理を続ける。on_canceled()の実装を見直す",
+                    exc_info=True,
+                )
             raise  # 例外を再送出してキャンセル状態を伝搬
         except Exception:
-            logger.warning("ジョブ実行エラー", exc_info=True)
+            logger.warning("ジョブ実行エラー。on_errored()を呼び出して処理を続ける。原因は付記した例外を参照", exc_info=True)
             try:
                 await asyncio.shield(job.on_errored())
             except Exception:
-                logger.warning("ジョブエラー処理エラー", exc_info=True)
+                logger.warning(
+                    "ジョブエラー処理エラー。on_finally()へ進んで処理を続ける。on_errored()の実装を見直す", exc_info=True
+                )
         finally:
             try:
                 await asyncio.shield(job.on_finally())
             except Exception:
-                logger.warning("ジョブ終了処理エラー", exc_info=True)
+                logger.warning(
+                    "ジョブ終了処理エラー。同時実行数の枠を解放して処理を続ける。on_finally()の実装を見直す", exc_info=True
+                )
             self.semaphore.release()
 
     def shutdown(self) -> None:

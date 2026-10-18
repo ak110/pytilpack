@@ -69,7 +69,7 @@ jobs:
                 echo "CI passed successfully"
                 exit 0
               fi
-              echo "Error: CI did not succeed (conclusion: ${conclusion})"
+              echo "Error: CI did not succeed (conclusion: ${conclusion}). Fix the failing CI run on this commit, then re-run this workflow."
               exit 1
             fi
 
@@ -78,7 +78,7 @@ jobs:
             elapsed="$((elapsed + wait_interval))"
           done
 
-          echo "Error: Timeout waiting for CI to complete"
+          echo "Error: Timeout waiting for CI to complete. Re-run this workflow after the CI run on this commit finishes."
           exit 1
 
       - name: Calculate next version
@@ -110,7 +110,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           if git rev-parse "${{ steps.next.outputs.next }}" >/dev/null 2>&1; then
-            echo "Tag ${{ steps.next.outputs.next }} already exists, skipping"
+            echo "Tag ${{ steps.next.outputs.next }} already exists, skipping (no action needed; the existing tag is used)"
           else
             git tag "${{ steps.next.outputs.next }}"
             git push origin "${{ steps.next.outputs.next }}"
@@ -147,7 +147,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if gh release view "${{ steps.next.outputs.next }}" >/dev/null 2>&1; then
-            echo "Release ${{ steps.next.outputs.next }} already exists, skipping"
+            echo "Release ${{ steps.next.outputs.next }} already exists, skipping (no action needed; the existing release is kept)"
           else
             gh release create "${{ steps.next.outputs.next }}" \
               --title="${{ steps.next.outputs.next }}" --notes-file=CHANGES.md

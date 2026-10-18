@@ -57,11 +57,17 @@ class YearMonth:
         except ValueError:
             return False
 
+    def _invalid_message(self) -> str:
+        return (
+            f"Invalid date: year={self.year}, month={self.month}."
+            f" Specify month in 1-12 and year in {datetime.MINYEAR}-{datetime.MAXYEAR}."
+        )
+
     @property
     def prev_month(self) -> datetime.date:
         """前月の1日を返す。"""
         if not self.is_valid:
-            raise ValueError("Invalid date")
+            raise ValueError(self._invalid_message())
         if self.month == 1:
             return datetime.date(self.year - 1, 12, 1)
         else:
@@ -76,7 +82,7 @@ class YearMonth:
     def next_month(self) -> datetime.date:
         """次の月の1日を返す。"""
         if not self.is_valid:
-            raise ValueError("Invalid date")
+            raise ValueError(self._invalid_message())
         if self.month == 12:
             return datetime.date(self.year + 1, 1, 1)
         else:
@@ -100,11 +106,17 @@ class YearMonthDay:
         except ValueError:
             return False
 
+    def _invalid_message(self) -> str:
+        return (
+            f"Invalid date: year={self.year}, month={self.month}, day={self.day}."
+            f" Specify an existing date (month 1-12, day within the month, year {datetime.MINYEAR}-{datetime.MAXYEAR})."
+        )
+
     @property
     def prev_day(self) -> datetime.date:
         """前日を返す。"""
         if not self.is_valid:
-            raise ValueError("Invalid date")
+            raise ValueError(self._invalid_message())
         return self.this_day - datetime.timedelta(days=1)
 
     @property
@@ -116,5 +128,5 @@ class YearMonthDay:
     def next_day(self) -> datetime.date:
         """翌日を返す。"""
         if not self.is_valid:
-            raise ValueError("Invalid date")
+            raise ValueError(self._invalid_message())
         return self.this_day + datetime.timedelta(days=1)

@@ -85,7 +85,8 @@ class ThreadPool:
         active_workers = [w for w in self.workers if w.thread is not None]
         if active_workers:
             logger.warning(
-                "ThreadPool is being destroyed with %d active worker(s). Sending stop signal.",
+                "ThreadPool is being destroyed with %d active worker(s). Sending stop signal."
+                " Call shutdown() or ashutdown(), or use the pool in a with/async with block, before releasing it.",
                 len(active_workers),
             )
             # デストラクタ内では待機せず、停止シグナルのみ送出する

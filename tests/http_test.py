@@ -492,3 +492,9 @@ def test_select_accept_language(
 ) -> None:
     """select_accept_languageのテスト。"""
     assert pytilpack.http.select_accept_language(header, supported, default) == expected
+
+
+def test_make_problem_details_invalid_status_message() -> None:
+    """範囲外のstatusの文面に受理範囲が含まれる。"""
+    with pytest.raises(ValueError, match="100以上599以下の整数を指定する"):
+        pytilpack.http.make_problem_details(600)

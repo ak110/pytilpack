@@ -22,7 +22,7 @@ update:
 
 # GitHub Actionsのアクションをハッシュピンで最新化（mise未導入時はスキップ）
 update-actions:
-	@command -v mise >/dev/null 2>&1 || { echo "mise未検出、スキップ"; exit 0; }; \
+	@command -v mise >/dev/null 2>&1 || { echo "mise未検出のためGitHub Actionsのピン更新をスキップした（他の更新は続行する）。ピンも更新する場合はmiseを導入して make update-actions を再実行する"; exit 0; }; \
 	GITHUB_TOKEN=$$(gh auth token) mise exec -- pinact run --update --min-age=1
 
 # pyfltrの呼び出しは推奨ガイドから意図して外れ、公開待機の例外を指定する。

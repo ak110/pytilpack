@@ -124,7 +124,7 @@ def timer(name: str, logger: logging.Logger | None = None):
         if logger is None:
             logger = _logger
         if has_error:
-            logger.warning(f"[{name}] failed in {elapsed:.0f} s")
+            logger.warning(f"[{name}] failed in {elapsed:.0f} s. The exception was re-raised; see its traceback for the cause.")
         else:
             logger.info(f"[{name}] done in {elapsed:.0f} s")
 
@@ -274,7 +274,7 @@ def jsonify(
         return json.dumps(data, ensure_ascii=False, indent=indent, separators=separators, default=_json_default)
     except Exception:
         # この関数はログ出力が主目的であるため、失敗しても例外を送出せずreprを返す。
-        _logger.warning("jsonify失敗", exc_info=True)
+        _logger.warning("jsonify失敗。repr()の文字列を返して処理を続ける（対応不要）", exc_info=True)
         return repr(data)
 
 

@@ -92,7 +92,9 @@ def rmtree(path: str | pathlib.Path, ignore_errors: bool = False) -> RmtreeResul
     if path.is_symlink():
         # シンボリックリンクの解決先がディレクトリならshutil.rmtree同様に例外
         if path.is_dir():
-            raise NotADirectoryError(f"Cannot call rmtree on a symbolic link: {path}")
+            raise NotADirectoryError(
+                f"Cannot call rmtree on a symbolic link: {path}. To remove the link itself, use pathlib.Path.unlink()."
+            )
         # ファイルへのシンボリックリンク（または解決先が存在しないリンク）は単一ファイル扱い
         _remove_file(path, stats, ignore_errors)
         return _to_result(stats)
@@ -184,7 +186,7 @@ def get_size(path: str | pathlib.Path) -> int:
             try:
                 return path.stat().st_size
             except Exception:
-                logger.warning(f"ファイルサイズ取得失敗: {path}", exc_info=True)
+                logger.warning(f"ファイルサイズ取得失敗: {path}。サイズを0として処理を続ける", exc_info=True)
                 return 0
         elif path.is_dir():
             total_size: int = 0
@@ -193,12 +195,12 @@ def get_size(path: str | pathlib.Path) -> int:
                     # 再帰的に子要素のサイズを加算する
                     total_size += get_size(child)
             except Exception:
-                logger.warning(f"ディレクトリサイズ取得失敗: {path}", exc_info=True)
+                logger.warning(f"ディレクトリサイズ取得失敗: {path}。取得済みの分だけを合計して処理を続ける", exc_info=True)
             return total_size
         else:
             return 0
     except Exception:
-        logger.warning(f"ファイル・ディレクトリサイズ取得失敗: {path}", exc_info=True)
+        logger.warning(f"ファイル・ディレクトリサイズ取得失敗: {path}。サイズを0として処理を続ける", exc_info=True)
         return 0
 
 
@@ -226,7 +228,9 @@ def delete_empty_dirs(path: str | pathlib.Path, keep_root: bool = True) -> None:
                 logger.info(f"削除: {path}")
                 path.rmdir()
     except Exception:
-        logger.warning(f"ディレクトリの削除に失敗: {path}", exc_info=True)
+        logger.warning(
+            f"ディレクトリの削除に失敗: {path}。削除せずに処理を続ける。権限と使用中のプロセスを確かめる", exc_info=True
+        )
 
 
 # delete_old_files内で同名のパラメーターと衝突するため別名を用意する
@@ -246,7 +250,7 @@ def sync(src: str | pathlib.Path, dst: str | pathlib.Path, delete: bool = False)
     dst = pathlib.Path(dst)
 
     if not src.exists():
-        logger.warning(f"コピー元が存在しません: {src}")
+        logger.warning(f"コピー元が存在しません: {src}。何もせずに終了した。コピー元のパスを見直す")
         return
 
     if not dst.exists():
@@ -333,7 +337,9 @@ def delete_old_files(
                 logger.info(f"削除: {path}")
                 path.unlink()
         except Exception:
-            logger.warning(f"ファイルの削除に失敗: {path}", exc_info=True)
+            logger.warning(
+                f"ファイルの削除に失敗: {path}。削除せずに処理を続ける。権限と使用中のプロセスを確かめる", exc_info=True
+            )
     elif path.is_dir():
         # 再帰的に子要素を処理
         for item in list(path.iterdir()):

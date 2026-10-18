@@ -94,7 +94,9 @@ def main() -> int:
         if result.returncode:
             failed = True
             print(
-                f"extra {extra or 'ベース'} のimportに失敗しました。依存宣言と対象モジュールを確認してください。\n"
+                f"extra {extra or 'ベース'} のimportに失敗しました。下の出力が示す不足モジュールを、"
+                "pyproject.tomlの[project.optional-dependencies]（ベースでは[project].dependencies）へ加えるか、"
+                "EXTRA_MODULESの対象モジュールを見直す。\n"
                 f"{result.stdout}{result.stderr}",
                 file=sys.stderr,
             )
@@ -106,7 +108,13 @@ def main() -> int:
             result = subprocess.run(assertion_command, check=False, capture_output=True, text=True, timeout=180)
             if result.returncode:
                 failed = True
-                print(f"extra {extra} のpytestなしasserts検証に失敗しました。\n{result.stdout}{result.stderr}", file=sys.stderr)
+                print(
+                    f"extra {extra} のpytestなしasserts検証に失敗しました。"
+                    f"pytilpack/{extra}/asserts.pyがpytestなしでimport・実行できるよう修正する。"
+                    f"再現: uv run --no-project python scripts/check_extras_imports.py <wheel> --extra {extra}\n"
+                    f"{result.stdout}{result.stderr}",
+                    file=sys.stderr,
+                )
         cli_command = command[: command.index("-c")] + [
             str(pathlib.Path(__file__).with_name("check_cli_extra.py").resolve()),
             extra,
@@ -114,7 +122,14 @@ def main() -> int:
         result = subprocess.run(cli_command, check=False, capture_output=True, text=True, timeout=180)
         if result.returncode:
             failed = True
-            print(f"extra {extra or 'ベース'} のCLI検証に失敗しました。\n{result.stdout}{result.stderr}", file=sys.stderr)
+            print(
+                f"extra {extra or 'ベース'} のCLI検証に失敗しました。"
+                "pytilpack/cli/main.pyの_SUBCOMMANDSとextras判定を修正する。"
+                "再現: uv run --no-project python scripts/check_extras_imports.py <wheel>"
+                f"{f' --extra {extra}' if extra else ''}\n"
+                f"{result.stdout}{result.stderr}",
+                file=sys.stderr,
+            )
     return int(failed)
 
 

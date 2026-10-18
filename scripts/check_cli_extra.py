@@ -18,7 +18,11 @@ def main() -> int:
     )
     failed = root.returncode != 0 or "usage:" not in root.stdout
     if failed:
-        print(f"CLIの全体ヘルプが不整合です。\n{root.stdout}{root.stderr}", file=sys.stderr)
+        print(
+            "CLIの全体ヘルプが不整合です。pytilpack/cli/main.pyのmain()と_SUBCOMMANDSの登録処理を修正する。\n"
+            f"{root.stdout}{root.stderr}",
+            file=sys.stderr,
+        )
     for name, _, required_extra in _SUBCOMMANDS:
         if extra and required_extra is not None and extra not in (required_extra, "all"):
             continue
@@ -34,7 +38,12 @@ def main() -> int:
         valid = valid and ("usage:" in result.stdout if installed else f"extras [{required_extra}]" in result.stderr)
         if not valid:
             failed = True
-            print(f"extra {extra or 'ベース'} の{name}ヘルプが不整合です。\n{result.stdout}{result.stderr}", file=sys.stderr)
+            print(
+                f"extra {extra or 'ベース'} の{name}ヘルプが不整合です。"
+                "pytilpack/cli/main.pyの_SUBCOMMANDSのextras名と、pyproject.tomlの[project.optional-dependencies]を一致させる。\n"
+                f"{result.stdout}{result.stderr}",
+                file=sys.stderr,
+            )
     return int(failed)
 
 

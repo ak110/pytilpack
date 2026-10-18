@@ -11,14 +11,16 @@ import pytilpack.cli.main
 
 
 def test_main_no_command(capsys) -> None:
-    """引数なしでmain()を呼んだ場合のテスト。"""
-    try:
+    """引数なしでは使い方に加えて未指定の理由と指定例を出力し、終了コード1で終わる。"""
+    with pytest.raises(SystemExit) as exc_info:
         pytilpack.cli.main.main([])
-    except SystemExit as e:
-        assert e.code == 1
+    assert exc_info.value.code == 1
 
     captured = capsys.readouterr()
     assert "usage:" in captured.out
+    assert "サブコマンドが指定されていません" in captured.err
+    assert "例: pytilpack delete-empty-dirs <ディレクトリ>" in captured.err
+    assert "pytilpack <サブコマンド> --help" in captured.err
 
 
 @pytest.fixture(name="fake_missing_sqlalchemy")

@@ -81,7 +81,9 @@ def set_max_concurrency(app: quart.Quart, max_concurrency: int, timeout: float |
     if max_concurrency < 1:
         raise ValueError("max_concurrency must be >= 1")
     if "pytilpack_concurrency" in app.extensions:
-        raise RuntimeError("set_max_concurrency is already configured on this app")
+        raise RuntimeError(
+            "set_max_concurrency is already configured on this app. Call set_max_concurrency() only once per app."
+        )
 
     semaphore = asyncio.Semaphore(max_concurrency)
     state = ConcurrencyState(
@@ -101,7 +103,11 @@ def set_max_concurrency(app: quart.Quart, max_concurrency: int, timeout: float |
             else:
                 await asyncio.wait_for(sem.acquire(), timeout=to)
         except TimeoutError:
-            logger.warning(f"Concurrency limit reached, aborting request: {quart.request.path}")
+            logger.warning(
+                f"Concurrency limit reached, aborting request with 503: {quart.request.path}."
+                " No action is needed for occasional bursts; if this persists, raise max_concurrency or timeout"
+                " of set_max_concurrency()."
+            )
             quart.abort(
                 503,
                 description="サーバーが混みあっています。しばらく待ってから再度お試しください。",
@@ -275,9 +281,13 @@ async def run(app: quart.Quart, host: str = "localhost", port: int = 5000):
             deadline = time.monotonic() + 10.0
             while True:
                 if not thread.is_alive():
-                    raise RuntimeError("Quartサーバーの起動に失敗しました") from (failures[0] if failures else None)
+                    raise RuntimeError(
+                        "Quartサーバーの起動に失敗しました。原因は連鎖した例外を参照し、host・portの指定（使用中のポートなど）を見直す"
+                    ) from (failures[0] if failures else None)
                 if time.monotonic() >= deadline:
-                    raise TimeoutError("Quartサーバーの起動待ちが10秒を超えました")
+                    raise TimeoutError(
+                        "Quartサーバーの起動待ちが10秒を超えました。host・portへ接続できるか（ファイアウォール、名前解決）を確かめて再実行する"
+                    )
                 servers = getattr(server, "servers", [])
                 sockets = [sock for srv in servers for sock in (srv.sockets or [])]
                 if not server.started or not sockets:
@@ -302,4 +312,7 @@ async def run(app: quart.Quart, host: str = "localhost", port: int = 5000):
             server.force_exit = True
             await asyncio.to_thread(thread.join, 2.0)
         if thread.is_alive():
-            raise RuntimeError("Quartサーバーの停止に失敗しました")
+            raise RuntimeError(
+                "Quartサーバーの停止に失敗しました。強制終了の要求後もサーバースレッドが終了せずdaemonスレッドとして残っている。"
+                "終了しないリクエスト処理が無いかを確かめる"
+            )

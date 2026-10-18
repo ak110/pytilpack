@@ -17,6 +17,8 @@ def deprecated[**P, R](reason: str | None = None) -> typing.Callable[[typing.Cal
         message = f"{func.__name__} is deprecated."
         if reason:
             message += f" {reason}"
+        else:
+            message += " Stop calling it; see the documentation of the package for a replacement."
 
         if inspect.iscoroutinefunction(func):
 
@@ -279,12 +281,18 @@ def get[T](
             else:
                 # key error
                 if errors == "strict":
-                    raise ValueError(f"{_stringify_key(key)} not found")
+                    raise ValueError(
+                        f"{_stringify_key(key)} not found;"
+                        " specify a key that matches the data structure, or pass errors='ignore' to get default_value"
+                    )
                 return default_value
         else:
             # data error
             if errors == "strict":
-                raise ValueError(f"{_stringify_key(key)} not found")
+                raise ValueError(
+                    f"{_stringify_key(key)} not found;"
+                    " specify a key that matches the data structure, or pass errors='ignore' to get default_value"
+                )
             return default_value
 
     # 値がNoneの場合

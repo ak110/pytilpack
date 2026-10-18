@@ -41,3 +41,12 @@ def test_paginator_invalid_total() -> None:
     """無効なtotalでValueErrorが送出されることを確認。"""
     with pytest.raises(ValueError, match="total"):
         pytilpack.paginator.Paginator(page=1, per_page=3, items=[], total=-1)
+
+
+def test_paginator_no_page_messages() -> None:
+    """前後ページが無い場合の文面に確認するプロパティが含まれる。"""
+    paginator = pytilpack.paginator.Paginator[int](page=1, per_page=10, items=[], total=0)
+    with pytest.raises(ValueError, match="Check has_next before calling next\\(\\)"):
+        paginator.next()
+    with pytest.raises(ValueError, match="Check has_prev before calling prev\\(\\)"):
+        paginator.prev()

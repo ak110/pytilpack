@@ -77,7 +77,9 @@ def _run_extract(args: argparse.Namespace) -> None:
     for input_dir in args.input_dirs:
         input_path = pathlib.Path(input_dir)
         if not input_path.is_dir():
-            logger.warning(f"ディレクトリが存在しません: {input_path}")
+            logger.warning(
+                f"ディレクトリが存在しません: {input_path}。このディレクトリを抽出対象から除いて続ける。入力の指定を見直す"
+            )
             continue
         keywords = _parse_keywords(args.keywords) if args.keywords else babel.messages.extract.DEFAULT_KEYWORDS
         extracted = babel.messages.extract.extract_from_dir(
