@@ -15,7 +15,7 @@ __lazy_modules__ = [
 ]
 
 import binascii
-import datetime
+import datetime as dt
 import pathlib
 import threading
 
@@ -50,7 +50,7 @@ class SimpleTokenCredential(azure.core.credentials.TokenCredential):
 
     def __init__(self, access_token: str, expires_in: int):
         self.access_token = access_token
-        self.expires: datetime.datetime = datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=expires_in)
+        self.expires: dt.datetime = dt.datetime.now(dt.UTC) + dt.timedelta(seconds=expires_in)
         self.expires_on: int = int(self.expires.timestamp())
 
     def get_token(self, *args, **kwargs) -> azure.core.credentials.AccessToken:

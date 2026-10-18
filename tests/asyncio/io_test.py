@@ -1,7 +1,7 @@
 """テストコード。"""
 
 import collections.abc
-import datetime
+import datetime as dt
 import inspect
 import pathlib
 import typing
@@ -117,7 +117,7 @@ async def test_yaml_operations(tmp_path: pathlib.Path) -> None:
     old_root.mkdir()
     old_file = old_root / "old.txt"
     await pytilpack.asyncio.write_text(old_file, "old")
-    before = datetime.datetime.now() + datetime.timedelta(days=1)
+    before = dt.datetime.now() + dt.timedelta(days=1)
     await pytilpack.asyncio.delete_old_files(old_root, before)
     assert not old_file.exists()
 
@@ -134,7 +134,7 @@ async def test_deletion_preserve_external(tmp_path: pathlib.Path) -> None:
     link = root / "link"
     link.symlink_to(target, target_is_directory=True)
 
-    await pytilpack.asyncio.delete_old_files(root, datetime.datetime(2100, 1, 1), keep_root_empty_dir=False)
+    await pytilpack.asyncio.delete_old_files(root, dt.datetime(2100, 1, 1), keep_root_empty_dir=False)
     await pytilpack.asyncio.delete_empty_dirs(root, keep_root=False)
 
     assert protected.read_text(encoding="utf-8") == "protected"

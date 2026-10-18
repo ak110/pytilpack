@@ -1,6 +1,6 @@
 """MSALユーティリティのテスト。"""
 
-import datetime
+import datetime as dt
 import pathlib
 
 import azure.core.credentials
@@ -30,8 +30,8 @@ def test_load_pem_certificate(tmp_path: pathlib.Path) -> None:
         .issuer_name(issuer)
         .public_key(private_key.public_key())
         .serial_number(cryptography.x509.random_serial_number())
-        .not_valid_before(datetime.datetime.now(datetime.UTC))
-        .not_valid_after(datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=1))
+        .not_valid_before(dt.datetime.now(dt.UTC))
+        .not_valid_after(dt.datetime.now(dt.UTC) + dt.timedelta(days=1))
         .sign(private_key, cryptography.hazmat.primitives.hashes.SHA256())
     )
     cert_pem = cert.public_bytes(cryptography.hazmat.primitives.serialization.Encoding.PEM)
@@ -61,7 +61,7 @@ def test_simple_token_credential(access_token: str, expires_in: int) -> None:
     assert token.token == access_token
     assert isinstance(token.expires_on, int)
     # トークンの有効期限が現在時刻から指定された秒数後に設定されていることを確認
-    now = datetime.datetime.now(datetime.UTC).timestamp()
+    now = dt.datetime.now(dt.UTC).timestamp()
     assert token.expires_on == pytest.approx(int(now) + expires_in, abs=1)
 
 

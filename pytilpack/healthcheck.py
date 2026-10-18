@@ -3,7 +3,7 @@
 __lazy_modules__ = ["asyncio", "datetime", "functools", "inspect", "logging", "pytilpack.logging", "time", "typing"]
 
 import asyncio
-import datetime
+import datetime as dt
 import functools
 import inspect
 import logging
@@ -21,7 +21,7 @@ CheckerEntry = tuple[str, CheckerType]
 CheckerEntries = list[CheckerEntry]
 """ヘルスチェックの名前と関数のリスト。"""
 
-startup_time = datetime.datetime.now()
+startup_time = dt.datetime.now()
 """アプリケーションの起動時間を記録する変数。ヘルスチェックの uptime に使用される。"""
 
 logger = logging.getLogger(__name__)
@@ -97,9 +97,9 @@ def make_entry[**P, R](
 async def run(
     checks: CheckerEntries,
     output_details: bool = True,
-    dedup_window: datetime.timedelta | None = None,
-    now: datetime.datetime | None = None,
-    start_time: datetime.datetime | None = None,
+    dedup_window: dt.timedelta | None = None,
+    now: dt.datetime | None = None,
+    start_time: dt.datetime | None = None,
 ) -> HealthCheckResult:
     """ヘルスチェックを実行し、結果を返す。
 
@@ -114,9 +114,9 @@ async def run(
         ヘルスチェックの結果。
     """
     if dedup_window is None:
-        dedup_window = datetime.timedelta(days=1)
+        dedup_window = dt.timedelta(days=1)
     if now is None:
-        now = datetime.datetime.now()
+        now = dt.datetime.now()
     if start_time is None:
         start_time = startup_time
     # 名前が重複している場合は AssertionError を送出する

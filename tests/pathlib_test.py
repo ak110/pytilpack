@@ -1,6 +1,6 @@
 """テストコード。"""
 
-import datetime
+import datetime as dt
 import functools
 import os
 import pathlib
@@ -191,7 +191,7 @@ def test_delete_empty_dirs_preserve_external(tmp_path: pathlib.Path, top_link: b
         functools.partial(pytilpack.pathlib.delete_empty_dirs, keep_root=False),
         functools.partial(
             pytilpack.pathlib.delete_old_files,
-            before=datetime.datetime(2100, 1, 1),
+            before=dt.datetime(2100, 1, 1),
             keep_root_empty_dir=False,
         ),
     ],
@@ -286,13 +286,13 @@ def test_delete_old_files(tmp_path: pathlib.Path) -> None:
     (tmp_path / "empty").mkdir()
 
     # 古いファイルを作成するため、ファイルのタイムスタンプを過去に設定
-    old_time = datetime.datetime.now() - datetime.timedelta(days=2)
+    old_time = dt.datetime.now() - dt.timedelta(days=2)
     old_path = tmp_path / "dir1" / "old.txt"
     os_time = time.mktime(old_time.timetuple())
     os.utime(old_path, (os_time, os_time))
 
     # 現在時刻より1日前を基準に削除
-    before = datetime.datetime.now() - datetime.timedelta(days=1)
+    before = dt.datetime.now() - dt.timedelta(days=1)
     pytilpack.pathlib.delete_old_files(tmp_path, before)
 
     # 古いファイルと空になったディレクトリが削除されていることを確認
@@ -329,7 +329,7 @@ def test_delete_old_files_preserve_external(tmp_path: pathlib.Path, top_link: bo
 
     pytilpack.pathlib.delete_old_files(
         link if top_link else root,
-        datetime.datetime(2100, 1, 1),
+        dt.datetime(2100, 1, 1),
         delete_empty_dirs=delete_empty_dirs,
         keep_root_empty_dir=False,
     )
@@ -348,7 +348,7 @@ def test_delete_old_files_file_symlink(tmp_path: pathlib.Path) -> None:
     link = root / "link.txt"
     link.symlink_to(target)
 
-    pytilpack.pathlib.delete_old_files(root, datetime.datetime(2100, 1, 1))
+    pytilpack.pathlib.delete_old_files(root, dt.datetime(2100, 1, 1))
 
     assert not link.is_symlink()
     assert target.read_text(encoding="utf-8") == "protected"

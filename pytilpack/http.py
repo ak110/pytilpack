@@ -20,7 +20,7 @@ __lazy_modules__ = [
 import collections.abc
 import contextlib
 import dataclasses
-import datetime
+import datetime as dt
 import email.utils
 import http
 import json
@@ -290,14 +290,14 @@ def get_retry_after(retry_after_header: str | None) -> float | None:
     # 日時形式
     # Retry-After: <http-date> 再試行する日付
     try:
-        dt = email.utils.parsedate_to_datetime(retry_after_header)
+        retry_at = email.utils.parsedate_to_datetime(retry_after_header)
         # parsedate_to_datetime はタイムゾーン情報付き（あるいは naive）を返す
-        # dt が naive なら UTC とみなす
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=datetime.UTC)
+        # retry_at が naive なら UTC とみなす
+        if retry_at.tzinfo is None:
+            retry_at = retry_at.replace(tzinfo=dt.UTC)
         # 現在の UTC 時刻を aware で取得
-        now = datetime.datetime.now(tz=datetime.UTC)
-        delta = (dt - now).total_seconds()
+        now = dt.datetime.now(tz=dt.UTC)
+        delta = (retry_at - now).total_seconds()
         return max(delta, 0.0)
     except Exception:
         return None

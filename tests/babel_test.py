@@ -1,6 +1,6 @@
 """babelのテスト。"""
 
-import datetime
+import datetime as dt
 import pathlib
 import typing
 
@@ -25,19 +25,19 @@ def _i18n_ja() -> typing.Generator[None, None, None]:
 def test_format() -> None:
     """babel各種フォーマット関数のテスト。"""
     # format_date: I18nState経由のロケールでフォーマット
-    date = datetime.date(2024, 1, 15)
+    date = dt.date(2024, 1, 15)
     result = pytilpack.babel.format_date(date, format="long")
     assert "2024" in result
     assert "1" in result
     assert "15" in result
 
     # format_datetime: ロケール直指定
-    dt = datetime.datetime(2024, 1, 15, 10, 30, 0, tzinfo=datetime.UTC)
-    result = pytilpack.babel.format_datetime(dt, format="short", locale="en")
+    value = dt.datetime(2024, 1, 15, 10, 30, 0, tzinfo=dt.UTC)
+    result = pytilpack.babel.format_datetime(value, format="short", locale="en")
     assert "1/15/24" in result
 
     # format_time
-    t = datetime.time(14, 30, 0)
+    t = dt.time(14, 30, 0)
     result = pytilpack.babel.format_time(t, format="short", locale="ja")
     assert "14:30" in result
 

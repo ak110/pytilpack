@@ -1,7 +1,7 @@
 """テストコード。"""
 
 import asyncio
-import datetime
+import datetime as dt
 import logging
 import pathlib
 import typing
@@ -63,8 +63,8 @@ def test_exception_with_dedup(caplog: pytest.LogCaptureFixture) -> None:
     logger.setLevel(logging.DEBUG)
 
     # 固定時刻を設定
-    now = datetime.datetime(2023, 1, 1, 12, 0, 0)
-    dedup_window = datetime.timedelta(hours=1)
+    now = dt.datetime(2023, 1, 1, 12, 0, 0)
+    dedup_window = dt.timedelta(hours=1)
 
     # 最初の例外は WARNING レベルで出力される
     exc1 = ValueError("test error")
@@ -79,7 +79,7 @@ def test_exception_with_dedup(caplog: pytest.LogCaptureFixture) -> None:
     caplog.clear()
 
     # 同じ例外を dedup_window 内で再度発生させると INFO レベルで出力される
-    now2 = now + datetime.timedelta(minutes=30)
+    now2 = now + dt.timedelta(minutes=30)
     with caplog.at_level(logging.INFO):
         pytilpack.logging.exception_with_dedup(logger, exc1, msg="テストエラー", dedup_window=dedup_window, now=now2)
 
@@ -91,7 +91,7 @@ def test_exception_with_dedup(caplog: pytest.LogCaptureFixture) -> None:
     caplog.clear()
 
     # dedup_window を超えた後は再び WARNING レベルで出力される
-    now3 = now + datetime.timedelta(hours=2)
+    now3 = now + dt.timedelta(hours=2)
     with caplog.at_level(logging.INFO):
         pytilpack.logging.exception_with_dedup(logger, exc1, msg="テストエラー", dedup_window=dedup_window, now=now3)
 
@@ -140,8 +140,8 @@ def test_exception_with_dedup_str(caplog: pytest.LogCaptureFixture) -> None:
     logger = logging.getLogger("test_logger_str")
     logger.setLevel(logging.DEBUG)
 
-    now = datetime.datetime(2023, 1, 1, 12, 0, 0)
-    dedup_window = datetime.timedelta(hours=1)
+    now = dt.datetime(2023, 1, 1, 12, 0, 0)
+    dedup_window = dt.timedelta(hours=1)
 
     # 文字列の場合も WARNING で出力されるが exc_info は付かない
     with caplog.at_level(logging.INFO):
@@ -155,7 +155,7 @@ def test_exception_with_dedup_str(caplog: pytest.LogCaptureFixture) -> None:
     caplog.clear()
 
     # 同じ文字列を dedup_window 内で再度渡すと INFO
-    now2 = now + datetime.timedelta(minutes=30)
+    now2 = now + dt.timedelta(minutes=30)
     with caplog.at_level(logging.INFO):
         pytilpack.logging.exception_with_dedup(logger, "接続エラー", msg="テストエラー", dedup_window=dedup_window, now=now2)
 
@@ -165,7 +165,7 @@ def test_exception_with_dedup_str(caplog: pytest.LogCaptureFixture) -> None:
     caplog.clear()
 
     # dedup_window を超えた後は再び WARNING
-    now3 = now + datetime.timedelta(hours=2)
+    now3 = now + dt.timedelta(hours=2)
     with caplog.at_level(logging.INFO):
         pytilpack.logging.exception_with_dedup(logger, "接続エラー", msg="テストエラー", dedup_window=dedup_window, now=now3)
 
@@ -188,7 +188,7 @@ def test_exception_with_dedup_count(caplog: pytest.LogCaptureFixture) -> None:
     logger = logging.getLogger("test_logger_count")
     logger.setLevel(logging.DEBUG)
 
-    now = datetime.datetime(2023, 1, 1, 12, 0, 0)
+    now = dt.datetime(2023, 1, 1, 12, 0, 0)
     exc = ValueError("test error")
 
     # dedup_count=3: WARNING → 2回INFO → WARNING → ... (3回ごとにWARNING)
@@ -219,7 +219,7 @@ def test_exception_with_dedup_count_str(caplog: pytest.LogCaptureFixture) -> Non
     logger = logging.getLogger("test_logger_count_str")
     logger.setLevel(logging.DEBUG)
 
-    now = datetime.datetime(2023, 1, 1, 12, 0, 0)
+    now = dt.datetime(2023, 1, 1, 12, 0, 0)
 
     with caplog.at_level(logging.INFO):
         # 1回目: WARNING (exc_info なし)
@@ -242,8 +242,8 @@ def test_exception_with_dedup_both_windows(caplog: pytest.LogCaptureFixture) -> 
     logger = logging.getLogger("test_logger_both")
     logger.setLevel(logging.DEBUG)
 
-    now = datetime.datetime(2023, 1, 1, 12, 0, 0)
-    dedup_window = datetime.timedelta(hours=1)
+    now = dt.datetime(2023, 1, 1, 12, 0, 0)
+    dedup_window = dt.timedelta(hours=1)
     exc = ValueError("test error")
 
     with caplog.at_level(logging.INFO):
@@ -257,7 +257,7 @@ def test_exception_with_dedup_both_windows(caplog: pytest.LogCaptureFixture) -> 
             assert caplog.records[-1].levelname == "INFO"
 
         # 時間窓が先に超過 → WARNING
-        now2 = now + datetime.timedelta(hours=2)
+        now2 = now + dt.timedelta(hours=2)
         pytilpack.logging.exception_with_dedup(logger, exc, dedup_window=dedup_window, dedup_count=5, now=now2)
         assert caplog.records[-1].levelname == "WARNING"
 
@@ -287,7 +287,7 @@ def _assert_second_call_warns(
     """1回目の後に別の入力で呼んだ2回目がWARNINGになり、例外ならexc_infoが付くことを確認する。"""
     logger = logging.getLogger("test_logger_fingerprint")
     logger.setLevel(logging.DEBUG)
-    now = datetime.datetime(2023, 1, 1, 12, 0, 0)
+    now = dt.datetime(2023, 1, 1, 12, 0, 0)
     pytilpack.logging.clear_exception_history()
     caplog.clear()
     with caplog.at_level(logging.INFO):
@@ -499,8 +499,8 @@ def test_truncate_values(
         ([1, 2, 3], None, False, "[1,2,3]"),
         ({"list": ["a" * 150, "b"]}, None, True, '{"list":["' + "a" * 100 + '...","b"]}'),
         # datetime変換
-        ({"dt": datetime.datetime(2023, 1, 1, 12, 0, 0, 123000)}, None, False, '{"dt":"2023-01-01T12:00:00.123"}'),
-        ({"date": datetime.date(2023, 1, 1)}, None, False, '{"date":"2023-01-01"}'),
+        ({"dt": dt.datetime(2023, 1, 1, 12, 0, 0, 123000)}, None, False, '{"dt":"2023-01-01T12:00:00.123"}'),
+        ({"date": dt.date(2023, 1, 1)}, None, False, '{"date":"2023-01-01"}'),
         # pathlib.Path変換
         ({"path": pathlib.Path("/tmp/test")}, None, False, '{"path":"/tmp/test"}'),
     ],

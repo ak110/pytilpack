@@ -3,7 +3,7 @@
 __lazy_modules__ = ["base64", "datetime", "json", "pytilpack.io", "pytilpack.jsonc", "typing"]
 
 import base64
-import datetime
+import datetime as dt
 import json
 import typing
 
@@ -44,11 +44,11 @@ def converter(
     bytesはBASE64エンコードする。
 
     """
-    if isinstance(o, datetime.datetime):
+    if isinstance(o, dt.datetime):
         return o.isoformat(timespec="milliseconds")
-    if isinstance(o, datetime.date):
+    if isinstance(o, dt.date):
         return o.isoformat()
-    if isinstance(o, datetime.time):
+    if isinstance(o, dt.time):
         return o.isoformat(timespec="milliseconds")
     if isinstance(o, bytes):
         return base64.b64encode(o).decode("ascii")

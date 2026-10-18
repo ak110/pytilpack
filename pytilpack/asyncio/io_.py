@@ -14,7 +14,7 @@ __lazy_modules__ = [
 ]
 
 import asyncio
-import datetime
+import datetime as dt
 import logging
 import pathlib
 import shutil
@@ -339,7 +339,7 @@ async def sync(src: str | pathlib.Path, dst: str | pathlib.Path, delete: bool = 
 
 async def delete_old_files(
     path: str | pathlib.Path,
-    before: datetime.datetime,
+    before: dt.datetime,
     delete_empty_dirs: bool = True,  # pylint: disable=redefined-outer-name
     keep_root_empty_dir: bool = True,
 ) -> None:

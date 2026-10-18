@@ -1,6 +1,6 @@
 """SyncMixinのテストコード。"""
 
-import datetime
+import datetime as dt
 import typing
 
 import pytest
@@ -380,7 +380,7 @@ def test_to_dict() -> None:
     """to_dictのテスト。"""
     # arid: disable
     # flask版（tests.sqlalchemy.flask_test.test_to_dict）と並行実装のため許容する。
-    test2 = Test2(name="test2", enabled=True, value4=datetime.datetime(2021, 1, 1))
+    test2 = Test2(name="test2", enabled=True, value4=dt.datetime(2021, 1, 1))
     assert test2.to_dict(excludes=["pass_hash"]) == {
         "id": None,
         "name": "test2",

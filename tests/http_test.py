@@ -1,7 +1,7 @@
 """テストコード。"""
 
 import collections.abc
-import datetime
+import datetime as dt
 import email.utils
 import json
 import sys
@@ -407,7 +407,7 @@ def test_get_retry_after_integer(retry_after: str, expected_wait: float | None):
 def test_get_retry_after_datetime():
     """_get_retry_after関数の日時形式テスト。"""
     # 現在時刻から5秒後の日時文字列を作成
-    future_time = datetime.datetime.now(tz=datetime.UTC) + datetime.timedelta(seconds=5)
+    future_time = dt.datetime.now(tz=dt.UTC) + dt.timedelta(seconds=5)
     retry_after = email.utils.formatdate(future_time.timestamp(), usegmt=True)
 
     result = pytilpack.http.get_retry_after(retry_after)
@@ -420,7 +420,7 @@ def test_get_retry_after_datetime():
 def test_get_retry_after_past_datetime():
     """_get_retry_after関数の過去の日時形式テスト。"""
     # 現在時刻から5秒前の日時文字列を作成
-    past_time = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(seconds=5)
+    past_time = dt.datetime.now(tz=dt.UTC) - dt.timedelta(seconds=5)
     retry_after = email.utils.formatdate(past_time.timestamp(), usegmt=True)
 
     result = pytilpack.http.get_retry_after(retry_after)

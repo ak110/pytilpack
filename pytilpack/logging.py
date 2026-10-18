@@ -20,7 +20,7 @@ __lazy_modules__ = [
 
 import contextlib
 import contextvars
-import datetime
+import datetime as dt
 import hashlib
 import io
 import json
@@ -43,11 +43,11 @@ def _json_default(o: typing.Any) -> typing.Any:
     （converterはbytesをbase64化するが、jsonifyは元々bytesを`str(o)`にフォールバック
     していたため）。
     """
-    if isinstance(o, datetime.datetime):
+    if isinstance(o, dt.datetime):
         return o.isoformat(timespec="milliseconds")
-    if isinstance(o, datetime.date):
+    if isinstance(o, dt.date):
         return o.isoformat()
-    if isinstance(o, datetime.time):
+    if isinstance(o, dt.time):
         return o.isoformat(timespec="milliseconds")
     if isinstance(o, pathlib.Path):
         return str(o)
@@ -56,7 +56,7 @@ def _json_default(o: typing.Any) -> typing.Any:
     return str(o)
 
 
-_exception_history: dict[str, tuple[datetime.datetime, int]] = {}
+_exception_history: dict[str, tuple[dt.datetime, int]] = {}
 """例外フィンガープリント → (最終発生時刻, 最終WARNING以降の発生回数)。"""
 
 
@@ -133,9 +133,9 @@ def exception_with_dedup(
     logger: logging.Logger,
     exc: BaseException | str,
     msg: str = "Unhandled exception occurred",
-    dedup_window: datetime.timedelta | None = None,
+    dedup_window: dt.timedelta | None = None,
     dedup_count: int | None = None,
-    now: datetime.datetime | None = None,
+    now: dt.datetime | None = None,
 ) -> None:
     """同一 fingerprint が重複排除ウィンドウ内にあれば INFO、そうでなければ WARN でログ出力する。
 
@@ -157,9 +157,9 @@ def exception_with_dedup(
         now: 現在時刻。
     """
     if dedup_window is None and dedup_count is None:
-        dedup_window = datetime.timedelta(days=1)
+        dedup_window = dt.timedelta(days=1)
     if now is None:
-        now = datetime.datetime.now()
+        now = dt.datetime.now()
 
     is_exception = isinstance(exc, BaseException)
     # 種別タグとJSON配列の要素境界により、例外と文字列の違い・区切り文字の位置・

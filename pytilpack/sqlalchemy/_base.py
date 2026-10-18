@@ -2,7 +2,7 @@
 
 __lazy_modules__ = ["datetime", "logging", "secrets", "sqlalchemy", "sqlalchemy.sql.base", "time", "typing"]
 
-import datetime
+import datetime as dt
 import logging
 import secrets
 import time
@@ -177,7 +177,7 @@ class _ToDictMixin:
 
         def convert_value(value: typing.Any) -> typing.Any:
             """値を変換する関数。"""
-            if datetime_to_iso and isinstance(value, datetime.datetime | datetime.date):
+            if datetime_to_iso and isinstance(value, dt.datetime | dt.date):
                 return value.isoformat()
             if value_converter is not None:
                 return value_converter(value)

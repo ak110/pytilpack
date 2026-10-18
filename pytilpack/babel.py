@@ -2,7 +2,7 @@
 
 __lazy_modules__ = ["babel.dates", "babel.numbers", "datetime", "decimal", "pytilpack.i18n"]
 
-import datetime
+import datetime  # noqa: ICN001  # 公開関数format_datetimeの引数名dtと衝突するため別名にしない
 import decimal
 
 import babel.dates

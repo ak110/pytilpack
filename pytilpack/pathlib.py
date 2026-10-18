@@ -3,7 +3,7 @@
 __lazy_modules__ = ["dataclasses", "datetime", "logging", "os", "pathlib", "shutil", "stat", "typing"]
 
 import dataclasses
-import datetime
+import datetime as dt
 import logging
 import os
 import pathlib
@@ -305,7 +305,7 @@ def sync(src: str | pathlib.Path, dst: str | pathlib.Path, delete: bool = False)
 
 def delete_old_files(
     path: str | pathlib.Path,
-    before: datetime.datetime,
+    before: dt.datetime,
     delete_empty_dirs: bool = True,  # pylint: disable=redefined-outer-name
     keep_root_empty_dir: bool = True,
 ) -> None:
@@ -328,7 +328,7 @@ def delete_old_files(
 
     if path.is_file():
         try:
-            mtime = datetime.datetime.fromtimestamp(path.stat().st_mtime)
+            mtime = dt.datetime.fromtimestamp(path.stat().st_mtime)
             if mtime < before:
                 logger.info(f"削除: {path}")
                 path.unlink()

@@ -3,7 +3,7 @@
 __lazy_modules__ = ["argparse", "datetime", "pathlib", "pytilpack.pathlib"]
 
 import argparse
-import datetime
+import datetime as dt
 import pathlib
 
 import pytilpack.pathlib
@@ -49,7 +49,7 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
 def run(args: argparse.Namespace) -> None:
     """delete-old-filesコマンドを実行する。"""
     days = max(0, args.days)
-    before = datetime.datetime.now() - datetime.timedelta(days=days)
+    before = dt.datetime.now() - dt.timedelta(days=days)
     pytilpack.pathlib.delete_old_files(
         pathlib.Path(args.path),
         before=before,

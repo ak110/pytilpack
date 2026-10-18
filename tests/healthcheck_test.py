@@ -1,7 +1,7 @@
 """ヘルスチェック機能のテストコード。"""
 
 import asyncio
-import datetime
+import datetime as dt
 import time
 
 import pytest
@@ -88,7 +88,7 @@ async def test_run(
     output_details: bool,
 ) -> None:
     """run関数のテスト。"""
-    now = datetime.datetime(2024, 1, 1, 12, 0, 0)
+    now = dt.datetime(2024, 1, 1, 12, 0, 0)
 
     result = await pytilpack.healthcheck.run(checks=checks, output_details=output_details, now=now)
 
@@ -153,7 +153,7 @@ async def test_run_misc() -> None:
     assert details["fail"].get("error") == "ValueError: テストエラー"
 
     # アップタイム計算: start_timeパラメータ経由で起動時刻を注入
-    start = datetime.datetime(2024, 1, 1, 10, 0, 0)
-    now = datetime.datetime(2024, 1, 1, 12, 30, 0)
+    start = dt.datetime(2024, 1, 1, 10, 0, 0)
+    now = dt.datetime(2024, 1, 1, 12, 30, 0)
     result = await pytilpack.healthcheck.run([], now=now, start_time=start)
     assert result["uptime"] == str(now - start)

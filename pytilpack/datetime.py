@@ -3,7 +3,7 @@
 __lazy_modules__ = ["dataclasses", "datetime", "zoneinfo"]
 
 import dataclasses
-import datetime
+import datetime  # noqa: ICN001  # 公開関数toutcの引数名dtと衝突するため別名にしない
 import zoneinfo
 
 
