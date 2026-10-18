@@ -25,6 +25,8 @@ HTML_VALID_CASES = [
     ),
     pytest.param("<table><tr><td><select><option>a<hr><option>b</select></td></tr></table>", id="table-select"),
     pytest.param("<select><option>a</option></select>", id="ordinary-select"),
+    pytest.param("<select><template><option>a</option></template></select>", id="select-template"),
+    pytest.param("<table><tbody><template><tr><td>a</td></tr></template></tbody></table>", id="table-template"),
     pytest.param("<svg><circle r='1'/></svg><math><mi>x</mi></math><search><dialog open>x</dialog></search>", id="controls"),
     pytest.param("<template><template><tr><td>x</td></tr></template></template>", id="nested-template"),
     pytest.param("<svg><script/><template/></svg><template><tr><td>x</td></tr></template>", id="svg-self-closing"),
