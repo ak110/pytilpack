@@ -1,5 +1,18 @@
 # 開発手順
 
+## エージェントの共通品質基準
+
+Claude Codeでは`claude plugin marketplace add ak110/dotfiles`の後に
+`claude plugin install agent-basics@ak110-dotfiles`で共通品質スキルを導入する。
+Codexでは`codex plugin marketplace add ak110/dotfiles`を実行し、`/plugins`から
+`agent-basics@ak110-dotfiles`をインストールする。
+リポジトリの`.claude/settings.json`と`.codex/config.toml`は導入済みプラグインを有効化する共有設定である。
+Codexでは信頼したプロジェクトの設定が読み込まれる。
+AGENTS.mdが指定する`writing-standards`・`review-standards`と該当するreferencesを読む。
+個人用のagent-toolkitは任意で利用できる。
+導入仕様は[Claude Code](https://code.claude.com/docs/en/discover-plugins)と
+[Codex](https://developers.openai.com/plugins/build/plugins)の公式資料を参照する。
+
 ## 開発環境の構築手順
 
 1. 本リポジトリをcloneする
@@ -34,7 +47,7 @@
 `pyproject.toml`の`[tool.uv] override-dependencies`による上書きは本リポジトリの依存解決にのみ適用され、
 配布物のメタデータには含まれない。
 上流パッケージの厳密ピンにより依存更新だけでは問題を解消できない場合の上書きによる迂回の採否は、
-`agent-toolkit:writing-standards`の`references/dependency-management.md`を参照する。
+`agent-basics:writing-standards`の`references/dependency-management.md`を参照する。
 同スキルでは、利用者環境へ波及する脆弱性は上書きで迂回せず、上流の追従を待つ。
 開発時にのみ用いる依存は上書きで迂回してよく、判断の根拠と解除条件をコメントへ残す。
 本リポジトリでの依存の分類と検証は、以下の「依存の版制約を変更する場合の確認手順」に従う。

@@ -5,6 +5,12 @@
 主要Pythonライブラリ向けの軽量ユーティリティ集。
 モジュール単位の個別importとextras単位の依存管理を採用し、利用者は必要なモジュールだけ取り込む。
 
+## 共通品質基準
+
+設計・コード・テスト・文書の作成と修正では`agent-basics:writing-standards`を起動し、変更対象に該当するreferencesを読む。
+レビューと指摘の採否判断では`agent-basics:review-standards`を起動する。
+導入方法は[開発ガイド](docs/development/development.md)を参照する。本書の固有規約も併用する。
+
 ## 開発手順
 
 コミット前の検証方法: `make test`（特定ファイルに限定する場合は`uvx --exclude-newer-package pyfltr=false pyfltr run <path>`）
