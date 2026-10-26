@@ -2,11 +2,13 @@
 
 import pathlib
 import socket
+import threading
 import types
 
 import flask
 import httpx
 import pytest
+import werkzeug.serving
 
 import pytilpack.flask
 import pytilpack.flask.misc
@@ -65,6 +67,31 @@ def test_run_bind_failure() -> None:
         occupied.listen()
         with pytest.raises(SystemExit), pytilpack.flask.run(app, host="127.0.0.1", port=occupied.getsockname()[1]):
             pytest.fail("使用中のポートで起動した")
+    assert not flask.has_app_context()
+
+
+def test_run_thread_start_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    """スレッド起動失敗でも、作成済みソケットとアプリ文脈を回収する。"""
+    servers: list[werkzeug.serving.BaseWSGIServer] = []
+    original_make_server = werkzeug.serving.make_server
+
+    def make_server(*args, **kwargs):
+        server = original_make_server(*args, **kwargs)
+        servers.append(server)
+        return server
+
+    def fail_start(_thread: threading.Thread) -> None:
+        raise RuntimeError("スレッドを起動できない")
+
+    monkeypatch.setattr(werkzeug.serving, "make_server", make_server)
+    monkeypatch.setattr(threading.Thread, "start", fail_start)
+    with (
+        pytest.raises(RuntimeError, match="スレッドを起動できない"),
+        pytilpack.flask.run(flask.Flask(__name__), host="127.0.0.1", port=0),
+    ):
+        pytest.fail("起動失敗後に制御を返した")
+    assert len(servers) == 1
+    assert servers[0].socket.fileno() == -1
     assert not flask.has_app_context()
 
 

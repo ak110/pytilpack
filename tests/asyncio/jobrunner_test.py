@@ -103,6 +103,25 @@ async def _graceful_shutdown(runner: PollingJobRunner) -> None:
     await runner.graceful_shutdown()
 
 
+@pytest.mark.asyncio
+async def test_cancel_while_polling_releases_capacity() -> None:
+    """取得待機の取消後に同時実行枠を全て再取得できる。"""
+    runner = PollingJobRunner()
+    task = asyncio.create_task(runner.run())
+    try:
+        await runner.poll_started.wait()
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        async with asyncio.timeout(1):
+            await runner.semaphore.acquire()
+            await runner.semaphore.acquire()
+        assert runner.semaphore.locked()
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+
+
 def add_jobs_thread(
     queue_: queue.Queue[pytilpack.asyncio.Job],
     jobs: list[pytilpack.asyncio.Job],

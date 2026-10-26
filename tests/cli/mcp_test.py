@@ -29,15 +29,14 @@ def _page_url() -> Iterator[str]:
             self.end_headers()
             self.wfile.write(body)
 
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    try:
-        yield f"http://127.0.0.1:{server.server_port}/"
-    finally:
-        server.shutdown()
-        server.server_close()
-        thread.join()
+    with http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler) as server:
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            yield f"http://127.0.0.1:{server.server_port}/"
+        finally:
+            server.shutdown()
+            thread.join()
 
 
 def _assert_fetch_result(result: mcp.types.CallToolResult) -> None:
@@ -68,40 +67,41 @@ async def test_mcp_http_fetch_url(page_url: str) -> None:
     with socket.socket() as reservation:
         reservation.bind(("127.0.0.1", 0))
         port = reservation.getsockname()[1]
-    process = subprocess.Popen(
+    with subprocess.Popen(
         [sys.executable, "-m", "pytilpack.cli.main", "mcp", "--transport", "http", "--host", "127.0.0.1", "--port", str(port)],
         cwd=pathlib.Path(__file__).parents[2],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
         text=True,
-    )
-    assert process.stderr is not None
-    startup: list[str] = []
-    try:
+        encoding="utf-8",
+    ) as process:
+        assert process.stderr is not None
+        startup: list[str] = []
         try:
-            async with asyncio.timeout(30):
-                while True:
-                    line = await asyncio.to_thread(process.stderr.readline)
-                    if not line:
-                        raise AssertionError(f"MCPサーバーが終了した: {''.join(startup)}")
-                    startup.append(line)
-                    if "Uvicorn running on " in line:
-                        break
-        except TimeoutError as exc:
-            raise AssertionError(f"MCPサーバーの起動完了を確認できない: {''.join(startup)}") from exc
+            try:
+                async with asyncio.timeout(30):
+                    while True:
+                        line = await asyncio.to_thread(process.stderr.readline)
+                        if not line:
+                            raise AssertionError(f"MCPサーバーが終了した: {''.join(startup)}")
+                        startup.append(line)
+                        if "Uvicorn running on " in line:
+                            break
+            except TimeoutError as exc:
+                raise AssertionError(f"MCPサーバーの起動完了を確認できない: {''.join(startup)}") from exc
 
-        async with contextlib.AsyncExitStack() as stack:
-            read_stream, write_stream = await stack.enter_async_context(
-                mcp.client.streamable_http.streamable_http_client(f"http://127.0.0.1:{port}/mcp")
-            )
-            session = await stack.enter_async_context(mcp.ClientSession(read_stream, write_stream))
-            await session.initialize()
-            result = await session.call_tool("fetch_url", {"url": page_url})
-        _assert_fetch_result(result)
-    finally:
-        process.terminate()
-        with contextlib.suppress(subprocess.TimeoutExpired):
-            process.communicate(timeout=5)
-        if process.poll() is None:
-            process.kill()
-            process.communicate()
+            async with contextlib.AsyncExitStack() as stack:
+                read_stream, write_stream = await stack.enter_async_context(
+                    mcp.client.streamable_http.streamable_http_client(f"http://127.0.0.1:{port}/mcp")
+                )
+                session = await stack.enter_async_context(mcp.ClientSession(read_stream, write_stream))
+                await session.initialize()
+                result = await session.call_tool("fetch_url", {"url": page_url})
+            _assert_fetch_result(result)
+        finally:
+            process.terminate()
+            with contextlib.suppress(subprocess.TimeoutExpired):
+                process.communicate(timeout=5)
+            if process.poll() is None:
+                process.kill()
+                process.communicate()

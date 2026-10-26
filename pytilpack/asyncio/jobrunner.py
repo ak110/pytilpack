@@ -62,24 +62,24 @@ class JobRunner(metaclass=abc.ABCMeta):
         while self.running:
             # セマフォを取得して実行可能なジョブがあるか確認
             await self.semaphore.acquire()
-            # 再度self.runningをチェック (graceful_shutdown()対策)
-            if not self.running:
-                self.semaphore.release()
-                break
-            job = await self._poll()
-            # poll()の待機中にも停止できるため、タスク登録の直前に再確認する。
-            if not self.running:
-                self.semaphore.release()
-                break
+            transferred = False
+            try:
+                if not self.running:
+                    break
+                job = await self._poll()
+                # poll()の待機中にも停止できるため、タスク登録の直前に再確認する。
+                if not self.running:
+                    break
+                if job is not None:
+                    task = asyncio.create_task(self._run_job(job))
+                    task.add_done_callback(self.tasks.discard)
+                    self.tasks.add(task)
+                    transferred = True
+            finally:
+                if not transferred:
+                    self.semaphore.release()
             if job is None:
-                # ジョブがなければセマフォを解放して一定時間待機
-                self.semaphore.release()
                 await asyncio.sleep(self.poll_interval)
-            else:
-                # ジョブがあれば実行
-                task = asyncio.create_task(self._run_job(job))
-                task.add_done_callback(self.tasks.discard)
-                self.tasks.add(task)
 
     async def _poll(self) -> Job | None:
         try:
@@ -119,7 +119,8 @@ class JobRunner(metaclass=abc.ABCMeta):
                 logger.warning(
                     "ジョブ終了処理エラー。同時実行数の枠を解放して処理を続ける。on_finally()の実装を見直す", exc_info=True
                 )
-            self.semaphore.release()
+            finally:
+                self.semaphore.release()
 
     def shutdown(self) -> None:
         """停止処理。"""

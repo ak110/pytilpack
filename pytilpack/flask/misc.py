@@ -154,46 +154,42 @@ def run(app: flask.Flask, host: str = "localhost", port: int = 5000):
         def _pytilpack_flask_dummy():
             return "OK"
 
-    server = werkzeug.serving.make_server(host, port, app, threaded=True)
-    ctx = app.app_context()
-    ctx.push()
-    failures: list[BaseException] = []
+    with werkzeug.serving.make_server(host, port, app, threaded=True) as server, app.app_context():
+        failures: list[BaseException] = []
 
-    def serve():
-        try:
-            server.serve_forever()
-        except BaseException as exc:
-            failures.append(exc)
-
-    thread = threading.Thread(target=serve, daemon=True)
-    thread.start()
-    try:
-        # サーバーが起動するまで待機
-        deadline = time.monotonic() + 10.0
-        while True:
-            if not thread.is_alive():
-                raise RuntimeError(
-                    "Flaskサーバーの起動に失敗しました。原因は連鎖した例外を参照し、host・portの指定（使用中のポートなど）を見直す"
-                ) from (failures[0] if failures else None)
-            if time.monotonic() >= deadline:
-                raise TimeoutError(
-                    "Flaskサーバーの起動待ちが10秒を超えました。host・portへ接続できるか（ファイアウォール、名前解決）を確かめて再実行する"
-                )
+        def serve():
             try:
-                httpx.get(f"http://{host}:{server.server_port}/_pytilpack_flask_dummy", timeout=0.2).raise_for_status()
-                break
-            except httpx.HTTPError:
-                time.sleep(0.05)
-        # 制御を戻す
-        yield server.server_port
-    finally:
-        if thread.is_alive():
-            server.shutdown()
-        thread.join(timeout=5.0)
-        server.server_close()
-        ctx.pop()
-        if thread.is_alive():
-            raise RuntimeError(
-                "Flaskサーバーの停止に失敗しました。サーバースレッドが5秒以内に終了せずdaemonスレッドとして残っている。"
-                "終了しないリクエスト処理が無いかを確かめる"
-            )
+                server.serve_forever()
+            except BaseException as exc:
+                failures.append(exc)
+
+        thread = threading.Thread(target=serve, daemon=True)
+        thread.start()
+        try:
+            # サーバーが起動するまで待機
+            deadline = time.monotonic() + 10.0
+            while True:
+                if not thread.is_alive():
+                    raise RuntimeError(
+                        "Flaskサーバーの起動に失敗しました。原因は連鎖した例外を参照し、host・portの指定（使用中のポートなど）を見直す"
+                    ) from (failures[0] if failures else None)
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(
+                        "Flaskサーバーの起動待ちが10秒を超えました。host・portへ接続できるか（ファイアウォール、名前解決）を確かめて再実行する"
+                    )
+                try:
+                    httpx.get(f"http://{host}:{server.server_port}/_pytilpack_flask_dummy", timeout=0.2).raise_for_status()
+                    break
+                except httpx.HTTPError:
+                    time.sleep(0.05)
+            # 制御を戻す
+            yield server.server_port
+        finally:
+            if thread.is_alive():
+                server.shutdown()
+            thread.join(timeout=5.0)
+            if thread.is_alive():
+                raise RuntimeError(
+                    "Flaskサーバーの停止に失敗しました。サーバースレッドが5秒以内に終了せずdaemonスレッドとして残っている。"
+                    "終了しないリクエスト処理が無いかを確かめる"
+                )
