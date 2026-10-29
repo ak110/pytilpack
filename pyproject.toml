@@ -155,10 +155,10 @@ pytilpack = "pytilpack.cli.main:main"
 
 [tool.uv]
 default-groups = ["dev"]
-# mypy 2.4.0はSyncMixin/AsyncMixin.paginateの条件式で内部エラーになる。
+# mypy 2.4.0と2.4.1はSyncMixin/AsyncMixin.paginateの条件式で内部エラーになる。
 # https://github.com/python/mypy/issues/22108
-# 2.4.0より新しい版へ解決されmake testが成功したら撤去する。
-constraint-dependencies = ["mypy!=2.4.0"]
+# 2.4.1より新しい版へ解決されmake testが成功したら撤去する。
+constraint-dependencies = ["mypy!=2.4.0,!=2.4.1"]
 exclude-newer = "1 day"
 exclude-newer-package = { pyfltr = false, pytilpack = false }
 
