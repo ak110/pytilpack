@@ -2,6 +2,8 @@
 
 import asyncio
 import concurrent.futures
+import subprocess
+import sys
 import threading
 import types
 import typing
@@ -22,6 +24,65 @@ from pytilpack.python import (
     get_list,
     get_str,
 )
+
+
+def test_singleton_failed_initialization_retries() -> None:
+    """初期化に失敗したインスタンスを公開しない。"""
+    attempts = 0
+
+    class Config(pytilpack.python.SingletonMixin):
+        """初回だけ初期化に失敗する。"""
+
+        def __init__(self) -> None:
+            nonlocal attempts
+            attempts += 1
+            if attempts == 1:
+                raise ValueError("initialization failed")
+            self.value = 42
+
+    try:
+        with pytest.raises(ValueError, match="initialization failed"):
+            Config.get_singleton()
+        assert Config.get_singleton().value == 42
+        assert attempts == 2
+    finally:
+        Config.reset()
+
+
+@pytest.mark.parametrize("recursive", [False, True])
+def test_singleton_nested_initialization(recursive: bool) -> None:
+    """入れ子の初期化と同じクラスの再帰を独立プロセスで確認する。"""
+    code = """
+import pytilpack.python
+import sys
+
+class Other(pytilpack.python.SingletonMixin):
+    pass
+
+class Config(pytilpack.python.SingletonMixin):
+    def __init__(self):
+        if sys.argv[1] == "True":
+            try:
+                Config.get_singleton()
+            except RuntimeError:
+                return
+            raise AssertionError("recursive initialization was accepted")
+        self.other = Other.get_singleton()
+
+value = Config.get_singleton()
+assert value is Config.get_singleton()
+if sys.argv[1] == "False":
+    assert value.other is Other.get_singleton()
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code, str(recursive)],
+        capture_output=True,
+        encoding="utf-8",
+        errors="backslashreplace",
+        timeout=5,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 def test_coalesce():

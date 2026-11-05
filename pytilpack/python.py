@@ -419,11 +419,11 @@ class SingletonMixin:
     _instances: dict[type, typing.Any] = {}
     """シングルトンインスタンスを保持する辞書。"""
 
-    _lock: threading.Lock = threading.Lock()
+    _lock: threading.RLock = threading.RLock()
     """スレッドセーフ用のロック。"""
 
-    _initialized: dict[type, bool] = {}
-    """初期化済みフラグ。"""
+    _initializing: set[type] = set()
+    """再入可能なロックの内側で、同じクラスの再帰初期化を検出する。"""
 
     def __new__(cls, *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
         """直接インスタンス化を禁止する。"""
@@ -432,19 +432,21 @@ class SingletonMixin:
 
     @classmethod
     def get_singleton[T](cls: type[T]) -> T:
-        """シングルトンインスタンスを取得する。"""
-        # ダブルチェックロッキングパターン
-        if cls not in SingletonMixin._instances:
-            with SingletonMixin._lock:
-                if cls not in SingletonMixin._instances:
-                    # object.__new__() を使ってインスタンスを作成
+        """初期化を正常に終えたシングルトンインスタンスを取得する。"""
+        with SingletonMixin._lock:
+            if cls in SingletonMixin._initializing:
+                raise RuntimeError(
+                    f"{cls.__name__}の初期化中に同じsingletonが要求されました。初期化の循環参照を解消してください。"
+                )
+            if cls not in SingletonMixin._instances:
+                SingletonMixin._initializing.add(cls)
+                try:
                     instance = object.__new__(cls)
+                    cls.__init__(instance)  # type: ignore[misc]
                     SingletonMixin._instances[cls] = instance
-                    # __init__() を初回のみ実行
-                    if cls not in SingletonMixin._initialized:
-                        cls.__init__(instance)  # type: ignore[misc]
-                        SingletonMixin._initialized[cls] = True
-        return typing.cast(T, SingletonMixin._instances[cls])
+                finally:
+                    SingletonMixin._initializing.remove(cls)
+            return typing.cast(T, SingletonMixin._instances[cls])
 
     @classmethod
     def reset(cls) -> None:
@@ -452,8 +454,6 @@ class SingletonMixin:
         with SingletonMixin._lock:
             if cls in SingletonMixin._instances:
                 del SingletonMixin._instances[cls]
-            if cls in SingletonMixin._initialized:
-                del SingletonMixin._initialized[cls]
 
 
 def merge(dst: typing.Any, src: typing.Any) -> typing.Any:

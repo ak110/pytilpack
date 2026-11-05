@@ -27,6 +27,7 @@ class ThreadPool:
         self.workers = [WorkerThread(name=f"aloop-{i}") for i in range(max_workers)]
         self.next = 0
         self.lock = threading.Lock()
+        self._shutdown = False
         for w in self.workers:
             w.start()
 
@@ -48,9 +49,11 @@ class ThreadPool:
             結果を取得するためのFuture
         """
         with self.lock:
+            if self._shutdown:
+                raise RuntimeError("ThreadPoolは停止済みです。新しいプールを作成して送信してください。")
             idx = self.next
             self.next = (self.next + 1) % len(self.workers)
-        return self.workers[idx].submit(coro)
+            return self.workers[idx].submit(coro)
 
     def map[T](self, coros: typing.Iterable[typing.Coroutine[typing.Any, typing.Any, T]]) -> list[concurrent.futures.Future[T]]:
         """複数のコルーチンをワーカーに送信する。
@@ -65,6 +68,8 @@ class ThreadPool:
 
     def shutdown(self) -> None:
         """全てのワーカースレッドを停止する。"""
+        with self.lock:
+            self._shutdown = True
         for w in self.workers:
             w.stop()
 
@@ -111,6 +116,7 @@ class WorkerThread:
 
     def start(self) -> None:
         """ワーカースレッドを起動する。"""
+        self.stopped.clear()
         started = threading.Event()
 
         def thread() -> None:

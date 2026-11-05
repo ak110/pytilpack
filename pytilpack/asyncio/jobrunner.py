@@ -27,15 +27,15 @@ class Job(metaclass=abc.ABCMeta):
 
     async def on_finished(self) -> None:
         """ジョブが完了した場合に呼ばれる処理。必要に応じてサブクラスで追加の処理を行う。"""
-        self.status = "finished"
+        del self  # noqa
 
     async def on_canceled(self) -> None:
         """ジョブが完了する前にキャンセルされた場合に呼ばれる処理。必要に応じてサブクラスで追加の処理を行う。"""
-        self.status = "canceled"
+        del self  # noqa
 
     async def on_errored(self) -> None:
         """ジョブがエラー終了した場合に呼ばれる処理。必要に応じてサブクラスで追加の処理を行う。"""
-        self.status = "errored"
+        del self  # noqa
 
     async def on_finally(self) -> None:
         """ジョブの終了時に必ず呼ばれる処理。必要に応じてサブクラスで追加の処理を行う。"""
@@ -93,25 +93,20 @@ class JobRunner(metaclass=abc.ABCMeta):
 
     async def _run_job(self, job: Job) -> None:
         try:
-            await job.run()
-            await asyncio.shield(job.on_finished())
-        except asyncio.CancelledError:
+            job.status = "running"
             try:
-                await asyncio.shield(job.on_canceled())
+                await job.run()
+            except asyncio.CancelledError:
+                await self._notify_job(job, "canceled")
+                raise
             except Exception:
                 logger.warning(
-                    "ジョブキャンセル処理エラー。キャンセルは呼び出し元へ伝搬して処理を続ける。on_canceled()の実装を見直す",
+                    "ジョブ実行エラー。on_errored()を呼び出して処理を続ける。原因は付記した例外を参照",
                     exc_info=True,
                 )
-            raise  # 例外を再送出してキャンセル状態を伝搬
-        except Exception:
-            logger.warning("ジョブ実行エラー。on_errored()を呼び出して処理を続ける。原因は付記した例外を参照", exc_info=True)
-            try:
-                await asyncio.shield(job.on_errored())
-            except Exception:
-                logger.warning(
-                    "ジョブエラー処理エラー。on_finally()へ進んで処理を続ける。on_errored()の実装を見直す", exc_info=True
-                )
+                await self._notify_job(job, "errored")
+            else:
+                await self._notify_job(job, "finished")
         finally:
             try:
                 await asyncio.shield(job.on_finally())
@@ -121,6 +116,19 @@ class JobRunner(metaclass=abc.ABCMeta):
                 )
             finally:
                 self.semaphore.release()
+
+    async def _notify_job(self, job: Job, status: typing.Literal["finished", "canceled", "errored"]) -> None:
+        """本体の結果を確定してから、上書き可能な通知を実行する。"""
+        job.status = status
+        callback = {"finished": job.on_finished, "canceled": job.on_canceled, "errored": job.on_errored}[status]
+        try:
+            await asyncio.shield(callback())
+        except Exception:
+            logger.warning(
+                "ジョブの%s通知エラー。本体の結果を保持して終了処理を続ける。通知メソッドの実装を見直す",
+                status,
+                exc_info=True,
+            )
 
     def shutdown(self) -> None:
         """停止処理。"""

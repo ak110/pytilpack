@@ -1,5 +1,16 @@
 # pytilpack.asyncio
 
+## ジョブの状態と通知
+
+`JobRunner`は`Job.run()`の直前に`status`を`running`へ変更し、実行結果を確定してから通知メソッドを呼ぶ。
+`on_finished`・`on_canceled`・`on_errored`を上書きする場合も、状態設定のために`super()`を呼ぶ必要はない。
+通知メソッドの例外は警告ログに記録され、本体の実行結果は保持される。
+
+### 通知メソッドの変更履歴
+
+通知メソッドを直接呼んでも`status`は変化しなくなった。
+ジョブは`JobRunner`を通じて実行し、通知メソッドには追加の終了処理を実装する。
+
 !!! note "pytilpack.asyncio.run の制約"
     親イベントループが実行中の状態から `pytilpack.asyncio.run` を呼ぶ場合、
     `coro` は別スレッドの新規ループで実行される。

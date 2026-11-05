@@ -95,6 +95,36 @@ class PollingJobRunner(pytilpack.asyncio.JobRunner):
         return await self.result
 
 
+@pytest.mark.asyncio
+async def test_job_state_owned_by_runner(caplog: pytest.LogCaptureFixture) -> None:
+    """通知の上書きと失敗を経ても本体の実行結果を保持する。"""
+
+    class NotifyingJob(EventJob):
+        """完了通知に失敗するジョブ。"""
+
+        @typing.override
+        async def on_finished(self) -> None:
+            assert self.status == "finished"
+            raise ValueError("notification failed")
+
+    job = NotifyingJob()
+    runner = PollingJobRunner(job)
+    task = asyncio.create_task(runner.run())
+    try:
+        await job.started.wait()
+        assert job.status == "running"
+        job.finish.set()
+        await runner.graceful_shutdown()
+        runner.result.set_result(None)
+        await task
+        assert str(job.status) == "finished"
+        assert "notification failed" in caplog.text
+    finally:
+        job.finish.set()
+        task.cancel()
+        await asyncio.gather(task, *runner.tasks, return_exceptions=True)
+
+
 async def _shutdown(runner: PollingJobRunner) -> None:
     runner.shutdown()
 

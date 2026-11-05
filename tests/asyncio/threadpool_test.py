@@ -1,6 +1,7 @@
 """テストコード。"""
 
 import asyncio
+import threading
 
 import pytest
 
@@ -79,6 +80,60 @@ def test_worker_thread() -> None:
     assert future.result(timeout=1) == 30
     worker.stop()
     assert worker.thread is None
+
+
+def test_worker_restart_waits_for_cleanup() -> None:
+    """再起動後も取消処理を回収してから停止する。"""
+    worker = pytilpack.asyncio.threadpool.WorkerThread(name="restart-worker")
+    worker.start()
+    worker.stop()
+    started = threading.Event()
+    cleaning = threading.Event()
+    finish = threading.Event()
+    stopped = threading.Event()
+
+    async def work() -> None:
+        started.set()
+        try:
+            await asyncio.Future()
+        finally:
+            cleaning.set()
+            await asyncio.to_thread(finish.wait)
+
+    def stop() -> None:
+        worker.stop()
+        stopped.set()
+
+    worker.start()
+    future = worker.submit(work())
+    thread = threading.Thread(target=stop)
+    try:
+        assert started.wait(timeout=2)
+        assert not worker.stopped.is_set()
+        thread.start()
+        assert cleaning.wait(timeout=2)
+        assert not stopped.is_set()
+    finally:
+        finish.set()
+        if thread.ident is not None:
+            thread.join(timeout=2)
+        else:
+            worker.stop()
+        assert not thread.is_alive()
+        assert future.done()
+
+
+def test_submit_after_shutdown() -> None:
+    """停止したプールへの送信は既存のRuntimeErrorで拒否する。"""
+    pool = pytilpack.asyncio.threadpool.ThreadPool(max_workers=1)
+    pool.shutdown()
+    coro = _async_add(1, 2)
+    try:
+        with pytest.raises(RuntimeError):
+            pool.submit(coro)
+    finally:
+        # pylintはasync関数の戻り値注釈をコルーチンの型として推論する。
+        coro.close()  # pylint: disable=no-member
 
 
 def test_thread_pool_destructor(caplog: pytest.LogCaptureFixture) -> None:
