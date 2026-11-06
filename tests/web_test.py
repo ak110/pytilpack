@@ -41,6 +41,14 @@ HTML_VALID_CASES = [
         pytest.param(f"<{tag}>text &lt;template&gt;</{tag}><template><tr><td>x</td></tr></template>", id=f"text-{tag}")
         for tag in ("script", "style", "xmp", "iframe", "noembed", "noframes", "title", "textarea")
     ],
+    # HTML StandardのCharacter reference stateは、``&``の次がASCII英数字・``#``以外なら文字参照を開始しない。
+    # https://html.spec.whatwg.org/multipage/parsing.html#character-reference-state
+    pytest.param('<div class="[&_svg]:size-4 [&>li]:mt-2 [&:hover]:a">x</div>', id="ampersand-attr-double"),
+    pytest.param("<div class='[&_svg]:size-4 [&>li]:mt-2'>x</div>", id="ampersand-attr-single"),
+    pytest.param("<div class=[&_svg]:size-4>x</div>", id="ampersand-attr-unquoted"),
+    pytest.param("<p>a &_ b &> c &- d &日本語 &&lt;</p>", id="ampersand-body"),
+    pytest.param("<textarea>&_ &></textarea>", id="ampersand-textarea"),
+    pytest.param("<p>&lt;&amp;&#65;&#x41;&copy;</p>", id="ampersand-valid-references"),
 ]
 
 HTML_INVALID_CASES = [
@@ -77,6 +85,12 @@ HTML_INVALID_CASES = [
     pytest.param("<template><p>a</div>", ("div",), id="unclosed-template"),
     pytest.param("<frameset><script><template></script></frameset></template>", ("script",), id="ignored-script"),
     pytest.param("<svg><script><template/></script></svg><p>a</div></template>", ("div",), id="svg-script"),
+    # 文字参照を開始する``&``の誤りは、開始しない``&``の補正後も報告する。
+    pytest.param("<p>&_ &zzunknown;</p>", ("named entity expected",), id="ampersand-unknown-name"),
+    pytest.param("<div title='&_ &zzunknown;'>x</div>", ("named entity expected",), id="ampersand-attr-unknown-name"),
+    pytest.param("<p>&_ &#x;</p>", ("numeric entity expected",), id="ampersand-numeric-without-digits"),
+    pytest.param("<p>&_ &amp x</p>", ("didn't end with",), id="ampersand-missing-semicolon"),
+    pytest.param("<div class='[&_svg]:a'>x</div><p>a</div>", ("div",), id="ampersand-with-tag-error"),
 ]
 
 
@@ -108,7 +122,7 @@ def test_check_html_reparsed_bytes(file_like: bool, caplog: pytest.LogCaptureFix
     """先読み範囲より後のcharset宣言による再解析でもtemplate境界を初期化する。"""
     # charsetの先読み（1024 bytes）の外で、未終了のtemplateを持つ解析をやり直す。
     html = "<!doctype html><title>t</title><!--" + "x" * 1024 + "-->"
-    html += "<template><meta charset='utf-8'><tr><td>日本語</td></tr></template>"
+    html += "<template><meta charset='utf-8'><tr><td>日本語</td></tr></template><p class='[&_svg]:a'>&_</p>"
     for strict in (True, False):
         data = html.encode()
         pytilpack.web.check_html(io.BytesIO(data) if file_like else data, strict=strict)

@@ -2,6 +2,7 @@
 
 __lazy_modules__ = [
     "html5lib",
+    "html5lib._tokenizer",
     "html5lib.constants",
     "logging",
     "pathlib",
@@ -21,6 +22,7 @@ import typing
 import urllib.parse
 
 import html5lib
+import html5lib._tokenizer
 import html5lib.constants
 import werkzeug.http
 
@@ -372,7 +374,12 @@ def check_content_type(content_type: str, valid_content_types: str | typing.Iter
 def check_html(input_stream: typing.Any, strict: bool = False) -> None:
     """HTMLの字句・木構築時の構文エラーを診断する。
 
-    html5libの診断に現行のselect解析規則を補って報告する。
+    html5libの診断に現行のselect解析規則と文字参照の開始判定を補って報告する。
+    文字参照の開始判定は、``&``の次がASCII英数字・``#``以外（``&_``・``&>``など）の場合に
+    文字参照を開始しないとする現行仕様のCharacter reference stateに合わせ、
+    html5lib 1.1がこの場合にも出す名前付き参照の欠落エラーを報告しない。
+    文字参照として扱われる未知の名前・数字の無い数値参照・セミコロン不足の診断は報告する。
+    仕様: https://html.spec.whatwg.org/multipage/parsing.html#character-reference-state
     内容モデルや属性値など、HTML仕様への適合全体の検証は行わない。
     ただし``template``要素の範囲（最も外側の開始タグから対応する終了タグまで）にあるエラーは報告しない。
     html5lib 1.1は``template``要素の構文規則を持たず、``select``や表の中の``template``、
@@ -402,8 +409,61 @@ def check_html(input_stream: typing.Any, strict: bool = False) -> None:
             logger.warning(f"HTMLエラー: 処理を継続しました。報告位置のHTMLを修正してください。{error}")
 
 
+class _DiagnosticTokenizer(html5lib._tokenizer.HTMLTokenizer):  # pylint: disable=protected-access
+    """文字参照の開始判定を現行仕様へ合わせる診断用トークナイザー。
+
+    html5lib 1.1の``consumeEntity``は、``&``の次がASCII英数字・``#``以外の文字でも名前付き参照の分岐へ進み、
+    該当する名前が無いと``expected-named-entity``を積む。
+    現行仕様のCharacter reference stateはこの場合に文字参照を開始せず、``&``を通常の文字として扱う。
+    そこで消費開始時の先頭文字が開始条件を満たさない場合に限り、その消費で積まれた同エラーだけを除く。
+    判定を文字参照の消費時点に置くため、属性値・本文・RCDATAなど``consumeEntity``を使う全文脈へ同じ規則が働く。
+    仕様: https://html.spec.whatwg.org/multipage/parsing.html#character-reference-state
+    """
+
+    def consumeEntity(self, allowedChar: str | None = None, fromAttribute: bool = False) -> None:
+        """文字参照を消費し、文字参照を開始しない``&``への``expected-named-entity``を除く。"""
+        first = self.stream.char()
+        self.stream.unget(first)
+        queued = len(self.tokenQueue)
+        super().consumeEntity(allowedChar, fromAttribute)
+        if first == "#" or first in html5lib.constants.asciiLetters or first in html5lib.constants.digits:
+            return
+        # この呼び出しで追加されたトークンだけを対象にし、既に積まれていたトークンと順序は変えない。
+        added = [self.tokenQueue.pop() for _ in range(len(self.tokenQueue) - queued)][::-1]
+        parse_error = html5lib.constants.tokenTypes["ParseError"]
+        self.tokenQueue.extend(
+            token for token in added if not (token.get("type") == parse_error and token.get("data") == "expected-named-entity")
+        )
+
+
 class _HTMLDiagnosticParser(html5lib.HTMLParser):
     """html5lib 1.1のphase・tree・tokenizer位置を共有する診断用パーサー。"""
+
+    def _parse(
+        self,
+        stream: typing.Any,
+        innerHTML: bool = False,
+        container: str = "div",
+        scripting: bool = False,
+        **kwargs: typing.Any,
+    ) -> None:
+        """html5lib 1.1の``_parse``と同じ手順で、トークナイザーだけを診断用に差し替える。
+
+        html5lib 1.1は``_parse``の中でトークナイザーの型を固定し、型を差し替える公開手段を持たない。
+        文字コード変更による再解析（``_ReparseException``）は同じトークナイザーを使うため、開始判定も維持される。
+        """
+        # html5lib 1.1の``_parse``が設定する属性を同じ位置で設定し、元の初期化順序を保つ。
+        # pylint: disable=attribute-defined-outside-init,protected-access
+        self.innerHTMLMode = innerHTML
+        self.container = container
+        self.scripting = scripting
+        self.tokenizer = _DiagnosticTokenizer(stream, parser=self, **kwargs)
+        self.reset()
+        try:
+            self.mainLoop()
+        except html5lib.constants._ReparseException:
+            self.reset()
+            self.mainLoop()
 
     def __init__(self) -> None:
         self.template_ranges: list[tuple[tuple[int, int], tuple[int, int]]] = []
