@@ -48,6 +48,7 @@ HTML_VALID_CASES = [
     pytest.param("<div class=[&_svg]:size-4>x</div>", id="ampersand-attr-unquoted"),
     pytest.param("<p>a &_ b &> c &- d &日本語 &&lt;</p>", id="ampersand-body"),
     pytest.param("<textarea>&_ &></textarea>", id="ampersand-textarea"),
+    pytest.param("<title>&_ &></title>", id="ampersand-title"),
     pytest.param("<p>&lt;&amp;&#65;&#x41;&copy;</p>", id="ampersand-valid-references"),
 ]
 
@@ -90,6 +91,7 @@ HTML_INVALID_CASES = [
     pytest.param("<div title='&_ &zzunknown;'>x</div>", ("named entity expected",), id="ampersand-attr-unknown-name"),
     pytest.param("<p>&_ &#x;</p>", ("numeric entity expected",), id="ampersand-numeric-without-digits"),
     pytest.param("<p>&_ &amp x</p>", ("didn't end with",), id="ampersand-missing-semicolon"),
+    pytest.param("<div title='&_ &amp x'>x</div>", ("didn't end with",), id="ampersand-attr-missing-semicolon"),
     pytest.param("<div class='[&_svg]:a'>x</div><p>a</div>", ("div",), id="ampersand-with-tag-error"),
 ]
 
