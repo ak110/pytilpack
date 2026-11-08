@@ -48,16 +48,28 @@ jobs:
           # UV_FROZENではlockfileの最新性を検査しないため、この検査だけ解除する。
           env --unset=UV_FROZEN XDG_CONFIG_HOME="$config_dir" uv lock --check
 
+      # キャッシュのキーへ使う、イメージが同梱するpyfltrの版。イメージが同梱するツール群はこの版で決まる。
+      - name: イメージ同梱のpyfltrの版
+        if: ${{ matrix.python-version == '3.15' }}
+        id: image
+        run: |
+          set -euo pipefail
+          # 版の表示を標準エラーへ書く旧版のイメージでも取り出せるよう、両方を受け取る。
+          version="$(pyfltr --version 2>&1 | sed -n 's/^pyfltr //p')"
+          test -n "$version"
+          echo "pyfltr-version=${version}" >> "$GITHUB_OUTPUT"
+
+      # キャッシュなしの計測（2026年11月、pyfltr 3.27.0のイメージ）では、全検査のジョブが/cacheへ加えるのは
+      # mise（pyfltr ciのツール導入、約82MB）、pnpm（約129MB）、uv（プロジェクトの依存、約388MB）で、
+      # pytestのみのジョブはmiseを増やさなかった。pnpmとuvの増分はレジストリから短時間で取得でき、
+      # 保存するとイメージ同梱分（数百MB）まで毎回アーカイブし直すため、全検査のジョブの/cache/miseだけを保存する。
+      # キーは内容を決める入力（イメージのpyfltrの版と設定）のハッシュとし、restore-keysを置かない。
+      # 入力が同じ実行は完全一致で復元して保存を省き、イメージの更新後は新しいキーで同梱ツールから作り直す。
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: ${{ matrix.python-version == '3.15' }}
         with:
-          path: /cache
-          # 固定キーでは一度保存されると更新されないため、run_idとrun_attemptを含めて毎回保存させる。
-          # restore-keysで直近のキャッシュを初期値として復元し、ジョブ中に変化した/cacheの内容を
-          # 新しいキーで保存して次の実行へ引き継ぐ。
-          # run_idは再実行（Re-run）で変化しないため、run_attemptを併記する。
-          # run_idだけでは再実行時にキーが完全一致し、その再実行で変化した/cacheの内容が保存されない。
-          key: pyfltr-cache-${{ runner.os }}-py${{ matrix.python-version }}-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: pyfltr-cache-${{ runner.os }}-py${{ matrix.python-version }}-
+          path: /cache/mise
+          key: pyfltr-mise-${{ runner.os }}-${{ steps.image.outputs.pyfltr-version }}-${{ hashFiles('pyproject.toml', 'mise.toml') }}
 
       - name: Install dependencies
         run: uv sync --all-groups --all-extras
@@ -70,9 +82,6 @@ jobs:
       - name: Test with pyfltr（pytestのみ）
         if: ${{ matrix.python-version != '3.15' }}
         run: pyfltr ci --commands=pytest --output-format=github-annotations
-
-      - name: Prune uv cache for CI
-        run: uv cache prune --ci
 
   cli-smoke:
     runs-on: ubuntu-latest
@@ -88,18 +97,9 @@ jobs:
       # container jobでは明示しないとsecrets.GITHUB_TOKENがコンテナへ渡らない
       GITHUB_TOKEN: ${{ github.token }}
     steps:
+      # このジョブはmiseのツールを使わず、/cacheへ加えるのはレジストリから短時間で取得できるuvの依存だけのため、
+      # キャッシュを復元しない（testジョブのキャッシュ対象の選び方と同じ判断）。
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: /cache
-          # 固定キーでは一度保存されると更新されないため、testジョブと揃えてrun_idとrun_attemptを含める。
-          # run_idは再実行（Re-run）で変化しないため、run_attemptを併記する。
-          # 通常の実行ではtestジョブが保存したキャッシュを完全一致で復元する。
-          # 失敗ジョブのみの再実行ではtestジョブが再実行されずrun_attemptだけが増えるため、
-          # 完全一致ではなくrestore-keysで直近のキャッシュを復元する。
-          key: pyfltr-cache-${{ runner.os }}-py3.13-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: pyfltr-cache-${{ runner.os }}-py3.13-
 
       - name: Build wheel
         run: uv build --wheel
@@ -109,6 +109,3 @@ jobs:
           set -euo pipefail
           wheel=$(ls dist/pytilpack-*.whl)
           uv run --no-project python scripts/check_extras_imports.py "$wheel"
-
-      - name: Prune uv cache for CI
-        run: uv cache prune --ci
