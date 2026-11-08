@@ -139,10 +139,9 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
             )
             quart.g.quart_auth_current_user = AnonymousUser()
             quart_auth.logout_user()
-        elif auth_id is not None:
+        elif auth_id is not None and getattr(quart.g, "quart_auth_set_cookie", True):
             # ログイン状態を更新する
-            if getattr(quart.g, "quart_auth_set_cookie", True):
-                quart_auth.renew_login()
+            quart_auth.renew_login()
 
         # ロジック上、ここでNoneになることはない (未認証→AnonymousUser, ロード失敗→AnonymousUser)
         return quart.g.quart_auth_current_user  # pyright: ignore[reportReturnType]

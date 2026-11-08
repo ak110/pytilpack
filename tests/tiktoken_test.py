@@ -126,8 +126,8 @@ def test_num_tokens_from_messages_with_tools(model: str, expected: int):
 # このためlitellmは開発依存で3.15未満に限定しており、比較テストも3.15未満だけで定義する。
 # fastuuidが3.15へ対応したら、pyproject.tomlの環境マーカーと併せてこの分岐を外す。
 if sys.version_info < (3, 15):
-    import litellm.types.llms.openai  # ty: ignore[unresolved-import]
-    import litellm.utils  # ty: ignore[unresolved-import]
+    import litellm.types.llms.openai  # ty: ignore[import-not-found]
+    import litellm.utils  # ty: ignore[import-not-found]
 
     @pytest.mark.parametrize("model", ALL_MODELS)
     def test_vs_litellm(model: str):
