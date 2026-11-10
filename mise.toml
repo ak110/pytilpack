@@ -1,5 +1,7 @@
 [tools]
 pinact = "latest"
+# actionlintがワークフローのrunステップのシェルスクリプトを確かめるために子プロセスとして起動する
+shellcheck = "latest"
 typos = "latest"
 
 # actionlintの配布物はインストールrootへ実行ファイルと並べて`man`・`docs`を展開する。
