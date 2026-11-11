@@ -27,7 +27,7 @@ AGENTS.mdが指定する`writing-standards`・`review-standards`と該当するr
 | コマンド | 用途 |
 | --- | --- |
 | `make format` | 整形 + 軽量lint + 自動修正（開発時の手動実行用）。実行前に仮想環境を`uv.lock`と`.python-version`の版へ同期する |
-| `make test` | 全チェック実行（コミット前の最終確認用）。実行前に`make format`と同じ同期を行う |
+| `make test` | 全チェック実行（手元で全体を確かめる場合に使う。通常の検証は変更箇所を対象にした`pyfltr run <path>`で行い、全体はCIで判定する）。実行前に`make format`と同じ同期を行う |
 | `make update` | 依存更新 |
 | `make docs` | ドキュメントのローカルプレビュー（`http://127.0.0.1:8000/`） |
 
@@ -151,7 +151,7 @@ MkDocs + mkdocstrings + mkdocs-llmstxtでAPIリファレンスとllms.txtを自�
 3. `docs/api/<name>.md`へmkdocstringsの設定と必要なextra・プラットフォームの注記を記載する
 4. `docs/guide/index.md`のextra表とモジュール分類を更新し、`mkdocs.yml`のnavとllmstxt sectionsを同じ分類へそろえる。CLIは`_SUBCOMMANDS`と`docs/guide/cli.md`へ加える
 5. `uv run --frozen python scripts/check_docs_api.py`で対応情報と定義元の一致を確かめる。`uv build --wheel --out-dir <空の出力ディレクトリ>`でwheelを作成する。生成されたwheelのパスを`uv run --frozen python scripts/check_extras_imports.py <wheelのパス>`へ渡して単独extraのimportを確かめる
-6. `make test`と`uv run --frozen mkdocs build --strict`で実装とAPI文書を検証する
+6. 追加・変更したファイルと関連するテストを対象に指定した`uvx --exclude-newer-package pyfltr=false pyfltr run <path>`と、`uv run --frozen mkdocs build --strict`で実装とAPI文書を検証する
 
 対応情報の不足・過剰・分類の不一致では、pre-commitとCIが失敗して所在を表示する。
 エージェントの追加作業は`add-module`スキル、既存対応の変更は`check-module-sync`スキルも同じ手順へ接続する。

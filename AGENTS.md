@@ -13,7 +13,12 @@
 
 ## 開発手順
 
-コミット前の検証方法: `make test`（特定ファイルに限定する場合は`uvx --exclude-newer-package pyfltr=false pyfltr run <path>`）
+- 手元の検証は、変更したファイルと参照をたどって特定した利用側のテスト・lintを対象に指定した
+  `uvx --exclude-newer-package pyfltr=false pyfltr run <path>`で行う。
+  対象を渡さない全体の実行（`make test`、対象なしの`pyfltr run`）は求めず、全体のlintとテストはpush後のCIの結果で判定する
+  - 共通設定・`conftest.py`・依存の版指定とlockファイルなど利用側を列挙しきれない変更でも、全体の実行へ広げない。
+    列挙できた範囲だけを実行し、残りはCIの結果で判定する
+  - commit時のフック（`pyfltr fast`）は従来どおり動く。手元で全体を確かめたい場合は`make test`を使ってよい
 
 ## アーキテクチャの参照先
 

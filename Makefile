@@ -19,12 +19,11 @@ setup: sync
 	uvx prek --config=.pre-commit-config.yaml install
 	git config --local commit.template .gitmessage
 
-# 依存パッケージをアップグレードし全テスト実行
+# 依存パッケージ・prekのhook・GitHub Actionsのピンを更新する（lintとテストはCIで判定する）
 update:
 	env --unset=UV_FROZEN uv sync --upgrade --all-groups --all-extras
 	uvx prek --config=.pre-commit-config.yaml autoupdate
 	$(MAKE) update-actions
-	$(MAKE) test
 
 # GitHub Actionsのアクションをハッシュピンで最新化（mise未導入時はスキップ）
 update-actions:
