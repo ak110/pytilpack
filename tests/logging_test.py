@@ -2,6 +2,7 @@
 
 import asyncio
 import datetime as dt
+import json
 import logging
 import pathlib
 import typing
@@ -546,24 +547,27 @@ def test_redact_secrets_multiline() -> None:
 @pytest.mark.parametrize(
     "text,expected",
     [
-        # 鍵状の文字列は32文字から伏せる
         ("id " + "a" * 31 + " end", "id " + "a" * 31 + " end"),
         ("id " + "a" * 32 + " end", "id [REDACTED] end"),
         ("id " + "x_-9" * 8 + ".", "id [REDACTED]."),
-        # 引用符内の空白を含む値
         ('secret="a b c" next', 'secret="[REDACTED]" next'),
         ("token: 'x y'", "token: '[REDACTED]'"),
-        # キー名の大小文字と区切り表記
         ("API KEY: abc", "API KEY: [REDACTED]"),
         ("Api-Key=abc", "Api-Key=[REDACTED]"),
         ("apikey=abc", "apikey=[REDACTED]"),
         ("Password = abc", "Password = [REDACTED]"),
         ("authorization=Token abc def", "authorization=[REDACTED]"),
-        # 区切りの無い記述は対象外
         ("token expired at 12:00", "token expired at 12:00"),
-        # 空入力と対象なし
         ("", ""),
         ("plain error message\nline 2\r\n", "plain error message\nline 2\r\n"),
+        ("Authorization: [REDACTED]abc\n", "Authorization: [REDACTED]\n"),
+        ('password="[REDACTED]abc" code=E42', 'password="[REDACTED]" code=E42'),
+        ("password=[REDACTED]abc code=E42", "password=[REDACTED] code=E42"),
+        (json.dumps({"password": 'abc"def ghi', "code": "E42"}), '{"password": "[REDACTED]", "code": "E42"}'),
+        ("token: 'it\\'s secret' code=E42", "token: '[REDACTED]' code=E42"),
+        ("(password=abc) code=E42", "(password=[REDACTED]) code=E42"),
+        ("[token=abc] code=E42", "[token=[REDACTED]] code=E42"),
+        ("{secret=abc} code=E42", "{secret=[REDACTED]} code=E42"),
     ],
 )
 def test_redact_secrets(text: str, expected: str) -> None:
