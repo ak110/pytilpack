@@ -257,6 +257,8 @@ select = [
     "I",
     # flake8-tidy-imports: __lazy_modules__の列挙漏れを検出する（docs/development/architecture.md「依存の向きとimport」）
     "TID254",
+    # flake8-bandit: 危険な構文（exec・pickle・mktemp・シェル経由の実行・文字列で組み立てたSQL・eval）を検出する
+    "S102", "S301", "S306", "S307", "S602", "S604", "S605", "S608",
 ]
 ignore = [
     "D107", # Missing docstring in `__init__`
@@ -272,7 +274,8 @@ require-lazy = "all"
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-"**_test.py" = ["D"]
+# テストは検査対象の入力としてexecやshell=Trueを意図して使うため、危険構文の規則を外す
+"**_test.py" = ["D", "S102", "S301", "S306", "S307", "S602", "S604", "S605", "S608"]
 "**/__init__.py" = ["D104"]  # Missing docstring in public package
 
 [tool.mypy]
