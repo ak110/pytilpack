@@ -36,6 +36,7 @@ all = [
     "cryptography>=46.0.6",
     "defusedxml>=0.7",
     "fastapi>=0.111",
+    "filelock>=4.2.10",
     "flask-login>=0.6",
     "flask>=3.0",
     "html5lib",
@@ -72,6 +73,9 @@ flask = [
     "flask-login>=0.6",
     "flask>=3.0",
     "html5lib",
+]
+logging = [
+    "filelock>=4.2.10",
 ]
 markdown = [
     "bleach",

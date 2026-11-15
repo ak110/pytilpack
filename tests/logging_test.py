@@ -1,12 +1,17 @@
 """テストコード。"""
 
 import asyncio
+import concurrent.futures
 import datetime as dt
+import io
 import json
 import logging
+import logging.handlers
+import multiprocessing
 import pathlib
 import typing
 
+import filelock
 import pytest
 
 import pytilpack.logging
@@ -587,3 +592,106 @@ def test_redact_secrets_idempotent(text: str) -> None:
     once = pytilpack.logging.redact_secrets(text)
     assert once != text
     assert pytilpack.logging.redact_secrets(once) == once
+
+
+def _write_shared_log(log_path: pathlib.Path, writer: str, count: int) -> None:
+    """別プロセスで自身のハンドラを作り、共有ログへ書き込む。"""
+    logger = logging.getLogger(f"{__name__}.shared_writer_{writer}")
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    handler = pytilpack.logging.multiprocess_file_handler(log_path, max_bytes=512, backup_count=1000, format="%(message)s")
+    logger.addHandler(handler)
+    try:
+        for i in range(count):
+            logger.info(f"{writer}-{i:04d}-{'x' * 40}")
+    finally:
+        logger.removeHandler(handler)
+        handler.close()
+
+
+def _read_generations(log_path: pathlib.Path) -> list[str]:
+    """古い世代から順に連結した全行を返す。"""
+    paths = sorted(
+        log_path.parent.glob(f"{log_path.name}.*[0-9]"), key=lambda path: int(path.suffix.removeprefix(".")), reverse=True
+    )
+    return [line for path in [*paths, log_path] for line in path.read_text(encoding="utf-8").splitlines()]
+
+
+def test_multiprocess_file_handler_processes(tmp_path: pathlib.Path) -> None:
+    """別々にハンドラを作る複数プロセスの出力が、ローテーションを経ても欠落・重複・混在なく残る。"""
+    log_path = tmp_path / "shared.log"
+    count = 200
+    # spawnで起動し、親のハンドラやロックを引き継がない独立したwriterとする（Windowsと同じ起動方式）
+    with concurrent.futures.ProcessPoolExecutor(max_workers=2, mp_context=multiprocessing.get_context("spawn")) as executor:
+        futures = [executor.submit(_write_shared_log, log_path, writer, count) for writer in ("a", "b")]
+        for future in futures:
+            future.result(timeout=50)
+
+    lines = _read_generations(log_path)
+    assert sorted(lines) == sorted(f"{writer}-{i:04d}-{'x' * 40}" for writer in ("a", "b") for i in range(count))
+    # 世代の順に読むと各writerの出力順が保たれ、ローテーションで古い記録が後ろへ混ざっていない
+    for writer in ("a", "b"):
+        assert [line for line in lines if line.startswith(f"{writer}-")] == [
+            f"{writer}-{i:04d}-{'x' * 40}" for i in range(count)
+        ]
+    assert len(list(tmp_path.glob("shared.log.*[0-9]"))) > 1
+
+
+def test_multiprocess_file_handler_rotation(tmp_path: pathlib.Path) -> None:
+    """書き込みの合間は本体を閉じ、他のハンドラのローテーション後も最新ファイルへ続けて書く。"""
+    log_path = tmp_path / "rotate.log"
+    log_path.write_text("existing\n", encoding="utf-8")
+    handlers = [
+        pytilpack.logging.multiprocess_file_handler(log_path, max_bytes=30, backup_count=2, format="%(message)s")
+        for _ in range(2)
+    ]
+    try:
+        # 作成時にファイルを開かず、既存の内容を切り詰めない
+        assert log_path.read_text(encoding="utf-8") == "existing\n"
+        for i in range(10):
+            handler = handlers[i % 2]
+            assert isinstance(handler, logging.handlers.RotatingFileHandler)
+            handler.handle(logging.makeLogRecord({"msg": f"record-{i:02d}", "levelno": logging.INFO}))
+            assert handler.stream is None
+
+        assert sorted(path.name for path in tmp_path.iterdir() if not path.name.endswith(".lock")) == [
+            "rotate.log",
+            "rotate.log.1",
+            "rotate.log.2",
+        ]
+        lines = _read_generations(log_path)
+        assert lines == [f"record-{i:02d}" for i in range(10 - len(lines), 10)]
+    finally:
+        for handler in handlers:
+            handler.close()
+
+
+class _FailingStream(io.StringIO):
+    def write(self, s: str) -> int:
+        raise OSError(f"write failed: {s!r}")
+
+
+def test_multiprocess_file_handler_failure(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """書き込みが失敗しても、本体を閉じてからロックを解放する。"""
+    handler = pytilpack.logging.multiprocess_file_handler(tmp_path / "fail.log", max_bytes=1024, format="%(message)s")
+    assert isinstance(handler, logging.handlers.RotatingFileHandler)
+    streams: list[_FailingStream] = []
+    errors: list[logging.LogRecord] = []
+
+    def open_failing_stream() -> _FailingStream:
+        streams.append(_FailingStream())
+        return streams[-1]
+
+    monkeypatch.setattr(handler, "_open", open_failing_stream)
+    monkeypatch.setattr(handler, "handleError", errors.append)
+    try:
+        handler.handle(logging.makeLogRecord({"msg": "record", "levelno": logging.INFO}))
+        assert len(errors) == 1
+        assert len(streams) == 1 and streams[0].closed
+        assert handler.stream is None
+        # 別のロックで即時に取得できれば、失敗したemitがロックを解放している
+        lock = filelock.FileLock(f"{tmp_path / 'fail.log'}.lock")
+        lock.acquire(timeout=0)
+        lock.release()
+    finally:
+        handler.close()

@@ -36,13 +36,14 @@ SQLiteの標準ドライバ以外は、URIに対応するDBドライバも同じ
 
 | Extra | 対象モジュール | 直接依存パッケージ（版指定を除く） |
 | --- | --- | --- |
-| `all` | 全モジュール | `azure-identity`、`babel`、`bleach`、`cryptography`、`defusedxml`、`fastapi`、`flask-login`、`flask`、`html5lib`、`hypercorn`、`markdown`、`msal`、`openai`、`pillow`、`pycryptodome`、`pydantic`、`pytest`、`pytest-asyncio`、`python-dotenv`、`pyyaml`、`quart-auth`、`quart`、`sqlalchemy[asyncio]`、`tabulate[widechars]`、`tiktoken`、`tinycss2`、`tqdm`、`uvicorn` |
+| `all` | 全モジュール | `azure-identity`、`babel`、`bleach`、`cryptography`、`defusedxml`、`fastapi`、`filelock`、`flask-login`、`flask`、`html5lib`、`hypercorn`、`markdown`、`msal`、`openai`、`pillow`、`pycryptodome`、`pydantic`、`pytest`、`pytest-asyncio`、`python-dotenv`、`pyyaml`、`quart-auth`、`quart`、`sqlalchemy[asyncio]`、`tabulate[widechars]`、`tiktoken`、`tinycss2`、`tqdm`、`uvicorn` |
 | `babel` | `pytilpack.babel` | `babel` |
 | `bleach` | `bleach` | `bleach` |
 | `environ` | `pytilpack.environ` | `python-dotenv` |
 | `fastapi` | `pytilpack.fastapi` | `defusedxml`、`fastapi`、`html5lib` |
 | `flask` | `pytilpack.flask`、`pytilpack.flask_login` | `defusedxml`、`flask-login`、`flask`、`html5lib` |
 | `htmlrag` | `pytilpack.htmlrag`（ベース依存で利用可能） | なし（後方互換用の空extra） |
+| `logging` | `filelock`（pytilpack.loggingのmultiprocess_file_handler用。他の機能はベース依存で利用可能） | `filelock` |
 | `markdown` | `pytilpack.markdown` | `bleach`、`markdown`、`tinycss2` |
 | `mcp` | `pytilpack.cli.mcp`（ベース依存で利用可能） | なし（後方互換用の空extra） |
 | `msal` | `pytilpack.msal` | `azure-identity`、`cryptography`、`msal` |

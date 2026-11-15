@@ -3076,6 +3076,7 @@ all = [
     { name = "cryptography" },
     { name = "defusedxml" },
     { name = "fastapi" },
+    { name = "filelock" },
     { name = "flask" },
     { name = "flask-login" },
     { name = "html5lib" },
@@ -3119,6 +3120,9 @@ flask = [
     { name = "flask" },
     { name = "flask-login" },
     { name = "html5lib" },
+]
+logging = [
+    { name = "filelock" },
 ]
 markdown = [
     { name = "bleach" },
@@ -3208,6 +3212,8 @@ requires-dist = [
     { name = "defusedxml", marker = "extra == 'quart'", specifier = ">=0.7" },
     { name = "fastapi", marker = "extra == 'all'", specifier = ">=0.111" },
     { name = "fastapi", marker = "extra == 'fastapi'", specifier = ">=0.111" },
+    { name = "filelock", marker = "extra == 'all'", specifier = ">=4.2.10" },
+    { name = "filelock", marker = "extra == 'logging'", specifier = ">=4.2.10" },
     { name = "flask", marker = "extra == 'all'", specifier = ">=3.0" },
     { name = "flask", marker = "extra == 'flask'", specifier = ">=3.0" },
     { name = "flask-login", marker = "extra == 'all'", specifier = ">=0.6" },
@@ -3259,7 +3265,7 @@ requires-dist = [
     { name = "uvicorn", marker = "extra == 'quart'", specifier = ">=0.34.3" },
     { name = "werkzeug", specifier = ">=3.1.7" },
 ]
-provides-extras = ["all", "babel", "bleach", "environ", "fastapi", "flask", "htmlrag", "markdown", "mcp", "msal", "pycryptodome", "pydantic", "pytest", "pyyaml", "quart", "sqlalchemy", "tiktoken", "tqdm", "web"]
+provides-extras = ["all", "babel", "bleach", "environ", "fastapi", "flask", "htmlrag", "logging", "markdown", "mcp", "msal", "pycryptodome", "pydantic", "pytest", "pyyaml", "quart", "sqlalchemy", "tiktoken", "tqdm", "web"]
 
 [package.metadata.requires-dev]
 dev = [

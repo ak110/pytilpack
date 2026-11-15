@@ -19,6 +19,8 @@ EXTRA_MODULES = {
     "fastapi": ("pytilpack.fastapi",),
     "flask": ("pytilpack.flask", "pytilpack.flask_login"),
     "htmlrag": ("pytilpack.htmlrag",),
+    # pytilpack.loggingはベースでも使えるため、ベースの検証対象に残して依存だけを確かめる。
+    "logging": ("filelock",),
     "markdown": ("pytilpack.markdown",),
     "mcp": ("pytilpack.cli.mcp",),
     "msal": ("pytilpack.msal",),

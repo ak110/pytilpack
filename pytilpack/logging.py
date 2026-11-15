@@ -111,6 +111,95 @@ def file_handler(
     return handler
 
 
+def multiprocess_file_handler(
+    log_path: str | pathlib.Path,
+    max_bytes: int,
+    backup_count: int = 5,
+    encoding: str = "utf-8",
+    level: int | None = logging.DEBUG,
+    format: str | None = "[%(levelname)-5s] %(message)s",
+) -> logging.Handler:
+    """複数プロセスで同じファイルへ追記し、容量でローテーションするハンドラを作成する。
+
+    `pip install pytilpack[logging]`で導入する`filelock`が必要。
+
+    `<log_path>.lock`のプロセス間ロックの内側で、容量の判定、世代の移動、追記、flushを行い、
+    ロックを解放する前にログ本体を閉じる。書き込みや世代の移動が失敗した場合も同様に閉じてから解放する。
+    書き込みの合間は本体を開かないため、待機中のプロセスが他プロセスの世代の移動を妨げない
+    （Windowsでは開いているファイルを移動できない）。
+    容量の判定と世代の移動は標準の`logging.handlers.RotatingFileHandler`に従う。
+
+    同じログへ書く各プロセスは、同じパス・容量・世代数で自身のハンドラを作成する。
+    `file_handler`など排他しないハンドラを同じログへ混在させると、この保証は失われる。
+    ハンドラの作成ではログを開かず、既存の内容を切り詰めない。
+
+    Args:
+        log_path: ログファイルのパス。
+        max_bytes: ローテーションする容量（バイト）。
+        backup_count: 保存する世代数。
+        encoding: 文字エンコーディング。
+        level: ログレベル。Noneの場合は設定しない。
+        format: ログの書式。Noneの場合は設定しない。
+
+    Returns:
+        loggerへ登録できるハンドラ。
+
+    Raises:
+        ImportError: `filelock`が導入されていない場合。
+    """
+    try:
+        # logging extraの任意依存のため、この機能の利用時だけ読み込む
+        import filelock  # pylint: disable=import-outside-toplevel
+    except ImportError as e:
+        raise ImportError(
+            "multiprocess_file_handlerにはfilelockが必要です。`pip install pytilpack[logging]`で導入してください。"
+        ) from e
+    log_path = pathlib.Path(log_path)
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    handler = _MultiprocessRotatingFileHandler(
+        log_path,
+        filelock.FileLock(f"{log_path}.lock"),
+        max_bytes=max_bytes,
+        backup_count=backup_count,
+        encoding=encoding,
+    )
+    if level is not None:
+        handler.setLevel(level)
+    if format is not None:
+        handler.setFormatter(logging.Formatter(format))
+    return handler
+
+
+class _MultiprocessRotatingFileHandler(logging.handlers.RotatingFileHandler):
+    """プロセス間ロックの内側でだけログ本体を開くRotatingFileHandler。"""
+
+    def __init__(
+        self,
+        log_path: pathlib.Path,
+        lock: contextlib.AbstractContextManager[typing.Any],
+        max_bytes: int,
+        backup_count: int,
+        encoding: str,
+    ) -> None:
+        # delay=Trueで本体を遅延オープンし、ロック待ちの間や作成時に開かない。
+        # mode="a"で既存の内容を切り詰めない。
+        super().__init__(log_path, mode="a", maxBytes=max_bytes, backupCount=backup_count, encoding=encoding, delay=True)
+        self.process_lock = lock
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """ロックの内側で容量判定・世代移動・追記を行い、解放前に本体を閉じる。"""
+        with self.process_lock:
+            try:
+                super().emit(record)
+            finally:
+                self._close_stream()
+
+    def _close_stream(self) -> None:
+        if self.stream is not None:
+            stream, self.stream = self.stream, None
+            stream.close()
+
+
 @contextlib.contextmanager
 def timer(name: str, logger: logging.Logger | None = None):
     """処理時間を計測してログ出力するコンテキストマネージャー。"""
