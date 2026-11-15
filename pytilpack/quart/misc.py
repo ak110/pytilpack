@@ -7,9 +7,11 @@ __lazy_modules__ = [
     "functools",
     "httpx",
     "logging",
+    "os",
     "pytilpack.web",
     "quart",
     "quart.utils",
+    "socket",
     "threading",
     "time",
     "typing",
@@ -21,6 +23,8 @@ import contextlib
 import dataclasses
 import functools
 import logging
+import os
+import socket
 import threading
 import time
 import typing
@@ -246,6 +250,41 @@ def get_routes(app: quart.Quart) -> list[RouteInfo]:
     return pytilpack.web.build_routes(app.url_map.iter_rules(), app.config.get("APPLICATION_ROOT"))
 
 
+def _bind_listen_sockets(host: str, port: int) -> list[socket.socket]:
+    """hostが解決される全アドレスで、同じポート番号を待ち受けるソケットを作る。
+
+    port=0でアドレスごとにOSへ割り当てを任せると、IPv4とIPv6で別のポートになる。
+    呼び出し元が``http://localhost:<port>``で接続すると、名前解決の順によっては待ち受けていないポートへ接続する。
+    Windowsでは拒否の応答まで約2秒かかるため、起動待ちや呼び出し元の要求がタイムアウトする。
+    そのため最初のアドレスで決まったポートを残りのアドレスでも使い、他のアドレスでそのポートが使用中なら割り当てからやり直す。
+    """
+    infos = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM, flags=socket.AI_PASSIVE)
+    addresses = list(dict.fromkeys((family, sockaddr[0]) for family, _, _, _, sockaddr in infos))
+    for _ in range(10):
+        sockets: list[socket.socket] = []
+        bound_port = port
+        try:
+            for family, address in addresses:
+                sock = socket.socket(family, socket.SOCK_STREAM)
+                sockets.append(sock)
+                # WindowsのSO_REUSEADDRは使用中のポートへの重複bindを許すため、POSIXだけで指定する
+                if os.name == "posix":
+                    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                if family == socket.AF_INET6:
+                    sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+                sock.bind((address, bound_port))
+                bound_port = sock.getsockname()[1]
+        except OSError:
+            for sock in sockets:
+                sock.close()
+            # 指定ポートの使用中と、最初のアドレスでの失敗はやり直しても解消しない
+            if port != 0 or len(sockets) <= 1:
+                raise
+            continue
+        return sockets
+    raise OSError(f"{host}の全アドレスで共通の空きポートを確保できなかった")
+
+
 @contextlib.asynccontextmanager
 async def run(app: quart.Quart, host: str = "localhost", port: int = 5000):
     """Quartアプリを実行し、実際のポート番号を返す。
@@ -259,7 +298,14 @@ async def run(app: quart.Quart, host: str = "localhost", port: int = 5000):
         async def _pytilpack_quart_dummy():
             return "OK"
 
-    # Uvicornサーバーの設定
+    try:
+        listen_sockets = _bind_listen_sockets(host, port)
+    except OSError as e:
+        raise RuntimeError(
+            "Quartサーバーの起動に失敗しました。原因は連鎖した例外を参照し、host・portの指定（使用中のポートなど）を見直す"
+        ) from e
+
+    # Uvicornサーバーの設定（host・portはログ表示にだけ使われ、待ち受けには上で作ったソケットを使う）
     config = uvicorn.Config(app=app, host=host, port=port, timeout_graceful_shutdown=1)
     server = uvicorn.Server(config)
 
@@ -268,7 +314,7 @@ async def run(app: quart.Quart, host: str = "localhost", port: int = 5000):
 
     def run_server():
         try:
-            asyncio.run(server.serve())
+            asyncio.run(server.serve(sockets=listen_sockets))
         except BaseException as exc:
             failures.append(exc)
 
@@ -311,6 +357,10 @@ async def run(app: quart.Quart, host: str = "localhost", port: int = 5000):
         if thread.is_alive():
             server.force_exit = True
             await asyncio.to_thread(thread.join, 2.0)
+        if not thread.is_alive():
+            # uvicornへ渡す前に起動が失敗した場合はソケットが残るため閉じる（閉じ済みのソケットには何もしない）
+            for sock in listen_sockets:
+                sock.close()
         if thread.is_alive():
             raise RuntimeError(
                 "Quartサーバーの停止に失敗しました。強制終了の要求後もサーバースレッドが終了せずdaemonスレッドとして残っている。"
