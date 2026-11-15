@@ -179,7 +179,7 @@ ty-args = [
     "--output-format", "concise",
     "--error-on-warning",
     "--ignore", "invalid-argument-type",
-    "--ignore", "invalid-return-type",
+    "--ignore", "invalid-explicit-return",
     "--ignore", "invalid-context-manager",
     "--ignore", "missing-attribute",
     "--ignore", "invalid-type-form",
