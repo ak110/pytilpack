@@ -514,7 +514,13 @@ def test_truncate_values(
         ({"dt": dt.datetime(2023, 1, 1, 12, 0, 0, 123000)}, None, False, '{"dt":"2023-01-01T12:00:00.123"}'),
         ({"date": dt.date(2023, 1, 1)}, None, False, '{"date":"2023-01-01"}'),
         # pathlib.Path変換
-        ({"path": pathlib.Path("/tmp/test")}, None, False, '{"path":"/tmp/test"}'),
+        # PathはOSの区切り文字を含むstr(path)として出力する
+        (
+            {"path": pathlib.Path("/tmp/test")},
+            None,
+            False,
+            '{"path":' + json.dumps(str(pathlib.Path("/tmp/test"))) + "}",
+        ),
     ],
 )
 def test_jsonify(
