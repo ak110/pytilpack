@@ -2,12 +2,15 @@
 
 import asyncio
 import pathlib
+import sys
 import threading
 import time
 
 import pytest
 
 import pytilpack.fnctl
+
+pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="pytilpack.fnctlはUnix専用のfcntlに依存するため")
 
 
 def _assert_lock_order(results: list[str]) -> None:

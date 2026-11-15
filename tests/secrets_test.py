@@ -4,11 +4,14 @@ import concurrent.futures
 import multiprocessing
 import os
 import pathlib
+import sys
 import typing
 
 import pytest
 
 import pytilpack.secrets
+
+pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="pytilpack.secretsはUnix専用のfcntlに依存するため")
 
 
 def test_generate_secret_key(tmp_path: pathlib.Path) -> None:
