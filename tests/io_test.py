@@ -1,6 +1,7 @@
 """同期I/Oのテスト。"""
 
 import io
+import os
 import pathlib
 
 import pytest
@@ -14,7 +15,8 @@ def test_read_write_text_path(tmp_path: pathlib.Path, use_string_path: bool) -> 
     path = tmp_path / "nested" / "sample.txt"
     target = str(path) if use_string_path else path
     pytilpack.io.write_text(target, "日本語\nテキスト")
-    assert path.read_bytes() == "日本語\nテキスト".encode()
+    # パスへの書き込みはテキストモードのため、改行はOSの改行文字になる
+    assert path.read_bytes() == f"日本語{os.linesep}テキスト".encode()
     assert pytilpack.io.read_text(target) == "日本語\nテキスト"
 
 

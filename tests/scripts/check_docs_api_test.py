@@ -34,8 +34,8 @@ def test_current_documents(docs_root: pathlib.Path) -> None:
         ("docs/guide/index.md", "| `babel` | `pytilpack.babel`", "| `unknown` | `pytilpack.babel`", "extras一覧"),
         (
             "docs/guide/index.md",
-            "コア依存: `beautifulsoup4`、`httpx`、`mcp`、`werkzeug`。",
-            "コア依存: `httpx`、`mcp`、`werkzeug`。",
+            "コア依存: `beautifulsoup4`、",
+            "コア依存: ",
             "コア依存",
         ),
         (
