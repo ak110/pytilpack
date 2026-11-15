@@ -4,7 +4,7 @@
 
 標準ライブラリ用の支援と、ベース依存を使うモジュールを導入する:
 
-コア依存: `beautifulsoup4`、`httpx`、`mcp`、`werkzeug`。
+コア依存: `beautifulsoup4`、`httpx`、`mcp`、`werkzeug`（Windowsでは`tzdata`も導入する）。
 
 ```bash
 pip install pytilpack

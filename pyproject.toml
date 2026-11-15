@@ -22,6 +22,8 @@ dependencies = [
     # 下限は`mcp.server.mcpserver`が導入された2.0.0に合わせる。
     # 1.x系の`mcp.server.fastmcp`は2.0.0で削除されており、`pytilpack/cli/mcp.py`が動作しない。
     "mcp>=2.0.0",
+    # WindowsはIANAのタイムゾーンデータを持たず、pytilpack.datetimeのzoneinfo.ZoneInfo("UTC")などが失敗するため、Windowsだけで導入する。
+    "tzdata>=2026.6 ; sys_platform == 'win32'",
     "werkzeug>=3.1.7",
 ]
 
