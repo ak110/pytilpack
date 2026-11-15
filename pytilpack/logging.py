@@ -158,7 +158,7 @@ def multiprocess_file_handler(
     log_path.parent.mkdir(parents=True, exist_ok=True)
     handler = _MultiprocessRotatingFileHandler(
         log_path,
-        filelock.FileLock(f"{log_path}.lock"),
+        filelock.FileLock,
         max_bytes=max_bytes,
         backup_count=backup_count,
         encoding=encoding,
@@ -176,7 +176,7 @@ class _MultiprocessRotatingFileHandler(logging.handlers.RotatingFileHandler):
     def __init__(
         self,
         log_path: pathlib.Path,
-        lock: contextlib.AbstractContextManager[typing.Any],
+        lock_factory: typing.Callable[[str], contextlib.AbstractContextManager[typing.Any]],
         max_bytes: int,
         backup_count: int,
         encoding: str,
@@ -184,7 +184,10 @@ class _MultiprocessRotatingFileHandler(logging.handlers.RotatingFileHandler):
         # delay=Trueで本体を遅延オープンし、ロック待ちの間や作成時に開かない。
         # mode="a"で既存の内容を切り詰めない。
         super().__init__(log_path, mode="a", maxBytes=max_bytes, backupCount=backup_count, encoding=encoding, delay=True)
-        self.process_lock = lock
+        # ロックファイルは本体と同じ絶対パス（baseFilename）から決める。
+        # 相対パスのまま渡すと、作成後にカレントディレクトリが変わった場合や別の表記で作成した場合に、
+        # 同じ本体へ別々のロックを使ってしまう。
+        self.process_lock = lock_factory(f"{self.baseFilename}.lock")
 
     def emit(self, record: logging.LogRecord) -> None:
         """ロックの内側で容量判定・世代移動・追記を行い、解放前に本体を閉じる。"""

@@ -666,28 +666,66 @@ def test_multiprocess_file_handler_rotation(tmp_path: pathlib.Path) -> None:
             handler.close()
 
 
-class _FailingStream(io.StringIO):
+class _RecordingStream(io.StringIO):
+    """closeを記録し、指定時は書き込みを失敗させる本体の代用。"""
+
+    def __init__(self, events: list[str], initial: str, fail_write: bool) -> None:
+        super().__init__(initial)
+        self.seek(0, io.SEEK_END)
+        self.events = events
+        self.fail_write = fail_write
+
     def write(self, s: str) -> int:
-        raise OSError(f"write failed: {s!r}")
+        if self.fail_write:
+            raise OSError(f"write failed: {s!r}")
+        return super().write(s)
+
+    def close(self) -> None:
+        self.events.append("close")
+        super().close()
 
 
-def test_multiprocess_file_handler_failure(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """書き込みが失敗しても、本体を閉じてからロックを解放する。"""
+class _RecordingLock:
+    """取得と解放の順序を記録するロックの代用。実際の排他は元のロックで行う。"""
+
+    def __init__(self, lock: typing.Any, events: list[str]) -> None:
+        self.lock = lock
+        self.events = events
+
+    def __enter__(self) -> None:
+        self.lock.acquire()
+        self.events.append("acquire")
+
+    def __exit__(self, *exc_info: typing.Any) -> None:
+        self.events.append("release")
+        self.lock.release()
+
+
+@pytest.mark.parametrize("failure", ["write", "rotate"])
+def test_multiprocess_file_handler_failure(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, failure: str) -> None:
+    """書き込みや世代移動が失敗しても、ロックの保持中に本体を閉じてから解放する。"""
     handler = pytilpack.logging.multiprocess_file_handler(tmp_path / "fail.log", max_bytes=1024, format="%(message)s")
     assert isinstance(handler, logging.handlers.RotatingFileHandler)
-    streams: list[_FailingStream] = []
+    events: list[str] = []
     errors: list[logging.LogRecord] = []
 
-    def open_failing_stream() -> _FailingStream:
-        streams.append(_FailingStream())
-        return streams[-1]
+    def open_stream() -> _RecordingStream:
+        # 世代移動の失敗では、容量を超えた既存の本体として開き、ローテーションへ進ませる
+        initial = "x" * 2048 if failure == "rotate" else ""
+        return _RecordingStream(events, initial, fail_write=failure == "write")
 
-    monkeypatch.setattr(handler, "_open", open_failing_stream)
+    def fail_rotate(source: str, dest: str) -> None:
+        raise OSError(f"rotate failed: {source} -> {dest}")
+
+    monkeypatch.setattr(handler, "_open", open_stream)
     monkeypatch.setattr(handler, "handleError", errors.append)
+    if failure == "rotate":
+        monkeypatch.setattr(handler, "rotate", fail_rotate)
+    monkeypatch.setattr(handler, "process_lock", _RecordingLock(vars(handler)["process_lock"], events))
     try:
         handler.handle(logging.makeLogRecord({"msg": "record", "levelno": logging.INFO}))
         assert len(errors) == 1
-        assert len(streams) == 1 and streams[0].closed
+        assert events == ["acquire", "close", "release"]
         assert handler.stream is None
         # 別のロックで即時に取得できれば、失敗したemitがロックを解放している
         lock = filelock.FileLock(f"{tmp_path / 'fail.log'}.lock")
