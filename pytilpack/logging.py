@@ -11,6 +11,7 @@ __lazy_modules__ = [
     "logging.handlers",
     "pathlib",
     "pytilpack.python",
+    "re",
     "time",
     "typing",
     "uuid",
@@ -27,6 +28,7 @@ import json
 import logging
 import logging.handlers
 import pathlib
+import re
 import time
 import typing
 import uuid
@@ -337,3 +339,62 @@ def truncate_values(
             for item in data
         )
     return data
+
+
+REDACTED = "[REDACTED]"
+"""redact_secretsが秘匿部分の置換に使う文字列。"""
+
+_REDACT_HEADER_PATTERN = re.compile(r"(?i)\b((?:proxy-)?authorization)([ \t]*[:=])(?![ \t]*\[REDACTED\])([ \t]*)[^\r\n]+")
+_REDACT_NAMED_PATTERN = re.compile(
+    r"""(?ix)
+    (["']?)                                          # キーの引用符
+    (\b[\w-]*?(?:api[ _-]?key|token|secret|password)[\w-]*)  # キー名
+    \1
+    ([ \t]*[:=][ \t]*)                                # 区切り
+    (?!["']?\[REDACTED\])                             # 伏せ済みの値は対象外
+    ("[^"\r\n]*"|'[^'\r\n]*'|[^\s,;&"'}\]]+)         # 値
+    """
+)
+_REDACT_KEYLIKE_PATTERN = re.compile(r"(?<![A-Za-z0-9_-])[A-Za-z0-9_-]{32,}(?![A-Za-z0-9_-])")
+
+
+def redact_secrets(text: str) -> str:
+    """診断用の文字列から資格情報らしき部分を`[REDACTED]`へ置換する。
+
+    例外メッセージや外部コマンドのエラー出力をログへ保存する前に、呼び出し元が明示的に適用する。
+    エラーの種類・コード・周辺の説明、改行などの非秘匿部分は保持する。
+    置換後の文字列へ再適用しても結果は変わらない。
+
+    検出規則:
+
+    - `Authorization`・`Proxy-Authorization`（大文字小文字を区別しない）に`:`か`=`が続く場合、その行末までの値。
+    - 名前に`api key`・`token`・`secret`・`password`を含むキー（大文字小文字を区別しない。
+      `api key`は空白・ハイフン・アンダースコア区切りや区切りなしにも対応し、`access_token`のような前後の語を含む）に
+      `:`か`=`が続く場合の値。値が引用符で囲まれていれば引用符内（空白を含む）を、
+      そうでなければ空白・`,`・`;`・`&`・引用符・閉じ括弧の直前までを伏せる。キー自体の引用符にも対応する。
+    - 英数字・`_`・`-`が32文字以上連続する文字列（API鍵やトークンの形をした値）。
+
+    限界:
+
+    - 文字列だけでは任意の資格情報を判別できないため、完全な漏えい防止は保証しない。
+      上記の規則に合わない形の資格情報（31文字以下で名前の付いていない値、URLに埋め込まれた認証情報など）は残る。
+    - 32文字以上のハッシュ値・区切りなしのUUID・長い識別子や、`tokens: 5`のように対象の語を含む名前の値も伏せる。
+
+    Args:
+        text: 対象の文字列。
+
+    Returns:
+        秘匿部分を置換した文字列。対象が無ければ入力をそのまま返す。
+    """
+    if not text:
+        return text
+    text = _REDACT_HEADER_PATTERN.sub(lambda m: f"{m.group(1)}{m.group(2)}{m.group(3)}{REDACTED}", text)
+    text = _REDACT_NAMED_PATTERN.sub(_redact_named_value, text)
+    return _REDACT_KEYLIKE_PATTERN.sub(REDACTED, text)
+
+
+def _redact_named_value(match: re.Match[str]) -> str:
+    """名前付きの値を伏せる。値の引用符は保持する。"""
+    quote, key, separator, value = match.groups()
+    value = f"{value[0]}{REDACTED}{value[0]}" if value[:1] in ("'", '"') else REDACTED
+    return f"{quote}{key}{quote}{separator}{value}"

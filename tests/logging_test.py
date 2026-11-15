@@ -520,3 +520,66 @@ def test_jsonify(
     """jsonifyのテスト。"""
     actual = pytilpack.logging.jsonify(obj, indent, truncate)
     assert actual == expected
+
+
+def test_redact_secrets_multiline() -> None:
+    """複数の資格情報が混在する複数行の診断から秘匿部分だけを伏せる。"""
+    key = "sk_live_" + "A1b2C3d4" * 4
+    text = (
+        "HTTPError 401 Unauthorized: request to https://api.example.com/v1/items failed\n"
+        "Authorization: Bearer abc.def.ghi\n"
+        "Proxy-Authorization: Basic dXNlcjpwYXNz\n"
+        f'{{"error_code": "E1234", "api_key": "{key}", "message": "invalid credentials"}}\n'
+        "retry with password=hunter2; ACCESS_TOKEN = 'tok en' (code=E42)\n"
+    )
+    actual = pytilpack.logging.redact_secrets(text)
+    assert actual == (
+        "HTTPError 401 Unauthorized: request to https://api.example.com/v1/items failed\n"
+        "Authorization: [REDACTED]\n"
+        "Proxy-Authorization: [REDACTED]\n"
+        '{"error_code": "E1234", "api_key": "[REDACTED]", "message": "invalid credentials"}\n'
+        "retry with password=[REDACTED]; ACCESS_TOKEN = '[REDACTED]' (code=E42)\n"
+    )
+    assert key not in actual
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        # 鍵状の文字列は32文字から伏せる
+        ("id " + "a" * 31 + " end", "id " + "a" * 31 + " end"),
+        ("id " + "a" * 32 + " end", "id [REDACTED] end"),
+        ("id " + "x_-9" * 8 + ".", "id [REDACTED]."),
+        # 引用符内の空白を含む値
+        ('secret="a b c" next', 'secret="[REDACTED]" next'),
+        ("token: 'x y'", "token: '[REDACTED]'"),
+        # キー名の大小文字と区切り表記
+        ("API KEY: abc", "API KEY: [REDACTED]"),
+        ("Api-Key=abc", "Api-Key=[REDACTED]"),
+        ("apikey=abc", "apikey=[REDACTED]"),
+        ("Password = abc", "Password = [REDACTED]"),
+        ("authorization=Token abc def", "authorization=[REDACTED]"),
+        # 区切りの無い記述は対象外
+        ("token expired at 12:00", "token expired at 12:00"),
+        # 空入力と対象なし
+        ("", ""),
+        ("plain error message\nline 2\r\n", "plain error message\nline 2\r\n"),
+    ],
+)
+def test_redact_secrets(text: str, expected: str) -> None:
+    """redact_secretsの境界と表記揺れのテスト。"""
+    assert pytilpack.logging.redact_secrets(text) == expected
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Authorization: Bearer abc\npassword='p w' api_key=k " + "z" * 40,
+        '"token": "t", Proxy-Authorization = Basic xyz',
+    ],
+)
+def test_redact_secrets_idempotent(text: str) -> None:
+    """伏せた結果へ再適用しても変わらない。"""
+    once = pytilpack.logging.redact_secrets(text)
+    assert once != text
+    assert pytilpack.logging.redact_secrets(once) == once
