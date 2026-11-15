@@ -459,7 +459,8 @@ async def test_init_args_stored_globally(tmp_path) -> None:
     IsolatedBase.init(url)
     try:
         engine = IsolatedBase.engine()
-        assert str(engine.url) == url
+        # 文字列表記はURLエンコードの有無（Windowsのパス区切りなど）で変わるため、解析後のURLで比べる
+        assert engine.url == sqlalchemy.make_url(url)
     finally:
         await IsolatedBase.term()
 
