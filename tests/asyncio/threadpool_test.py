@@ -80,6 +80,9 @@ def test_worker_thread() -> None:
     worker.start()
     try:
         assert worker.thread is not None and worker.loop is not None
+        thread = worker.thread
+        worker.start()
+        assert worker.thread is thread
         assert worker.submit(_async_add(10, 20)).result(timeout=1) == 30
     finally:
         worker.stop()
@@ -163,6 +166,8 @@ def test_worker_restart_waits_for_cleanup() -> None:
         thread.start()
         assert cleaning.wait(timeout=2)
         assert not stopped.is_set()
+        with pytest.raises(RuntimeError, match="worker is stopping"):
+            worker.start()
         _assert_worker_rejects_submit(worker)
     finally:
         finish.set()
@@ -172,6 +177,12 @@ def test_worker_restart_waits_for_cleanup() -> None:
             worker.stop()
         assert not thread.is_alive()
         assert future.done()
+    assert worker.thread is None and worker.loop is None
+    worker.start()
+    try:
+        assert worker.submit(_async_add(1, 2)).result(timeout=1) == 3
+    finally:
+        worker.stop()
 
 
 def test_submit_after_shutdown() -> None:

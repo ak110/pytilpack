@@ -144,9 +144,11 @@ class WorkerThread:
             return self._state.loop if isinstance(self._state, _Running) else None
 
     def start(self) -> None:
-        """ワーカースレッドを起動する。"""
+        """ワーカースレッドを起動する。停止処理中はRuntimeErrorを送出する。"""
         with self._lock:
             state = self._state
+            if isinstance(state, _Stopping):
+                raise RuntimeError("worker is stopping")
             if isinstance(state, _Running):
                 return
             if state is None:

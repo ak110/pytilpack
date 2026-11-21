@@ -167,6 +167,8 @@ class JobRunner(metaclass=abc.ABCMeta):
     def shutdown(self) -> None:
         """停止処理。"""
         self._request_stop(_RunnerPhase.CANCELING)
+        for task in list(self.tasks):
+            task.cancel()
 
     async def graceful_shutdown(self) -> None:
         """新規ジョブ取得を停止し、実行中のジョブ完了を待ってから戻る。"""
@@ -179,9 +181,6 @@ class JobRunner(metaclass=abc.ABCMeta):
         if self._phase is _RunnerPhase.CANCELING:
             return
         self._phase = phase
-        if phase is _RunnerPhase.CANCELING:
-            for task in self.tasks:
-                task.cancel()
 
     @abc.abstractmethod
     async def poll(self) -> Job | None:

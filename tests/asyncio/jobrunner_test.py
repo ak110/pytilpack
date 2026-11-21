@@ -402,3 +402,41 @@ async def test_shutdown_while_polling_with_running_job() -> None:
     assert active.status == "canceled"
     assert not pending.started.is_set()
     assert pending.status == "waiting"
+
+
+@pytest.mark.asyncio
+async def test_shutdown_cancels_job_again() -> None:
+    """最初の取消を処理中のジョブにも再度の即時停止が届く。"""
+    first_cancel = asyncio.Event()
+
+    class RetryingJob(EventJob):
+        """最初の取消を受けた後も完了シグナルを待つジョブ。"""
+
+        @typing.override
+        async def run(self) -> None:
+            try:
+                await super().run()
+            except asyncio.CancelledError:
+                first_cancel.set()
+                await self.finish.wait()
+
+    job = RetryingJob()
+    runner = PollingJobRunner(job)
+    task = asyncio.create_task(runner.run())
+    try:
+        async with asyncio.timeout(2):
+            await job.started.wait()
+            await runner.poll_started.wait()
+            runner.shutdown()
+            await first_cancel.wait()
+            assert job.status == "running"
+            runner.shutdown()
+            await runner.graceful_shutdown()
+            runner.result.set_result(None)
+            await task
+        assert str(job.status) == "canceled"
+        assert not runner.running and not runner.tasks
+    finally:
+        job.finish.set()
+        task.cancel()
+        await asyncio.gather(task, *runner.tasks, return_exceptions=True)
