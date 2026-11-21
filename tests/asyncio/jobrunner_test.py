@@ -95,29 +95,63 @@ class PollingJobRunner(pytilpack.asyncio.JobRunner):
         return await self.result
 
 
+@pytest.mark.parametrize("outcome", ["finished", "errored", "canceled"])
 @pytest.mark.asyncio
-async def test_job_state_owned_by_runner(caplog: pytest.LogCaptureFixture) -> None:
+async def test_job_state_owned_by_runner(outcome: pytilpack.asyncio.JobStatus, caplog: pytest.LogCaptureFixture) -> None:
     """通知の上書きと失敗を経ても本体の実行結果を保持する。"""
 
+    observed: list[tuple[str, pytilpack.asyncio.JobStatus]] = []
+
     class NotifyingJob(EventJob):
-        """完了通知に失敗するジョブ。"""
+        """本体と通知の実行順序を記録するジョブ。"""
+
+        @typing.override
+        async def run(self) -> None:
+            observed.append(("run", self.status))
+            await super().run()
+            if outcome == "errored":
+                raise ValueError("job failed")
+
+        def _record_notification(self, name: str) -> None:
+            observed.append((name, self.status))
+            raise ValueError("notification failed")
 
         @typing.override
         async def on_finished(self) -> None:
-            assert self.status == "finished"
-            raise ValueError("notification failed")
+            self._record_notification("finished")
+
+        @typing.override
+        async def on_errored(self) -> None:
+            self._record_notification("errored")
+
+        @typing.override
+        async def on_canceled(self) -> None:
+            self._record_notification("canceled")
+
+        @typing.override
+        async def on_finally(self) -> None:
+            observed.append(("finally", self.status))
 
     job = NotifyingJob()
+    pending = EventJob()
     runner = PollingJobRunner(job)
+    assert job.status == "waiting" and runner.running
     task = asyncio.create_task(runner.run())
     try:
-        await job.started.wait()
-        assert job.status == "running"
-        job.finish.set()
-        await runner.graceful_shutdown()
-        runner.result.set_result(None)
-        await task
-        assert str(job.status) == "finished"
+        async with asyncio.timeout(2):
+            await job.started.wait()
+            await runner.poll_started.wait()
+            if outcome == "canceled":
+                runner.shutdown()
+            else:
+                job.finish.set()
+            await runner.graceful_shutdown()
+            runner.result.set_result(pending)
+            await task
+        assert observed == [("run", "running"), (outcome, outcome), ("finally", outcome)]
+        assert job.status == outcome
+        assert pending.status == "waiting" and not pending.started.is_set()
+        assert not runner.running and not runner.tasks
         assert "notification failed" in caplog.text
     finally:
         job.finish.set()

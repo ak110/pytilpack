@@ -1,9 +1,10 @@
 """専用スレッド上のイベントループで非同期処理を実行するプール。"""
 
-__lazy_modules__ = ["asyncio", "concurrent.futures", "logging", "threading", "typing"]
+__lazy_modules__ = ["asyncio", "concurrent.futures", "dataclasses", "logging", "threading", "typing"]
 
 import asyncio
 import concurrent.futures
+import dataclasses
 import logging
 import threading
 import typing
@@ -87,7 +88,7 @@ class ThreadPool:
 
     def __del__(self) -> None:
         """デストラクタ。停止していないワーカーがいる場合は警告して停止シグナルを送る。"""
-        active_workers = [w for w in self.workers if w.thread is not None]
+        active_workers = [w for w in getattr(self, "workers", ()) if w.thread is not None]
         if active_workers:
             logger.warning(
                 "ThreadPool is being destroyed with %d active worker(s). Sending stop signal."
@@ -96,8 +97,24 @@ class ThreadPool:
             )
             # デストラクタ内では待機せず、停止シグナルのみ送出する
             for w in active_workers:
-                if w.loop is not None:
-                    w.loop.call_soon_threadsafe(w.loop.stop)  # 一時的に無効化
+                w._request_stop()
+
+
+@dataclasses.dataclass(frozen=True)
+class _Starting:
+    thread: threading.Thread
+    ready: concurrent.futures.Future[None]
+
+
+@dataclasses.dataclass(frozen=True)
+class _Running:
+    thread: threading.Thread
+    loop: asyncio.AbstractEventLoop
+
+
+@dataclasses.dataclass(frozen=True)
+class _Stopping(_Running):
+    pass
 
 
 class WorkerThread:
@@ -110,35 +127,87 @@ class WorkerThread:
             name: スレッド名
         """
         self.name = name
-        self.thread: threading.Thread | None = None
-        self.loop: asyncio.AbstractEventLoop | None = None
+        self._lock = threading.Lock()
+        self._state: _Starting | _Running | None = None
         self.stopped = threading.Event()
+
+    @property
+    def thread(self) -> threading.Thread | None:
+        """現在の起動で使うスレッド。"""
+        with self._lock:
+            return self._state.thread if self._state is not None else None
+
+    @property
+    def loop(self) -> asyncio.AbstractEventLoop | None:
+        """準備済みのイベントループ。"""
+        with self._lock:
+            return self._state.loop if isinstance(self._state, _Running) else None
 
     def start(self) -> None:
         """ワーカースレッドを起動する。"""
-        self.stopped.clear()
-        started = threading.Event()
-
-        def thread() -> None:
-            self.loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(self.loop)
-            started.set()
-            try:
-                self.loop.run_forever()
-            finally:
+        with self._lock:
+            state = self._state
+            if isinstance(state, _Running):
+                return
+            if state is None:
+                ready = concurrent.futures.Future[None]()
+                thread = threading.Thread(target=self._run, args=(ready,), name=self.name, daemon=True)
+                self._state = _Starting(thread, ready)
+                self.stopped.clear()
                 try:
-                    pending = asyncio.all_tasks(self.loop)
+                    thread.start()
+                except BaseException:
+                    self._set_idle()
+                    raise
+            else:
+                ready = state.ready
+        ready.result()
+
+    def _run(self, ready: concurrent.futures.Future[None]) -> None:
+        try:
+            loop = asyncio.new_event_loop()
+            try:
+                asyncio.set_event_loop(loop)
+                with self._lock:
+                    self._state = _Running(threading.current_thread(), loop)
+                    ready.set_result(None)
+                try:
+                    loop.run_forever()
+                finally:
+                    self._request_stop(signal=False)
+                    pending = asyncio.all_tasks(loop)
                     for t in pending:
                         t.cancel()
                     if pending:
-                        self.loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
-                finally:
-                    self.loop.close()
-                    self.stopped.set()
+                        loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+            finally:
+                loop.close()
+        except BaseException as exc:
+            if ready.done():
+                raise
+            with self._lock:
+                self._set_idle()
+                ready.set_exception(exc)
+        finally:
+            with self._lock:
+                state = self._state
+                if state is not None and state.thread is threading.current_thread():
+                    self._set_idle()
 
-        self.thread = threading.Thread(target=thread, name=self.name, daemon=True)
-        self.thread.start()
-        started.wait()
+    def _set_idle(self) -> None:
+        self._state = None
+        self.stopped.set()
+
+    def _request_stop(self, *, signal: bool = True, thread: threading.Thread | None = None) -> None:
+        with self._lock:
+            state = self._state
+            if not isinstance(state, _Running) or isinstance(state, _Stopping):
+                return
+            if thread is not None and state.thread is not thread:
+                return
+            if signal:
+                state.loop.call_soon_threadsafe(state.loop.stop)
+            self._state = _Stopping(state.thread, state.loop)
 
     def submit[T](self, coro: typing.Coroutine[typing.Any, typing.Any, T]) -> concurrent.futures.Future[T]:
         """コルーチンをイベントループに送信する。
@@ -149,15 +218,19 @@ class WorkerThread:
         Returns:
             結果を取得するためのFuture
         """
-        if self.loop is None:
-            raise RuntimeError("worker not started")
-        return asyncio.run_coroutine_threadsafe(coro, self.loop)
+        with self._lock:
+            state = self._state
+            if not isinstance(state, _Running) or isinstance(state, _Stopping):
+                raise RuntimeError("worker not started")
+            return asyncio.run_coroutine_threadsafe(coro, state.loop)
 
     def stop(self) -> None:
         """ワーカースレッドを停止する。"""
-        if self.loop is None:
+        with self._lock:
+            state = self._state
+        if state is None:
             return
-        self.loop.call_soon_threadsafe(self.loop.stop)
-        self.stopped.wait()
-        self.loop = None
-        self.thread = None
+        if isinstance(state, _Starting):
+            concurrent.futures.wait((state.ready,))
+        self._request_stop(thread=state.thread)
+        state.thread.join()

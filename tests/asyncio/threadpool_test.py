@@ -73,13 +73,63 @@ async def test_thread_pool_async_context_manager() -> None:
 
 
 def test_worker_thread() -> None:
-    """WorkerThreadのテスト。"""
+    """起動前、稼働中、停止後で送信の可否と資源の有無が切り替わる。"""
     worker = pytilpack.asyncio.threadpool.WorkerThread(name="test-worker")
+    _assert_worker_rejects_submit(worker)
+    assert worker.thread is None and worker.loop is None
     worker.start()
-    future = worker.submit(_async_add(10, 20))
-    assert future.result(timeout=1) == 30
+    try:
+        assert worker.thread is not None and worker.loop is not None
+        assert worker.submit(_async_add(10, 20)).result(timeout=1) == 30
+    finally:
+        worker.stop()
     worker.stop()
-    assert worker.thread is None
+    assert worker.thread is None and worker.loop is None and worker.stopped.is_set()
+    _assert_worker_rejects_submit(worker)
+
+
+def _assert_worker_rejects_submit(worker: pytilpack.asyncio.threadpool.WorkerThread) -> None:
+    coro = _async_add(1, 2)
+    try:
+        with pytest.raises(RuntimeError, match="^worker not started$"):
+            worker.submit(coro)
+    finally:
+        coro.close()  # pylint: disable=no-member
+
+
+def test_worker_start_waits_for_loop(monkeypatch: pytest.MonkeyPatch) -> None:
+    """ループの準備中は送信を拒否し、起動操作は準備完了を待つ。"""
+    worker = pytilpack.asyncio.threadpool.WorkerThread(name="starting-worker")
+    new_event_loop = asyncio.new_event_loop
+    preparing = threading.Event()
+    proceed = threading.Event()
+    started = threading.Event()
+
+    def prepare_loop() -> asyncio.AbstractEventLoop:
+        preparing.set()
+        assert proceed.wait(timeout=5)
+        return new_event_loop()
+
+    def start() -> None:
+        worker.start()
+        started.set()
+
+    monkeypatch.setattr(asyncio, "new_event_loop", prepare_loop)
+    starter = threading.Thread(target=start)
+    starter.start()
+    try:
+        assert preparing.wait(timeout=2)
+        assert worker.thread is not None and worker.loop is None
+        assert not started.is_set()
+        _assert_worker_rejects_submit(worker)
+        proceed.set()
+        assert started.wait(timeout=2)
+        assert worker.submit(_async_add(1, 2)).result(timeout=1) == 3
+    finally:
+        proceed.set()
+        starter.join(timeout=5)
+        worker.stop()
+        assert not starter.is_alive()
 
 
 def test_worker_restart_waits_for_cleanup() -> None:
@@ -113,6 +163,7 @@ def test_worker_restart_waits_for_cleanup() -> None:
         thread.start()
         assert cleaning.wait(timeout=2)
         assert not stopped.is_set()
+        _assert_worker_rejects_submit(worker)
     finally:
         finish.set()
         if thread.ident is not None:
@@ -126,6 +177,10 @@ def test_worker_restart_waits_for_cleanup() -> None:
 def test_submit_after_shutdown() -> None:
     """停止したプールへの送信は既存のRuntimeErrorで拒否する。"""
     pool = pytilpack.asyncio.threadpool.ThreadPool(max_workers=1)
+    try:
+        assert pool.submit(_async_add(1, 2)).result(timeout=1) == 3
+    finally:
+        pool.shutdown()
     pool.shutdown()
     coro = _async_add(1, 2)
     try:
