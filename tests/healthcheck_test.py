@@ -1,6 +1,6 @@
-import asyncio
+import contextvars
 import datetime as dt
-import time
+import types
 
 import pytest
 
@@ -8,133 +8,78 @@ import pytilpack.healthcheck
 
 
 def sync_success_check() -> None:
-    time.sleep(0.01)
+    pass
 
 
 async def mock_success_check() -> None:
-    await asyncio.sleep(0.01)
+    pass
 
 
 async def mock_fail_check() -> None:
-    await asyncio.sleep(0.01)
     raise ValueError("テストエラー")
-
-
-async def mock_slow_check() -> None:
-    await asyncio.sleep(0.1)
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "checks,expected_status,expected_details_count,output_details",
+    "checkers,expected_status,expected_errors,output_details",
     [
-        (
-            [pytilpack.healthcheck.make_entry("test1", mock_success_check)],
-            "ok",
-            1,
-            True,
-        ),
-        (
-            [
-                pytilpack.healthcheck.make_entry("test1", mock_success_check),
-                pytilpack.healthcheck.make_entry("test2", mock_success_check),
-            ],
-            "ok",
-            2,
-            True,
-        ),
-        (
-            [
-                pytilpack.healthcheck.make_entry("test1", sync_success_check),
-                pytilpack.healthcheck.make_entry("test2", mock_success_check),
-            ],
-            "ok",
-            2,
-            True,
-        ),
-        ([pytilpack.healthcheck.make_entry("test1", mock_fail_check)], "fail", 1, True),
-        (
-            [
-                pytilpack.healthcheck.make_entry("test1", mock_success_check),
-                pytilpack.healthcheck.make_entry("test2", mock_fail_check),
-            ],
-            "fail",
-            2,
-            True,
-        ),
-        (
-            [pytilpack.healthcheck.make_entry("test1", mock_success_check)],
-            "ok",
-            1,
-            False,
-        ),
-        ([], "ok", 0, True),
+        ([mock_success_check], "ok", [None], True),
+        ([mock_success_check, mock_success_check], "ok", [None, None], True),
+        ([sync_success_check, mock_success_check], "ok", [None, None], True),
+        ([mock_fail_check], "fail", ["ValueError: テストエラー"], True),
+        ([mock_success_check, mock_fail_check], "fail", [None, "ValueError: テストエラー"], True),
+        ([mock_success_check], "ok", [None], False),
+        ([], "ok", [], True),
     ],
 )
-async def test_run(
-    checks: list[pytilpack.healthcheck.CheckerEntry],
-    expected_status: str,
-    expected_details_count: int,
-    output_details: bool,
-) -> None:
-    now = dt.datetime(2024, 1, 1, 12, 0, 0)
-
-    result = await pytilpack.healthcheck.run(checks=checks, output_details=output_details, now=now)
+async def test_run(checkers, expected_status: str, expected_errors: list[str | None], output_details: bool) -> None:
+    checks = [pytilpack.healthcheck.make_entry(f"check-{i}", check) for i, check in enumerate(checkers)]
+    start = dt.datetime(2024, 1, 1, 10)
+    now = dt.datetime(2024, 1, 1, 12, 30)
+    result = await pytilpack.healthcheck.run(checks, output_details=output_details, now=now, start_time=start)
 
     assert result["status"] == expected_status
     assert result["checked"] == str(now)
-    assert "uptime" in result
+    assert result["uptime"] == str(now - start)
 
     if output_details:
-        assert "details" in result
-        assert len(result["details"]) == expected_details_count
-
-        for name, detail in result.get("details", {}).items():
-            assert name in [check[0] for check in checks]
-            assert detail["status"] in ["ok", "fail"]
-            assert isinstance(detail["response_time_ms"], int | float)
+        details = result.get("details")
+        assert details is not None
+        assert details.keys() == {name for name, _ in checks}
+        for (name, _), error in zip(checks, expected_errors, strict=True):
+            detail = details[name]
             assert detail["response_time_ms"] >= 0
-            if detail["status"] == "ok":
+            if error is None:
+                assert detail["status"] == "ok"
                 assert "error" not in detail
             else:
-                assert detail.get("error") is not None
+                assert detail["status"] == "fail"
+                assert detail.get("error") == error
     else:
         assert "details" not in result
 
 
 @pytest.mark.asyncio
-async def test_run_misc() -> None:
-    checks_dup = [
-        pytilpack.healthcheck.make_entry("duplicate", mock_success_check),
-        pytilpack.healthcheck.make_entry("duplicate", mock_success_check),
-    ]
+async def test_run_duplicate_names() -> None:
+    checks = [pytilpack.healthcheck.make_entry("duplicate", mock_success_check)] * 2
     with pytest.raises(AssertionError, match="ヘルスチェック名が重複しています"):
-        await pytilpack.healthcheck.run(checks_dup)
+        await pytilpack.healthcheck.run(checks)
 
-    checks_time = [
-        pytilpack.healthcheck.make_entry("slow", mock_slow_check),
-        pytilpack.healthcheck.make_entry("fast", mock_success_check),
+
+@pytest.mark.asyncio
+async def test_run_response_time(monkeypatch: pytest.MonkeyPatch) -> None:
+    clock = contextvars.ContextVar("clock", default=10.0)
+
+    async def advance_clock(seconds: float) -> None:
+        clock.set(clock.get() + seconds)
+
+    monkeypatch.setattr(pytilpack.healthcheck, "time", types.SimpleNamespace(perf_counter=clock.get))
+    checks = [
+        pytilpack.healthcheck.make_entry("slow", advance_clock, 0.125),
+        pytilpack.healthcheck.make_entry("fast", advance_clock, 0.015625),
     ]
-    result = await pytilpack.healthcheck.run(checks_time)
+    result = await pytilpack.healthcheck.run(checks)
     details = result.get("details")
     assert details is not None
-    assert details["slow"]["response_time_ms"] > details["fast"]["response_time_ms"]
-    assert details["slow"]["response_time_ms"] >= 90
-
-    checks_err = [
-        pytilpack.healthcheck.make_entry("success", mock_success_check),
-        pytilpack.healthcheck.make_entry("fail", mock_fail_check),
-    ]
-    result = await pytilpack.healthcheck.run(checks_err)
-    assert result["status"] == "fail"
-    details = result.get("details")
-    assert details is not None
-    assert details["success"]["status"] == "ok"
-    assert "error" not in details["success"]
-    assert details["fail"]["status"] == "fail"
-    assert details["fail"].get("error") == "ValueError: テストエラー"
-
-    start = dt.datetime(2024, 1, 1, 10, 0, 0)
-    now = dt.datetime(2024, 1, 1, 12, 30, 0)
-    result = await pytilpack.healthcheck.run([], now=now, start_time=start)
-    assert result["uptime"] == str(now - start)
+    assert details["slow"]["response_time_ms"] == 125
+    assert details["fast"]["response_time_ms"] == 15

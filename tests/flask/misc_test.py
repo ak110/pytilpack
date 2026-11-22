@@ -2,6 +2,7 @@ import pathlib
 import socket
 import threading
 import types
+import urllib.parse
 
 import flask
 import httpx
@@ -22,9 +23,10 @@ def test_static_url_for(tmp_path: pathlib.Path) -> None:
     app = flask.Flask(__name__, static_folder=static_dir_str)
     with app.test_request_context():
         url = pytilpack.flask.static_url_for("test.css")
-        assert url.startswith("/static/test.css?v=")
+        parts = urllib.parse.urlsplit(url)
+        assert parts.path == "/static/test.css"
         mtime = int(test_file.stat().st_mtime)
-        assert f"v={mtime}" in url
+        assert urllib.parse.parse_qs(parts.query, keep_blank_values=True) == {"v": [str(mtime)]}
 
         url = pytilpack.flask.static_url_for("test.css", cache_busting=False)
         assert url == "/static/test.css"
@@ -121,7 +123,8 @@ def test_get_routes() -> None:
     with app.test_request_context():
         routes = pytilpack.flask.misc.get_routes(app)
 
-        assert len(routes[0].arg_names) >= len(routes[-1].arg_names)
+        endpoints = {"index", "users_list", "user_detail", "user_post", "api_item"}
+        assert [len(route.arg_names) for route in routes if route.endpoint in endpoints] == [2, 1, 1, 0, 0]
 
         route_dict = {r.endpoint: r for r in routes}
 

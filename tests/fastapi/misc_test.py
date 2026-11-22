@@ -19,15 +19,15 @@ def _app() -> fastapi.FastAPI:
 
     @app.get("/pretty", response_class=pytilpack.fastapi.JSONResponse)
     def pretty():
-        return {"message": "hello", "value": 42, "items": [1, 2, 3]}
-
-    @app.get("/pretty-japanese", response_class=pytilpack.fastapi.JSONResponse)
-    def japanese():
-        return {"メッセージ": "こんにちは"}
+        return {"メッセージ": "こんにちは", "nested": {"items": [42]}}
 
     @app.get("/model", response_class=pytilpack.fastapi.JSONResponse, response_model=_Item)
     def model():
         return _Item(name="test", value=123)
+
+    @app.get("/direct-model")
+    def direct_model():
+        return pytilpack.fastapi.JSONResponse(_Item(name="test", value=123))
 
     return app
 
@@ -43,24 +43,15 @@ def test_json_response(client: fastapi.testclient.TestClient) -> None:
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/json"
 
-    text = response.text
-    assert "\n" in text
-    assert "  " in text
-
-    data = json.loads(text)
-    assert data == {"message": "hello", "value": 42, "items": [1, 2, 3]}
+    assert json.loads(response.content) == {"メッセージ": "こんにちは", "nested": {"items": [42]}}
+    assert "こんにちは".encode() in response.content
+    assert "メッセージ".encode() in response.content
+    assert {'  "nested": {', '    "items": [', "      42"} <= {line.rstrip() for line in response.text.splitlines()}
 
 
-def test_json_response_ensure_ascii(client: fastapi.testclient.TestClient) -> None:
-    response = client.get("/pretty-japanese")
-
-    assert response.status_code == 200
-    assert "メッセージ" in response.text
-    assert "こんにちは" in response.text
-
-
-def test_json_response_pydantic_model(client: fastapi.testclient.TestClient) -> None:
-    response = client.get("/model")
+@pytest.mark.parametrize("path", ["/model", "/direct-model"])
+def test_json_response_pydantic_model(client: fastapi.testclient.TestClient, path: str) -> None:
+    response = client.get(path)
 
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/json"

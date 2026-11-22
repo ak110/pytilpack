@@ -49,15 +49,6 @@ def test_gettext() -> None:
         pytilpack.i18n.deactivate(tokens)
 
 
-def test_gettext_fallback() -> None:
-    state = pytilpack.i18n.I18nState(LOCALES_DIR, default_locale="en")
-    tokens = pytilpack.i18n.activate(state, "en")
-    try:
-        assert pytilpack.i18n.gettext_func("Hello") == "Hello"
-    finally:
-        pytilpack.i18n.deactivate(tokens)
-
-
 def test_get_state_without_activate() -> None:
     with pytest.raises(RuntimeError, match="I18nStateが未設定"):
         pytilpack.i18n.get_state()
@@ -77,24 +68,20 @@ def test_set_locale() -> None:
 @pytest.mark.asyncio
 async def test_locale_isolation_between_tasks() -> None:
     state = pytilpack.i18n.I18nState(LOCALES_DIR, default_locale="en")
-    results: dict[str, str] = {}
+    activated = asyncio.Barrier(2)
+    translated = asyncio.Barrier(2)
 
-    async def task_ja() -> None:
-        tokens = pytilpack.i18n.activate(state, "ja")
+    async def translate(locale: str) -> str:
+        tokens = pytilpack.i18n.activate(state, locale)
         try:
-            await asyncio.sleep(0.01)
-            results["ja"] = pytilpack.i18n.gettext_func("Hello")
+            await activated.wait()
+            result = pytilpack.i18n.gettext_func("Hello")
+            await translated.wait()
+            return result
         finally:
             pytilpack.i18n.deactivate(tokens)
 
-    async def task_en() -> None:
-        tokens = pytilpack.i18n.activate(state, "en")
-        try:
-            await asyncio.sleep(0.01)
-            results["en"] = pytilpack.i18n.gettext_func("Hello")
-        finally:
-            pytilpack.i18n.deactivate(tokens)
-
-    await asyncio.gather(task_ja(), task_en())
-    assert results["ja"] == "こんにちは"
-    assert results["en"] == "Hello"
+    async with asyncio.timeout(5):
+        ja, en = await asyncio.gather(translate("ja"), translate("en"))
+        assert ja == "こんにちは"
+        assert en == "Hello"

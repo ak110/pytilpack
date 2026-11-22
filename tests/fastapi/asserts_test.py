@@ -50,6 +50,10 @@ def _app() -> fastapi.FastAPI:
     def xml_invalid():
         return fastapi.responses.Response("<root>hello & world</root>", status_code=200, media_type="application/xml")
 
+    @app.get("/sse-forbidden")
+    def sse_forbidden():
+        return fastapi.responses.Response("data: forbidden\n\n", status_code=403, media_type="text/event-stream")
+
     @app.get("/sse")
     def sse():
         return fastapi.responses.StreamingResponse(iter(["data: hello\n\n"]), media_type="text/event-stream")
@@ -64,8 +68,11 @@ def _client(app: fastapi.FastAPI) -> fastapi.testclient.TestClient:
 
 def test_assert_bytes(client: fastapi.testclient.TestClient):
     response = client.get("/html")
-    _ = pytilpack.fastapi.assert_bytes(response)
-    _ = pytilpack.fastapi.assert_bytes(response, content_type="text/html")
+    assert pytilpack.fastapi.assert_bytes(response) == b"<!doctype html><p>hello"
+    assert pytilpack.fastapi.assert_bytes(response, content_type="text/html") == b"<!doctype html><p>hello"
+
+    with pytest.raises(AssertionError):
+        _ = pytilpack.fastapi.assert_bytes(response, content_type="application/json")
 
     response = client.get("/403")
     _ = pytilpack.fastapi.assert_bytes(response, 403)
@@ -87,7 +94,11 @@ def test_assert_html(client: fastapi.testclient.TestClient, tmp_path: pathlib.Pa
 
     response = client.get("/html-invalid")
     with pytest.raises(AssertionError):
-        _ = pytilpack.fastapi.assert_html(response, strict=True)
+        _ = pytilpack.fastapi.assert_html(response, strict=True, tmp_path=tmp_path)
+    saved_files = list(tmp_path.glob("*.html"))
+    assert len(saved_files) == 1
+    (saved_html,) = saved_files
+    assert saved_html.read_text(encoding="utf-8") == "<!doctype html><body>hello</form></body>"
 
 
 @pytest.mark.parametrize("fragment", tests.web_test.HTML_VALID_CASES)
@@ -119,7 +130,7 @@ def test_assert_html_diagnostics_retained(
 
 def test_assert_json(client: fastapi.testclient.TestClient) -> None:
     response = client.get("/json")
-    _ = pytilpack.fastapi.assert_json(response)
+    assert pytilpack.fastapi.assert_json(response) == {"hello": "world"}
 
     response = client.get("/json-invalid")
     with pytest.raises(AssertionError):
@@ -132,8 +143,8 @@ def test_assert_json(client: fastapi.testclient.TestClient) -> None:
 
 def test_assert_xml(client: fastapi.testclient.TestClient) -> None:
     response = client.get("/xml")
-    _ = pytilpack.fastapi.assert_xml(response)
-    _ = pytilpack.fastapi.assert_xml(response, content_type="text/xml")
+    assert pytilpack.fastapi.assert_xml(response) == "<root><hello>world</hello></root>"
+    assert pytilpack.fastapi.assert_xml(response, content_type="text/xml") == "<root><hello>world</hello></root>"
 
     response = client.get("/xml-invalid")
     with pytest.raises(AssertionError):
@@ -146,9 +157,9 @@ def test_assert_xml(client: fastapi.testclient.TestClient) -> None:
 
 def test_assert_sse(client: fastapi.testclient.TestClient) -> None:
     response = client.get("/sse")
-    _ = pytilpack.fastapi.assert_sse(response)
+    assert pytilpack.fastapi.assert_sse(response) is response
 
-    response = client.get("/403")
+    response = client.get("/sse-forbidden")
     with pytest.raises(AssertionError):
         _ = pytilpack.fastapi.assert_sse(response)
 

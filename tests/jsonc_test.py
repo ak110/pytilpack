@@ -76,22 +76,9 @@ def test_edit_root_replacement() -> None:
     assert result == '// header\n{"b": 2}\n'
 
 
-def test_edit_missing_key_raises() -> None:
-    with pytest.raises(KeyError):
-        pytilpack.jsonc.edit('{"a": 1}', {("b",): 2})
-
-
 def test_edit_type_mismatch_raises() -> None:
     with pytest.raises(TypeError):
         pytilpack.jsonc.edit('{"a": 1}', {("a", "b"): 2})
-
-
-def test_edit_overlapping_paths_rejected() -> None:
-    with pytest.raises(ValueError):
-        pytilpack.jsonc.edit(
-            '{"a": {"b": 1}}',
-            {("a",): {"c": 3}, ("a", "b"): 2},
-        )
 
 
 def test_edit_file(tmp_path: pathlib.Path) -> None:

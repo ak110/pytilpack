@@ -1,5 +1,5 @@
 import logging
-import time
+import types
 import typing
 
 import pytest
@@ -100,47 +100,32 @@ async def test_retry_default_status_codes() -> None:
 
 
 @pytest.mark.asyncio
-async def test_warn_if_slow(caplog: pytest.LogCaptureFixture) -> None:
+@pytest.mark.parametrize("duration", [0.124, 0.125])
+@pytest.mark.parametrize("is_async", [False, True], ids=["sync", "async"])
+async def test_warn_if_slow(
+    caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch, duration: float, is_async: bool
+) -> None:
+    ticks = iter((0.0, duration))
+    monkeypatch.setattr(pytilpack.functools, "time", types.SimpleNamespace(perf_counter=lambda: next(ticks)))
+
+    @pytilpack.functools.warn_if_slow(threshold_seconds=0.125)
+    def sync_call(x: int, *, label: str) -> str:
+        return f"{x}-{label}"
+
+    @pytilpack.functools.warn_if_slow(threshold_seconds=0.125)
+    async def async_call(x: int, *, label: str) -> str:
+        return f"{x}-{label}"
+
     with caplog.at_level(logging.WARNING):
-
-        @pytilpack.functools.warn_if_slow()
-        def fast_function(x: int, y: str = "default"):
-            return f"{x}-{y}"
-
-        result = fast_function(42, y="test")
-        assert result == "42-test"
-        assert len(caplog.records) == 0
-
-        @pytilpack.functools.warn_if_slow()
-        def slow_function(x: int, y: str = "default"):
-            time.sleep(0.01)
-            return f"{x}-{y}"
-
-        result = slow_function(42, y="test")
-        assert result == "42-test"
+        result = await async_call(42, label="test") if is_async else sync_call(42, label="test")
+    assert result == "42-test"
+    if duration < 0.125:
+        assert not caplog.records
+    else:
         assert len(caplog.records) == 1
-        assert "slow_function took" in caplog.records[0].message
-        assert "threshold 0.001 s" in caplog.records[0].message
-
-        caplog.clear()
-
-        @pytilpack.functools.warn_if_slow()
-        async def fast_async_function(x: int, y: str = "default"):
-            return f"{x}-{y}"
-
-        result = await fast_async_function(42, y="test")
-        assert result == "42-test"
-        assert len(caplog.records) == 0
-
-        @pytilpack.functools.warn_if_slow()
-        async def slow_async_function(x: int, y: str = "default"):
-            time.sleep(0.01)
-            return f"{x}-{y}"
-
-        result = await slow_async_function(42, y="test")
-        assert result == "42-test"
-        assert len(caplog.records) == 1
-        assert "slow_async_function took" in caplog.records[0].message
+        (record,) = caplog.records
+        assert record.levelno == logging.WARNING
+        assert ("async_call" if is_async else "sync_call") in record.getMessage()
 
 
 @pytest.mark.asyncio
@@ -230,19 +215,26 @@ async def test_retry_should_retry() -> None:
 
 @pytest.mark.parametrize("is_async", [False, True], ids=["sync", "async"])
 @pytest.mark.asyncio
-async def test_retry_override_total_delay(monkeypatch: pytest.MonkeyPatch, is_async: bool) -> None:
+@pytest.mark.parametrize("retry_after,expected_waits", [(1, [1, 1, 1]), (2, [2, 2])])
+async def test_retry_override_total_delay(
+    monkeypatch: pytest.MonkeyPatch, is_async: bool, retry_after: int, expected_waits: list[int]
+) -> None:
+
+    waits: list[float] = []
 
     def sleep(delay: float, **kwargs: typing.Any) -> None:
-        del delay, kwargs
+        del kwargs
+        waits.append(delay)
 
     async def async_sleep(delay: float, **kwargs: typing.Any) -> None:
-        del delay, kwargs
+        del kwargs
+        waits.append(delay)
 
     monkeypatch.setattr(pytilpack.functools.time, "sleep", sleep)
     monkeypatch.setattr(pytilpack.functools.asyncio, "sleep", async_sleep)
     response = requests.Response()
     response.status_code = 429
-    response.headers["Retry-After"] = "1"
+    response.headers["Retry-After"] = str(retry_after)
     call_count = 0
 
     @pytilpack.functools.retry(max_retries=1, initial_delay=1, exponential_base=1)
@@ -264,7 +256,8 @@ async def test_retry_override_total_delay(monkeypatch: pytest.MonkeyPatch, is_as
             await f_async(retry=pytilpack.functools.Retry(max_retries=3))
         else:
             f_sync(retry=pytilpack.functools.Retry(max_retries=3))
-    assert call_count == 4
+    assert call_count == len(expected_waits) + 1
+    assert waits == expected_waits
 
 
 def test_retry_override_should_retry() -> None:

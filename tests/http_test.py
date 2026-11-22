@@ -1,16 +1,16 @@
 import collections.abc
 import datetime as dt
 import email.utils
+import io
 import json
 import sys
+import types
 
 import httpx
 import pytest
-import quart
 import requests
 
 import pytilpack.http
-import pytilpack.quart.misc
 
 
 class _ResponseStub:
@@ -72,7 +72,8 @@ def test_make_problem_details():
 
 @pytest.mark.parametrize("status", [99, 600, True, False])
 def test_make_problem_details_rejects_invalid_status(status: int):
-    with pytest.raises(ValueError):
+    match = "100以上599以下の整数を指定する" if status == 600 else None
+    with pytest.raises(ValueError, match=match):
         pytilpack.http.make_problem_details(status)
 
 
@@ -275,84 +276,46 @@ def test_get_rate_limit_info_ignores_integer_over_conversion_limit():
     assert pytilpack.http.get_rate_limit_info(headers) == pytilpack.http.RateLimitInfo(None, None, None)
 
 
-@pytest.mark.asyncio
-async def test_get_from_exception():
+@pytest.mark.parametrize("backend", ["requests", "httpx", "consumed-requests"])
+def test_get_from_exception(backend: str) -> None:
+    url = "https://example.com/problems/limited"
+    headers = {
+        "Retry-After": "1",
+        "Content-Type": "application/problem+json",
+        "X-RateLimit-Limit": "100",
+        "X-RateLimit-Remaining": "0",
+        "X-RateLimit-Reset": "1700000000",
+    }
+    body = '{"status":429,"title":"Too Many Requests","detail":"要求回数が上限を超過"}'.encode()
+    if backend == "httpx":
+        httpx_response = httpx.Response(429, request=httpx.Request("GET", url), headers=headers, content=body)
+        with pytest.raises(httpx.HTTPStatusError) as httpx_error:
+            httpx_response.raise_for_status()
+        error: Exception = httpx_error.value
+    else:
+        with requests.Response() as response:
+            response.status_code = 429
+            response.url = url
+            response.headers.update(headers)
+            response.raw = io.BytesIO(body)
+            if backend == "consumed-requests":
+                assert b"".join(response.iter_content()) == body
+            with pytest.raises(requests.HTTPError) as requests_error:
+                response.raise_for_status()
+            error = requests_error.value
 
-    app = quart.Quart(__name__)
+            if backend != "consumed-requests":
+                assert response.content == body
 
-    @app.route("/retry_with_header")
-    async def retry_with_header_endpoint():
-        return "", 429, {"Retry-After": "1"}
-
-    @app.route("/problem")
-    async def problem_endpoint():
-        status = 429
-        body = pytilpack.http.make_problem_details(status, detail="要求回数が上限を超過")
-        return (
-            body,
-            status,
-            {
-                "Content-Type": pytilpack.http.PROBLEM_JSON_CONTENT_TYPE,
-                "X-RateLimit-Limit": "100",
-                "X-RateLimit-Remaining": "0",
-                "X-RateLimit-Reset": "1700000000",
-            },
-        )
-
-    async with pytilpack.quart.misc.run(app, port=0) as port:
-        try:
-            r1 = requests.get(f"http://localhost:{port}/retry_with_header", timeout=5)
-            print(f"{r1.status_code=}, {r1.headers=}")
-            r1.raise_for_status()
-            pytest.fail("Expected HTTPError was not raised")
-        except requests.HTTPError as e:
-            assert pytilpack.http.get_status_code_from_exception(e) == 429
-            assert pytilpack.http.get_retry_after_from_exception(e) == 1.0
-
-        try:
-            async with httpx.AsyncClient() as client:
-                r2 = await client.get(f"http://localhost:{port}/retry_with_header", timeout=5)
-                print(f"{r2.status_code=}, {r2.headers=}")
-                r2.raise_for_status()
-            pytest.fail("Expected HTTPStatusError was not raised")
-        except httpx.HTTPStatusError as e:
-            assert pytilpack.http.get_status_code_from_exception(e) == 429
-            assert pytilpack.http.get_retry_after_from_exception(e) == 1.0
-
-        try:
-            problem_response = requests.get(f"http://localhost:{port}/problem", timeout=5)
-            problem_response.raise_for_status()
-            pytest.fail("Expected HTTPError was not raised")
-        except requests.HTTPError as e:
-            assert e.response.status_code == 429
-            assert e.response.headers["Content-Type"].startswith(pytilpack.http.PROBLEM_JSON_CONTENT_TYPE)
-            assert pytilpack.http.get_problem_details_from_exception(e) == pytilpack.http.ProblemDetails(
-                title="Too Many Requests",
-                status=429,
-                detail="要求回数が上限を超過",
-            )
-            assert pytilpack.http.get_rate_limit_info_from_exception(e) == pytilpack.http.RateLimitInfo(100, 0, 1700000000)
-
-        try:
-            async with httpx.AsyncClient() as client:
-                problem_response_async = await client.get(f"http://localhost:{port}/problem", timeout=5)
-                problem_response_async.raise_for_status()
-            pytest.fail("Expected HTTPStatusError was not raised")
-        except httpx.HTTPStatusError as e:
-            assert e.response.status_code == 429
-            assert e.response.headers["Content-Type"].startswith(pytilpack.http.PROBLEM_JSON_CONTENT_TYPE)
-            assert pytilpack.http.get_problem_details_from_exception(e) == pytilpack.http.ProblemDetails(
-                title="Too Many Requests",
-                status=429,
-                detail="要求回数が上限を超過",
-            )
-            assert pytilpack.http.get_rate_limit_info_from_exception(e) == pytilpack.http.RateLimitInfo(100, 0, 1700000000)
-
-        with requests.get(f"http://localhost:{port}/problem", timeout=5, stream=True) as streamed_response:
-            list(streamed_response.iter_content())
-            with pytest.raises(requests.HTTPError) as exc_info:
-                streamed_response.raise_for_status()
-            assert pytilpack.http.get_problem_details_from_exception(exc_info.value) is None
+    assert pytilpack.http.get_status_code_from_exception(error) == 429
+    assert pytilpack.http.get_retry_after_from_exception(error) == 1.0
+    assert pytilpack.http.get_rate_limit_info_from_exception(error) == pytilpack.http.RateLimitInfo(100, 0, 1700000000)
+    expected = (
+        None
+        if backend == "consumed-requests"
+        else pytilpack.http.ProblemDetails(title="Too Many Requests", status=429, detail="要求回数が上限を超過")
+    )
+    assert pytilpack.http.get_problem_details_from_exception(error) == expected
 
 
 @pytest.mark.parametrize(
@@ -369,23 +332,15 @@ def test_get_retry_after_integer(retry_after: str, expected_wait: float | None):
     assert result == expected_wait
 
 
-def test_get_retry_after_datetime():
-    future_time = dt.datetime.now(tz=dt.UTC) + dt.timedelta(seconds=5)
-    retry_after = email.utils.formatdate(future_time.timestamp(), usegmt=True)
+@pytest.mark.parametrize("offset,expected", [(5, 5.0), (-5, 0.0)])
+def test_get_retry_after_datetime(monkeypatch: pytest.MonkeyPatch, offset: int, expected: float) -> None:
+    now = dt.datetime(2024, 1, 1, tzinfo=dt.UTC)
+    clock = types.SimpleNamespace(now=lambda *, tz: now.astimezone(tz))
+    monkeypatch.setattr(pytilpack.http, "dt", types.SimpleNamespace(datetime=clock, UTC=dt.UTC))
+    retry_time = now + dt.timedelta(seconds=offset)
+    retry_after = email.utils.formatdate(retry_time.timestamp(), usegmt=True)
 
-    result = pytilpack.http.get_retry_after(retry_after)
-
-    assert result is not None
-    assert 4.0 <= result <= 6.0
-
-
-def test_get_retry_after_past_datetime():
-    past_time = dt.datetime.now(tz=dt.UTC) - dt.timedelta(seconds=5)
-    retry_after = email.utils.formatdate(past_time.timestamp(), usegmt=True)
-
-    result = pytilpack.http.get_retry_after(retry_after)
-
-    assert result == 0.0
+    assert pytilpack.http.get_retry_after(retry_after) == expected
 
 
 def test_get_retry_after_invalid_datetime():
@@ -443,8 +398,3 @@ def test_select_accept_language(
     expected: str | None,
 ) -> None:
     assert pytilpack.http.select_accept_language(header, supported, default) == expected
-
-
-def test_make_problem_details_invalid_status_message() -> None:
-    with pytest.raises(ValueError, match="100以上599以下の整数を指定する"):
-        pytilpack.http.make_problem_details(600)

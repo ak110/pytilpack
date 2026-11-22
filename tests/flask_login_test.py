@@ -25,9 +25,12 @@ def test_admin_only_endpoint() -> None:
         flask_login.login_user(users[name])
         return "ok"
 
+    admin_calls: list[str | None] = []
+
     @app.get("/admin")
     @pytilpack.flask_login.admin_only
     def admin() -> str:
+        admin_calls.append(flask_login.current_user.get_id())
         assert pytilpack.flask_login.is_admin()
         return "ok"
 
@@ -35,5 +38,7 @@ def test_admin_only_endpoint() -> None:
     assert client.get("/admin").status_code == 401
     assert client.get("/login/user").status_code == 200
     assert client.get("/admin").status_code == 403
+    assert not admin_calls
     assert client.get("/login/admin").status_code == 200
     assert client.get("/admin").status_code == 200
+    assert admin_calls == ["admin"]

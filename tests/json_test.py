@@ -1,4 +1,5 @@
 import io
+import json
 import pathlib
 
 import pytest
@@ -16,32 +17,32 @@ def test_load_not_exist_strict(tmp_path: pathlib.Path) -> None:
         pytilpack.json.load(tmp_path / "not_exist.json", strict=True)
 
 
+_DATA = {"a": "💯", "c": 1}
+_EXTERNAL_JSON = '{"a": "💯", "c": 1}'
+
+
 def test_load_save(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "a.json"
-    data = {"a": "💯", "c": 1}
+    pytilpack.json.save(path, _DATA)
+    saved = path.read_text(encoding="utf-8")
+    assert json.loads(saved) == _DATA
+    assert "💯" in saved
 
-    pytilpack.json.save(path, data)
-    data2 = pytilpack.json.load(path)
-
-    assert data["a"] == data2["a"]
-    assert data["c"] == data2["c"]
-    assert tuple(sorted(data)) == tuple(sorted(data2))
+    path.write_bytes(_EXTERNAL_JSON.encode("utf-8"))
+    assert pytilpack.json.load(path) == _DATA
 
 
 def test_load_save_io() -> None:
-    data = {"a": "💯", "c": 1}
+    text = io.StringIO()
+    binary = io.BytesIO()
+    pytilpack.json.save(text, _DATA)
+    pytilpack.json.save(binary, _DATA)
+    for saved in (text.getvalue(), binary.getvalue().decode("utf-8")):
+        assert json.loads(saved) == _DATA
+        assert "💯" in saved
 
-    buf = io.StringIO()
-    pytilpack.json.save(buf, data)
-    buf.seek(0)
-    data2 = pytilpack.json.load(buf)
-    assert data == data2
-
-    buf_b = io.BytesIO()
-    pytilpack.json.save(buf_b, data)
-    buf_b.seek(0)
-    data3 = pytilpack.json.load(buf_b)
-    assert data == data3
+    assert pytilpack.json.load(io.StringIO(_EXTERNAL_JSON)) == _DATA
+    assert pytilpack.json.load(io.BytesIO(_EXTERNAL_JSON.encode("utf-8"))) == _DATA
 
 
 def test_edit_preserves_blank_lines() -> None:

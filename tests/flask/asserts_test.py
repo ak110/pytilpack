@@ -49,6 +49,10 @@ def _app() -> typing.Generator[flask.Flask, None, None]:
     def xml_invalid():
         return "<root>hello & world</root>", 200, {"Content-Type": "application/xml"}
 
+    @app.route("/sse-forbidden")
+    def sse_forbidden():
+        return flask.Response("data: forbidden\n\n", status=403, content_type="text/event-stream")
+
     @app.route("/sse")
     def sse():
         return flask.Response(iter(["data: hello\n\n"]), content_type="text/event-stream")
@@ -64,15 +68,16 @@ def _client(app) -> typing.Generator[flask.testing.FlaskClient, None, None]:
 
 def test_assert_bytes(client: flask.testing.FlaskClient) -> None:
     response = client.get("/html")
-    _ = pytilpack.flask.assert_bytes(response)
-    _ = pytilpack.flask.assert_bytes(response, content_type="text/html")
+    assert pytilpack.flask.assert_bytes(response) == b"<!doctype html><p>hello"
+    assert pytilpack.flask.assert_bytes(response, content_type="text/html") == b"<!doctype html><p>hello"
+
+    with pytest.raises(AssertionError):
+        _ = pytilpack.flask.assert_bytes(response, content_type="application/json")
 
     response = client.get("/403")
     _ = pytilpack.flask.assert_bytes(response, 403)
     with pytest.raises(AssertionError):
         _ = pytilpack.flask.assert_bytes(response)
-    with pytest.raises(AssertionError):
-        _ = pytilpack.flask.assert_bytes(response, content_type="application/json")
 
 
 def test_assert_html(client: flask.testing.FlaskClient, tmp_path: pathlib.Path) -> None:
@@ -89,7 +94,11 @@ def test_assert_html(client: flask.testing.FlaskClient, tmp_path: pathlib.Path) 
 
     response = client.get("/html-invalid")
     with pytest.raises(AssertionError):
-        _ = pytilpack.flask.assert_html(response, strict=True)
+        _ = pytilpack.flask.assert_html(response, strict=True, tmp_path=tmp_path)
+    saved_files = list(tmp_path.glob("*.html"))
+    assert len(saved_files) == 1
+    (saved_html,) = saved_files
+    assert saved_html.read_text(encoding="utf-8") == "<!doctype html><body>hello</form></body>"
 
 
 @pytest.mark.parametrize("fragment", tests.web_test.HTML_VALID_CASES)
@@ -119,7 +128,7 @@ def test_assert_html_diagnostics_retained(
 
 def test_assert_json(client: flask.testing.FlaskClient) -> None:
     response = client.get("/json")
-    _ = pytilpack.flask.assert_json(response)
+    assert pytilpack.flask.assert_json(response) == {"hello": "world"}
 
     response = client.get("/json-invalid")
     with pytest.raises(AssertionError):
@@ -132,8 +141,8 @@ def test_assert_json(client: flask.testing.FlaskClient) -> None:
 
 def test_assert_xml(client: flask.testing.FlaskClient) -> None:
     response = client.get("/xml")
-    _ = pytilpack.flask.assert_xml(response)
-    _ = pytilpack.flask.assert_xml(response, content_type="text/xml")
+    assert pytilpack.flask.assert_xml(response) == "<root><hello>world</hello></root>"
+    assert pytilpack.flask.assert_xml(response, content_type="text/xml") == "<root><hello>world</hello></root>"
 
     response = client.get("/xml-invalid")
     with pytest.raises(AssertionError):
@@ -146,9 +155,9 @@ def test_assert_xml(client: flask.testing.FlaskClient) -> None:
 
 def test_assert_sse(client: flask.testing.FlaskClient) -> None:
     response = client.get("/sse")
-    _ = pytilpack.flask.assert_sse(response)
+    assert pytilpack.flask.assert_sse(response) is response
 
-    response = client.get("/403")
+    response = client.get("/sse-forbidden")
     with pytest.raises(AssertionError):
         _ = pytilpack.flask.assert_sse(response)
 
@@ -159,7 +168,7 @@ def test_assert_sse(client: flask.testing.FlaskClient) -> None:
 
 def test_assert_response(client: flask.testing.FlaskClient) -> None:
     response = client.get("/html")
-    _ = pytilpack.flask.assert_response(response)
+    assert pytilpack.flask.assert_response(response) is response
 
     response = client.get("/403")
     with pytest.raises(AssertionError):
