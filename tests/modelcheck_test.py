@@ -130,6 +130,36 @@ def test_report_write_reduces_runs() -> None:
     assert finals_without == finals_with == {1, 2}
 
 
+@pytest.mark.parametrize(
+    ("backtrack_by", "expected"),
+    [
+        (None, {("a", "b", "b"), ("b", "b", "a")}),
+        ("reported", {("a", "b", "b"), ("b", "b", "a")}),
+        ("planned", {("a", "b", "b"), ("b", "a", "b"), ("b", "b", "a")}),
+    ],
+)
+def test_backtrack_by(backtrack_by: typing.Literal["reported", "planned"] | None, expected: set[tuple[str, ...]]) -> None:
+    def reader() -> None:
+        mc.step("r", write=False)
+
+    def writer() -> None:
+        mc.step("r", write=True, label="check")
+        mc.report_write(False)
+        mc.step("r", write=True, label="update")
+
+    actors = {"a": reader, "b": writer}
+    explorer = mc.ThreadExplorer(actors) if backtrack_by is None else mc.ThreadExplorer(actors, backtrack_by=backtrack_by)
+    schedules = [run.schedule for run in explorer]
+    assert explorer.outcome == mc.Outcome.EXHAUSTIVE
+    assert len(schedules) == len(expected)
+    assert set(schedules) == expected
+
+
+def test_backtrack_by_invalid() -> None:
+    with pytest.raises(ValueError, match="backtrack_by"):
+        mc.ThreadExplorer({"a": lambda: None}, backtrack_by="other")  # type: ignore[arg-type]
+
+
 def test_deadlock() -> None:
     def first() -> None:
         with mc.lock("A"), mc.lock("B"):

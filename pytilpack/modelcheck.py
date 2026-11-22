@@ -133,15 +133,19 @@ class ThreadExplorer:
         max_runs: int | None = None,
         count_equivalent: bool = True,
         independent: typing.Callable[[Step, Step], bool] = independent_by_resource,
+        backtrack_by: typing.Literal["reported", "planned"] = "reported",
     ) -> None:
         if not actors:
             raise ValueError("主体を1つ以上指定してください")
+        if backtrack_by not in ("reported", "planned"):
+            raise ValueError(f"backtrack_byには'reported'か'planned'を指定してください: {backtrack_by!r}")
         self.actors = dict(actors)
         self.setup = setup
         self.step_timeout = step_timeout
         self.max_runs = max_runs
         self.count_equivalent = count_equivalent
         self.independent = independent
+        self.backtrack_by = backtrack_by
         self.outcome: Outcome | None = None
         self.runs = 0
         self.equivalent_runs = 0
@@ -260,6 +264,8 @@ class ThreadExplorer:
             if node is not None and depth >= len(prefix) - 1:
                 with ctx.cond:
                     executed = ctx.trace[-1]
+                if self.backtrack_by == "planned" and depth == len(prefix) - 1:
+                    executed = node.pending[chosen]
                 sleep = {u: s for u, s in {**node.sleep, **node.done}.items() if u != chosen and self.independent(s, executed)}
             depth += 1
 
