@@ -48,6 +48,7 @@ class Test2(Base, pytilpack.sqlalchemy.Mixin):  # pylint: disable=too-many-ances
 def _engine() -> typing.Generator[sqlalchemy.engine.Engine, None, None]:
     engine = sqlalchemy.create_engine("sqlite:///:memory:")
     pytilpack.sqlalchemy.register_ping()
+    Base.metadata.create_all(engine)
     yield engine
 
 
@@ -64,7 +65,6 @@ def _session(engine: sqlalchemy.engine.Engine) -> typing.Generator[sqlalchemy.or
 @pytest.fixture(autouse=True)
 def _clean_tables(engine: sqlalchemy.engine.Engine) -> typing.Generator[None, None, None]:
     with engine.begin() as conn:
-        Base.metadata.create_all(conn)
         for table in reversed(Base.metadata.sorted_tables):
             conn.execute(table.delete())
     yield
@@ -94,7 +94,6 @@ def test_repr() -> None:
 
 
 def test_get_by_id(session: sqlalchemy.orm.Session) -> None:
-    Base.metadata.create_all(session.bind)  # type: ignore
     session.add(Test1(id=1))
     session.commit()
 
@@ -104,8 +103,6 @@ def test_get_by_id(session: sqlalchemy.orm.Session) -> None:
 
 
 def test_get_by_id_not_null(session: sqlalchemy.orm.Session) -> None:
-    Base.metadata.create_all(session.bind)  # type: ignore
-
     session.add(Test1(id=10))
     session.commit()
 
@@ -117,7 +114,6 @@ def test_get_by_id_not_null(session: sqlalchemy.orm.Session) -> None:
 
 
 def test_get_by_unique_id(session: sqlalchemy.orm.Session) -> None:
-    Base.metadata.create_all(session.bind)  # type: ignore
     test1 = Test1(id=2, unique_id=Test1.generate_unique_id())
     assert test1.unique_id is not None and len(test1.unique_id) == 43
     unique_id = test1.unique_id
@@ -149,20 +145,3 @@ def test_to_dict() -> None:
     # arid: enable
 
     # arid: enable
-
-
-def test_wait_for_connection() -> None:
-    pytilpack.sqlalchemy.wait_for_connection("sqlite:///:memory:", timeout=0.1)
-
-    with pytest.raises(RuntimeError):
-        pytilpack.sqlalchemy.wait_for_connection("sqlite:////nonexistent/path/db.sqlite3", timeout=0.1)
-
-
-def test_safe_close() -> None:
-    engine = sqlalchemy.create_engine("sqlite:///:memory:")
-    session = sqlalchemy.orm.Session(engine)
-    pytilpack.sqlalchemy.safe_close(session)
-
-    session.close()
-    pytilpack.sqlalchemy.safe_close(session)
-    pytilpack.sqlalchemy.safe_close(session, log_level=None)

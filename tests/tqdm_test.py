@@ -1,6 +1,8 @@
 import logging
 import sys
 
+import pytest
+
 import pytilpack.tqdm
 
 
@@ -24,8 +26,16 @@ def test_tqdm_stream_handler(capsys):
         handler.close()
 
 
-def test_capture(capsys):
-    with pytilpack.tqdm.capture():
+@pytest.mark.parametrize(
+    "flags,during,after",
+    [
+        ({}, ("", ""), ("stdout\n", "stderr\n")),
+        ({"capture_stdout": True, "capture_stderr": False}, ("", "stderr\n"), ("stdout\n", "")),
+    ],
+)
+def test_capture(capsys, flags, during, after):
+    with pytilpack.tqdm.capture(**flags):
         print("stderr", file=sys.stderr)
         print("stdout")
-    assert capsys.readouterr() == ("stdout\n", "stderr\n")
+        assert capsys.readouterr() == during
+    assert capsys.readouterr() == after

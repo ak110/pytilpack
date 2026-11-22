@@ -1,4 +1,5 @@
-import time
+import asyncio
+import types
 
 import pytest
 
@@ -6,29 +7,28 @@ import pytilpack.ratelimit
 
 
 @pytest.mark.asyncio
-async def test_ratelimit_basic() -> None:
-    limiter = pytilpack.ratelimit.RateLimiter(rate=100, per=1.0)
-    start = time.monotonic()
-    for _ in range(10):
-        await limiter.acquire()
-    elapsed = time.monotonic() - start
-    assert elapsed < 0.1
+async def test_ratelimit_burst_and_refill(monkeypatch: pytest.MonkeyPatch) -> None:
+    now = 0.0
+    delays: list[float] = []
 
+    async def advance(delay: float) -> None:
+        nonlocal now
+        assert len(delays) < 2
+        delays.append(delay)
+        now += delay
 
-@pytest.mark.asyncio
-async def test_ratelimit_throttle() -> None:
-    rate = 5
-    per = 0.1
-    limiter = pytilpack.ratelimit.RateLimiter(rate=rate, per=per)
-    start = time.monotonic()
-    for _ in range(rate * 2):
-        await limiter.acquire()
-    elapsed = time.monotonic() - start
-    assert elapsed >= per * 0.5
-
-
-@pytest.mark.asyncio
-async def test_ratelimit_context_manager() -> None:
-    limiter = pytilpack.ratelimit.RateLimiter(rate=10, per=1.0)
+    monkeypatch.setattr(pytilpack.ratelimit, "time", types.SimpleNamespace(monotonic=lambda: now))
+    monkeypatch.setattr(pytilpack.ratelimit, "asyncio", types.SimpleNamespace(Lock=asyncio.Lock, sleep=advance))
+    limiter = pytilpack.ratelimit.RateLimiter(rate=2, per=1)
     async with limiter:
-        pass
+        await limiter.acquire()
+        assert now == 0
+    await limiter.acquire()
+    assert delays == [0.5]
+
+    now += 10
+    await limiter.acquire()
+    await limiter.acquire()
+    assert delays == [0.5]
+    await limiter.acquire()
+    assert delays == [0.5, 0.5]

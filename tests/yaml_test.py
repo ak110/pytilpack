@@ -1,6 +1,8 @@
 import io
 import pathlib
 
+import yaml
+
 import pytilpack.yaml
 
 
@@ -33,11 +35,10 @@ def test_load_all_save_all(tmp_path: pathlib.Path) -> None:
     data = [{"key": "value1", "num": 1}, {"key": "value2", "num": 2}]
 
     pytilpack.yaml.save_all(path, data)
-    data2 = pytilpack.yaml.load_all(path)
+    assert list(yaml.safe_load_all(path.read_text(encoding="utf-8"))) == data
 
-    assert len(data2) == 2
-    assert data[0] == data2[0]
-    assert data[1] == data2[1]
+    path.write_text("key: value1\nnum: 1\n---\nkey: value2\nnum: 2\n", encoding="utf-8")
+    assert pytilpack.yaml.load_all(path) == data
 
 
 def test_load_save_io() -> None:

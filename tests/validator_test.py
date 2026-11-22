@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 import pytilpack.validator
@@ -111,7 +113,18 @@ def test_check_email_url() -> None:
 
 
 def test_check_format_messages() -> None:
-    with pytest.raises(ValueError, match="user@example.comの形式で指定する"):
-        pytilpack.validator.check_email("x")
-    with pytest.raises(ValueError, match="http://またはhttps://で始まりホスト名を含む形式で指定する"):
-        pytilpack.validator.check_url("x")
+    invalid = "invalid-address-42"
+    with pytest.raises(ValueError) as email_error:
+        pytilpack.validator.check_email(invalid)
+    email_message = str(email_error.value)
+    assert invalid in email_message
+    example = re.search(r"[\w.]+@[\w.-]+\.[a-z]+", email_message)
+    assert example is not None
+    pytilpack.validator.check_email(example.group())
+
+    with pytest.raises(ValueError) as url_error:
+        pytilpack.validator.check_url(invalid)
+    url_message = str(url_error.value)
+    assert invalid in url_message
+    assert {"http://", "https://"} <= set(re.findall(r"https?://", url_message))
+    assert "ホスト" in url_message

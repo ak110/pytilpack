@@ -1,5 +1,8 @@
 import datetime as dt
+import logging
+import pathlib
 import typing
+import unittest.mock
 
 import pytest
 import sqlalchemy
@@ -59,6 +62,7 @@ def _engine() -> typing.Generator[sqlalchemy.engine.Engine, None, None]:
     # https://stackoverflow.com/questions/61678766/sqlalchemy-exc-operationalerror-sqlite3-operationalerror-no-such-table-items/61694048
     Base.init("sqlite:///:memory:?check_same_thread=false", poolclass=sqlalchemy.pool.StaticPool)
     assert Base.engine is not None
+    Base.metadata.create_all(Base.engine)
     yield Base.engine
 
 
@@ -71,7 +75,6 @@ def _session() -> typing.Generator[sqlalchemy.orm.Session, None, None]:
 @pytest.fixture(autouse=True)
 def _clean_tables() -> typing.Generator[None, None, None]:
     with Base.connect() as conn:
-        Base.metadata.create_all(conn)
         for table in reversed(Base.metadata.sorted_tables):
             conn.execute(table.delete())
         conn.commit()
@@ -102,9 +105,6 @@ def test_repr() -> None:
 
 
 def test_mixin_basic_functionality() -> None:
-    with Base.connect() as conn:
-        Base.metadata.create_all(conn)
-
     with Base.session_scope():
         assert Base.count(Test1.select()) == 0
 
@@ -125,20 +125,14 @@ def test_mixin_basic_functionality() -> None:
 
 
 def test_sync_mixin_context_vars() -> None:
-    with Base.connect() as conn:
-        Base.metadata.create_all(conn)
-
-    with Base.session_scope():
-        session = Base.session()
-        assert session is not None
-
-        test_record = Test1(unique_id="test_context")
-        session.add(test_record)
-        session.commit()
-
-        query = Test1.select().where(Test1.unique_id == "test_context")
-        result = session.execute(query).scalar_one()
-        assert result.unique_id == "test_context"
+    with Base.session_scope() as outer:
+        assert Base.session() is outer
+        with Base.session_scope() as inner:
+            assert inner is not outer
+            assert Base.session() is inner
+        assert Base.session() is outer
+    with pytest.raises(RuntimeError):
+        Base.session()
 
 
 def test_sync_mixin_to_dict() -> None:
@@ -155,8 +149,6 @@ def test_sync_mixin_to_dict() -> None:
 
 
 def test_get_by_id(session: sqlalchemy.orm.Session) -> None:
-    with Base.connect() as conn:
-        Base.metadata.create_all(conn)
     session.add(Test1(unique_id="test_get_by_id"))
     session.commit()
 
@@ -169,8 +161,6 @@ def test_get_by_id(session: sqlalchemy.orm.Session) -> None:
 
 
 def test_get_by_id_not_null(session: sqlalchemy.orm.Session) -> None:
-    with Base.connect() as conn:
-        Base.metadata.create_all(conn)
     session.add(Test1(unique_id="test_get_by_id_not_null"))
     session.commit()
 
@@ -185,8 +175,6 @@ def test_get_by_id_not_null(session: sqlalchemy.orm.Session) -> None:
 
 
 def test_get_by_unique_id(session: sqlalchemy.orm.Session) -> None:
-    with Base.connect() as conn:
-        Base.metadata.create_all(conn)
     test1 = Test1(unique_id=Test1.generate_unique_id())
     assert test1.unique_id is not None and len(test1.unique_id) == 43
     unique_id = test1.unique_id
@@ -229,18 +217,17 @@ def test_init_already_called() -> None:
             TempBase.engine.dispose()
 
 
-def test_wait_for_connection() -> None:
+def test_wait_for_connection(tmp_path: pathlib.Path) -> None:
     pytilpack.sqlalchemy.wait_for_connection("sqlite:///:memory:", timeout=0.1)
 
-    with pytest.raises(RuntimeError):
-        pytilpack.sqlalchemy.wait_for_connection("sqlite:////nonexistent/path/db.sqlite3", timeout=0.1)
+    db = tmp_path / "missing" / "db.sqlite3"
+    with pytest.raises(RuntimeError) as error:
+        pytilpack.sqlalchemy.wait_for_connection(f"sqlite:///{db}", timeout=0.1)
+    assert isinstance(error.value.__cause__, sqlalchemy.exc.OperationalError)
 
 
 def test_paginate() -> None:
     with Base.session_scope() as session:
-        with Base.connect() as conn:
-            Base.metadata.create_all(conn)
-
         test_items = [Test1(unique_id=f"paginate_test_{i}") for i in range(1, 11)]
         for item in test_items:
             session.add(item)
@@ -252,20 +239,20 @@ def test_paginate() -> None:
         assert paginator.page == 1
         assert paginator.per_page == 3
         assert paginator.total_items == 10
-        assert len(paginator.items) == 3
+        assert [item.unique_id for item in paginator.items] == [f"paginate_test_{i}" for i in range(1, 4)]
         assert paginator.pages == 4
         assert paginator.has_next is True
         assert paginator.has_prev is False
 
         paginator = Test1.paginate(query, page=2, per_page=3)
         assert paginator.page == 2
-        assert len(paginator.items) == 3
+        assert [item.unique_id for item in paginator.items] == [f"paginate_test_{i}" for i in range(4, 7)]
         assert paginator.has_next is True
         assert paginator.has_prev is True
 
         paginator = Test1.paginate(query, page=4, per_page=3)
         assert paginator.page == 4
-        assert len(paginator.items) == 1
+        assert [item.unique_id for item in paginator.items] == ["paginate_test_10"]
         assert paginator.has_next is False
         assert paginator.has_prev is True
 
@@ -283,13 +270,28 @@ def test_paginate() -> None:
 
 
 def test_safe_close() -> None:
-    engine = sqlalchemy.create_engine("sqlite:///:memory:")
-    session = sqlalchemy.orm.Session(engine)
-    pytilpack.sqlalchemy.safe_close(session)
+    assert Base.engine is not None
+    with sqlalchemy.orm.Session(Base.engine) as session:
+        session.add(Test1(unique_id="uncommitted"))
+        session.flush()
+        pytilpack.sqlalchemy.safe_close(session)
+        assert not session.in_transaction()
+        pytilpack.sqlalchemy.safe_close(session)
 
-    session.close()
-    pytilpack.sqlalchemy.safe_close(session)
-    pytilpack.sqlalchemy.safe_close(session, log_level=None)
+    with Base.session_scope() as observer:
+        assert observer.scalar(sqlalchemy.select(Test1).where(Test1.unique_id == "uncommitted")) is None
+
+
+@pytest.mark.parametrize("log_level", [logging.ERROR, None])
+def test_safe_close_suppresses_close_error(caplog: pytest.LogCaptureFixture, log_level: int | None) -> None:
+    session = sqlalchemy.orm.Session()
+    close = unittest.mock.Mock(side_effect=RuntimeError("close failed"))
+    with unittest.mock.patch.object(session, "close", close):
+        pytilpack.sqlalchemy.safe_close(session, log_level=log_level)
+    close.assert_called_once_with()
+    assert [record.levelno for record in caplog.records if "close failed" in str(record.exc_info)] == (
+        [] if log_level is None else [log_level]
+    )
 
 
 def test_to_dict() -> None:
@@ -314,8 +316,6 @@ def test_to_dict() -> None:
 
 @pytest.mark.asyncio
 async def test_async_methods() -> None:
-    with Base.connect() as conn:
-        Base.metadata.create_all(conn)
 
     with Base.session_scope():
         test_records = [Test3(unique_id=f"async_test_{i}") for i in range(1, 6)]
@@ -333,17 +333,20 @@ async def test_async_methods() -> None:
         assert result is not None
         assert result.unique_id == "async_test_1"
 
-        results = await Test3.ascalars(Test3.select().where(Test3.unique_id.like("async_test_%")).order_by(Test3.id))
-        assert len(results) == 5
-        assert all(r.unique_id.startswith("async_test_") for r in results)  # type: ignore
+        names = [f"async_test_{i}" for i in range(1, 6)]
+        results = await Test3.ascalars(sqlalchemy.select(Test3.unique_id).order_by(Test3.id))
+        assert list(results) == names
 
-        row = await Test3.aone_or_none(Test3.select().where(Test3.unique_id == "async_test_1"))
-        assert row is not None
-
-        rows = await Test3.aall(Test3.select().where(Test3.unique_id.like("async_test_%")).order_by(Test3.id))
-        assert len(rows) == 5
-
+        columns = sqlalchemy.select(Test3.id, Test3.unique_id)
         test_id = test_records[0].id
+        row = await Test3.aone_or_none(columns.where(Test3.id == test_id))
+        assert isinstance(row, sqlalchemy.Row)
+        assert tuple(row) == (test_id, names[0])
+
+        rows = await Test3.aall(columns.order_by(Test3.id))
+        assert all(isinstance(row, sqlalchemy.Row) for row in rows)
+        assert [tuple(row) for row in rows] == list(zip([record.id for record in test_records], names, strict=True))
+
         result_by_id = await Test3.aget_by_id(test_id)
         assert result_by_id is not None
         assert result_by_id.id == test_id
@@ -353,5 +356,5 @@ async def test_async_methods() -> None:
         assert paginator.page == 1
         assert paginator.per_page == 3
         assert paginator.total_items == 5
-        assert len(paginator.items) == 3
+        assert [item.unique_id for item in paginator.items] == names[:3]
         assert paginator.pages == 2

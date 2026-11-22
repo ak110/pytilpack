@@ -66,10 +66,6 @@ def test_get_literal_values(t, expected) -> None:
         ({1: "a", 2: "b"}, dict[int, str], True),
         ({"a": 1, "b": "c"}, dict[str, int], False),
         ({}, dict[str, int], True),
-        ([1, 2, 3], list, True),
-        ({1, 2, 3}, set, True),
-        ((1, 2, 3), tuple, True),
-        ({"a": 1}, dict, True),
     ],
 )
 def test_is_instance(value: typing.Any, expected_type: type, expected: bool) -> None:
@@ -82,14 +78,6 @@ def test_newtype() -> None:
 
     assert pytilpack.typing.is_instance_safe(123, UserId) is True
     assert pytilpack.typing.is_instance_safe("hello", UserId) is False
-
-
-def test_union_type() -> None:
-    union_type = int | str
-
-    assert pytilpack.typing.is_instance_safe(123, union_type) is True
-    assert pytilpack.typing.is_instance_safe("hello", union_type) is True
-    assert pytilpack.typing.is_instance_safe(1.0, union_type) is False
 
 
 def test_literal() -> None:

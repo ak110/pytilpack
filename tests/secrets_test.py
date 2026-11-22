@@ -15,10 +15,11 @@ pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="pytilpack.secre
 def test_generate_secret_key(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "secret_key"
     assert not path.exists()
-    secret_key1 = pytilpack.secrets.generate_secret_key(path)
+    secret_key1 = pytilpack.secrets.generate_secret_key(path, nbytes=17)
     assert path.exists()
     secret_key2 = pytilpack.secrets.generate_secret_key(path)
-    assert secret_key1 == secret_key2
+    assert len(secret_key1) == 17
+    assert secret_key1 == secret_key2 == path.read_bytes()
     assert (os.stat(path).st_mode & 0o777) == 0o600
 
 
@@ -57,13 +58,15 @@ def test_generate_secret_key_concurrent(tmp_path: pathlib.Path) -> None:
             )
 
         assert len(results) == 4
-        assert all(result == results[0] for result in results)
+        saved_key = path.read_bytes()
+        assert len(saved_key) == 17
+        assert results == [saved_key] * 4
 
 
 def _run_threads(path: pathlib.Path, thread_count: int) -> list[bytes]:
 
     def call_generate_secret_key() -> bytes:
-        return pytilpack.secrets.generate_secret_key(path)
+        return pytilpack.secrets.generate_secret_key(path, nbytes=17)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as thread_executor:
         thread_futures = [thread_executor.submit(call_generate_secret_key) for _ in range(thread_count)]

@@ -395,6 +395,9 @@ async def test_async_login_no_cookie_no_set_cookie(client_async: quart.typing.Te
     response = await client_async.get("/login_no_cookie")
     assert response.status_code == 200
     assert await response.get_data(as_text=True) == "logged in without cookie"
+    followup = await client_async.get("/auser")
+    assert followup.status_code == 200
+    assert await followup.get_data(as_text=True) == "async user: anonymous"
     assert "Set-Cookie" not in response.headers
 
 
@@ -468,3 +471,33 @@ async def test_template_context_fallback_without_before_request() -> None:
         assert response.status_code == 200
         text = await response.get_data(as_text=True)
         assert text == "User: &lt;anonymous&gt;"
+
+
+@pytest.mark.asyncio
+async def test_template_context_fallback_on_loader_error() -> None:
+    app = quart.Quart(__name__)
+    app.secret_key = "secret"
+    auth_manager = pytilpack.quart_auth.QuartAuth[User](cookie_secure=False)
+    auth_manager.init_app(app)
+    calls: list[str] = []
+
+    @auth_manager.user_loader
+    async def load_user(user_id: str) -> User | None:
+        calls.append(user_id)
+        raise RuntimeError("user lookup failed")
+
+    @app.get("/login")
+    async def login() -> str:
+        pytilpack.quart_auth.login_user("known-user")
+        return "logged in"
+
+    @app.get("/page")
+    async def page() -> str:
+        return await quart.render_template_string("{{ current_user.name if current_user.is_authenticated else 'anonymous' }}")
+
+    async with app.test_client() as client:
+        assert (await client.get("/login")).status_code == 200
+        response = await client.get("/page")
+        assert response.status_code == 200
+        assert await response.get_data(as_text=True) == "anonymous"
+    assert calls == ["known-user"]

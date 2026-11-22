@@ -1,18 +1,18 @@
 import threading
 
-import pytest
-
 import pytilpack.threading
 
 
-@pytest.mark.asyncio
-async def test_acquire_with_timeout():
+def test_acquire_with_timeout():
     lock = threading.Lock()
     with pytilpack.threading.acquire_with_timeout(lock, 0.001) as acquired:
         assert acquired
 
-    with lock, pytilpack.threading.acquire_with_timeout(lock, 0.001) as acquired:
-        assert not acquired
+    assert not lock.locked()
+    with lock:
+        with pytilpack.threading.acquire_with_timeout(lock, 0.001) as acquired:
+            assert not acquired
+        assert lock.locked()
 
 
 def test_parallel():

@@ -1,11 +1,15 @@
 import asyncio
 import datetime as dt
+import logging
+import pathlib
 import threading
 import typing
+import unittest.mock
 
 import pytest
 import pytest_asyncio
 import sqlalchemy
+import sqlalchemy.exc
 import sqlalchemy.ext.asyncio
 import sqlalchemy.orm
 
@@ -50,6 +54,8 @@ class Test2(Base):  # pylint: disable=too-many-ancestors
 async def _engine() -> typing.AsyncGenerator[sqlalchemy.ext.asyncio.AsyncEngine, None]:
     Base.init("sqlite+aiosqlite:///:memory:")
     try:
+        async with Base.engine().begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
         yield Base.engine()
     finally:
         await Base.term()
@@ -64,7 +70,6 @@ async def _session() -> typing.AsyncGenerator[sqlalchemy.ext.asyncio.AsyncSessio
 @pytest_asyncio.fixture(autouse=True)
 async def _clean_tables() -> typing.AsyncGenerator[None, None]:
     async with Base.connect() as conn:
-        await conn.run_sync(Base.metadata.create_all)
         for table in reversed(Base.metadata.sorted_tables):
             await conn.execute(table.delete())
         await conn.commit()
@@ -96,9 +101,6 @@ def test_repr() -> None:
 
 @pytest.mark.asyncio
 async def test_mixin_basic_functionality() -> None:
-    async with Base.connect() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
     async with Base.session_scope():
         assert await Base.count(Test1.select()) == 0
 
@@ -120,20 +122,14 @@ async def test_mixin_basic_functionality() -> None:
 
 @pytest.mark.asyncio
 async def test_async_mixin_context_vars() -> None:
-    async with Base.connect() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    async with Base.session_scope():
-        session = Base.session()
-        assert session is not None
-
-        test_record = Test1(unique_id="test_context")
-        session.add(test_record)
-        await session.commit()
-
-        query = Test1.select().where(Test1.unique_id == "test_context")
-        result = (await session.execute(query)).scalar_one()
-        assert result.unique_id == "test_context"
+    async with Base.session_scope() as outer:
+        assert Base.session() is outer
+        async with Base.session_scope() as inner:
+            assert inner is not outer
+            assert Base.session() is inner
+        assert Base.session() is outer
+    with pytest.raises(RuntimeError):
+        Base.session()
 
 
 @pytest.mark.asyncio
@@ -152,8 +148,6 @@ async def test_async_mixin_to_dict() -> None:
 
 @pytest.mark.asyncio
 async def test_get_by_id(session: sqlalchemy.ext.asyncio.AsyncSession) -> None:
-    async with Base.connect() as conn:
-        await conn.run_sync(Base.metadata.create_all)
     session.add(Test1(unique_id="test_get_by_id"))
     await session.commit()
 
@@ -167,8 +161,6 @@ async def test_get_by_id(session: sqlalchemy.ext.asyncio.AsyncSession) -> None:
 
 @pytest.mark.asyncio
 async def test_get_by_unique_id(session: sqlalchemy.ext.asyncio.AsyncSession) -> None:
-    async with Base.connect() as conn:
-        await conn.run_sync(Base.metadata.create_all)
     test1 = Test1(unique_id=Test1.generate_unique_id())
     assert test1.unique_id is not None and len(test1.unique_id) == 43
     unique_id = test1.unique_id
@@ -185,19 +177,18 @@ async def test_get_by_unique_id(session: sqlalchemy.ext.asyncio.AsyncSession) ->
 
 
 @pytest.mark.asyncio
-async def test_await_for_connection() -> None:
+async def test_await_for_connection(tmp_path: pathlib.Path) -> None:
     await pytilpack.sqlalchemy.await_for_connection("sqlite+aiosqlite:///:memory:", timeout=0.1)
 
-    with pytest.raises(RuntimeError):
-        await pytilpack.sqlalchemy.await_for_connection("sqlite+aiosqlite:////nonexistent/path/db.sqlite3", timeout=0.1)
+    db = tmp_path / "missing" / "db.sqlite3"
+    with pytest.raises(RuntimeError) as error:
+        await pytilpack.sqlalchemy.await_for_connection(f"sqlite+aiosqlite:///{db}", timeout=0.1)
+    assert isinstance(error.value.__cause__, sqlalchemy.exc.OperationalError)
 
 
 @pytest.mark.asyncio
 async def test_paginate() -> None:
     async with Base.session_scope() as session:
-        async with Base.connect() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-
         test_items = [Test1(unique_id=f"paginate_test_{i}") for i in range(1, 11)]
         for item in test_items:
             session.add(item)
@@ -209,20 +200,20 @@ async def test_paginate() -> None:
         assert paginator.page == 1
         assert paginator.per_page == 3
         assert paginator.total_items == 10
-        assert len(paginator.items) == 3
+        assert [item.unique_id for item in paginator.items] == [f"paginate_test_{i}" for i in range(1, 4)]
         assert paginator.pages == 4
         assert paginator.has_next is True
         assert paginator.has_prev is False
 
         paginator = await Test1.paginate(query, page=2, per_page=3)
         assert paginator.page == 2
-        assert len(paginator.items) == 3
+        assert [item.unique_id for item in paginator.items] == [f"paginate_test_{i}" for i in range(4, 7)]
         assert paginator.has_next is True
         assert paginator.has_prev is True
 
         paginator = await Test1.paginate(query, page=4, per_page=3)
         assert paginator.page == 4
-        assert len(paginator.items) == 1
+        assert [item.unique_id for item in paginator.items] == ["paginate_test_10"]
         assert paginator.has_next is False
         assert paginator.has_prev is True
 
@@ -255,13 +246,29 @@ async def test_async_init_already_called() -> None:
 
 @pytest.mark.asyncio
 async def test_asafe_close() -> None:
-    engine = sqlalchemy.ext.asyncio.create_async_engine("sqlite+aiosqlite:///:memory:")
-    session = sqlalchemy.ext.asyncio.AsyncSession(engine)
-    await pytilpack.sqlalchemy.asafe_close(session)
+    assert Base.engine() is not None
+    async with sqlalchemy.ext.asyncio.AsyncSession(Base.engine()) as session:
+        session.add(Test1(unique_id="uncommitted"))
+        await session.flush()
+        await pytilpack.sqlalchemy.asafe_close(session)
+        assert not session.in_transaction()
+        await pytilpack.sqlalchemy.asafe_close(session)
 
-    await session.close()
-    await pytilpack.sqlalchemy.asafe_close(session)
-    await pytilpack.sqlalchemy.asafe_close(session, log_level=None)
+    async with Base.session_scope() as observer:
+        assert await observer.scalar(sqlalchemy.select(Test1).where(Test1.unique_id == "uncommitted")) is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("log_level", [logging.ERROR, None])
+async def test_asafe_close_suppresses_close_error(caplog: pytest.LogCaptureFixture, log_level: int | None) -> None:
+    session = sqlalchemy.ext.asyncio.AsyncSession()
+    close = unittest.mock.AsyncMock(side_effect=RuntimeError("close failed"))
+    with unittest.mock.patch.object(session, "close", close):
+        await pytilpack.sqlalchemy.asafe_close(session, log_level=log_level)
+    close.assert_awaited_once_with()
+    assert [record.levelno for record in caplog.records if "close failed" in str(record.exc_info)] == (
+        [] if log_level is None else [log_level]
+    )
 
 
 def test_to_dict() -> None:
@@ -384,13 +391,21 @@ async def test_init_args_stored_globally(tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_negative_pool_size_uses_null_pool(tmp_path) -> None:
+async def test_negative_pool_size_does_not_reuse_connection(tmp_path) -> None:
     IsolatedBase, _ = _make_isolated_base()
     url = f"sqlite+aiosqlite:///{tmp_path / 'test.db'}"
     IsolatedBase.init(url, pool_size=-1)
     try:
         engine = IsolatedBase.engine()
-        assert isinstance(engine.sync_engine.pool, sqlalchemy.pool.NullPool)
+        async with engine.begin() as conn:
+            await conn.exec_driver_sql("CREATE TABLE persistent_value (value INTEGER)")
+            await conn.exec_driver_sql("INSERT INTO persistent_value VALUES (42)")
+            await conn.exec_driver_sql("CREATE TEMP TABLE connection_marker (value INTEGER)")
+        async with engine.connect() as conn:
+            assert (await conn.exec_driver_sql("SELECT value FROM persistent_value")).scalar_one() == 42
+            assert (
+                await conn.exec_driver_sql("SELECT name FROM sqlite_temp_master WHERE name = 'connection_marker'")
+            ).scalar_one_or_none() is None
     finally:
         await IsolatedBase.term()
 

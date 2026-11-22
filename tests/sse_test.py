@@ -47,61 +47,38 @@ def test_sse_non_sse_line_separators_not_split(sep: str) -> None:
 
 
 @pytest.mark.asyncio
-async def test_generator() -> None:
+async def test_generator(monkeypatch: pytest.MonkeyPatch) -> None:
+    waiting = asyncio.Event()
+    release = asyncio.Event()
+    original_wait_for = asyncio.wait_for
+    waits = 0
 
-    @pytilpack.sse.generator(interval=0.15)
-    async def generate_str() -> typing.AsyncGenerator[str, None]:
-        yield "data: msg1\n\n"
-        await asyncio.sleep(0.1)
-        yield "data: msg2\n\n"
-        await asyncio.sleep(0.2)
-        yield "data: msg3\n\n"
+    async def wait_for(awaitable: typing.Any, timeout: float) -> typing.Any:
+        nonlocal waits
+        waits += 1
+        assert 50 < timeout <= 60
+        if waits == 2:
+            await original_wait_for(waiting.wait(), timeout=5)
+            awaitable.cancel()
+            raise TimeoutError
+        return await original_wait_for(awaitable, timeout=5)
 
-    messages: list[str] = []
-    async for msg in generate_str():
-        messages.append(msg)
+    monkeypatch.setattr(pytilpack.sse.asyncio, "wait_for", wait_for)
 
-    assert len(messages) == 4
-    assert messages[0] == "data: msg1\n\n"
-    assert messages[1] == "data: msg2\n\n"
-    assert messages[2] == ": ping\n\n"
-    assert messages[3] == "data: msg3\n\n"
+    @pytilpack.sse.generator(interval=60)
+    async def generate() -> typing.AsyncGenerator[str | pytilpack.sse.SSE, None]:
+        yield "data: raw"
+        waiting.set()
+        await original_wait_for(release.wait(), timeout=5)
+        yield pytilpack.sse.SSE("updated", event="update", id="123")
 
-    @pytilpack.sse.generator(interval=0.15)
-    async def generate_sse() -> typing.AsyncGenerator[pytilpack.sse.SSE, None]:
-        yield pytilpack.sse.SSE("msg1")
-        await asyncio.sleep(0.1)
-        yield pytilpack.sse.SSE("msg2", event="update")
-        await asyncio.sleep(0.2)
-        yield pytilpack.sse.SSE("msg3", id="123")
-
-    messages_sse: list[typing.Any] = []
-    async for msg in generate_sse():
-        messages_sse.append(msg)
-
-    assert len(messages_sse) == 4
-    assert messages_sse[0] == "data: msg1\n\n"
-    assert messages_sse[1] == "event: update\ndata: msg2\n\n"
-    assert messages_sse[2] == ": ping\n\n"
-    assert messages_sse[3] == "id: 123\ndata: msg3\n\n"
-
-    @pytilpack.sse.generator(interval=0.15)
-    async def generate_mixed() -> typing.AsyncGenerator[str | pytilpack.sse.SSE, None]:
-        yield "data: raw1\n\n"
-        await asyncio.sleep(0.1)
-        yield pytilpack.sse.SSE("msg1", event="update")
-        await asyncio.sleep(0.2)
-        yield "data: raw2\n\n"
-
-    messages_mixed: list[typing.Any] = []
-    async for msg in generate_mixed():
-        messages_mixed.append(msg)
-
-    assert len(messages_mixed) == 4
-    assert messages_mixed[0] == "data: raw1\n\n"
-    assert messages_mixed[1] == "event: update\ndata: msg1\n\n"
-    assert messages_mixed[2] == ": ping\n\n"
-    assert messages_mixed[3] == "data: raw2\n\n"
+    async with contextlib.aclosing(generate()) as messages:
+        assert await original_wait_for(anext(messages), timeout=5) == "data: raw\n\n"
+        assert await original_wait_for(anext(messages), timeout=5) == ": ping\n\n"
+        release.set()
+        assert await original_wait_for(anext(messages), timeout=5) == "event: update\nid: 123\ndata: updated\n\n"
+        with pytest.raises(StopAsyncIteration):
+            await original_wait_for(anext(messages), timeout=5)
 
 
 @pytest.mark.asyncio

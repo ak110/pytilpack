@@ -1,11 +1,14 @@
-# pylint: disable=protected-access
-
+import base64
+import io
 import sys
 import typing
 import warnings
 
+import httpx
 import openai.types.chat
+import PIL.Image
 import pytest
+import tiktoken
 
 import pytilpack.tiktoken
 
@@ -70,12 +73,19 @@ _WEATHER_TOOL: openai.types.chat.ChatCompletionToolParam = {
 }
 
 
-def test_get_encoding_for_model():
-    encoding = pytilpack.tiktoken.get_encoding_for_model("gpt-3.5-turbo-0613")
-    assert encoding is not None
+def test_get_encoding_for_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    encodings = {
+        name: tiktoken.Encoding(name, pat_str=".", mergeable_ranks={b"a": 0}, special_tokens={})
+        for name in ("cl100k_base", "o200k_base")
+    }
 
-    encoding = pytilpack.tiktoken.get_encoding_for_model("unknown-model")
-    assert encoding is not None
+    def get_encoding(name: str) -> tiktoken.Encoding:
+        return encodings[name]
+
+    monkeypatch.setattr(tiktoken.model, "get_encoding", get_encoding)
+    monkeypatch.setattr(tiktoken, "get_encoding", get_encoding)
+    assert pytilpack.tiktoken.get_encoding_for_model("gpt-3.5-turbo-0613").name == "cl100k_base"
+    assert pytilpack.tiktoken.get_encoding_for_model("unknown-model").name == "o200k_base"
 
 
 def test_num_tokens_from_messages():
@@ -170,28 +180,37 @@ if sys.version_info < (3, 15):
         assert actual_tokens == litellm_tokens, "ツールありトークン数の不一致"
 
 
+_VISION_MODEL = "gpt-4o-2024-08-06"
+
+
+def _image_tokens(url: str, detail: typing.Literal["low", "high", "auto"]) -> int:
+    return pytilpack.tiktoken.num_tokens_from_messages(
+        _VISION_MODEL,
+        [{"role": "user", "content": [{"type": "image_url", "image_url": {"url": url, "detail": detail}}]}],
+    )
+
+
 @pytest.mark.parametrize(
-    "width,height,expected",
-    [
-        (512, 512, 255),
-        (513, 512, 425),
-        (768, 1000, 765),
-        (1024, 1024, 765),
-        (4096, 2048, 1105),
-    ],
+    "width,height,tiles",
+    [(512, 512, 1), (513, 512, 2), (768, 1000, 4), (1024, 1024, 4), (4096, 2048, 6), (1600, 1600, 4), (4096, 512, 4)],
 )
-def test_calculate_high_detail_image_token_cost(width: int, height: int, expected: int):
-    assert pytilpack.tiktoken._calculate_high_detail_image_token_cost(width, height) == expected
+def test_calculate_high_detail_image_token_cost(width: int, height: int, tiles: int) -> None:
+    buffer = io.BytesIO()
+    with PIL.Image.new("1", (width, height)) as image:
+        image.save(buffer, format="PNG")
+    url = f"data:image/png;base64,{base64.b64encode(buffer.getvalue()).decode('ascii')}"
+    assert _image_tokens(url, "high") - _image_tokens(url, "low") == 170 * tiles
 
 
-@pytest.mark.parametrize("detail", ["low", "invalid"])
-def test_calculate_image_token_cost_without_dims(monkeypatch: pytest.MonkeyPatch, detail: str):
-    def fail(image: str) -> tuple[int, int]:
-        raise AssertionError("_get_image_dims must not be called")
+def test_calculate_image_token_cost_without_dims(monkeypatch: pytest.MonkeyPatch) -> None:
+    def unexpected_dimension_lookup(*args: object, **kwargs: object) -> typing.NoReturn:
+        raise AssertionError("Image dimensions are not needed")
 
-    monkeypatch.setattr(pytilpack.tiktoken, "_get_image_dims", fail)
-    if detail == "low":
-        assert pytilpack.tiktoken._calculate_image_token_cost("https://example.com/a.png", detail) == 85
-    else:
-        with pytest.raises(ValueError):
-            pytilpack.tiktoken._calculate_image_token_cost("https://example.com/a.png", detail)
+    monkeypatch.setattr(httpx, "get", unexpected_dimension_lookup)
+    monkeypatch.setattr(PIL.Image, "open", unexpected_dimension_lookup)
+    url = "https://example.com/a.png"
+    encoding = tiktoken.encoding_for_model(_VISION_MODEL)
+    without_image = pytilpack.tiktoken.num_tokens_from_messages(_VISION_MODEL, [{"role": "user", "content": []}])
+    assert _image_tokens(url, "low") - without_image - len(encoding.encode("image_url")) == 85
+    with pytest.raises(ValueError):
+        _image_tokens(url, typing.cast(typing.Literal["low"], "invalid"))
