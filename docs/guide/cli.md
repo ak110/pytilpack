@@ -53,10 +53,16 @@ pytilpack sync --help
 
 ```bash
 pytilpack fetch https://example.com/ --accept=text/html
+pytilpack fetch https://example.com/ --raw -O page.html
 pytilpack fetch --help
 ```
 
-URLからHTMLを取得し、簡略化して標準出力に出力する。
+URLから本文を取得して標準出力に出力する。
+HTMLは簡略化し、他のテキスト形式（`text/*`）・JSON・XMLはそのまま出力する。
+`--raw`でHTMLも簡略化せずに出力し、`-O`（`--output-document`）で標準出力の代わりにファイルへ書き込む。
+接続エラーと一時的なHTTPエラー（429、503など）は再試行する。
+HTTPエラーと扱えない形式（バイナリなど）は、理由を標準エラーに出して終了コード1で終了する。
+通信ログは`--verbose`の指定時だけ標準エラーに出す。
 
 ## `pytilpack mcp`
 

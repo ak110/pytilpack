@@ -8,7 +8,7 @@ clean_html だけを使用したい場合に依存関係が厳しいため、切
 <https://github.com/plageon/HtmlRAG/blob/main/toolkit/htmlrag/html_utils.py>
 """
 
-__lazy_modules__ = ["bs4", "httpx", "importlib.metadata", "re", "warnings"]
+__lazy_modules__ = ["bs4", "httpx", "importlib.metadata", "pytilpack.functools", "re", "warnings"]
 
 import importlib.metadata
 import re
@@ -16,6 +16,8 @@ import warnings
 
 import bs4
 import httpx
+
+import pytilpack.functools
 
 DEFAULT_ACCEPT = "text/markdown,text/plain;q=0.9,text/html,application/xhtml+xml,application/xml;q=0.8,*/*;q=0.7"
 """Acceptヘッダーのデフォルト値。"""
@@ -26,38 +28,50 @@ def fetch_url(
     no_verify: bool = False,
     accept: str = DEFAULT_ACCEPT,
     user_agent: str | None = None,
+    raw: bool = False,
 ) -> str:
-    """URLからHTMLを取得し、簡略化して返す。
+    """URLから本文を取得し、HTMLは簡略化して返す。
+
+    HTML以外のテキスト形式・JSON・XMLは本文をそのまま返す。
+    接続エラーと一時的なHTTPエラーは再試行する。
 
     Args:
         url: 取得するURL
         no_verify: SSL証明書の検証を無効化するかどうか
         accept: 受け入れるコンテンツタイプ
         user_agent: User-Agentヘッダー（未指定時はデフォルト値を使用）
+        raw: HTMLも簡略化せずにそのまま返すかどうか
 
     Returns:
-        簡略化されたHTML内容
+        取得した内容
 
     Raises:
-        Exception: HTTP取得やHTMLパースでエラーが発生した場合
+        RuntimeError: HTTPステータスが200以外、または扱えないContent-Typeの場合
+        httpx.HTTPError: 再試行しても通信に失敗した場合
     """
     if user_agent is None:
         user_agent = get_default_user_agent()
 
-    r = httpx.get(
-        url,
-        headers={
-            "Accept": accept,
-            "User-Agent": user_agent,
-        },
-        verify=not no_verify,
-        follow_redirects=True,
-    )
+    try:
+        r = _get(url, headers={"Accept": accept, "User-Agent": user_agent}, verify=not no_verify)
+    except httpx.HTTPStatusError as e:
+        r = e.response
 
-    return _process_fetched_response(url, r.status_code, r.headers.get("Content-Type"), r.text)
+    return _process_fetched_response(url, r.status_code, r.headers.get("Content-Type"), r.text, raw=raw)
 
 
-def _process_fetched_response(url: str, status_code: int, content_type: str | None, text: str) -> str:
+_RETRY_STATUS_CODES = (408, 429, 500, 502, 503, 504, 529)
+
+
+@pytilpack.functools.retry(includes=(httpx.TransportError, httpx.HTTPStatusError), retry_status_codes=_RETRY_STATUS_CODES)
+def _get(url: str, headers: dict[str, str], verify: bool) -> httpx.Response:
+    r = httpx.get(url, headers=headers, verify=verify, follow_redirects=True)
+    if r.status_code in _RETRY_STATUS_CODES:
+        r.raise_for_status()
+    return r
+
+
+def _process_fetched_response(url: str, status_code: int, content_type: str | None, text: str, raw: bool = False) -> str:
     if status_code != 200:
         raise RuntimeError(
             f"URL {url} の取得に失敗しました。Status: {status_code}。URLとアクセス権を確かめて再試行する\n{text}"
@@ -65,21 +79,14 @@ def _process_fetched_response(url: str, status_code: int, content_type: str | No
 
     if content_type is None:
         content_type = "text/html"
-    if (
-        "text/markdown" in content_type
-        or "text/plain" in content_type
-        or "text/xml" in content_type
-        or "application/xml" in content_type
-        or "application/json" in content_type
-    ):
+    if "html" in content_type:
+        return text if raw else clean_html(text, aggressive=True, keep_title=True, keep_href=True)
+    if content_type.startswith("text/") or "application/xml" in content_type or "application/json" in content_type:
         return text
 
-    if "html" not in content_type:
-        raise RuntimeError(
-            f"URL {url} はHTMLではありません。Content-Type: {content_type}。HTMLを返すURLを指定する\n{text[:100]}..."
-        )
-
-    return clean_html(text, aggressive=True, keep_title=True, keep_href=True)
+    raise RuntimeError(
+        f"URL {url} は扱えない形式です。Content-Type: {content_type}。テキスト・HTML・JSON・XML以外は取得できない"
+    )
 
 
 def get_default_user_agent():

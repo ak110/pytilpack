@@ -6,8 +6,10 @@
 
 # pylint: disable=protected-access
 
+import httpx
 import pytest
 
+import pytilpack.functools
 import pytilpack.htmlrag
 
 
@@ -92,18 +94,35 @@ def test_process_fetched_response_html(content_type: str | None):
 
 
 @pytest.mark.parametrize(
-    "content_type", ["text/markdown", "text/plain; charset=utf-8", "text/xml", "application/xml", "application/json"]
+    "content_type",
+    ["text/markdown", "text/plain; charset=utf-8", "text/csv", "text/xml", "application/xml", "application/json"],
 )
 def test_process_fetched_response_passthrough(content_type: str):
     text = "<p>raw</p>"
     assert pytilpack.htmlrag._process_fetched_response("https://example.com", 200, content_type, text) == text
 
 
+def test_process_fetched_response_raw():
+    html = "<html><body><header>H</header><p>本文</p></body></html>"
+    assert pytilpack.htmlrag._process_fetched_response("https://example.com", 200, "text/html", html, raw=True) == html
+
+
 def test_process_fetched_response_not_html():
-    with pytest.raises(RuntimeError, match="HTMLではありません"):
+    with pytest.raises(RuntimeError, match="Content-Type: image/png"):
         pytilpack.htmlrag._process_fetched_response("https://example.com", 200, "image/png", "xxx")
 
 
 def test_process_fetched_response_status_error():
     with pytest.raises(RuntimeError, match="Status: 404"):
         pytilpack.htmlrag._process_fetched_response("https://example.com", 404, "text/html", "not found")
+
+
+def test_fetch_url_retry(monkeypatch: pytest.MonkeyPatch):
+    request = httpx.Request("GET", "https://example.com")
+    responses = [
+        httpx.Response(503, request=request),
+        httpx.Response(200, headers={"Content-Type": "text/plain"}, text="ok", request=request),
+    ]
+    monkeypatch.setattr(httpx, "get", lambda *args, **kwargs: responses.pop(0))
+    monkeypatch.setattr(pytilpack.functools.time, "sleep", lambda seconds: None)
+    assert pytilpack.htmlrag.fetch_url("https://example.com") == "ok"
