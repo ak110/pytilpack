@@ -159,43 +159,79 @@ async def test_get_routes_application_root() -> None:
         assert test_endpoint_route.arg_names == []
 
 
-@pytest.mark.asyncio
-async def test_set_max_concurrency() -> None:
+def test_set_max_concurrency_invalid_limit() -> None:
     with pytest.raises(ValueError):
         pytilpack.quart.set_max_concurrency(quart.Quart(__name__), 0)
 
-    app = quart.Quart(__name__)
 
-    @app.route("/test")
-    async def test_endpoint():
+@pytest.mark.asyncio
+async def test_set_max_concurrency() -> None:
+    app = quart.Quart(__name__)
+    entered = [asyncio.Event(), asyncio.Event()]
+    release = asyncio.Event()
+
+    @app.route("/hold/<int:index>")
+    async def hold(index: int) -> str:
+        entered[index].set()
+        await release.wait()
         return "OK"
 
-    pytilpack.quart.set_max_concurrency(app, 2, timeout=0.01)
+    @app.route("/ready")
+    async def ready() -> str:
+        return "OK"
 
-    client = app.test_client()
-    for _ in range(3):
-        assert (await client.get("/test")).status_code == 200
-
-    state = app.extensions["pytilpack_concurrency"]
-    assert isinstance(state, pytilpack.quart.misc.ConcurrencyState)
-    assert state.max_concurrency == 2
-    assert state.timeout == 0.01
+    pytilpack.quart.set_max_concurrency(app, 2, timeout=0.5)
+    async with asyncio.timeout(5), asyncio.TaskGroup() as tasks:
+        requests = [tasks.create_task(app.test_client().get(f"/hold/{i}")) for i in range(2)]
+        try:
+            for event in entered:
+                await event.wait()
+            assert (await app.test_client().get("/ready")).status_code == 503
+        finally:
+            release.set()
+    assert [request.result().status_code for request in requests] == [200, 200]
+    async with asyncio.timeout(5):
+        assert (await app.test_client().get("/ready")).status_code == 200
 
 
 @pytest.mark.asyncio
 async def test_set_max_concurrency_no_timeout() -> None:
     app = quart.Quart(__name__)
+    first_entered = asyncio.Event()
+    second_started = asyncio.Event()
+    second_entered = asyncio.Event()
+    release = asyncio.Event()
 
-    @app.route("/test")
-    async def test_endpoint():
+    @app.before_request
+    async def observe_request() -> None:
+        if quart.request.path == "/second":
+            second_started.set()
+
+    @app.route("/first")
+    async def first() -> str:
+        first_entered.set()
+        await release.wait()
+        return "OK"
+
+    @app.route("/second")
+    async def second() -> str:
+        second_entered.set()
         return "OK"
 
     pytilpack.quart.set_max_concurrency(app, 1, timeout=None)
-    state: pytilpack.quart.misc.ConcurrencyState = app.extensions["pytilpack_concurrency"]
-
-    client = app.test_client()
-    assert (await client.get("/test")).status_code == 200
-    assert not state.semaphore.locked()
+    async with asyncio.timeout(5), asyncio.TaskGroup() as tasks:
+        first_request = tasks.create_task(app.test_client().get("/first"))
+        try:
+            await first_entered.wait()
+            second_request = tasks.create_task(app.test_client().get("/second"))
+            await second_started.wait()
+            assert not second_entered.is_set()
+            assert not second_request.done()
+        finally:
+            release.set()
+    assert first_request.result().status_code == 200
+    assert second_request.result().status_code == 200
+    assert second_entered.is_set()
 
 
 @pytest.mark.asyncio

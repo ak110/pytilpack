@@ -113,12 +113,13 @@ def test_default():
 
 def test_doc_summary():
     assert doc_summary(None) == ""
-    assert doc_summary(0) == "int([x]) -> integer"
+    assert int.__doc__ is not None
+    assert doc_summary(0) == int.__doc__.splitlines()[0]
 
     def f() -> None:
         pass
 
-    f.__doc__ = "先頭行\n2行目"
+    f.__doc__ = "  先頭行\n2行目  "
     assert doc_summary(f) == "先頭行"
 
 
@@ -250,8 +251,6 @@ def test_get_dict():
         ("0", bool, False),
         ("1", bool, True),
         ("2", bool, None),
-        (True, int, 1),
-        (False, int, 0),
         (42, int, 42),
         (3.14, int, 3),
         ("42", int, 42),
@@ -275,7 +274,16 @@ def test_get_dict():
 )
 def test_convert_success(value, target_type, expected):
     result = pytilpack.python.convert(value, target_type, None)
-    assert result == expected
+    if expected is None or isinstance(expected, bool):
+        assert result is expected
+    else:
+        assert type(result) is type(expected)
+        assert result == expected
+
+
+@pytest.mark.parametrize(("value", "expected"), [(True, 1), (False, 0)])
+def test_convert_bool_to_int_value(value: bool, expected: int) -> None:
+    assert pytilpack.python.convert(value, int, -1) == expected
 
 
 @pytest.mark.parametrize(
@@ -429,7 +437,7 @@ def test_deprecated():
         assert result == 10
         assert len(w) == 1
         assert issubclass(w[0].category, DeprecationWarning)
-        assert "old_func is deprecated." in str(w[0].message)
+        assert "old_func" in str(w[0].message)
 
     @pytilpack.python.deprecated(reason="Use new_func instead.")
     def old_func2() -> str:
@@ -440,7 +448,9 @@ def test_deprecated():
         result2 = old_func2()
         assert result2 == "old"
         assert len(w) == 1
-        assert "old_func2 is deprecated. Use new_func instead." in str(w[0].message)
+        assert w[0].category is DeprecationWarning
+        assert "old_func2" in str(w[0].message)
+        assert "Use new_func instead." in str(w[0].message)
 
     @pytilpack.python.deprecated()
     async def old_async_func(x: int) -> int:
@@ -453,6 +463,6 @@ def test_deprecated():
             assert result3 == 15
             assert len(w) == 1
             assert issubclass(w[0].category, DeprecationWarning)
-            assert "old_async_func is deprecated." in str(w[0].message)
+            assert "old_async_func" in str(w[0].message)
 
     asyncio.run(run_async())

@@ -80,24 +80,25 @@ async def _client(
 @pytest.mark.asyncio
 async def test_assert_bytes(client: quart.typing.TestClientProtocol) -> None:
     response = await client.get("/html")
-    _ = await pytilpack.quart.assert_bytes(response)
-    _ = await pytilpack.quart.assert_bytes(response, content_type="text/html")
+    assert await pytilpack.quart.assert_bytes(response) == b"<!doctype html><p>hello"
+    assert await pytilpack.quart.assert_bytes(response, content_type="text/html") == b"<!doctype html><p>hello"
 
     response = await client.get("/403")
     _ = await pytilpack.quart.assert_bytes(response, 403)
     with pytest.raises(AssertionError):
         _ = await pytilpack.quart.assert_bytes(response)
     with pytest.raises(AssertionError):
-        _ = await pytilpack.quart.assert_bytes(response, content_type="application/json")
+        _ = await pytilpack.quart.assert_bytes(response, status_code=403, content_type="application/json")
 
 
 @pytest.mark.asyncio
 async def test_assert_html(client: quart.typing.TestClientProtocol, tmp_path: pathlib.Path) -> None:
     response = await client.get("/html")
-    _ = await pytilpack.quart.assert_html(response)
-    _ = await pytilpack.quart.assert_html(response, content_type="text/html")
-    _ = await pytilpack.quart.assert_html(response, tmp_path=tmp_path)
-    _ = await pytilpack.quart.assert_html(response, strict=True)
+    expected = "<!doctype html><p>hello"
+    assert await pytilpack.quart.assert_html(response) == expected
+    assert await pytilpack.quart.assert_html(response, content_type="text/html") == expected
+    assert await pytilpack.quart.assert_html(response, tmp_path=tmp_path) == expected
+    assert await pytilpack.quart.assert_html(response, strict=True) == expected
 
     response = await client.get("/403")
     _ = await pytilpack.quart.assert_html(response, 403)
@@ -141,7 +142,7 @@ async def test_assert_html_diagnostics_retained(
 @pytest.mark.asyncio
 async def test_assert_json(client: quart.typing.TestClientProtocol) -> None:
     response = await client.get("/json")
-    _ = await pytilpack.quart.assert_json(response)
+    assert await pytilpack.quart.assert_json(response) == {"hello": "world"}
 
     response = await client.get("/json-invalid")
     with pytest.raises(AssertionError):
@@ -155,8 +156,9 @@ async def test_assert_json(client: quart.typing.TestClientProtocol) -> None:
 @pytest.mark.asyncio
 async def test_assert_xml(client: quart.typing.TestClientProtocol) -> None:
     response = await client.get("/xml")
-    _ = await pytilpack.quart.assert_xml(response)
-    _ = await pytilpack.quart.assert_xml(response, content_type="text/xml")
+    expected = "<root><hello>world</hello></root>"
+    assert await pytilpack.quart.assert_xml(response) == expected
+    assert await pytilpack.quart.assert_xml(response, content_type="text/xml") == expected
 
     response = await client.get("/xml-invalid")
     with pytest.raises(AssertionError):
@@ -170,7 +172,7 @@ async def test_assert_xml(client: quart.typing.TestClientProtocol) -> None:
 @pytest.mark.asyncio
 async def test_assert_sse(client: quart.typing.TestClientProtocol) -> None:
     response = await client.get("/sse")
-    _ = await pytilpack.quart.assert_sse(response)
+    assert await pytilpack.quart.assert_sse(response) is response
 
     response = await client.get("/403")
     with pytest.raises(AssertionError):
@@ -184,7 +186,7 @@ async def test_assert_sse(client: quart.typing.TestClientProtocol) -> None:
 @pytest.mark.asyncio
 async def test_assert_response(client: quart.typing.TestClientProtocol) -> None:
     response = await client.get("/html")
-    _ = await pytilpack.quart.assert_response(response)
+    assert await pytilpack.quart.assert_response(response) is response
 
     response = await client.get("/403")
     with pytest.raises(AssertionError):

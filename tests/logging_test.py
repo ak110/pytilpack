@@ -7,6 +7,7 @@ import logging
 import logging.handlers
 import multiprocessing
 import pathlib
+import types
 import typing
 
 import filelock
@@ -41,26 +42,22 @@ def test_logging(tmp_path: pathlib.Path, capsys: pytest.CaptureFixture) -> None:
             handler.close()
 
 
-def test_timer(caplog: pytest.LogCaptureFixture) -> None:
+def test_timer(caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch) -> None:
+    ticks = iter((100, 103, 100, 103))
+    monkeypatch.setattr(pytilpack.logging, "time", types.SimpleNamespace(perf_counter=lambda: next(ticks)))
     with caplog.at_level(logging.INFO), pytilpack.logging.timer("test"):
         pass
-    assert caplog.record_tuples == [("pytilpack.logging", logging.INFO, "[test] done in 0 s")]
+    assert caplog.record_tuples == [("pytilpack.logging", logging.INFO, "[test] done in 3 s")]
 
     caplog.clear()
-
-    with caplog.at_level(logging.INFO):
-        try:
-            with pytilpack.logging.timer("test"):
-                raise ValueError()
-        except ValueError:
-            pass
-    assert caplog.record_tuples == [
-        (
-            "pytilpack.logging",
-            logging.WARNING,
-            "[test] failed in 0 s. The exception was re-raised; see its traceback for the cause.",
-        )
-    ]
+    error = ValueError("timer failure")
+    with caplog.at_level(logging.INFO), pytest.raises(ValueError) as caught, pytilpack.logging.timer("test"):
+        raise error
+    assert caught.value is error
+    (record,) = caplog.records
+    assert record.name == "pytilpack.logging"
+    assert record.levelno == logging.WARNING
+    assert record.message.startswith("[test] failed in 3 s")
 
 
 def test_exception_with_dedup(caplog: pytest.LogCaptureFixture) -> None:
@@ -329,31 +326,26 @@ async def test_capture_context_multiple_tasks() -> None:
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter("[%(levelname)s] %(message)s")
 
-    async def task1():
+    entered = [asyncio.Event(), asyncio.Event()]
+    emitted = [asyncio.Event(), asyncio.Event()]
+
+    async def capture(index: int) -> str:
         async with pytilpack.logging.capture_context(logger, formatter, logging.INFO) as get_value:
-            logger.info("タスク1のメッセージ")
-            await asyncio.sleep(0.01)
-            logger.warning("タスク1の警告")
+            entered[index].set()
+            await entered[1 - index].wait()
+            logger.info("タスク%d", index)
+            if index == 0:
+                logger.warning("タスク0の警告")
+            else:
+                logger.error("タスク1のエラー")
+            emitted[index].set()
+            await emitted[1 - index].wait()
             return get_value()
 
-    async def task2():
-        async with pytilpack.logging.capture_context(logger, formatter, logging.INFO) as get_value:
-            await asyncio.sleep(0.005)
-            logger.info("タスク2のメッセージ")
-            logger.error("タスク2のエラー")
-            return get_value()
-
-    result1, result2 = await asyncio.gather(task1(), task2())
-
-    assert "タスク1のメッセージ" in result1
-    assert "タスク1の警告" in result1
-    assert "タスク2のメッセージ" not in result1
-    assert "タスク2のエラー" not in result1
-
-    assert "タスク2のメッセージ" in result2
-    assert "タスク2のエラー" in result2
-    assert "タスク1のメッセージ" not in result2
-    assert "タスク1の警告" not in result2
+    async with asyncio.timeout(5):
+        result1, result2 = await asyncio.gather(capture(0), capture(1))
+    assert result1.splitlines() == ["[INFO] タスク0", "[WARNING] タスク0の警告"]
+    assert result2.splitlines() == ["[INFO] タスク1", "[ERROR] タスク1のエラー"]
 
 
 @pytest.mark.asyncio
@@ -572,24 +564,19 @@ def test_multiprocess_file_handler_rotation(tmp_path: pathlib.Path) -> None:
     log_path = tmp_path / "rotate.log"
     log_path.write_text("existing\n", encoding="utf-8")
     handlers = [
-        pytilpack.logging.multiprocess_file_handler(log_path, max_bytes=30, backup_count=2, format="%(message)s")
+        pytilpack.logging.multiprocess_file_handler(log_path, max_bytes=40, backup_count=2, format="%(message)s")
         for _ in range(2)
     ]
     try:
         assert log_path.read_text(encoding="utf-8") == "existing\n"
-        for i in range(10):
-            handler = handlers[i % 2]
-            assert isinstance(handler, logging.handlers.RotatingFileHandler)
-            handler.handle(logging.makeLogRecord({"msg": f"record-{i:02d}", "levelno": logging.INFO}))
-            assert handler.stream is None
+        for i, message in enumerate(("a" * 20, "b" * 22, "c" * 24, "d" * 26)):
+            handlers[i % 2].handle(logging.makeLogRecord({"msg": message, "levelno": logging.INFO}))
 
-        assert sorted(path.name for path in tmp_path.iterdir() if not path.name.endswith(".lock")) == [
-            "rotate.log",
-            "rotate.log.1",
-            "rotate.log.2",
-        ]
-        lines = _read_generations(log_path)
-        assert lines == [f"record-{i:02d}" for i in range(10 - len(lines), 10)]
+        assert {
+            path.name: path.read_text(encoding="utf-8").splitlines()
+            for path in tmp_path.iterdir()
+            if not path.name.endswith(".lock")
+        } == {"rotate.log": ["d" * 26], "rotate.log.1": ["c" * 24], "rotate.log.2": ["b" * 22]}
     finally:
         for handler in handlers:
             handler.close()

@@ -186,25 +186,33 @@ def test_actor_results() -> None:
         mc.step("r", write=False)
         return 42
 
+    error = ValueError("boom")
+
     def ng() -> None:
         mc.step("r", write=False)
-        raise ValueError("boom")
+        raise error
 
-    for run in mc.ThreadExplorer({"ok": ok, "ng": ng}):
+    explorer = mc.ThreadExplorer({"ok": ok, "ng": ng})
+    runs = list(explorer)
+    assert runs
+    assert explorer.outcome is mc.Outcome.EXHAUSTIVE
+    for run in runs:
         assert run.returns == {"ok": 42}
-        assert isinstance(run.exceptions["ng"], ValueError)
+        assert run.exceptions == {"ng": error}
 
 
 def test_step_timeout() -> None:
     gate = threading.Event()
     caught: list[BaseException] = []
     finished = threading.Event()
+    waiting = threading.Event()
     setup_calls = []
 
     def stuck() -> None:
         mc.step("r", write=True, label="first")
         try:
-            gate.wait()
+            waiting.set()
+            assert gate.wait(5)
             mc.step("r", write=True, label="late")
         except BaseException as e:
             caught.append(e)
@@ -216,18 +224,20 @@ def test_step_timeout() -> None:
         mc.step("r", write=True)
 
     explorer = mc.ThreadExplorer({"stuck": stuck, "other": other}, lambda: setup_calls.append(1), step_timeout=0.2)
-    with pytest.raises(mc.StepTimeoutError) as excinfo:
-        for _ in explorer:
-            pass
-    error = excinfo.value
-    assert error.actor == "stuck"
-    assert [s.label for s in error.steps][-1] == "first"
-    assert error.unfinished_actors == ("stuck",)
-    assert len(setup_calls) == 1
-    assert explorer.outcome is None
-
-    gate.set()
-    assert finished.wait(5)
+    try:
+        with pytest.raises(mc.StepTimeoutError) as excinfo:
+            for _ in explorer:
+                pass
+        error = excinfo.value
+        assert error.actor == "stuck"
+        assert [s.label for s in error.steps][-1] == "first"
+        assert error.unfinished_actors == ("stuck",)
+        assert len(setup_calls) == 1
+        assert explorer.outcome is None
+    finally:
+        gate.set()
+        if waiting.is_set():
+            assert finished.wait(5)
     assert len(caught) == 1
     assert isinstance(caught[0], mc.ExplorationAborted)
     assert not isinstance(caught[0], Exception)

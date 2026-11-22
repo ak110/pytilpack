@@ -10,10 +10,11 @@ LOCALES_DIR = pathlib.Path(__file__).parent.parent / "fixtures" / "locales"
 
 
 @pytest.fixture(name="app")
-def _app() -> quart.Quart:
+def _app(request: pytest.FixtureRequest) -> quart.Quart:
+    default_locale = getattr(request, "param", "en")
     app = quart.Quart(__name__)
     app.config["TESTING"] = True
-    pytilpack.quart.i18n.init_app(app, LOCALES_DIR, default_locale="en")
+    pytilpack.quart.i18n.init_app(app, LOCALES_DIR, supported_locales=["en", "ja"], default_locale=default_locale)
 
     @app.route("/hello")
     async def hello() -> str:
@@ -35,6 +36,7 @@ async def test_accept_language_ja(app: quart.Quart) -> None:
         assert data == "こんにちは"
 
 
+@pytest.mark.parametrize("app", ["ja"], indirect=True)
 @pytest.mark.asyncio
 async def test_accept_language_en(app: quart.Quart) -> None:
     async with app.test_client() as client:
@@ -44,13 +46,14 @@ async def test_accept_language_en(app: quart.Quart) -> None:
         assert data == "Hello"
 
 
+@pytest.mark.parametrize("app", ["ja"], indirect=True)
 @pytest.mark.asyncio
 async def test_accept_language_default(app: quart.Quart) -> None:
     async with app.test_client() as client:
         response = await client.get("/hello")
         assert response.status_code == 200
         data = await response.get_data(as_text=True)
-        assert data == "Hello"
+        assert data == "こんにちは"
 
 
 @pytest.mark.asyncio

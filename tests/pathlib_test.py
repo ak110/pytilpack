@@ -4,7 +4,6 @@ import os
 import pathlib
 import shutil
 import sys
-import time
 import typing
 
 import pytest
@@ -269,16 +268,20 @@ def test_delete_old_files(tmp_path: pathlib.Path) -> None:
     (tmp_path / "dir2" / "new.txt").write_text("new")
     (tmp_path / "empty").mkdir()
 
-    old_time = dt.datetime.now() - dt.timedelta(days=2)
-    old_path = tmp_path / "dir1" / "old.txt"
-    os_time = time.mktime(old_time.timetuple())
-    os.utime(old_path, (os_time, os_time))
+    before = dt.datetime(2024, 1, 2)
+    cutoff = before.timestamp()
+    os_time = cutoff - 60
+    boundary = tmp_path / "boundary.txt"
+    boundary.write_text("boundary")
+    os.utime(tmp_path / "dir1" / "old.txt", (os_time, os_time))
+    os.utime(boundary, (cutoff, cutoff))
+    os.utime(tmp_path / "dir2" / "new.txt", (cutoff + 60, cutoff + 60))
 
-    before = dt.datetime.now() - dt.timedelta(days=1)
     pytilpack.pathlib.delete_old_files(tmp_path, before)
 
     assert not (tmp_path / "dir1" / "old.txt").exists()
     assert not (tmp_path / "dir1").exists()
+    assert boundary.exists()
     assert (tmp_path / "dir2" / "new.txt").exists()
     assert (tmp_path / "dir2").exists()
     assert not (tmp_path / "empty").exists()

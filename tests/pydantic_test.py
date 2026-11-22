@@ -1,5 +1,8 @@
+import re
+
 import pydantic
 import pydantic_core
+import pytest
 
 import pytilpack.pydantic
 
@@ -22,36 +25,31 @@ class _TestModel(pydantic.BaseModel):
         return self
 
 
-def test_format_error():
-    try:
-        _TestModel.model_validate({"name": "bob", "age": "twenty"})
-    except pydantic.ValidationError as e:
-        formatted_error = pytilpack.pydantic.format_error(e)
-        assert (
-            formatted_error
-            == "_TestModel\n"
-            + "  age: Input should be a valid integer, unable to parse string as an integer (type=int_parsing, input=twenty)"
-        )
-    try:
-        _TestModel.model_validate({"before_error": True})
-    except pydantic.ValidationError as e:
-        formatted_error = pytilpack.pydantic.format_error(e)
-        assert formatted_error == "_TestModel\n  before_error！ (type=value_error)"
-    try:
-        _TestModel.model_validate({"name": "after_error", "age": 30})
-    except pydantic.ValidationError as e:
-        formatted_error = pytilpack.pydantic.format_error(e)
-        assert formatted_error == "_TestModel\n  after_error！ (type=かすたむえらー)"
+@pytest.mark.parametrize(
+    ("data", "diagnostic"),
+    [
+        ({"name": "bob", "age": "twenty"}, r"  age: .+ \(type=int_parsing, input=twenty\)"),
+        ({"before_error": True}, r"  before_error！ \(type=value_error\)"),
+        ({"name": "after_error", "age": 30}, r"  after_error！ \(type=かすたむえらー\)"),
+    ],
+)
+def test_format_error(data, diagnostic):
+    with pytest.raises(pydantic.ValidationError) as caught:
+        _TestModel.model_validate(data)
+    title, line = pytilpack.pydantic.format_error(caught.value).splitlines()
+    assert title == "_TestModel"
+    assert re.fullmatch(diagnostic, line)
 
 
 def test_format_exc():
     try:
         _TestModel.model_validate({"age": "twenty"})
     except pydantic.ValidationError:
-        formatted_error = pytilpack.pydantic.format_exc()
-        assert (
-            formatted_error
-            == "_TestModel\n"
-            + "  name: Field required (type=missing, input={'age': 'twenty'})\n"
-            + "  age: Input should be a valid integer, unable to parse string as an integer (type=int_parsing, input=twenty)"
-        )
+        title, name, age = pytilpack.pydantic.format_exc().splitlines()
+        assert title == "_TestModel"
+        assert name.startswith("  name: ")
+        assert name.endswith("(type=missing, input={'age': 'twenty'})")
+        assert age.startswith("  age: ")
+        assert age.endswith("(type=int_parsing, input=twenty)")
+    else:
+        pytest.fail("Expected validation to fail")

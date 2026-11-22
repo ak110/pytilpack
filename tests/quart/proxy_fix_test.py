@@ -184,10 +184,11 @@ async def test_forwarded_host_trusted_hosts_allowed():
 
     middleware.asgi_app = fake_asgi
 
-    scope = _make_scope([(b"x-forwarded-host", b"allowed.example.com")])
+    scope = _make_scope([(b"host", b"localhost"), (b"x-forwarded-host", b"allowed.example.com")])
     await middleware(scope, _noop_receive, _noop_send)  # type: ignore[arg-type]
 
-    assert received_scopes[0]["server"][0] == "allowed.example.com"
+    assert received_scopes[0]["server"] == ("allowed.example.com", 80)
+    assert [value for name, value in received_scopes[0]["headers"] if name == b"host"] == [b"allowed.example.com"]
 
 
 @pytest.mark.asyncio
@@ -203,10 +204,11 @@ async def test_forwarded_host_trusted_hosts_rejected(caplog):
     middleware.asgi_app = fake_asgi
 
     with caplog.at_level(logging.WARNING, logger="pytilpack.quart.proxy_fix"):
-        scope = _make_scope([(b"x-forwarded-host", b"evil.example.com")])
+        scope = _make_scope([(b"host", b"localhost"), (b"x-forwarded-host", b"evil.example.com")])
         await middleware(scope, _noop_receive, _noop_send)  # type: ignore[arg-type]
 
-    assert received_scopes[0]["server"][0] == "localhost"
+    assert received_scopes[0]["server"] == ("localhost", 80)
+    assert [value for name, value in received_scopes[0]["headers"] if name == b"host"] == [b"localhost"]
     assert any("許可リスト外" in r.message for r in caplog.records)
 
 
@@ -223,10 +225,11 @@ async def test_forwarded_host_crlf_rejected(caplog):
     middleware.asgi_app = fake_asgi
 
     with caplog.at_level(logging.WARNING, logger="pytilpack.quart.proxy_fix"):
-        scope = _make_scope([(b"x-forwarded-host", b"evil.com\r\nX-Injected: bad")])
+        scope = _make_scope([(b"host", b"localhost"), (b"x-forwarded-host", b"evil.com\r\nX-Injected: bad")])
         await middleware(scope, _noop_receive, _noop_send)  # type: ignore[arg-type]
 
-    assert received_scopes[0]["server"][0] == "localhost"
+    assert received_scopes[0]["server"] == ("localhost", 80)
+    assert [value for name, value in received_scopes[0]["headers"] if name == b"host"] == [b"localhost"]
     assert any("不正な値" in r.message for r in caplog.records)
 
 

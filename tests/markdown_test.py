@@ -1,3 +1,6 @@
+import html
+import re
+
 import pytilpack.markdown
 
 
@@ -9,38 +12,37 @@ def test_markdownfy_basic():
 
     assert pytilpack.markdown.markdownfy("") == ""
 
-    text = """```
-    def hello():
-        print("Hello")
-    ```"""
-    result = pytilpack.markdown.markdownfy(text)
-    assert "<code>" in result
+    code = 'print("Hello")'
+    result = pytilpack.markdown.markdownfy(f"```\n{code}\n```")
+    assert [html.unescape(body) for body in re.findall(r"<pre><code>(.*?)</code></pre>", result, re.S)] == [f"{code}\n"]
 
     text = """| Left | Right | Center |
 |:----|----:|:----:|
 | 1 | 2 | 3 |"""
     result = pytilpack.markdown.markdownfy(text)
     assert "<table>" in result
-    assert '<th style="text-align: left;">' in result
-    assert '<th style="text-align: right;">' in result
-    assert '<th style="text-align: center;">' in result
-    assert '<td style="text-align: left;">' in result
-    assert '<td style="text-align: right;">' in result
-    assert '<td style="text-align: center;">' in result
+    assert re.findall(r'<(th|td) style="text-align: (\w+);">([^<]+)</\1>', result) == [
+        ("th", "left", "Left"),
+        ("th", "right", "Right"),
+        ("th", "center", "Center"),
+        ("td", "left", "1"),
+        ("td", "right", "2"),
+        ("td", "center", "3"),
+    ]
 
 
 def test_markdownfy_with_html_tag():
-    html = "<script>alert('test')</script>"
-    result = pytilpack.markdown.markdownfy(html)
+    fragment = "<script>alert('test')</script>"
+    result = pytilpack.markdown.markdownfy(fragment)
     assert "<script>" not in result
     assert "&lt;script&gt;" in result
 
-    html = "<details><summary>サマリ</summary>詳細</details>"
-    result = pytilpack.markdown.markdownfy(html)
-    assert html in result
+    fragment = "<details><summary>サマリ</summary>詳細</details>"
+    result = pytilpack.markdown.markdownfy(fragment)
+    assert fragment in result
 
-    html = "<think>最近流行りのreasoning</think>結果"
-    result = pytilpack.markdown.markdownfy(html)
+    fragment = "<think>最近流行りのreasoning</think>結果"
+    result = pytilpack.markdown.markdownfy(fragment)
     assert "<think>" not in result
     assert "&lt;think&gt;" in result
 
@@ -49,6 +51,10 @@ def test_markdownfy_with_malicious_content():
     text = "[click me](javascript:alert('test'))"
     result = pytilpack.markdown.markdownfy(text)
     assert "javascript:" not in result
+    assert "click me" in result
+
+    result = pytilpack.markdown.markdownfy("[documentation](https://example.com/docs)")
+    assert '<a href="https://example.com/docs">documentation</a>' in result
 
 
 def test_escape() -> None:
