@@ -8,6 +8,11 @@ import pytilpack.crypto
 
 
 def test_hmac_sign_verify() -> None:
+    digest = bytes.fromhex("b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7")
+    expected_signature = base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
+    assert pytilpack.crypto.hmac_sign(b"Hi There", b"\x0b" * 20) == expected_signature
+    assert pytilpack.crypto.hmac_verify(b"Hi There", expected_signature, b"\x0b" * 20)
+
     key = "test-secret-key"
 
     sig = pytilpack.crypto.hmac_sign("hello", key)

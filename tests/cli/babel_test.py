@@ -1,3 +1,4 @@
+import gettext
 import subprocess
 import sys
 from pathlib import Path
@@ -18,6 +19,7 @@ def test_babel_cli_catalog_lifecycle(tmp_path: Path) -> None:
             capture_output=True,
             text=True,
             check=False,
+            timeout=30,
         )
         assert result.returncode == 0, result.stderr
 
@@ -26,7 +28,11 @@ def test_babel_cli_catalog_lifecycle(tmp_path: Path) -> None:
 
     run("init", "--locale", "ja", "--input-file", str(template), "--output-dir", str(locales))
     catalog = locales / "ja" / "LC_MESSAGES" / "messages.po"
-    assert 'msgid "hello"' in catalog.read_text(encoding="utf-8")
+    original_catalog = catalog.read_text(encoding="utf-8")
+    assert 'msgid "hello"\nmsgstr ""' in original_catalog
+    catalog.write_text(
+        original_catalog.replace('msgid "hello"\nmsgstr ""', 'msgid "hello"\nmsgstr "こんにちは"'), encoding="utf-8"
+    )
 
     messages.write_text('_("hello")\n_("welcome")\n', encoding="utf-8")
     run("extract", str(source), "--output", str(template))
@@ -34,4 +40,5 @@ def test_babel_cli_catalog_lifecycle(tmp_path: Path) -> None:
     assert 'msgid "welcome"' in catalog.read_text(encoding="utf-8")
 
     run("compile", "--directory", str(locales))
-    assert catalog.with_suffix(".mo").is_file()
+    with catalog.with_suffix(".mo").open("rb") as file:
+        assert gettext.GNUTranslations(file).gettext("hello") == "こんにちは"

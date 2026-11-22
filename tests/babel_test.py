@@ -2,6 +2,8 @@ import datetime as dt
 import pathlib
 import typing
 
+import babel.dates
+import babel.numbers
 import pytest
 
 import pytilpack.babel
@@ -21,22 +23,21 @@ def _i18n_ja() -> typing.Generator[None, None, None]:
 @pytest.mark.usefixtures("i18n_ja")
 def test_format() -> None:
     date = dt.date(2024, 1, 15)
-    result = pytilpack.babel.format_date(date, format="long")
-    assert "2024" in result
-    assert "1" in result
-    assert "15" in result
+    assert pytilpack.babel.format_date(date, format="long") == babel.dates.format_date(date, format="long", locale="ja")
+    assert pytilpack.babel.format_date(date, format="long", locale="en") == babel.dates.format_date(
+        date, format="long", locale="en"
+    )
 
     value = dt.datetime(2024, 1, 15, 10, 30, 0, tzinfo=dt.UTC)
-    result = pytilpack.babel.format_datetime(value, format="short", locale="en")
-    assert "1/15/24" in result
+    offset = dt.timezone(dt.timedelta(hours=-11))
+    assert pytilpack.babel.format_datetime(value, format="MM/dd/yyyy HH:mm", locale="en", tzinfo=offset) == ("01/14/2024 23:30")
 
     t = dt.time(14, 30, 0)
     result = pytilpack.babel.format_time(t, format="short", locale="ja")
     assert "14:30" in result
 
     assert pytilpack.babel.format_number(1234567, locale="en") == "1,234,567"
-    result_ja = pytilpack.babel.format_number(1234567, locale="ja")
-    assert "1,234,567" in result_ja
+    assert pytilpack.babel.format_number(1234567, locale="de") == babel.numbers.format_decimal(1234567, locale="de")
 
     result = pytilpack.babel.format_currency(1234, "JPY", locale="ja")
     assert "1,234" in result

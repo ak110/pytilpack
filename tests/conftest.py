@@ -1,4 +1,6 @@
+import os
 import pathlib
+import tempfile
 
 import babel.messages.mofile
 import babel.messages.pofile
@@ -17,8 +19,14 @@ def pytest_configure(config: pytest.Config) -> None:
             continue
         with po_path.open("rb") as f:
             catalog = babel.messages.pofile.read_po(f)
-        with mo_path.open("wb") as f:
-            babel.messages.mofile.write_mo(f, catalog)
+        with tempfile.NamedTemporaryFile(dir=mo_path.parent, delete=False) as f:
+            temporary_path = pathlib.Path(f.name)
+        try:
+            with temporary_path.open("wb") as f:
+                babel.messages.mofile.write_mo(f, catalog)
+            os.replace(temporary_path, mo_path)
+        finally:
+            temporary_path.unlink(missing_ok=True)
 
 
 @pytest.fixture(autouse=True, scope="session")

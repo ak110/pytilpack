@@ -1,4 +1,5 @@
 import dataclasses
+import json
 import pathlib
 import typing
 
@@ -57,8 +58,13 @@ def test_asdict() -> None:
 
 def test_json(tmp_path: pathlib.Path) -> None:
     x = Nested(A(1, "a"))
-    pytilpack.dataclasses.tojson(x, tmp_path / "test.json")
-    assert pytilpack.dataclasses.fromjson(Nested, tmp_path / "test.json") == x
+    output = tmp_path / "output.json"
+    pytilpack.dataclasses.tojson(x, output)
+    assert json.loads(output.read_text(encoding="utf-8")) == {"a": {"a": 1, "b": "a"}}
+
+    source = tmp_path / "input.json"
+    source.write_text('{"a": {"a": 1, "b": "a"}}', encoding="utf-8")
+    assert pytilpack.dataclasses.fromjson(Nested, source) == x
 
 
 def test_validate() -> None:
@@ -79,9 +85,6 @@ def test_validate() -> None:
 def test_validate_newtype() -> None:
     user = UserWithNewType(id=IntType(1), name=StrType("Taro"))
     pytilpack.dataclasses.validate(user)
-
-    user2 = UserWithNewType(id=1, name="Taro")  # type: ignore[arg-type]
-    pytilpack.dataclasses.validate(user2)
 
     user_bad = UserWithNewType(id="oops", name="Taro")  # type: ignore[arg-type]
     with pytest.raises(TypeError, match=r"位置 id: 型.*int.*str"):

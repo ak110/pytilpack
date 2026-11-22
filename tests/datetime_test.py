@@ -81,6 +81,7 @@ def test_fromiso(
 ) -> None:
     actual = pytilpack.datetime.fromiso(iso_str, tz, remove_tz)
     assert actual == expected
+    assert actual.utcoffset() == expected.utcoffset()
     if remove_tz:
         assert actual.tzinfo is None
     elif tz is not None:
@@ -96,7 +97,6 @@ def test_fromiso(
         (2023, 1, True, dt.date(2022, 12, 1), dt.date(2023, 1, 1), dt.date(2023, 2, 1)),
         (2023, 6, True, dt.date(2023, 5, 1), dt.date(2023, 6, 1), dt.date(2023, 7, 1)),
         (2023, 12, True, dt.date(2023, 11, 1), dt.date(2023, 12, 1), dt.date(2024, 1, 1)),
-        (2023, 1, True, dt.date(2022, 12, 1), dt.date(2023, 1, 1), dt.date(2023, 2, 1)),
         (2022, 12, True, dt.date(2022, 11, 1), dt.date(2022, 12, 1), dt.date(2023, 1, 1)),
         (2023, 0, False, None, None, None),
         (2023, 13, False, None, None, None),

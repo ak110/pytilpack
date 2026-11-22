@@ -1,36 +1,11 @@
 import asyncio
 import queue
-import threading
-import time
 import typing
 
 import pytest
+import pytest_asyncio
 
 import pytilpack.asyncio
-
-
-class CountingJob(pytilpack.asyncio.Job):
-    def __init__(self, sleep_time: float = 0.1) -> None:
-        super().__init__()
-        self.count = 0
-        self.sleep_time = sleep_time
-
-    @typing.override
-    async def run(self) -> None:
-        await asyncio.sleep(self.sleep_time)
-        self.count += 1
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.__dict__})"
-
-
-class ErrorJob(pytilpack.asyncio.Job):
-    @typing.override
-    async def run(self) -> None:
-        raise ValueError("Test error")
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.__dict__})"
 
 
 class JobRunner(pytilpack.asyncio.JobRunner):
@@ -169,119 +144,132 @@ async def test_cancel_while_polling_releases_capacity() -> None:
         await asyncio.gather(task, return_exceptions=True)
 
 
-def add_jobs_thread(
-    queue_: queue.Queue[pytilpack.asyncio.Job],
-    jobs: list[pytilpack.asyncio.Job],
-    sleep_time: float | None = 0.1,
-) -> None:
-    for job in jobs:
-        if sleep_time is not None:
-            time.sleep(sleep_time)
-        queue_.put(job)
+class ObservedJob(EventJob):
+    def __init__(self, *, fail: bool = False) -> None:
+        super().__init__()
+        self.fail = fail
+        self.done = asyncio.Event()
+        self.count = 0
+
+    @typing.override
+    async def run(self) -> None:
+        self.count += 1
+        await super().run()
+        if self.fail:
+            raise ValueError("Test error")
+
+    @typing.override
+    async def on_finally(self) -> None:
+        self.done.set()
 
 
-@pytest.mark.asyncio
-async def test_job_runner() -> None:
-    runner = JobRunner()
+@pytest_asyncio.fixture(name="running_jobs")
+async def _running_jobs():
+    tasks: list[tuple[JobRunner, asyncio.Task[None]]] = []
 
-    jobs = [CountingJob() for _ in range(3)]
-    thread = threading.Thread(target=add_jobs_thread, args=(runner.queue, jobs))
-    thread.start()
-    time.sleep(0.0)
+    def start(concurrency: int = 8) -> JobRunner:
+        runner = JobRunner(max_job_concurrency=concurrency, poll_interval=0)
+        task = asyncio.create_task(runner.run())
+        tasks.append((runner, task))
+        return runner
 
-    async def shutdown_after() -> None:
-        await asyncio.sleep(0.75)
+    yield start
+
+    for runner, task in tasks:
+        active = tuple(runner.tasks)
         runner.shutdown()
-
-    await asyncio.gather(runner.run(), shutdown_after())
-    thread.join()
-
-    thread.join()
-    assert all(job.status == "finished" and job.count == 1 for job in jobs)
+        task.cancel()
+        async with asyncio.timeout(5):
+            await asyncio.gather(task, *active, return_exceptions=True)
 
 
 @pytest.mark.asyncio
-async def test_job_runner_cancel() -> None:
-    runner = JobRunner()
+async def test_job_runner(running_jobs) -> None:
+    runner = running_jobs()
+    jobs = [ObservedJob() for _ in range(3)]
 
-    jobs = (
-        CountingJob(),
-        CountingJob(sleep_time=3.0),
-    )
-    thread = threading.Thread(target=add_jobs_thread, args=(runner.queue, jobs))
-    thread.start()
-    time.sleep(0.0)
+    def submit() -> None:
+        for job in jobs:
+            runner.queue.put(job)
 
-    async def shutdown_after() -> None:
-        await asyncio.sleep(1.0)
+    async with asyncio.timeout(5):
+        await asyncio.to_thread(submit)
+        for job in jobs:
+            job.finish.set()
+        await asyncio.gather(*(job.done.wait() for job in jobs))
+    assert [(job.status, job.count) for job in jobs] == [("finished", 1)] * 3
+
+
+@pytest.mark.asyncio
+async def test_job_runner_cancel(running_jobs) -> None:
+    runner = running_jobs()
+    finished, active = ObservedJob(), ObservedJob()
+    runner.queue.put(finished)
+    runner.queue.put(active)
+    finished.finish.set()
+
+    async with asyncio.timeout(5):
+        await finished.done.wait()
+        await active.started.wait()
         runner.shutdown()
-
-    start_time = time.perf_counter()
-    await asyncio.gather(runner.run(), shutdown_after())
-    thread.join()
-    elapsed_time = time.perf_counter() - start_time
-    assert 0.75 <= elapsed_time < 1.25
-
-    assert jobs[0].status == "finished" and jobs[0].count == 1
-    assert jobs[1].status == "canceled" and jobs[1].count == 0
+        await active.done.wait()
+    assert (finished.status, finished.count) == ("finished", 1)
+    assert (active.status, active.count) == ("canceled", 1)
 
 
 @pytest.mark.asyncio
-async def test_job_runner_errors() -> None:
-    runner = JobRunner()
+async def test_job_runner_errors(running_jobs) -> None:
+    runner = running_jobs(1)
+    failed, following, active, pending = ObservedJob(fail=True), ObservedJob(), ObservedJob(), ObservedJob()
+    runner.queue.put(failed)
+    runner.queue.put(following)
+    runner.queue.put(active)
+    failed.finish.set()
+    following.finish.set()
 
-    jobs = (
-        CountingJob(),
-        ErrorJob(),
-        CountingJob(),
-        CountingJob(sleep_time=3.0),
-    )
-    thread = threading.Thread(target=add_jobs_thread, args=(runner.queue, jobs))
-    thread.start()
-    time.sleep(0.0)
-
-    async def shutdown_after_and_add_job() -> CountingJob:
-        await asyncio.sleep(0.75)
+    async with asyncio.timeout(5):
+        await following.done.wait()
+        await active.started.wait()
         runner.shutdown()
-        await asyncio.sleep(0.25)
-        post_job = CountingJob()
-        runner.queue.put(post_job)
-        return post_job
-
-    _, post_job = await asyncio.gather(runner.run(), shutdown_after_and_add_job())
-    thread.join()
-
-    assert jobs[0].status == "finished" and jobs[0].count == 1
-    assert jobs[1].status == "errored"
-    assert jobs[2].status == "finished" and jobs[2].count == 1
-    assert jobs[3].status == "canceled" and jobs[3].count == 0
-    assert post_job.status == "waiting" and post_job.count == 0
+        runner.queue.put(pending)
+        await active.done.wait()
+    assert (failed.status, failed.count) == ("errored", 1)
+    assert (following.status, following.count) == ("finished", 1)
+    assert (active.status, active.count) == ("canceled", 1)
+    assert (pending.status, pending.count) == ("waiting", 0)
+    assert runner.queue.get_nowait() is pending
 
 
 @pytest.mark.asyncio
-async def test_job_runner_graceful_shutdown() -> None:
-    runner = JobRunner(max_job_concurrency=2)
-
-    jobs = (
-        CountingJob(sleep_time=0.5),
-        CountingJob(sleep_time=0.5),
-        CountingJob(sleep_time=0.5),
-    )
-    for job in jobs:
+async def test_job_runner_graceful_shutdown(running_jobs) -> None:
+    runner = running_jobs(2)
+    first, second, pending = ObservedJob(), ObservedJob(), ObservedJob()
+    for job in (first, second, pending):
         runner.queue.put(job)
 
-    async def graceful_shutdown_after() -> None:
-        await asyncio.sleep(0.3)
-        await runner.graceful_shutdown()
+    async with asyncio.timeout(5):
+        await first.started.wait()
+        await second.started.wait()
+        assert not pending.started.is_set()
 
-    start_time = time.perf_counter()
-    await asyncio.gather(runner.run(), graceful_shutdown_after())
-    elapsed_time = time.perf_counter() - start_time
-    assert 0.5 <= elapsed_time < 0.9
+        shutdown = asyncio.create_task(runner.graceful_shutdown())
+        try:
+            while runner.running:
+                await asyncio.sleep(0)
+            assert not shutdown.done()
+            first.finish.set()
+            second.finish.set()
+            await shutdown
+        finally:
+            shutdown.cancel()
+            await asyncio.gather(shutdown, return_exceptions=True)
 
-    assert jobs[0].status == "finished" and jobs[0].count == 1
-    assert jobs[1].status == "finished" and jobs[1].count == 1
-    assert jobs[2].status == "waiting" and jobs[2].count == 0
+    assert [(job.status, job.count) for job in (first, second, pending)] == [
+        ("finished", 1),
+        ("finished", 1),
+        ("waiting", 0),
+    ]
+    assert runner.queue.get_nowait() is pending
 
 
 @pytest.mark.parametrize("stop", [_shutdown, _graceful_shutdown], ids=["immediate", "graceful"])

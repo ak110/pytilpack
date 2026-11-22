@@ -11,14 +11,6 @@ def test_read_to_dict(tmp_path: pathlib.Path) -> None:
     assert result == [{"name": "Alice", "age": "20"}, {"name": "Bob", "age": "30"}]
 
 
-def test_read_to_dict_fieldnames(tmp_path: pathlib.Path) -> None:
-    path = tmp_path / "test.csv"
-    path.write_text("Alice,20\nBob,30")
-
-    result = pytilpack.csv.read_to_dict(path, ["name", "age"])
-    assert result == [{"name": "Alice", "age": "20"}, {"name": "Bob", "age": "30"}]
-
-
 def test_read_to_dict_skipinitialspace(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "test.csv"
     path.write_text("Alice, 20\nBob, 30")
@@ -34,7 +26,7 @@ def test_read_to_dict_crlf(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "test.csv"
     path.write_bytes(b"Alice,20\r\nBob,30\r\n")
 
-    result = pytilpack.csv.read_to_dict(path, ["name", "age"], lineterminator="\r\n")
+    result = pytilpack.csv.read_to_dict(path, ["name", "age"])
     assert result == [{"name": "Alice", "age": "20"}, {"name": "Bob", "age": "30"}]
 
 

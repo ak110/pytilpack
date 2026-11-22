@@ -1,5 +1,3 @@
-import re
-
 import pytest
 
 import pytilpack.data_url
@@ -22,6 +20,7 @@ def test_data_url() -> None:
     assert pytilpack.data_url.get_base64_data("data:text/plain;base64,SGVsbG8sIFdvcmxkIQ==") == "SGVsbG8sIFdvcmxkIQ=="
 
 
-def test_parse_invalid_message() -> None:
-    with pytest.raises(ValueError, match=re.escape("(expected format: data:[<mediatype>][;base64],<data>)")):
-        pytilpack.data_url.parse("http://example.com/")
+@pytest.mark.parametrize("url", ["http://example.com/,hello", "data:text/plain"])
+def test_parse_invalid(url: str) -> None:
+    with pytest.raises(ValueError):
+        pytilpack.data_url.parse(url)

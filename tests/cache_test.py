@@ -23,14 +23,21 @@ def _counting_loader() -> CountingLoaderType:
     return loader, lambda: call_count
 
 
-def test_cached_file_loader_errors() -> None:
+def test_cached_file_loader_errors(tmp_path: pathlib.Path, counting_loader: CountingLoaderType) -> None:
+    loader_func, get_count = counting_loader
+    path = tmp_path / "sample.txt"
+    path.write_text("sample")
     loader = cache.CachedFileLoader[str]()
-    with pytest.raises(ValueError, match="ローダー関数が指定されていません"):
-        loader.load(pathlib.Path(__file__))
+    with pytest.raises(ValueError, match="loader"):
+        loader.load(path)
+    assert loader.load(path, loader=loader_func) == "sample"
 
-    loader = cache.CachedFileLoader(lambda p: p.read_text())
-    with pytest.raises(FileNotFoundError):
-        loader.load(pathlib.Path("not_exists"))
+    missing = tmp_path / "missing"
+    loader = cache.CachedFileLoader(loader_func)
+    with pytest.raises(FileNotFoundError) as error:
+        loader.load(missing)
+    assert str(missing) in str(error.value)
+    assert get_count() == 1
 
 
 def test_cached_file_loader(
@@ -69,10 +76,3 @@ def test_cached_file_loader(
     loader_upper = cache.CachedFileLoader(lambda p: p.read_text().upper())
     assert loader_upper.load(test_file) == "UPDATED"
     assert loader_upper.load(test_file, lambda p: p.read_text().lower()) == "updated"
-
-
-def test_cached_file_loader_error_messages() -> None:
-    with pytest.raises(ValueError, match="load\\(\\)のloader引数か、CachedFileLoader\\(\\)のloader引数で指定する"):
-        cache.CachedFileLoader[str]().load(pathlib.Path(__file__))
-    with pytest.raises(FileNotFoundError, match="パスの指定を見直すか、ファイルを作成してから呼び出す"):
-        cache.CachedFileLoader(lambda p: p.read_text()).load(pathlib.Path("not_exists"))

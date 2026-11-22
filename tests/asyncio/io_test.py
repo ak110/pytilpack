@@ -1,6 +1,7 @@
 import collections.abc
 import datetime as dt
 import inspect
+import json
 import pathlib
 import typing
 
@@ -23,13 +24,15 @@ async def test_file_operations(tmp_path: pathlib.Path) -> None:
     test_bytes = b"Hello, World!\x00\x01\x02"
 
     await pytilpack.asyncio.write_text(text_file, test_text)
-    assert text_file.exists()
+    assert text_file.read_text(encoding="utf-8") == test_text
+    text_file.write_bytes(test_text.encode("utf-8"))
 
     result_text = await pytilpack.asyncio.read_text(text_file)
     assert result_text == test_text
 
     await pytilpack.asyncio.write_bytes(bytes_file, test_bytes)
-    assert bytes_file.exists()
+    assert bytes_file.read_bytes() == test_bytes
+    bytes_file.write_bytes(test_bytes)
 
     result_bytes = await pytilpack.asyncio.read_bytes(bytes_file)
     assert result_bytes == test_bytes
@@ -42,7 +45,8 @@ async def test_json_operations(tmp_path: pathlib.Path) -> None:
     test_data = {"name": "テスト", "value": 42, "list": [1, 2, 3], "nested": {"key": "value"}}
 
     await pytilpack.asyncio.write_json(json_file, test_data)
-    assert json_file.exists()
+    assert json.loads(json_file.read_text(encoding="utf-8")) == test_data
+    json_file.write_text('{"name":"テスト","value":42,"list":[1,2,3],"nested":{"key":"value"}}', encoding="utf-8")
 
     result = await pytilpack.asyncio.read_json(json_file)
     assert result == test_data
@@ -85,11 +89,15 @@ async def test_yaml_operations(tmp_path: pathlib.Path) -> None:
     yaml_file = tmp_path / "test.yaml"
     yaml_data = {"a": 1, "b": [1, 2]}
     await pytilpack.asyncio.write_yaml(yaml_file, yaml_data)
+    assert yaml.safe_load(yaml_file.read_text(encoding="utf-8")) == yaml_data
+    yaml_file.write_text("a: 1\nb: [1, 2]\n", encoding="utf-8")
     assert await pytilpack.asyncio.read_yaml(yaml_file) == yaml_data
 
     yaml_all_file = tmp_path / "test_all.yaml"
     yaml_all_data = [{"a": 1}, {"b": 2}]
     await pytilpack.asyncio.write_yaml_all(yaml_all_file, yaml_all_data)
+    assert list(yaml.safe_load_all(yaml_all_file.read_text(encoding="utf-8"))) == yaml_all_data
+    yaml_all_file.write_text("a: 1\n---\nb: 2\n", encoding="utf-8")
     assert await pytilpack.asyncio.read_yaml_all(yaml_all_file) == yaml_all_data
 
     old_root = tmp_path / "old"
@@ -114,6 +122,9 @@ async def test_deletion_preserve_external(tmp_path: pathlib.Path) -> None:
     link.symlink_to(target, target_is_directory=True)
 
     await pytilpack.asyncio.delete_old_files(root, dt.datetime(2100, 1, 1), keep_root_empty_dir=False)
+    assert protected.is_file()
+    assert protected.read_text(encoding="utf-8") == "protected"
+    assert empty.is_dir()
     await pytilpack.asyncio.delete_empty_dirs(root, keep_root=False)
 
     assert protected.read_text(encoding="utf-8") == "protected"

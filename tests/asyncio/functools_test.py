@@ -1,5 +1,5 @@
 import asyncio
-import time
+import threading
 
 import pytest
 
@@ -20,10 +20,13 @@ async def test_run_sync():
 async def test_acquire_with_timeout():
     lock = asyncio.Lock()
     async with pytilpack.asyncio.acquire_with_timeout(lock, 0.001) as acquired:
-        assert acquired
+        assert acquired and lock.locked()
+    assert not lock.locked()
 
-    async with lock, pytilpack.asyncio.acquire_with_timeout(lock, 0.001) as acquired:
-        assert not acquired
+    async with lock:
+        async with pytilpack.asyncio.acquire_with_timeout(lock, 0.001) as acquired:
+            assert not acquired and lock.locked()
+        assert lock.locked()
 
 
 async def async_func():
@@ -89,12 +92,13 @@ def test_run_from_non_async_context() -> None:
 @pytest.mark.asyncio
 async def test_run_in_thread():
 
-    @pytilpack.asyncio.run_in_thread
-    async def async_func_with_blocking(a: int, k: int) -> str:
-        await asyncio.sleep(0.01)
-        time.sleep(0.01)
-        result = a + k
-        return str(result)
+    caller = threading.get_ident()
 
-    assert await async_func_with_blocking(1, k=2) == "3"
-    assert await async_func_with_blocking(10, k=20) == "30"
+    @pytilpack.asyncio.run_in_thread
+    async def add(a: int, k: int) -> tuple[int, int]:
+        return a + k, threading.get_ident()
+
+    for a, k, expected in [(1, 2, 3), (10, 20, 30)]:
+        result, thread = await add(a, k=k)
+        assert result == expected
+        assert thread != caller

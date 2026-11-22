@@ -2,8 +2,7 @@ import asyncio
 import contextlib
 import http.server
 import pathlib
-import socket
-import subprocess
+import re
 import sys
 import threading
 from collections.abc import Iterator
@@ -58,44 +57,52 @@ async def test_mcp_stdio_fetch_url(page_url: str) -> None:
 
 @pytest.mark.asyncio
 async def test_mcp_http_fetch_url(page_url: str) -> None:
-    with socket.socket() as reservation:
-        reservation.bind(("127.0.0.1", 0))
-        port = reservation.getsockname()[1]
-    with subprocess.Popen(
-        [sys.executable, "-m", "pytilpack.cli.main", "mcp", "--transport", "http", "--host", "127.0.0.1", "--port", str(port)],
+    process = await asyncio.create_subprocess_exec(
+        sys.executable,
+        "-m",
+        "pytilpack.cli.main",
+        "mcp",
+        "--transport",
+        "http",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "0",
         cwd=pathlib.Path(__file__).parents[2],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.PIPE,
-        text=True,
-        encoding="utf-8",
-    ) as process:
-        assert process.stderr is not None
-        startup: list[str] = []
+        stdout=asyncio.subprocess.DEVNULL,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    assert process.stderr is not None
+    startup: list[str] = []
+    try:
         try:
-            try:
-                async with asyncio.timeout(30):
-                    while True:
-                        line = await asyncio.to_thread(process.stderr.readline)
-                        if not line:
-                            raise AssertionError(f"MCPサーバーが終了した: {''.join(startup)}")
-                        startup.append(line)
-                        if "Uvicorn running on " in line:
-                            break
-            except TimeoutError as exc:
-                raise AssertionError(f"MCPサーバーの起動完了を確認できない: {''.join(startup)}") from exc
+            async with asyncio.timeout(30):
+                while line_bytes := await process.stderr.readline():
+                    line = line_bytes.decode("utf-8", errors="replace")
+                    startup.append(line)
+                    if match := re.search(r"Uvicorn running on http://127\.0\.0\.1:([1-9][0-9]*)", line):
+                        port = int(match[1])
+                        break
+                else:
+                    raise AssertionError(f"MCPサーバーが終了した: {''.join(startup)}")
+        except TimeoutError as exc:
+            raise AssertionError(f"MCPサーバーの起動完了を確認できない: {''.join(startup)}") from exc
 
-            async with contextlib.AsyncExitStack() as stack:
-                read_stream, write_stream = await stack.enter_async_context(
-                    mcp.client.streamable_http.streamable_http_client(f"http://127.0.0.1:{port}/mcp")
-                )
-                session = await stack.enter_async_context(mcp.ClientSession(read_stream, write_stream))
-                await session.initialize()
-                result = await session.call_tool("fetch_url", {"url": page_url})
-            _assert_fetch_result(result)
-        finally:
-            process.terminate()
-            with contextlib.suppress(subprocess.TimeoutExpired):
-                process.communicate(timeout=5)
-            if process.poll() is None:
+        async with asyncio.timeout(30), contextlib.AsyncExitStack() as stack:
+            read_stream, write_stream = await stack.enter_async_context(
+                mcp.client.streamable_http.streamable_http_client(f"http://127.0.0.1:{port}/mcp")
+            )
+            session = await stack.enter_async_context(mcp.ClientSession(read_stream, write_stream))
+            await session.initialize()
+            result = await session.call_tool("fetch_url", {"url": page_url})
+        _assert_fetch_result(result)
+    finally:
+        if process.returncode is None:
+            with contextlib.suppress(ProcessLookupError):
+                process.terminate()
+        try:
+            await asyncio.wait_for(process.communicate(), timeout=5)
+        except TimeoutError:
+            with contextlib.suppress(ProcessLookupError):
                 process.kill()
-                process.communicate()
+            await asyncio.wait_for(process.communicate(), timeout=5)

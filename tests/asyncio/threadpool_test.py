@@ -187,8 +187,20 @@ def test_submit_after_shutdown() -> None:
 
 
 def test_thread_pool_destructor(caplog: pytest.LogCaptureFixture) -> None:
-    with caplog.at_level("WARNING"):
-        pool = pytilpack.asyncio.threadpool.ThreadPool(max_workers=2)
-        pool.submit(_async_add(1, 2))
+    started = threading.Event()
+    stopped = threading.Event()
+
+    async def wait_for_stop() -> None:
+        try:
+            started.set()
+            await asyncio.Future()
+        finally:
+            stopped.set()
+
+    pool = pytilpack.asyncio.threadpool.ThreadPool(max_workers=2)
+    pool.submit(wait_for_stop())
+    assert started.wait(timeout=5)
+    with caplog.at_level("WARNING", logger="pytilpack.asyncio.threadpool"):
         del pool
-        assert "ThreadPool is being destroyed with" in caplog.text
+    assert stopped.wait(timeout=5)
+    assert any(record.name == "pytilpack.asyncio.threadpool" and record.levelname == "WARNING" for record in caplog.records)

@@ -33,6 +33,21 @@ def _fake_missing_sqlalchemy(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(logging, "basicConfig", lambda *args, **kwargs: None)
 
 
+def _help_details(output: str, command: str) -> str:
+    lines = output.splitlines()
+    for index, line in enumerate(lines):
+        parts = line.split(maxsplit=1)
+        if parts and parts[0] == command:
+            indent = len(line) - len(line.lstrip())
+            details = parts[1:]
+            for continuation in lines[index + 1 :]:
+                if not continuation.strip() or len(continuation) - len(continuation.lstrip()) <= indent:
+                    break
+                details.append(continuation.strip())
+            return " ".join(details)
+    raise AssertionError(f"ヘルプに {command} の説明がない")
+
+
 @pytest.mark.usefixtures("fake_missing_sqlalchemy")
 def test_main_help_lists_missing_command(capsys) -> None:
     with pytest.raises(SystemExit) as exc_info:
@@ -40,9 +55,9 @@ def test_main_help_lists_missing_command(capsys) -> None:
     assert exc_info.value.code == 0
 
     captured = capsys.readouterr()
-    assert "wait-for-db-connection" in captured.out
-    assert "未インストール" in captured.out
-    assert "sqlalchemy" in captured.out
+    details = _help_details(captured.out, "wait-for-db-connection")
+    assert "未インストール" in details
+    assert "sqlalchemy" in details
 
 
 @pytest.mark.parametrize(
@@ -108,7 +123,9 @@ def test_main_help_survives_missing_core_dep(capsys) -> None:
 
     captured = capsys.readouterr()
     assert "sync" in captured.out
-    assert "利用不可" in captured.out
+    details = _help_details(captured.out, "mcp")
+    assert "利用不可" in details
+    assert "extras" not in details and "pytilpack[" not in details
 
 
 @pytest.fixture(name="fake_incompatible_mcp_dependency")
@@ -238,8 +255,9 @@ def test_main_help_survives_wrapped_missing_dep(capsys) -> None:
 
     captured = capsys.readouterr()
     assert "sync" in captured.out
-    assert "wait-for-db-connection" in captured.out
-    assert "未インストール" in captured.out
+    details = _help_details(captured.out, "wait-for-db-connection")
+    assert "未インストール" in details
+    assert "sqlalchemy" in details
 
 
 @pytest.mark.usefixtures("fake_wrapped_missing_greenlet")
