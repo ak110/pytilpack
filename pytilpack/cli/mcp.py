@@ -60,14 +60,15 @@ def _create_server() -> MCPServer:
 
     @mcp.tool(
         description=(
-            "URLからHTMLを取得し、簡略化して返す。\n\n"
+            "URLから本文を取得して返す。HTMLは簡略化し、他のテキスト形式・JSON・XMLはそのまま返す。"
+            "接続エラーと一時的なHTTPエラーは再試行する。\n\n"
             "Args:\n"
             "    url: 取得するURL\n"
             "    no_verify: SSL証明書の検証を無効化するかどうか\n"
             "    accept: 受け入れるコンテンツタイプ\n"
             "    user_agent: User-Agentヘッダー（未指定時はデフォルト値を使用）\n\n"
             "Returns:\n"
-            "    簡略化されたHTML内容\n"
+            "    取得した内容\n"
         )
     )
     def fetch_url(
