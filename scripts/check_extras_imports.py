@@ -1,5 +1,7 @@
 import argparse
+import concurrent.futures
 import email
+import os
 import pathlib
 import subprocess
 import sys
@@ -26,6 +28,8 @@ EXTRA_MODULES = {
     "tqdm": ("pytilpack.tqdm",),
     "web": ("pytilpack.web",),
 }
+
+_TIMEOUT = 180
 
 
 def main() -> int:
@@ -57,73 +61,95 @@ def main() -> int:
         if module.count(".") <= 1 and not module.startswith("pytilpack._") and module not in optional_modules
     ]
     selections = args.extra if args.extra is not None else ["", *sorted(extras)]
-    failed = False
     for extra in selections:
+        if extra and extra != "all" and extra not in EXTRA_MODULES:
+            parser.error(f"未定義のextra: {extra}")
+
+    def selected_modules(extra: str) -> list[str]:
         if extra == "all":
-            selected_modules = modules
-        elif extra:
-            if extra not in EXTRA_MODULES:
-                parser.error(f"未定義のextra: {extra}")
-            selected_modules = list(EXTRA_MODULES[extra])
-        else:
-            selected_modules = base_modules
-        requirement = f"pytilpack[{extra}] @ {wheel.as_uri()}" if extra else wheel.as_uri()
-        command = [
-            "uv",
-            "run",
-            "--no-project",
-            "--isolated",
-            "--python",
-            sys.executable,
-            "--with",
-            requirement,
-            "python",
-            "-I",
-            "-c",
-            "import importlib, sys; [importlib.import_module(name) for name in sys.argv[1:]]",
-            *selected_modules,
-        ]
-        result = subprocess.run(command, check=False, capture_output=True, text=True, timeout=180)
-        if result.returncode:
-            failed = True
-            print(
-                f"extra {extra or 'ベース'} のimportに失敗しました。下の出力が示す不足モジュールを、"
-                "pyproject.tomlの[project.optional-dependencies]（ベースでは[project].dependencies）へ加えるか、"
-                "EXTRA_MODULESの対象モジュールを見直す。\n"
-                f"{result.stdout}{result.stderr}",
-                file=sys.stderr,
-            )
-        if extra in ("fastapi", "flask", "quart"):
-            assertion_command = command[: command.index("-c")] + [
-                str(pathlib.Path(__file__).with_name("check_web_extra.py").resolve()),
-                extra,
-            ]
-            result = subprocess.run(assertion_command, check=False, capture_output=True, text=True, timeout=180)
-            if result.returncode:
-                failed = True
-                print(
-                    f"extra {extra} のpytestなしasserts検証に失敗しました。"
-                    f"pytilpack/{extra}/asserts.pyがpytestなしでimport・実行できるよう修正する。"
-                    f"再現: uv run --no-project python scripts/check_extras_imports.py <wheel> --extra {extra}\n"
-                    f"{result.stdout}{result.stderr}",
-                    file=sys.stderr,
-                )
-        cli_command = command[: command.index("-c")] + [
-            str(pathlib.Path(__file__).with_name("check_cli_extra.py").resolve()),
+            return modules
+        if extra:
+            return list(EXTRA_MODULES[extra])
+        return base_modules
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as executor:
+        results = list(executor.map(lambda extra: _check_extra(wheel, extra, selected_modules(extra)), selections))
+    for messages in results:
+        for message in messages:
+            print(message, file=sys.stderr)
+    failed = any(results)
+    return int(failed)
+
+
+def _check_extra(wheel: pathlib.Path, extra: str, modules: list[str]) -> list[str]:
+    messages: list[str] = []
+    requirement = f"pytilpack[{extra}] @ {wheel.as_uri()}" if extra else wheel.as_uri()
+    command = [
+        "uv",
+        "run",
+        "--no-project",
+        "--isolated",
+        "--python",
+        sys.executable,
+        "--with",
+        requirement,
+        "python",
+        "-I",
+        "-c",
+        "import importlib, sys; [importlib.import_module(name) for name in sys.argv[1:]]",
+        *modules,
+    ]
+    returncode, output = _run(command)
+    if returncode:
+        messages.append(
+            f"extra {extra or 'ベース'} のimportに失敗しました。下の出力が示す不足モジュールを、"
+            "pyproject.tomlの[project.optional-dependencies]（ベースでは[project].dependencies）へ加えるか、"
+            "EXTRA_MODULESの対象モジュールを見直す。\n"
+            f"{output}",
+        )
+    if extra in ("fastapi", "flask", "quart"):
+        assertion_command = command[: command.index("-c")] + [
+            str(pathlib.Path(__file__).with_name("check_web_extra.py").resolve()),
             extra,
         ]
-        result = subprocess.run(cli_command, check=False, capture_output=True, text=True, timeout=180)
-        if result.returncode:
-            failed = True
-            print(
-                f"extra {extra or 'ベース'} のCLI検証に失敗しました。"
-                "pytilpack/cli/main.pyの_SUBCOMMANDSとextras判定を修正する。"
-                "再現: uv run --no-project python scripts/check_extras_imports.py <wheel>"
-                f"{f' --extra {extra}' if extra else ''}\n"
-                f"{result.stdout}{result.stderr}",
-                file=sys.stderr,
+        returncode, output = _run(assertion_command)
+        if returncode:
+            messages.append(
+                f"extra {extra} のpytestなしasserts検証に失敗しました。"
+                f"pytilpack/{extra}/asserts.pyがpytestなしでimport・実行できるよう修正する。"
+                f"再現: uv run --no-project python scripts/check_extras_imports.py <wheel> --extra {extra}\n"
+                f"{output}",
             )
-    return int(failed)
+    cli_command = command[: command.index("-c")] + [
+        str(pathlib.Path(__file__).with_name("check_cli_extra.py").resolve()),
+        extra,
+    ]
+    returncode, output = _run(cli_command)
+    if returncode:
+        messages.append(
+            f"extra {extra or 'ベース'} のCLI検証に失敗しました。"
+            "pytilpack/cli/main.pyの_SUBCOMMANDSとextras判定を修正する。"
+            "再現: uv run --no-project python scripts/check_extras_imports.py <wheel>"
+            f"{f' --extra {extra}' if extra else ''}\n"
+            f"{output}",
+        )
+    return messages
+
+
+def _run(command: list[str]) -> tuple[int, str]:
+    try:
+        result = subprocess.run(command, check=False, capture_output=True, text=True, timeout=_TIMEOUT)
+    except subprocess.TimeoutExpired as e:
+        return 1, f"{_TIMEOUT}秒でタイムアウトしました。\n{_text(e.stdout)}{_text(e.stderr)}"
+    except OSError as e:
+        return 1, f"起動に失敗しました: {e}\n"
+    return result.returncode, f"{result.stdout}{result.stderr}"
+
+
+def _text(value: str | bytes | None) -> str:
+    if isinstance(value, bytes):
+        return value.decode(errors="replace")
+    return value or ""
 
 
 if __name__ == "__main__":

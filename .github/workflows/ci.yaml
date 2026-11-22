@@ -99,9 +99,9 @@ jobs:
       - name: Test with pyfltr（pytestのみ）
         run: uvx --exclude-newer-package pyfltr=false pyfltr ci --commands=pytest --output-format=github-annotations
 
+  # testジョブを待たずに並行して実行し、CI全体の待ち時間をtestジョブの最長の所要までに抑える。
   cli-smoke:
     runs-on: ubuntu-latest
-    needs: test
     container:
       image: ghcr.io/ak110/pyfltr:latest
     defaults:
