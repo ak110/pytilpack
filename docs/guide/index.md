@@ -139,6 +139,7 @@ APIの詳細は[ソースコード](https://github.com/ak110/pytilpack/tree/mast
 - `pytilpack.functools`
 - `pytilpack.importlib`
 - `pytilpack.logging`
+- `pytilpack.modelcheck`: 並行処理の全ての実行順序（`ThreadExplorer`）と状態遷移の全ての到達状態（`explore_states`）を、実際のコードを呼んで確かめる補助。対象のコードは共有資源への1手順の直前で`step()`、ロックの獲得で`acquire()`か`lock()`を呼ぶ。`StepTimeoutError`を受けたら、時間切れした主体が差し替えた関数などへまだ触れうるため、同じプロセスで確認を続けずにプロセスを終えるか、隔離したプロセスで実行する
 - `pytilpack.paginator`: ページネーション関連
 - `pytilpack.pytest`
 - `pytilpack.python`
