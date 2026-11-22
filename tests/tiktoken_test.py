@@ -1,5 +1,7 @@
 """テストコード。"""
 
+# pylint: disable=protected-access
+
 import sys
 import typing
 import warnings
@@ -177,3 +179,30 @@ if sys.version_info < (3, 15):
             )
 
         assert actual_tokens == litellm_tokens, "ツールありトークン数の不一致"
+
+
+@pytest.mark.parametrize(
+    "width,height,expected",
+    [
+        (512, 512, 255),
+        (513, 512, 425),
+        (768, 1000, 765),
+        (1024, 1024, 765),
+        (4096, 2048, 1105),
+    ],
+)
+def test_calculate_high_detail_image_token_cost(width: int, height: int, expected: int):
+    assert pytilpack.tiktoken._calculate_high_detail_image_token_cost(width, height) == expected
+
+
+@pytest.mark.parametrize("detail", ["low", "invalid"])
+def test_calculate_image_token_cost_without_dims(monkeypatch: pytest.MonkeyPatch, detail: str):
+    def fail(image: str) -> tuple[int, int]:
+        raise AssertionError("_get_image_dims must not be called")
+
+    monkeypatch.setattr(pytilpack.tiktoken, "_get_image_dims", fail)
+    if detail == "low":
+        assert pytilpack.tiktoken._calculate_image_token_cost("https://example.com/a.png", detail) == 85
+    else:
+        with pytest.raises(ValueError):
+            pytilpack.tiktoken._calculate_image_token_cost("https://example.com/a.png", detail)

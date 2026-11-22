@@ -4,6 +4,10 @@
 
 """
 
+# pylint: disable=protected-access
+
+import pytest
+
 import pytilpack.htmlrag
 
 
@@ -77,3 +81,29 @@ def test_htmlrag_clean_bytes():
     html = """<html><meta charset="Shift_JIS">バイナリデータ</html>""".encode("cp932")
     simplified_html = pytilpack.htmlrag.clean_html(html, aggressive=True)
     assert simplified_html == "バイナリデータ"
+
+
+@pytest.mark.parametrize("content_type", [None, "text/html; charset=utf-8"])
+def test_process_fetched_response_html(content_type: str | None):
+    html = "<html><head><title>T</title></head><body><header>H</header><p>本文</p></body></html>"
+    expected = pytilpack.htmlrag.clean_html(html, aggressive=True, keep_title=True, keep_href=True)
+    actual = pytilpack.htmlrag._process_fetched_response("https://example.com", 200, content_type, html)
+    assert actual == expected
+
+
+@pytest.mark.parametrize(
+    "content_type", ["text/markdown", "text/plain; charset=utf-8", "text/xml", "application/xml", "application/json"]
+)
+def test_process_fetched_response_passthrough(content_type: str):
+    text = "<p>raw</p>"
+    assert pytilpack.htmlrag._process_fetched_response("https://example.com", 200, content_type, text) == text
+
+
+def test_process_fetched_response_not_html():
+    with pytest.raises(RuntimeError, match="HTMLではありません"):
+        pytilpack.htmlrag._process_fetched_response("https://example.com", 200, "image/png", "xxx")
+
+
+def test_process_fetched_response_status_error():
+    with pytest.raises(RuntimeError, match="Status: 404"):
+        pytilpack.htmlrag._process_fetched_response("https://example.com", 404, "text/html", "not found")

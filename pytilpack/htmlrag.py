@@ -54,12 +54,17 @@ def fetch_url(
         follow_redirects=True,
     )
 
-    if r.status_code != 200:
+    return _process_fetched_response(url, r.status_code, r.headers.get("Content-Type"), r.text)
+
+
+def _process_fetched_response(url: str, status_code: int, content_type: str | None, text: str) -> str:
+    if status_code != 200:
         raise RuntimeError(
-            f"URL {url} の取得に失敗しました。Status: {r.status_code}。URLとアクセス権を確かめて再試行する\n{r.text}"
+            f"URL {url} の取得に失敗しました。Status: {status_code}。URLとアクセス権を確かめて再試行する\n{text}"
         )
 
-    content_type = r.headers.get("Content-Type", "text/html")
+    if content_type is None:
+        content_type = "text/html"
     if (
         "text/markdown" in content_type
         or "text/plain" in content_type
@@ -67,21 +72,14 @@ def fetch_url(
         or "application/xml" in content_type
         or "application/json" in content_type
     ):
-        return r.text
+        return text
 
     if "html" not in content_type:
         raise RuntimeError(
-            f"URL {url} はHTMLではありません。Content-Type: {content_type}。HTMLを返すURLを指定する\n{r.text[:100]}..."
+            f"URL {url} はHTMLではありません。Content-Type: {content_type}。HTMLを返すURLを指定する\n{text[:100]}..."
         )
 
-    content = r.text
-    output = clean_html(
-        content,
-        aggressive=True,
-        keep_title=True,
-        keep_href=True,
-    )
-    return output
+    return clean_html(text, aggressive=True, keep_title=True, keep_href=True)
 
 
 def get_default_user_agent():
