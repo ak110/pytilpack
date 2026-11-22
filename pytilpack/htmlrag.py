@@ -37,7 +37,11 @@ def fetch_url(
 _RETRY_STATUS_CODES = (408, 429, 500, 502, 503, 504, 529)
 
 
-@pytilpack.functools.retry(includes=(httpx.TransportError, httpx.HTTPStatusError), retry_status_codes=_RETRY_STATUS_CODES)
+@pytilpack.functools.retry(
+    includes=(httpx.TransportError, httpx.HTTPStatusError),
+    excludes=(httpx.UnsupportedProtocol,),
+    retry_status_codes=_RETRY_STATUS_CODES,
+)
 def _get(url: str, headers: dict[str, str], verify: bool) -> httpx.Response:
     r = httpx.get(url, headers=headers, verify=verify, follow_redirects=True)
     if r.status_code in _RETRY_STATUS_CODES:
