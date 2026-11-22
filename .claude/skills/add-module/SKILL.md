@@ -15,7 +15,7 @@ description: pytilpackの公開モジュールまたはサブパッケージを�
 ## 実施
 
 1. モジュールの責務と公開名を決め、architectureの依存規約に照らして実装する。
-2. developmentの「モジュールの追加・変更」に従い、依存宣言、`EXTRA_MODULES`、API文書、利用ガイドとMkDocsの分類、テストを更新する。
+2. developmentの「モジュールの追加・変更」に従い、依存宣言、`EXTRA_MODULES`、`docs/guide/index.md`のextra表とモジュール一覧、テストを更新する。
 3. 同節のコマンドで実装と文書を検証し、失敗を是正する。依存の最小性、任意依存の関数内import、公開APIとテストの対応は実装を読んで確かめる。
 
 CLIは`pytilpack/cli/main.py:_SUBCOMMANDS`と`docs/guide/cli.md`で扱う。
