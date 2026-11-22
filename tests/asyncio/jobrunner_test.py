@@ -1,5 +1,3 @@
-"""テストコード。"""
-
 import asyncio
 import queue
 import threading
@@ -12,8 +10,6 @@ import pytilpack.asyncio
 
 
 class CountingJob(pytilpack.asyncio.Job):
-    """実行回数をカウントするジョブ。"""
-
     def __init__(self, sleep_time: float = 0.1) -> None:
         super().__init__()
         self.count = 0
@@ -29,8 +25,6 @@ class CountingJob(pytilpack.asyncio.Job):
 
 
 class ErrorJob(pytilpack.asyncio.Job):
-    """エラーを発生させるジョブ。"""
-
     @typing.override
     async def run(self) -> None:
         raise ValueError("Test error")
@@ -40,10 +34,7 @@ class ErrorJob(pytilpack.asyncio.Job):
 
 
 class JobRunner(pytilpack.asyncio.JobRunner):
-    """テスト用のJobRunner。"""
-
     def __init__(self, max_job_concurrency: int = 8, poll_interval: float = 0.1, **kwargs) -> None:
-        # テスト高速化のためpoll_intervalのデフォルトは短くする
         super().__init__(
             max_job_concurrency=max_job_concurrency,
             poll_interval=poll_interval,
@@ -63,8 +54,6 @@ class JobRunner(pytilpack.asyncio.JobRunner):
 
 
 class EventJob(pytilpack.asyncio.Job):
-    """開始と終了をイベントで制御するジョブ。"""
-
     def __init__(self) -> None:
         super().__init__()
         self.started = asyncio.Event()
@@ -77,8 +66,6 @@ class EventJob(pytilpack.asyncio.Job):
 
 
 class PollingJobRunner(pytilpack.asyncio.JobRunner):
-    """取得待機の開始と返却を制御するランナー。"""
-
     def __init__(self, first_job: EventJob | None = None) -> None:
         super().__init__(max_job_concurrency=2, poll_interval=0)
         self.first_job = first_job
@@ -98,13 +85,10 @@ class PollingJobRunner(pytilpack.asyncio.JobRunner):
 @pytest.mark.parametrize("outcome", ["finished", "errored", "canceled"])
 @pytest.mark.asyncio
 async def test_job_state_owned_by_runner(outcome: pytilpack.asyncio.JobStatus, caplog: pytest.LogCaptureFixture) -> None:
-    """通知の上書きと失敗を経ても本体の実行結果を保持する。"""
 
     observed: list[tuple[str, pytilpack.asyncio.JobStatus]] = []
 
     class NotifyingJob(EventJob):
-        """本体と通知の実行順序を記録するジョブ。"""
-
         @typing.override
         async def run(self) -> None:
             observed.append(("run", self.status))
@@ -169,7 +153,6 @@ async def _graceful_shutdown(runner: PollingJobRunner) -> None:
 
 @pytest.mark.asyncio
 async def test_cancel_while_polling_releases_capacity() -> None:
-    """取得待機の取消後に同時実行枠を全て再取得できる。"""
     runner = PollingJobRunner()
     task = asyncio.create_task(runner.run())
     try:
@@ -191,7 +174,6 @@ def add_jobs_thread(
     jobs: list[pytilpack.asyncio.Job],
     sleep_time: float | None = 0.1,
 ) -> None:
-    """別スレッドでジョブを追加する。"""
     for job in jobs:
         if sleep_time is not None:
             time.sleep(sleep_time)
@@ -200,16 +182,13 @@ def add_jobs_thread(
 
 @pytest.mark.asyncio
 async def test_job_runner() -> None:
-    """基本機能のテスト。"""
     runner = JobRunner()
 
-    # 別スレッドでジョブを追加
     jobs = [CountingJob() for _ in range(3)]
     thread = threading.Thread(target=add_jobs_thread, args=(runner.queue, jobs))
     thread.start()
     time.sleep(0.0)
 
-    # JobRunnerを実行（0.75秒後にシャットダウン）
     async def shutdown_after() -> None:
         await asyncio.sleep(0.75)
         runner.shutdown()
@@ -218,25 +197,21 @@ async def test_job_runner() -> None:
     thread.join()
 
     thread.join()
-    # 各ジョブの実行回数を確認
     assert all(job.status == "finished" and job.count == 1 for job in jobs)
 
 
 @pytest.mark.asyncio
 async def test_job_runner_cancel() -> None:
-    """キャンセルのテスト。"""
     runner = JobRunner()
 
-    # 時間がかからないジョブとエラーになるジョブと時間のかかるジョブ
     jobs = (
-        CountingJob(),  # 期待: count == 1
-        CountingJob(sleep_time=3.0),  # shutdownにより処理されず count == 0
+        CountingJob(),
+        CountingJob(sleep_time=3.0),
     )
     thread = threading.Thread(target=add_jobs_thread, args=(runner.queue, jobs))
     thread.start()
     time.sleep(0.0)
 
-    # JobRunnerを実行（1.0秒後にシャットダウン）
     async def shutdown_after() -> None:
         await asyncio.sleep(1.0)
         runner.shutdown()
@@ -247,33 +222,27 @@ async def test_job_runner_cancel() -> None:
     elapsed_time = time.perf_counter() - start_time
     assert 0.75 <= elapsed_time < 1.25
 
-    # 各ジョブの実行結果を確認
     assert jobs[0].status == "finished" and jobs[0].count == 1
     assert jobs[1].status == "canceled" and jobs[1].count == 0
 
 
 @pytest.mark.asyncio
 async def test_job_runner_errors() -> None:
-    """異常系のテスト。"""
     runner = JobRunner()
 
-    # 時間がかからないジョブとエラーになるジョブと時間のかかるジョブ
     jobs = (
-        CountingJob(),  # 期待: count == 1
-        ErrorJob(),  # エラー発生するがrunnerは継続
-        CountingJob(),  # 期待: count == 1
-        CountingJob(sleep_time=3.0),  # shutdownにより処理されず count == 0
+        CountingJob(),
+        ErrorJob(),
+        CountingJob(),
+        CountingJob(sleep_time=3.0),
     )
     thread = threading.Thread(target=add_jobs_thread, args=(runner.queue, jobs))
     thread.start()
     time.sleep(0.0)
 
-    # JobRunnerを実行（0.75秒後にシャットダウン）
     async def shutdown_after_and_add_job() -> CountingJob:
-        # 早めにshutdownを実施
         await asyncio.sleep(0.75)
         runner.shutdown()
-        # シャットダウン後に少し待ってからジョブを追加
         await asyncio.sleep(0.25)
         post_job = CountingJob()
         runner.queue.put(post_job)
@@ -282,7 +251,6 @@ async def test_job_runner_errors() -> None:
     _, post_job = await asyncio.gather(runner.run(), shutdown_after_and_add_job())
     thread.join()
 
-    # 各ジョブの実行結果を確認
     assert jobs[0].status == "finished" and jobs[0].count == 1
     assert jobs[1].status == "errored"
     assert jobs[2].status == "finished" and jobs[2].count == 1
@@ -292,31 +260,25 @@ async def test_job_runner_errors() -> None:
 
 @pytest.mark.asyncio
 async def test_job_runner_graceful_shutdown() -> None:
-    """graceful_shutdownのテスト。"""
-    # 同時実行数2のJobRunnerを作成
     runner = JobRunner(max_job_concurrency=2)
 
-    # 3つのジョブを用意
     jobs = (
-        CountingJob(sleep_time=0.5),  # 期待: count == 1
-        CountingJob(sleep_time=0.5),  # 期待: count == 1
-        CountingJob(sleep_time=0.5),  # 実行待ちになる
+        CountingJob(sleep_time=0.5),
+        CountingJob(sleep_time=0.5),
+        CountingJob(sleep_time=0.5),
     )
     for job in jobs:
         runner.queue.put(job)
 
-    # JobRunnerを実行（0.3秒後にgraceful_shutdown）
     async def graceful_shutdown_after() -> None:
         await asyncio.sleep(0.3)
         await runner.graceful_shutdown()
 
-    # 処理実行
     start_time = time.perf_counter()
     await asyncio.gather(runner.run(), graceful_shutdown_after())
     elapsed_time = time.perf_counter() - start_time
     assert 0.5 <= elapsed_time < 0.9
 
-    # 各ジョブの実行結果を確認
     assert jobs[0].status == "finished" and jobs[0].count == 1
     assert jobs[1].status == "finished" and jobs[1].count == 1
     assert jobs[2].status == "waiting" and jobs[2].count == 0
@@ -337,7 +299,6 @@ async def test_stop_while_polling(stop: typing.Callable[[PollingJobRunner], typi
         assert not runner.tasks
         assert not job.started.is_set()
         assert job.status == "waiting"
-        # 全枠を再取得できれば、停止分岐での返却漏れと二重返却を検出できる。
         async with asyncio.timeout(1):
             await runner.semaphore.acquire()
             await runner.semaphore.acquire()
@@ -373,7 +334,6 @@ async def test_graceful_shutdown_while_polling_with_running_job() -> None:
     await active.started.wait()
     await runner.poll_started.wait()
     stop = asyncio.create_task(runner.graceful_shutdown())
-    # coroutine開始を確定し、既存ジョブの完了までは停止処理が戻らないことを確認する。
     await asyncio.sleep(0)
     assert not stop.done()
     runner.result.set_result(pending)
@@ -406,12 +366,9 @@ async def test_shutdown_while_polling_with_running_job() -> None:
 
 @pytest.mark.asyncio
 async def test_shutdown_cancels_job_again() -> None:
-    """最初の取消を処理中のジョブにも再度の即時停止が届く。"""
     first_cancel = asyncio.Event()
 
     class RetryingJob(EventJob):
-        """最初の取消を受けた後も完了シグナルを待つジョブ。"""
-
         @typing.override
         async def run(self) -> None:
             try:

@@ -1,5 +1,3 @@
-"""SQLAlchemy用のユーティリティ集（async版）。"""
-
 __lazy_modules__ = [
     "asyncio",
     "contextlib",
@@ -49,8 +47,6 @@ logger = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class _InitArgs:
-    """init()の引数。"""
-
     url: str | sqlalchemy.engine.URL
     autoflush: bool
     expire_on_commit: bool
@@ -58,40 +54,11 @@ class _InitArgs:
 
 
 class AsyncMixin(_QueryMixin, sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _ToDictMixin):
-    """モデルのベースクラス。SQLAlchemy 2.0スタイル・async前提。
-
-    Examples:
-        モデル定義例::
-
-            class Base(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.AsyncMixin):
-                pass
-
-            class User(Base):
-                __tablename__ = "users"
-                ...
-
-        Quart例::
-
-            @app.before_request
-            async def _before_request() -> None:
-                quart.g.db_session_token = await models.Base.start_session()
-
-            @app.teardown_request
-            async def _teardown_request(_: BaseException | None) -> None:
-                if hasattr(quart.g, "db_session_token"):
-                    await models.Base.close_session(quart.g.db_session_token)
-                    del quart.g.db_session_token
-
-    """
-
     _init_args: _InitArgs | None = None
-    """初期化引数。init()呼び出し後に設定される。"""
 
     _thread_local: threading.local | None = None
-    """スレッドローカルストレージ。init()呼び出し後に設定される。"""
 
     session_var: contextvars.ContextVar[sqlalchemy.ext.asyncio.AsyncSession] = contextvars.ContextVar("session_var")
-    """セッション。"""
 
     @classmethod
     def init(
@@ -106,23 +73,6 @@ class AsyncMixin(_QueryMixin, sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _To
         eagerly_init: bool = True,
         **kwargs: typing.Any,
     ) -> None:
-        """DB接続を初期化する。
-
-        engineとsessionmakerはスレッドローカルで遅延初期化される。
-        各スレッドが初めてDB操作を行う際にそのスレッド専用のengineとsessionmakerが生成される。
-
-        Args:
-            url: DB接続URL。
-            pool_size: コネクションプールのサイズ。スレッド数に応じて調整要。負数の場合はプーリングを無効化する。
-            max_overflow: コネクションプールの最大オーバーフロー数。Noneの場合はデフォルト値を使用。
-            pool_recycle: コネクションプールのリサイクル時間。Noneの場合はデフォルト値を使用。
-            pool_pre_ping: コネクションプールのプレピン。Noneの場合はデフォルト値を使用。
-            autoflush: セッションのautoflushフラグ。デフォルトはTrue。
-            expire_on_commit: セッションのexpire_on_commitフラグ。デフォルトはFalse。
-            eagerly_init: Trueの場合（デフォルト）、呼び出し元スレッドのengineとsessionmakerをすぐに生成する。
-            **kwargs: sqlalchemy.ext.asyncio.create_async_engine()へのキーワード引数。
-
-        """
         if cls._init_args is not None:
             raise RuntimeError(
                 f"DB接続はすでに初期化されています。{cls.__qualname__}.init()はクラスごとに1回だけ呼び、"
@@ -151,15 +101,6 @@ class AsyncMixin(_QueryMixin, sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _To
 
     @classmethod
     async def term(cls) -> None:
-        """現在のスレッドのDB接続を終了する。
-
-        スレッドローカルなengineを`dispose()`し、engineとsessionmakerの参照を`None`へ戻す。
-        スレッド終了時やテスト後の後始末に使用する。
-
-        init()で設定したクラス単位の初期化状態は保持するため、term()の後にinit()を
-        呼び直すことはできない（init()は二重呼び出しをRuntimeErrorで拒否する）。
-
-        """
         if cls._init_args is None:
             logger.warning(f"未初期化時のterm()呼び出し。{cls.__qualname__}.init()前のため何もせずに戻った（対応不要）")
             return
@@ -177,7 +118,6 @@ class AsyncMixin(_QueryMixin, sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _To
         sqlalchemy.ext.asyncio.AsyncEngine,
         sqlalchemy.ext.asyncio.async_sessionmaker[sqlalchemy.ext.asyncio.AsyncSession],
     ]:
-        """現在のスレッドのengineとsessionmakerを取得する（なければ遅延生成）。"""
         if cls._init_args is None:
             raise RuntimeError(f"init()が呼ばれていません。先に{cls.__qualname__}.init()でDB接続を初期化する")
         if cls._thread_local is None:
@@ -195,25 +135,16 @@ class AsyncMixin(_QueryMixin, sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _To
 
     @classmethod
     def engine(cls) -> sqlalchemy.ext.asyncio.AsyncEngine:
-        """現在のスレッドのDB接続を返す。init()後に初めて呼ばれた時点で遅延生成される。"""
         return cls._get_engine_and_sessionmaker()[0]
 
     @classmethod
     def sessionmaker(
         cls,
     ) -> sqlalchemy.ext.asyncio.async_sessionmaker[sqlalchemy.ext.asyncio.AsyncSession]:
-        """現在のスレッドのセッションファクトリを返す。init()後に初めて呼ばれた時点で遅延生成される。"""
         return cls._get_engine_and_sessionmaker()[1]
 
     @classmethod
     def connect(cls) -> sqlalchemy.ext.asyncio.AsyncConnection:
-        """DBに接続する。
-
-        使用例::
-            async with Base.connect() as conn:
-                await conn.run_sync(Base.metadata.create_all)
-
-        """
         return cls.engine().connect()
 
     @classmethod
@@ -223,17 +154,6 @@ class AsyncMixin(_QueryMixin, sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _To
         name: str | None = None,
         log_level: int = logging.DEBUG,
     ):
-        """セッションを開始するコンテキストマネージャ。
-
-        使用例::
-            async with Base.session_scope() as session:
-                ...
-
-        Args:
-            name: セッション名。指定時のみログ出力する。
-            log_level: ログレベル。
-
-        """
         token = await cls.start_session(name=name, log_level=log_level)
         try:
             yield cls.session()
@@ -244,9 +164,7 @@ class AsyncMixin(_QueryMixin, sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _To
     async def start_session(
         cls, name: str | None = None, log_level: int = logging.DEBUG
     ) -> contextvars.Token[sqlalchemy.ext.asyncio.AsyncSession]:
-        """セッションを開始する。"""
         # arid: disable
-        # sync版（pytilpack.sqlalchemy.sync.SyncMixin.start_session）と並行実装のため許容する。
         session = cls.sessionmaker()()  # pylint: disable=not-callable
         token = cls.session_var.set(session)
         if name is not None:
@@ -266,9 +184,7 @@ class AsyncMixin(_QueryMixin, sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _To
         name: str | None = None,
         log_level: int = logging.DEBUG,
     ) -> None:
-        """セッションを終了する。"""
         # arid: disable
-        # sync版（pytilpack.sqlalchemy.sync.SyncMixin.close_session）と並行実装のため許容する。
         session = cls.session()
         if name is not None:
             logger.log(
@@ -282,10 +198,8 @@ class AsyncMixin(_QueryMixin, sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _To
         # arid: enable
 
     # arid: disable
-    # sync版（pytilpack.sqlalchemy.sync.SyncMixin）と並行実装のため許容する。
     @classmethod
     def session(cls) -> sqlalchemy.ext.asyncio.AsyncSession:
-        """セッションを取得する。"""
         sess = cls.session_var.get(None)
         if sess is None:
             raise RuntimeError(f"セッションが開始されていません。{cls.__qualname__}.start_session()を呼び出してください。")
@@ -295,120 +209,39 @@ class AsyncMixin(_QueryMixin, sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _To
 
     @classmethod
     async def count(cls, query: sqlalchemy.Select | sqlalchemy.CompoundSelect) -> int:
-        """queryのレコード数を取得する。"""
         # pylint: disable=not-callable
         return await cls.scalar_one_or_none(_count_query(query)) or 0
 
     @classmethod
     async def scalar_one[T](cls, query: sqlalchemy.Select[T] | sqlalchemy.CompoundSelect[T]) -> T:
-        """queryの結果を1件取得する。
-
-        Args:
-            query: クエリ。
-
-        Returns:
-            1件のインスタンス。
-
-        Raises:
-            sqlalchemy.exc.NoResultFound: 結果が0件の場合。
-            sqlalchemy.exc.MultipleResultsFound: 結果が複数件の場合。
-
-        """
         return (await cls.session().execute(query)).scalar_one()
 
     @classmethod
     async def scalar_one_or_none[T](cls, query: sqlalchemy.Select[T] | sqlalchemy.CompoundSelect[T]) -> T | None:
-        """queryの結果を0件または1件取得する。
-
-        Args:
-            query: クエリ。
-
-        Returns:
-            0件の場合はNone、1件の場合はインスタンス。
-
-        Raises:
-            sqlalchemy.exc.MultipleResultsFound: 結果が複数件の場合。
-
-        """
         return (await cls.session().execute(query)).scalar_one_or_none()
 
     @classmethod
     async def scalars[T](cls, query: sqlalchemy.Select[T] | sqlalchemy.CompoundSelect[T]) -> list[T]:
-        """queryの結果を全件取得する。
-
-        Args:
-            query: クエリ。
-
-        Returns:
-            全件のインスタンスのリスト。
-
-        """
         return list((await cls.session().execute(query)).scalars().all())
 
     @classmethod
     async def one[*Ts](cls, query: sqlalchemy.Select[*Ts] | sqlalchemy.CompoundSelect[*Ts]) -> sqlalchemy.Row[*Ts]:
-        """queryの結果を1件取得する。
-
-        Args:
-            query: クエリ。
-
-        Returns:
-            1件のインスタンス。
-
-        Raises:
-            sqlalchemy.exc.NoResultFound: 結果が0件の場合。
-            sqlalchemy.exc.MultipleResultsFound: 結果が複数件の場合。
-
-        """
         return (await cls.session().execute(query)).one()
 
     @classmethod
     async def one_or_none[*Ts](
         cls, query: sqlalchemy.Select[*Ts] | sqlalchemy.CompoundSelect[*Ts]
     ) -> sqlalchemy.Row[*Ts] | None:
-        """queryの結果を0件または1件取得する。
-
-        Args:
-            query: クエリ。
-
-        Returns:
-            0件の場合はNone、1件の場合はインスタンス。
-
-        Raises:
-            sqlalchemy.exc.MultipleResultsFound: 結果が複数件の場合。
-
-        """
         return (await cls.session().execute(query)).one_or_none()
 
     @classmethod
     async def all[*Ts](cls, query: sqlalchemy.Select[*Ts] | sqlalchemy.CompoundSelect[*Ts]) -> list[sqlalchemy.Row[*Ts]]:
-        """queryの結果を全件取得する。
-
-        Args:
-            query: クエリ。
-
-        Returns:
-            全件のインスタンスのリスト。
-
-        """
         return list((await cls.session().execute(query)).all())
 
     @classmethod
     async def get_by_id_not_null(
         cls, id_: int, for_update: bool = False, options: sqlalchemy.sql.base.ExecutableOption | None = None
     ) -> typing.Self:
-        """IDを元にインスタンスを取得。見つからない場合は例外を送出する。
-
-        Args:
-            id_: ID。
-            for_update: 更新ロックを取得するか否か。
-            options: クエリオプション。eager loadingなどに使用する。
-
-        Returns:
-            インスタンス。
-        Raises:
-            ValueError: 見つからない場合。
-        """
         instance = await cls.get_by_id(id_, for_update=for_update, options=options)
         return _require_instance(instance, cls, id_)
 
@@ -416,17 +249,6 @@ class AsyncMixin(_QueryMixin, sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _To
     async def get_by_id(
         cls, id_: int, for_update: bool = False, options: sqlalchemy.sql.base.ExecutableOption | None = None
     ) -> typing.Self | None:
-        """IDを元にインスタンスを取得。
-
-        Args:
-            id_: ID。
-            for_update: 更新ロックを取得するか否か。
-            options: クエリオプション。eager loadingなどに使用する。
-
-        Returns:
-            インスタンス。
-
-        """
         q = cls.select().where(_id_filter(cls, id_))  # type: ignore  # pylint: disable=no-member
         q = _query_options(q, for_update, options)
         return await cls.scalar_one_or_none(q)  # type: ignore[arg-type]
@@ -439,17 +261,6 @@ class AsyncMixin(_QueryMixin, sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _To
         per_page: int,
         scalar: bool = True,
     ) -> pytilpack.paginator.Paginator:
-        """Flask-SQLAlchemy風ページネーション。
-
-        Args:
-            query: ページネーションするクエリ。
-            page: ページ番号。
-            per_page: 1ページあたりのアイテム数。
-            scalar: Trueの場合、スカラー値を返す。Falseの場合、全件のインスタンスを返す。
-
-        Returns:
-            ページネーションされた結果を返すpytilpack.paginator.Paginatorインスタンス。
-        """
         page_query = _page_query(query, page, per_page)
         total = await cls.count(query)
         items = await (cls.scalars(page_query) if scalar else cls.all(page_query))
@@ -458,16 +269,6 @@ class AsyncMixin(_QueryMixin, sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _To
 
     @classmethod
     def run_with_session[**P, R](cls, func: typing.Callable[P, typing.Awaitable[R]], *args: P.args, **kwargs: P.kwargs) -> R:
-        """非同期関数をセッション付きで同期実行する関数。
-
-        Args:
-            func: デコレート対象の非同期関数
-            *args: 非同期関数への引数
-            **kwargs: 非同期関数へのキーワード引数
-
-        Returns:
-            非同期関数の戻り値
-        """
 
         async def wrapper() -> R:
             async with cls.session_scope():
@@ -477,8 +278,6 @@ class AsyncMixin(_QueryMixin, sqlalchemy.ext.asyncio.AsyncAttrs, _ReprMixin, _To
 
 
 class AsyncUniqueIDMixin(_UniqueIDMixin):
-    """self.unique_idを持つテーブルクラスにユニークID操作メソッドを付与するmixin。"""
-
     @classmethod
     async def get_by_unique_id(
         cls: type[typing.Self],
@@ -486,17 +285,6 @@ class AsyncUniqueIDMixin(_UniqueIDMixin):
         allow_id: bool = False,
         for_update: bool = False,
     ) -> typing.Self | None:
-        """ユニークIDを元にインスタンスを取得。
-
-        Args:
-            unique_id: ユニークID。
-            allow_id: ユニークIDだけでなくID(int)も許可するかどうか。
-            for_update: 更新ロックを取得するか否か。
-
-        Returns:
-            インスタンス。
-
-        """
         assert issubclass(cls, AsyncMixin)
         q = cls.select().where(_id_filter(cls, unique_id, not (allow_id and isinstance(unique_id, int))))
         q = _query_options(q, for_update)
@@ -504,7 +292,6 @@ class AsyncUniqueIDMixin(_UniqueIDMixin):
 
 
 async def await_for_connection(url: str, timeout: float = 180.0) -> None:
-    """DBに接続可能になるまで待機する。"""
     state = _WaitForConnectionState(url, timeout)
     while True:
         try:
@@ -521,7 +308,6 @@ async def await_for_connection(url: str, timeout: float = 180.0) -> None:
 
 
 async def asafe_close(session: sqlalchemy.ext.asyncio.AsyncSession, log_level: int | None = logging.DEBUG):
-    """例外を送出せずにセッションをクローズ。"""
     try:
         await asyncio.shield(session.close())
     except Exception:

@@ -1,5 +1,3 @@
-"""JSONC(JSON with Comments)関連。"""
-
 __lazy_modules__ = ["dataclasses", "json", "pytilpack.io", "re", "typing"]
 
 import dataclasses
@@ -20,7 +18,6 @@ def load(
     strict: bool = False,
     **kwargs,
 ) -> typing.Any:
-    """JSONCファイルの読み込み。"""
     try:
         return loads(pytilpack.io.read_text(source, encoding=encoding, errors=errors), **kwargs)
     except FileNotFoundError:
@@ -30,29 +27,23 @@ def load(
 
 
 def loads(text: str, **kwargs) -> typing.Any:
-    """JSONC文字列のパース。"""
     return json.loads(_remove_trailing_commas(_remove_comments(text)), **kwargs)
 
 
 def _remove_comments(text: str) -> str:
-    """JSONCのコメントを除去する。"""
-    # 文字列リテラル、行コメント、ブロックコメントを正規表現で処理する
     pattern = re.compile(
-        r'"(?:[^"\\]|\\.)*"'  # 文字列リテラル
-        r"|//[^\n]*"  # 行コメント
-        r"|/\*.*?\*/",  # ブロックコメント
+        r'"(?:[^"\\]|\\.)*"'
+        r"|//[^\n]*"
+        r"|/\*.*?\*/",
         re.DOTALL,
     )
 
     def replacer(m: re.Match) -> str:
         s = m.group(0)
-        # 文字列リテラルはそのまま返す
         if s.startswith('"'):
             return s
-        # ブロックコメントは改行を保持する
         if s.startswith("/*"):
             return "\n" * s.count("\n")
-        # 行コメントは空文字
         return ""
 
     return pattern.sub(replacer, text)
@@ -65,28 +56,6 @@ def edit(
     default: typing.Callable[[typing.Any], typing.Any] | None = None,
     **dumps_kwargs: typing.Any,
 ) -> str:
-    """JSONC文字列中の指定パスの値を書き換えつつコメント・空行・インデントを維持する。
-
-    ``updates``のキーはパス（オブジェクトキー名の文字列または配列インデックスの整数の並び）、
-    値は書き込む新しいPythonオブジェクトとする。空タプルはルート全体を指す。
-    値の書き換えのみを対象とし、キーの追加・削除・配列要素の追加は扱わない。
-    書き換え後の値のシリアライズは``json.dumps``に委譲するため、
-    ``ensure_ascii``・``default``などの追加キーワード引数はそのまま渡す。
-
-    存在しないパスを指定した場合は``KeyError``（オブジェクト）または``IndexError``（配列）が発生する。
-    パスの途中で辿った値がオブジェクト・配列でない場合は``TypeError``が発生する。
-
-    Args:
-        text: 元のJSONC文字列。
-        updates: パスから新しい値へのマッピング。
-        ensure_ascii: ``json.dumps``へ渡すフラグ。既定は``False``。
-        default: ``json.dumps``へ渡す``default``コールバック。
-        **dumps_kwargs: ``json.dumps``へ渡す追加キーワード引数。
-
-    Returns:
-        更新後のJSONC文字列。
-
-    """
     root = _Parser(text).parse()
     replacements: list[tuple[int, int, str]] = []
     for path, value in updates.items():
@@ -94,7 +63,6 @@ def edit(
         dumped = json.dumps(value, ensure_ascii=ensure_ascii, default=default, **dumps_kwargs)
         replacements.append((node.start, node.end, dumped))
     replacements.sort(key=lambda r: r[0], reverse=True)
-    # オフセット重複の検出（同一位置または包含関係を持つ書き換えは順序に依存し曖昧なため拒否する）
     for i in range(len(replacements) - 1):
         curr_start = replacements[i][0]
         next_end = replacements[i + 1][1]
@@ -115,11 +83,6 @@ def edit_file(
     default: typing.Callable[[typing.Any], typing.Any] | None = None,
     **dumps_kwargs: typing.Any,
 ) -> None:
-    """JSONCファイルを``edit``で書き換えて上書き保存する。
-
-    コメント・空行・インデントを維持したままファイル内の値を差し替える。
-
-    """
     original = pytilpack.io.read_text(path, encoding=encoding, errors=errors)
     updated = edit(original, updates, ensure_ascii=ensure_ascii, default=default, **dumps_kwargs)
     pytilpack.io.write_text(path, updated, encoding=encoding, errors=errors)
@@ -127,9 +90,7 @@ def edit_file(
 
 @dataclasses.dataclass
 class _Node:
-    """パース時に値の範囲と構造を保持する内部ノード。"""
-
-    kind: str  # "object" | "array" | "string" | "number" | "true" | "false" | "null"
+    kind: str
     start: int
     end: int
     members: dict[str, "_Node"] | None = None
@@ -137,8 +98,6 @@ class _Node:
 
 
 class _Parser:
-    """位置情報付きJSONC最小パーサー。値の(start, end)オフセットのみを追跡する。"""
-
     def __init__(self, text: str) -> None:
         self.text = text
         self.pos = 0
@@ -207,7 +166,7 @@ class _Parser:
 
     def _parse_object(self) -> _Node:
         start = self.pos
-        self.pos += 1  # consume "{"
+        self.pos += 1
         members: dict[str, _Node] = {}
         while True:
             self._skip_ws()
@@ -237,7 +196,7 @@ class _Parser:
 
     def _parse_array(self) -> _Node:
         start = self.pos
-        self.pos += 1  # consume "["
+        self.pos += 1
         items: list[_Node] = []
         while True:
             self._skip_ws()
@@ -298,7 +257,6 @@ class _Parser:
 
 
 def _resolve(root: _Node, path: tuple[_PathKey, ...]) -> _Node:
-    """パスに従いノードを辿る。"""
     node = root
     for i, key in enumerate(path):
         if isinstance(key, str):
@@ -326,20 +284,16 @@ def _resolve(root: _Node, path: tuple[_PathKey, ...]) -> _Node:
 
 
 def _remove_trailing_commas(text: str) -> str:
-    """Trailing commaを除去する。"""
-    # 文字列リテラル、trailing commaを正規表現で処理する
     pattern = re.compile(
-        r'"(?:[^"\\]|\\.)*"'  # 文字列リテラル
-        r"|,\s*(?=[}\]])",  # trailing comma
+        r'"(?:[^"\\]|\\.)*"'
+        r"|,\s*(?=[}\]])",
         re.DOTALL,
     )
 
     def replacer(m: re.Match) -> str:
         s = m.group(0)
-        # 文字列リテラルはそのまま返す
         if s.startswith('"'):
             return s
-        # trailing commaは改行を保持する
         return "\n" * s.count("\n")
 
     return pattern.sub(replacer, text)

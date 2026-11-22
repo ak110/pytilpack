@@ -1,5 +1,3 @@
-"""同期I/Oのテスト。"""
-
 import io
 import os
 import pathlib
@@ -11,7 +9,6 @@ import pytilpack.io
 
 @pytest.mark.parametrize("use_string_path", [False, True])
 def test_read_write_text_path(tmp_path: pathlib.Path, use_string_path: bool) -> None:
-    """親ディレクトリを作成し、パスから書き込んだテキストを読み戻す。"""
     path = tmp_path / "nested" / "sample.txt"
     target = str(path) if use_string_path else path
     pytilpack.io.write_text(target, "日本語\nテキスト")
@@ -22,7 +19,6 @@ def test_read_write_text_path(tmp_path: pathlib.Path, use_string_path: bool) -> 
 
 @pytest.mark.parametrize("binary", [False, True])
 def test_read_write_text_stream(binary: bool) -> None:
-    """テキスト・バイナリのストリームへ書き込み、読み戻す。"""
     stream = io.BytesIO() if binary else io.StringIO()
     pytilpack.io.write_text(stream, "日本語", encoding="shift_jis")
     assert stream.getvalue() == ("日本語".encode("shift_jis") if binary else "日本語")
@@ -31,13 +27,11 @@ def test_read_write_text_stream(binary: bool) -> None:
 
 
 def test_read_text_missing_path(tmp_path: pathlib.Path) -> None:
-    """存在しないパスはFileNotFoundErrorを返す。"""
     with pytest.raises(FileNotFoundError):
         pytilpack.io.read_text(tmp_path / "missing.txt")
 
 
 def test_text_encoding_errors(tmp_path: pathlib.Path) -> None:
-    """パスとバイナリストリームに指定した文字コードとエラー処理を適用する。"""
     path = tmp_path / "sample.txt"
     pytilpack.io.write_text(path, "日本語", encoding="shift_jis")
     assert path.read_bytes() == "日本語".encode("shift_jis")

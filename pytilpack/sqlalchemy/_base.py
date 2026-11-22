@@ -1,5 +1,3 @@
-"""SQLAlchemy Mixin共通の基底クラス。"""
-
 __lazy_modules__ = ["datetime", "logging", "secrets", "sqlalchemy", "sqlalchemy.sql.base", "time", "typing"]
 
 import datetime as dt
@@ -24,7 +22,6 @@ def _engine_kwargs(
     pool_pre_ping: bool,
     disable_pool: bool = False,
 ) -> dict[str, typing.Any]:
-    """接続オプションを組み立てる。プール無効化の判断は呼出側が行う。"""
     result = kwargs.copy()
     if disable_pool:
         result["poolclass"] = sqlalchemy.pool.NullPool
@@ -43,50 +40,38 @@ def _engine_kwargs(
 
 
 class _QueryMixin:
-    """セッションに依存しないクエリ生成。"""
-
     @classmethod
     def select(cls) -> sqlalchemy.Select[typing.Self]:
-        """FROM句を保持したSELECTを返す。"""
         return sqlalchemy.select(cls).select_from(cls)
 
     @classmethod
     def insert(cls) -> sqlalchemy.Insert:
-        """INSERTを返す。"""
         return sqlalchemy.insert(cls)
 
     @classmethod
     def update(cls) -> sqlalchemy.Update:
-        """UPDATEを返す。"""
         return sqlalchemy.update(cls)
 
     @classmethod
     def delete(cls) -> sqlalchemy.Delete:
-        """DELETEを返す。"""
         return sqlalchemy.delete(cls)
 
 
 class _UniqueIDMixin:
-    """各SQL実装に同じ長さのユニークID生成を提供する。"""
-
     @classmethod
     def generate_unique_id(cls) -> str:
-        """ユニークIDを生成する。"""
         return secrets.token_urlsafe(32)
 
 
 def _count_query(query: sqlalchemy.Select | sqlalchemy.CompoundSelect) -> sqlalchemy.Select:
-    """ソートを除いた副問合せの件数クエリを返す。"""
     return sqlalchemy.select(sqlalchemy.func.count()).select_from(query.order_by(None).subquery())  # pylint: disable=not-callable
 
 
 def _id_filter(model: type, id_: str | int, unique: bool = False):
-    """IDまたはユニークIDの比較条件を返す。"""
     return (model.unique_id if unique else model.id) == id_  # type: ignore[attr-defined]
 
 
 def _query_options[T](query: T, for_update: bool, options: sqlalchemy.sql.base.ExecutableOption | None = None) -> T:
-    """ID検索のオプションと更新ロックを同じ順番で適用する。"""
     configured: typing.Any = query
     if options is not None:
         configured = configured.options(options)
@@ -96,7 +81,6 @@ def _query_options[T](query: T, for_update: bool, options: sqlalchemy.sql.base.E
 
 
 def _require_instance[T](instance: T | None, model: type, id_: int) -> T:
-    """ID検索が0件の場合のエラーをそろえる。"""
     if instance is None:
         raise ValueError(
             f"{model.__qualname__}が見つかりませんでした。id={id_}。"
@@ -106,7 +90,6 @@ def _require_instance[T](instance: T | None, model: type, id_: int) -> T:
 
 
 def _page_query[T: sqlalchemy.Select | sqlalchemy.CompoundSelect](query: T, page: int, per_page: int) -> T:
-    """ページ引数を検証し、取得範囲を指定したクエリを返す。"""
     if page <= 0:
         raise ValueError(f"ページ番号は1以上でなければなりません: page={page}")
     if per_page <= 0:
@@ -115,17 +98,13 @@ def _page_query[T: sqlalchemy.Select | sqlalchemy.CompoundSelect](query: T, page
 
 
 class _ReprMixin:
-    """__repr__を提供する共通Mixin。"""
-
     def _repr_attrs(self) -> dict[str, typing.Any]:
-        """__repr__で表示する属性を返す。派生クラスでオーバーライド可能。"""
         id_ = getattr(self, "id", _SENTINEL)
         if id_ is not _SENTINEL:
             return {"id": id_}
         return {}
 
     def __repr__(self) -> str:
-        # detached/expired状態でのDetachedInstanceErrorなどを防ぐ
         try:
             attrs = self._repr_attrs()
             attrs_str = ", ".join(f"{k}={v!r}" for k, v in attrs.items())
@@ -135,8 +114,6 @@ class _ReprMixin:
 
 
 class _ToDictMixin:
-    """to_dict()メソッドを提供する共通Mixin。sync/async/flask版Mixinで共用する。"""
-
     def to_dict(
         self,
         includes: list[str] | None = None,
@@ -145,23 +122,10 @@ class _ToDictMixin:
         value_converter: typing.Callable[[typing.Any], typing.Any] | None = None,
         datetime_to_iso: bool = True,
     ) -> dict[str, typing.Any]:
-        """インスタンスを辞書化する。
-
-        Args:
-            includes: 辞書化するフィールド名のリスト。excludesと同時指定不可。
-            excludes: 辞書化しないフィールド名のリスト。includesと同時指定不可。
-            exclude_none: Noneのフィールドを除外するかどうか。
-            value_converter: 各フィールドの値を変換する関数。引数は値、戻り値は変換後の値。
-            datetime_to_iso: datetime型の値をISOフォーマットの文字列に変換するかどうか。
-
-        Returns:
-            辞書。
-
-        """
         if includes is not None and excludes is not None:
             raise ValueError("includesとexcludesは同時に指定できません。")
         mapper = sqlalchemy.inspect(self.__class__, raiseerr=True)
-        assert mapper is not None  # SQLAlchemyモデルであることがクラス契約で保証される
+        assert mapper is not None
         all_columns = [
             mapper.get_property_by_column(column).key
             for column in self.__table__.columns  # type: ignore[attr-defined]
@@ -183,7 +147,6 @@ class _ToDictMixin:
                 )
 
         def convert_value(value: typing.Any) -> typing.Any:
-            """値を変換する関数。"""
             if datetime_to_iso and isinstance(value, dt.datetime | dt.date):
                 return value.isoformat()
             if value_converter is not None:
@@ -198,12 +161,6 @@ class _ToDictMixin:
 
 
 class _WaitForConnectionState:
-    """wait_for_connection/await_for_connectionで共有する状態管理。
-
-    sync/asyncで接続取得方法・sleep関数が異なるため、ループそのものは各呼び出し側に
-    残す。共通化は開始時刻の保持・初回失敗時のログ出力・タイムアウト判定に留める。
-    """
-
     def __init__(self, url: str, timeout: float) -> None:
         self.url = url
         self.timeout = timeout
@@ -211,12 +168,10 @@ class _WaitForConnectionState:
         self.failed = False
 
     def on_success(self) -> None:
-        """接続成功時に呼ぶ。過去に失敗していた場合のみログを出力する。"""
         if self.failed:
             logger.info("DB接続成功")
 
     def on_failure(self, exc: BaseException) -> float:
-        """接続失敗時に呼ぶ。残り時間を返す。0以下ならRuntimeErrorを送出する。"""
         if not self.failed:
             self.failed = True
             logger.info(f"DB接続待機中 . . . (URL: {self.url})")

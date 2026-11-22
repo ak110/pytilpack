@@ -1,5 +1,3 @@
-"""ヘルスチェック機能の実装用ヘルパー。"""
-
 __lazy_modules__ = ["asyncio", "datetime", "functools", "inspect", "logging", "pytilpack.logging", "time", "typing"]
 
 import asyncio
@@ -13,31 +11,23 @@ import typing
 import pytilpack.logging
 
 CheckerType = typing.Callable[[], typing.Awaitable[None]]
-"""ヘルスチェック関数の型。"""
 
 CheckerEntry = tuple[str, CheckerType]
-"""ヘルスチェックの名前と関数を持つタプル。"""
 
 CheckerEntries = list[CheckerEntry]
-"""ヘルスチェックの名前と関数のリスト。"""
 
 startup_time = dt.datetime.now()
-"""アプリケーションの起動時間を記録する変数。ヘルスチェックの uptime に使用される。"""
 
 logger = logging.getLogger(__name__)
 
 
 class HealthCheckDetail(typing.TypedDict):
-    """ヘルスチェックの詳細を表す型。"""
-
     status: typing.Literal["ok", "fail"]
     response_time_ms: float
     error: typing.NotRequired[str]
 
 
 class HealthCheckResult(typing.TypedDict):
-    """ヘルスチェックの結果を表す型。"""
-
     status: typing.Literal["ok", "fail"]
     checked: str
     uptime: str
@@ -56,29 +46,6 @@ def make_entry[**P, R](
     *args: P.args,
     **kwargs: P.kwargs,
 ) -> CheckerEntry:
-    """CheckerEntryを作成する。
-
-    同期関数は自動的にasyncio.to_thread()で非同期化される。
-
-    Args:
-        name: ヘルスチェックの名前。
-        func: ヘルスチェック関数。
-        *args: ヘルスチェック関数に渡す引数。
-        **kwargs: ヘルスチェック関数に渡すキーワード引数。
-
-    Returns:
-        ヘルスチェックの名前と関数を持つタプル。
-
-    Examples:
-        ヘルスチェックの構成例::
-
-            entries = [
-                pytilpack.healthcheck.make_entry("database", check_db),
-                pytilpack.healthcheck.make_entry("redis", check_redis, host="localhost"),
-            ]
-            result = await pytilpack.healthcheck.run(entries)
-
-    """
     if inspect.iscoroutinefunction(func):
 
         @functools.wraps(func)
@@ -101,25 +68,12 @@ async def run(
     now: dt.datetime | None = None,
     start_time: dt.datetime | None = None,
 ) -> HealthCheckResult:
-    """ヘルスチェックを実行し、結果を返す。
-
-    Args:
-        checks: ヘルスチェックの名前と関数のリスト。
-        output_details: 詳細を出力するかどうか。デフォルトはTrue。
-        dedup_window: ログの重複を防ぐための時間ウィンドウ。デフォルトは1日。
-        now: 現在の日時。デフォルトは現在の日時を使用。
-        start_time: 起動時刻。デフォルトはモジュール変数startup_timeを使用。
-
-    Returns:
-        ヘルスチェックの結果。
-    """
     if dedup_window is None:
         dedup_window = dt.timedelta(days=1)
     if now is None:
         now = dt.datetime.now()
     if start_time is None:
         start_time = startup_time
-    # 名前が重複している場合は AssertionError を送出する
     check_names = [name for name, _ in checks]
     assert len(checks) == len(set(check_names)), f"ヘルスチェック名が重複しています: {check_names}"
 

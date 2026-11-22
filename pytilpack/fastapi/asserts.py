@@ -1,5 +1,3 @@
-"""FastAPIのテストコード用アサーション関数。"""
-
 __lazy_modules__ = ["pathlib", "pytilpack._web_asserts", "typing"]
 
 import pathlib
@@ -19,48 +17,31 @@ __all__ = [
 
 
 class _HeadersType(typing.Protocol):
-    """Content-Type取得に必要な最小の構造的型。
-
-    外部ライブラリのget署名全体を複製せず、本モジュールが使うキー1引数の取得能力だけを要求する。
-    """
-
     def get(self, key: str, /) -> typing.Any:
-        """ヘッダー値を取得する。"""
         raise NotImplementedError
 
 
+# starlette 1.2.0以降のTestClientはhttpx2を優先してimportし、返すレスポンスの型がhttpx2の導入有無で変わるため、
+# 使う属性だけを構造的に宣言してどちらの環境でも型を成立させる。
 class ResponseType(typing.Protocol):
-    """レスポンスの構造的型。
-
-    starlette 1.2.0以降の`starlette/testclient.py`はhttpx2を優先してimportするため、
-    `fastapi.testclient.TestClient`が返すレスポンスの型はhttpx2の導入有無で変わる。
-    名目型で注釈すると一方の環境で静的型が不整合になるため、
-    本モジュールが実際に使う属性だけを構造的に宣言してどちらでも成立させる。
-    """
-
     @property
     def status_code(self) -> int:
-        """ステータスコード。"""
         raise NotImplementedError
 
     @property
     def headers(self) -> _HeadersType:
-        """レスポンスヘッダー。"""
         raise NotImplementedError
 
     @property
     def content(self) -> bytes:
-        """レスポンスボディのbytes表現。"""
         raise NotImplementedError
 
     @property
     def text(self) -> str:
-        """レスポンスボディの文字列表現。"""
         raise NotImplementedError
 
 
 def _content_type(response: ResponseType) -> str | None:
-    """レスポンスのContent-Typeヘッダー値を返す。"""
     return response.headers.get("content-type")
 
 
@@ -69,20 +50,6 @@ def assert_bytes(
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = None,
 ) -> bytes:
-    """レスポンスのステータスコードとContent-Typeを検証してボディをbytesで返す。
-
-    Args:
-        response: レスポンス
-        status_code: 期待するステータスコード
-        content_type: 期待するContent-Type
-
-    Raises:
-        AssertionError: ステータスコードが異なる場合
-
-    Returns:
-        レスポンスボディ
-
-    """
     response_body = response.content
     _core.assert_bytes_core(response_body, response.status_code, _content_type(response), status_code, content_type)
     return response_body
@@ -95,29 +62,6 @@ def assert_html(
     strict: bool = False,
     tmp_path: pathlib.Path | None = None,
 ) -> str:
-    """レスポンスを検証してHTMLボディを文字列で返す。html5libが必要。
-
-    html5libの字句・木構築時の構文診断に現行のselect解析規則を補って検査する。
-    templateの最も外側の開始・終了タグ間は診断対象から除外するため、内容の構文誤りも報告されない。
-    対応する終了タグのないtemplateは除外しない。内容モデルや属性値などの仕様適合全体は検証しない。
-
-    strict・tmp_pathはキーワード引数での指定を推奨する。flask/quart/fastapi間で
-    位置引数順を揃えているが、将来の引数追加時の後方互換性を保つためである。
-
-    Args:
-        response: レスポンス
-        status_code: 期待するステータスコード
-        content_type: 期待するContent-Type
-        strict: TrueではHTMLの構文診断をAssertionErrorで通知し、Falseでは警告して処理を継続する。
-        tmp_path: 一時ファイルを保存するディレクトリ
-
-    Raises:
-        AssertionError: ステータスコードが異なる場合
-
-    Returns:
-        HTMLレスポンスボディ (str)
-
-    """
     response_body = response.text
     _core.assert_html_core(
         response_body,
@@ -137,20 +81,6 @@ def assert_json(
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "application/json",
 ) -> typing.Any:
-    """レスポンスを検証してJSONをデコードして返す。
-
-    Args:
-        response: レスポンス
-        status_code: 期待するステータスコード
-        content_type: 期待するContent-Type
-
-    Raises:
-        AssertionError: ステータスコードが異なる場合
-
-    Returns:
-        レスポンスのJSONデコード結果
-
-    """
     response_body = response.text
     return _core.assert_json_core(response_body, response.status_code, _content_type(response), status_code, content_type)
 
@@ -160,20 +90,6 @@ def assert_xml(
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "__default__",
 ) -> str:
-    """レスポンスを検証してXMLボディを文字列で返す。
-
-    Args:
-        response: レスポンス
-        status_code: 期待するステータスコード
-        content_type: 期待するContent-Type
-
-    Raises:
-        AssertionError: ステータスコードが異なる場合
-
-    Returns:
-        レスポンスボディ
-
-    """
     response_body = response.text
     _core.assert_xml_core(response_body, response.status_code, _content_type(response), status_code, content_type)
     return response_body
@@ -183,19 +99,6 @@ def assert_sse[R: ResponseType](
     response: R,
     status_code: int = 200,
 ) -> R:
-    """レスポンスのステータスコードとSSE用Content-Typeを検証して返す。
-
-    Args:
-        response: レスポンス
-        status_code: 期待するステータスコード
-
-    Raises:
-        AssertionError: ステータスコードが異なる場合、またはContent-Typeが異なる場合
-
-    Returns:
-        レスポンス
-
-    """
     _core.assert_sse_core(response.status_code, _content_type(response), status_code)
     return response
 
@@ -204,18 +107,5 @@ def assert_response[R: ResponseType](
     response: R,
     status_code: int = 200,
 ) -> R:
-    """レスポンスのステータスコードを検証して返す。
-
-    Args:
-        response: レスポンス
-        status_code: 期待するステータスコード
-
-    Raises:
-        AssertionError: ステータスコードが異なる場合
-
-    Returns:
-        レスポンス
-
-    """
     _core.assert_response_core(response.status_code, status_code)
     return response

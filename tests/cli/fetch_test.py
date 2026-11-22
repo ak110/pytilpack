@@ -1,5 +1,3 @@
-"""ローカルHTTP応答だけを使ってfetchのCLIを実行する。"""
-
 import pathlib
 
 import flask
@@ -30,7 +28,6 @@ def _app() -> flask.Flask:
 
 
 def test_fetch_cli(capsys: pytest.CaptureFixture[str]) -> None:
-    """取得したHTMLを簡略化して標準出力へ返し、通信ログは出さない。"""
     with pytilpack.flask.run(_app(), port=0) as port:
         main(["fetch", f"http://127.0.0.1:{port}/"])
     captured = capsys.readouterr()

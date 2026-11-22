@@ -1,5 +1,3 @@
-"""SyncMixinのテストコード。"""
-
 import datetime as dt
 import typing
 
@@ -13,12 +11,10 @@ import pytilpack.sqlalchemy
 
 
 class Base(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.SyncMixin):  # pylint: disable=too-many-ancestors
-    """ベースクラス。"""
+    pass
 
 
 class Test1(Base, pytilpack.sqlalchemy.SyncUniqueIDMixin):  # pylint: disable=too-many-ancestors
-    """テストクラス。"""
-
     __test__ = False
     __tablename__ = "test1"
 
@@ -29,11 +25,7 @@ class Test1(Base, pytilpack.sqlalchemy.SyncUniqueIDMixin):  # pylint: disable=to
 
 
 class Test2(Base):  # pylint: disable=too-many-ancestors
-    """テストクラス。"""
-
     # arid: disable
-    # async/flask版（tests.sqlalchemy.async_test.Test2・tests.sqlalchemy.flask_test.Test2）と
-    # 並行実装のため許容する。
     __test__ = False
     __tablename__ = "test2"
     __table_args__ = (sqlalchemy.UniqueConstraint("value1", "value2", name="uc1"),)
@@ -43,9 +35,7 @@ class Test2(Base):  # pylint: disable=too-many-ancestors
     pass_hash = sqlalchemy.Column(sqlalchemy.String(100), default=None, comment="パスハッシュ")
     # 有効フラグ
     enabled = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False, default=True)
-    is_admin = sqlalchemy.Column(  # このコメントは無視されてほしい
-        sqlalchemy.Boolean, nullable=False, default=False
-    )
+    is_admin = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False, default=False)
     value1 = sqlalchemy.Column(sqlalchemy.Integer, nullable=True, default=0)
     value2 = sqlalchemy.Column(sqlalchemy.Integer, nullable=False, default=512)
     value3 = sqlalchemy.Column("value0", sqlalchemy.Float, nullable=False, default=1.0)
@@ -55,8 +45,6 @@ class Test2(Base):  # pylint: disable=too-many-ancestors
 
 
 class Test3(Base, pytilpack.sqlalchemy.SyncUniqueIDMixin):  # pylint: disable=too-many-ancestors
-    """テストクラス。"""
-
     __test__ = False
     __tablename__ = "test3"
 
@@ -66,13 +54,8 @@ class Test3(Base, pytilpack.sqlalchemy.SyncUniqueIDMixin):  # pylint: disable=to
     )
 
 
-# Mixin.init()はクラス単位の初期化状態を保持し、二重呼び出しを拒否する。moduleスコープに
-# すると、pytest-xdistのworksteal分配で同一モジュールのテストが同一ワーカーへ非連続に
-# 割り当たった際にsetupが繰り返され、2回目のinit()が「すでに初期化されています」で失敗する。
-# sessionスコープではワーカーごとに1回だけ初期化されるため、分配のされ方によらず成立する。
 @pytest.fixture(name="engine", scope="session", autouse=True)
 def _engine() -> typing.Generator[sqlalchemy.engine.Engine, None, None]:
-    """DB接続。"""
     # https://stackoverflow.com/questions/61678766/sqlalchemy-exc-operationalerror-sqlite3-operationalerror-no-such-table-items/61694048
     Base.init("sqlite:///:memory:?check_same_thread=false", poolclass=sqlalchemy.pool.StaticPool)
     assert Base.engine is not None
@@ -81,21 +64,12 @@ def _engine() -> typing.Generator[sqlalchemy.engine.Engine, None, None]:
 
 @pytest.fixture(name="session", scope="function")
 def _session() -> typing.Generator[sqlalchemy.orm.Session, None, None]:
-    """セッション。"""
     with Base.session_scope() as session:
         yield session
 
 
 @pytest.fixture(autouse=True)
 def _clean_tables() -> typing.Generator[None, None, None]:
-    """各テストの前に共有DBのテーブルを空にする。
-
-    engineはsessionスコープで共有されるため、テーブルの行はテストをまたいで残る。
-    pytest-xdistのworksteal分配では同一ワーカー内の実行順が収集順と一致しないため、
-    他テストが挿入した行の有無に依存すると分配のされ方によって結果が変わる。
-    各テストが同じ初期状態から開始できるよう、ここで全テーブルの行を削除する。
-
-    """
     with Base.connect() as conn:
         Base.metadata.create_all(conn)
         for table in reversed(Base.metadata.sorted_tables):
@@ -105,23 +79,16 @@ def _clean_tables() -> typing.Generator[None, None, None]:
 
 
 def test_repr() -> None:
-    """__repr__のテスト。"""
     # arid: disable
-    # async版（tests.sqlalchemy.async_test.test_repr）と並行実装のため許容する。
-    # デフォルト: idを表示
     test1 = Test1(id=1)
     r = repr(test1)
     assert r == f"<{Test1.__module__}.{Test1.__qualname__}(id=1)>"
     assert str(test1) == r
 
-    # idがNoneの場合
     test1_no_id = Test1()
     assert repr(test1_no_id) == f"<{Test1.__module__}.{Test1.__qualname__}(id=None)>"
 
-    # _repr_attrsをオーバーライドしたケース
     class CustomRepr(Test1):  # pylint: disable=too-many-ancestors
-        """カスタムreprのテスト用クラス。"""
-
         __test__ = False
 
         @typing.override
@@ -135,83 +102,64 @@ def test_repr() -> None:
 
 
 def test_mixin_basic_functionality() -> None:
-    """SyncMixinの基本機能をテスト。"""
-    # テーブル作成
     with Base.connect() as conn:
         Base.metadata.create_all(conn)
 
-    # セッションスコープのテスト
     with Base.session_scope():
-        # 件数取得 (0件)
         assert Base.count(Test1.select()) == 0
 
-        # データ挿入
         test_record = Test1(unique_id="test_name")
         Base.session().add(test_record)
         Base.session().commit()
 
-        # データ取得
         result = Test1.get_by_id(test_record.id)
         assert result is not None
         assert result.unique_id == "test_name"
 
-        # 件数取得 (1件)
         assert Base.count(Test1.select()) == 1
 
-        # 削除
         Base.session().execute(Test1.delete())
         Base.session().commit()
 
-        # 件数取得 (0件)
         assert Base.count(Test1.select()) == 0
 
 
 def test_sync_mixin_context_vars() -> None:
-    """SyncMixinのcontextvar管理をテスト。"""
-    # テーブル作成
     with Base.connect() as conn:
         Base.metadata.create_all(conn)
 
     with Base.session_scope():
-        # セッションが取得できることを確認
         session = Base.session()
         assert session is not None
 
-        # データ操作
         test_record = Test1(unique_id="test_context")
         session.add(test_record)
         session.commit()
 
-        # select メソッドのテスト
         query = Test1.select().where(Test1.unique_id == "test_context")
         result = session.execute(query).scalar_one()
         assert result.unique_id == "test_context"
 
 
 def test_sync_mixin_to_dict() -> None:
-    """to_dictメソッドのテスト。"""
     test_record = Test1(id=1, unique_id="test_dict")
     result = test_record.to_dict()
 
     assert result == {"id": 1, "unique_id": "test_dict"}
 
-    # includes テスト
     result_includes = test_record.to_dict(includes=["unique_id"])
     assert result_includes == {"unique_id": "test_dict"}
 
-    # excludes テスト
     result_excludes = test_record.to_dict(excludes=["id"])
     assert result_excludes == {"unique_id": "test_dict"}
 
 
 def test_get_by_id(session: sqlalchemy.orm.Session) -> None:
-    """get_by_idのテスト。"""
     with Base.connect() as conn:
         Base.metadata.create_all(conn)
     session.add(Test1(unique_id="test_get_by_id"))
     session.commit()
 
-    # 作成されたレコードのIDを取得
     created_record = session.execute(Test1.select().where(Test1.unique_id == "test_get_by_id")).scalar_one()
     test_id = created_record.id
 
@@ -221,11 +169,6 @@ def test_get_by_id(session: sqlalchemy.orm.Session) -> None:
 
 
 def test_get_by_id_not_null(session: sqlalchemy.orm.Session) -> None:
-    """get_by_id_not_nullが同期呼び出しで動作することを確認。
-
-    修正前は async def で定義されており、awaitせずに呼ぶとコルーチンオブジェクトが
-    返り、ValueErrorが送出されなかった。修正後は同期的に値を返すことを検証する。
-    """
     with Base.connect() as conn:
         Base.metadata.create_all(conn)
     session.add(Test1(unique_id="test_get_by_id_not_null"))
@@ -234,17 +177,14 @@ def test_get_by_id_not_null(session: sqlalchemy.orm.Session) -> None:
     created_record = session.execute(Test1.select().where(Test1.unique_id == "test_get_by_id_not_null")).scalar_one()
     test_id = created_record.id
 
-    # 存在するIDでは正常にインスタンスが返る（awaitなし）
     result = Test1.get_by_id_not_null(test_id)
     assert result.id == test_id
 
-    # 存在しないIDではValueErrorが送出される（awaitなし）
     with pytest.raises(ValueError):
         Test1.get_by_id_not_null(test_id + 1000)
 
 
 def test_get_by_unique_id(session: sqlalchemy.orm.Session) -> None:
-    """get_by_unique_idのテスト。"""
     with Base.connect() as conn:
         Base.metadata.create_all(conn)
     test1 = Test1(unique_id=Test1.generate_unique_id())
@@ -253,7 +193,6 @@ def test_get_by_unique_id(session: sqlalchemy.orm.Session) -> None:
     session.add(test1)
     session.commit()
 
-    # 作成されたレコードのIDを取得
     test_id = test1.id
 
     assert Test1.get_by_unique_id(unique_id).id == test_id  # type: ignore
@@ -264,17 +203,11 @@ def test_get_by_unique_id(session: sqlalchemy.orm.Session) -> None:
 
 
 def test_to_dict_invalid_args() -> None:
-    """to_dictに無効な引数を渡した場合にValueErrorが送出されることを確認。
-
-    assert文からValueErrorに変更したため、`-O`実行時も検証が機能する。
-    """
     test_record = Test1(id=1, unique_id="test_dict")
 
-    # includesとexcludes同時指定はValueError
     with pytest.raises(ValueError):
         test_record.to_dict(includes=["id"], excludes=["unique_id"])
 
-    # 未知のフィールド名
     with pytest.raises(ValueError):
         test_record.to_dict(includes=["nonexistent"])
 
@@ -283,13 +216,9 @@ def test_to_dict_invalid_args() -> None:
 
 
 def test_init_already_called() -> None:
-    """init()を二重呼び出しした場合にRuntimeErrorが送出されることを確認。
-
-    assert文からRuntimeErrorに変更したため、`-O`実行時も検証が機能する。
-    """
 
     class TempBase(sqlalchemy.orm.DeclarativeBase, pytilpack.sqlalchemy.SyncMixin):  # pylint: disable=too-many-ancestors
-        """テスト専用Base。グローバル状態を汚染しないよう個別クラスで検証する。"""
+        pass
 
     TempBase.init("sqlite:///:memory:?check_same_thread=false", poolclass=sqlalchemy.pool.StaticPool)
     try:
@@ -301,29 +230,22 @@ def test_init_already_called() -> None:
 
 
 def test_wait_for_connection() -> None:
-    """wait_for_connectionのテスト。"""
-    # 正常系
     pytilpack.sqlalchemy.wait_for_connection("sqlite:///:memory:", timeout=0.1)
 
-    # 異常系: タイムアウト
     with pytest.raises(RuntimeError):
         pytilpack.sqlalchemy.wait_for_connection("sqlite:////nonexistent/path/db.sqlite3", timeout=0.1)
 
 
 def test_paginate() -> None:
-    """paginateのテスト。"""
-    # テスト専用のセッションを作成
     with Base.session_scope() as session:
         with Base.connect() as conn:
             Base.metadata.create_all(conn)
 
-        # テストデータを準備（10件）
         test_items = [Test1(unique_id=f"paginate_test_{i}") for i in range(1, 11)]
         for item in test_items:
             session.add(item)
         session.commit()
 
-        # 1ページあたり3件、1ページ目をテスト
         query = Test1.select().where(Test1.unique_id.like("paginate_test_%")).order_by(Test1.id)
         paginator = Test1.paginate(query, page=1, per_page=3)
 
@@ -335,28 +257,24 @@ def test_paginate() -> None:
         assert paginator.has_next is True
         assert paginator.has_prev is False
 
-        # 2ページ目をテスト
         paginator = Test1.paginate(query, page=2, per_page=3)
         assert paginator.page == 2
         assert len(paginator.items) == 3
         assert paginator.has_next is True
         assert paginator.has_prev is True
 
-        # 最終ページ（4ページ目）をテスト
         paginator = Test1.paginate(query, page=4, per_page=3)
         assert paginator.page == 4
-        assert len(paginator.items) == 1  # 最後は1件のみ
+        assert len(paginator.items) == 1
         assert paginator.has_next is False
         assert paginator.has_prev is True
 
-        # 境界値テスト：無効なページ番号（ValueErrorに変更）
         with pytest.raises(ValueError):
             Test1.paginate(query, page=0, per_page=3)
 
         with pytest.raises(ValueError):
             Test1.paginate(query, page=1, per_page=0)
 
-        # 空のクエリの場合
         empty_query = Test1.select().where(Test1.id > 100000)
         paginator = Test1.paginate(empty_query, page=1, per_page=3)
         assert paginator.total_items == 0
@@ -365,21 +283,17 @@ def test_paginate() -> None:
 
 
 def test_safe_close() -> None:
-    """safe_closeのテスト。"""
     engine = sqlalchemy.create_engine("sqlite:///:memory:")
     session = sqlalchemy.orm.Session(engine)
-    pytilpack.sqlalchemy.safe_close(session)  # 正常ケース
+    pytilpack.sqlalchemy.safe_close(session)
 
-    # エラーケース（既にクローズ済み）
     session.close()
     pytilpack.sqlalchemy.safe_close(session)
     pytilpack.sqlalchemy.safe_close(session, log_level=None)
 
 
 def test_to_dict() -> None:
-    """to_dictのテスト。"""
     # arid: disable
-    # flask版（tests.sqlalchemy.flask_test.test_to_dict）と並行実装のため許容する。
     test2 = Test2(name="test2", enabled=True, value4=dt.datetime(2021, 1, 1))
     assert test2.to_dict(excludes=["pass_hash"]) == {
         "id": None,
@@ -400,52 +314,40 @@ def test_to_dict() -> None:
 
 @pytest.mark.asyncio
 async def test_async_methods() -> None:
-    """非同期版メソッド(acount〜apaginate)のテスト。"""
-    # テーブル作成
     with Base.connect() as conn:
         Base.metadata.create_all(conn)
 
-    # セッションスコープ内でテスト
     with Base.session_scope():
-        # データ挿入
         test_records = [Test3(unique_id=f"async_test_{i}") for i in range(1, 6)]
         for record in test_records:
             Base.session().add(record)
         Base.commit()
 
-        # count のテスト
         count = Test3.count(Test3.select().where(Test3.unique_id.like("async_test_%")))
         assert count == 5
 
-        # acount のテスト
         count = await Test3.acount(Test3.select().where(Test3.unique_id.like("async_test_%")))
         assert count == 5
 
-        # ascalar_one_or_none のテスト
         result = await Test3.ascalar_one_or_none(Test3.select().where(Test3.unique_id == "async_test_1"))
         assert result is not None
         assert result.unique_id == "async_test_1"
 
-        # ascalars のテスト
         results = await Test3.ascalars(Test3.select().where(Test3.unique_id.like("async_test_%")).order_by(Test3.id))
         assert len(results) == 5
         assert all(r.unique_id.startswith("async_test_") for r in results)  # type: ignore
 
-        # aone_or_none のテスト
         row = await Test3.aone_or_none(Test3.select().where(Test3.unique_id == "async_test_1"))
         assert row is not None
 
-        # aall のテスト
         rows = await Test3.aall(Test3.select().where(Test3.unique_id.like("async_test_%")).order_by(Test3.id))
         assert len(rows) == 5
 
-        # aget_by_id のテスト
         test_id = test_records[0].id
         result_by_id = await Test3.aget_by_id(test_id)
         assert result_by_id is not None
         assert result_by_id.id == test_id
 
-        # apaginate のテスト
         query = Test3.select().where(Test3.unique_id.like("async_test_%")).order_by(Test3.id)
         paginator = await Test3.apaginate(query, page=1, per_page=3)
         assert paginator.page == 1

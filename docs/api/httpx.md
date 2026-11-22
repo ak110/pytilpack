@@ -1,3 +1,0 @@
-# pytilpack.httpx
-
-::: pytilpack.httpx

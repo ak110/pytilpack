@@ -1,5 +1,3 @@
-"""import関連。"""
-
 __lazy_modules__ = ["importlib", "logging", "pathlib"]
 
 import importlib
@@ -12,15 +10,6 @@ logger = logging.getLogger(__name__)
 def import_all(
     path: pathlib.Path, base_path: pathlib.Path | None = None, ignore_test: bool = True, quiet: bool = False
 ) -> None:
-    """指定されたパス配下のすべての*.pyファイルをインポートする。
-
-    Args:
-        path: インポート対象のパス。
-        base_path: 相対パスの基準となるパス。Noneの場合はpathを使用。
-        ignore_test: テストファイルを無視するかどうか。デフォルトはTrue。
-        quiet: ログを少なくするか。デフォルトはFalse。
-
-    """
     if base_path is None:
         base_path = path
 

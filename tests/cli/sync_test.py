@@ -1,5 +1,3 @@
-"""ディレクトリ同期のコピーと削除をCLIから実行する。"""
-
 import os
 from pathlib import Path
 
@@ -7,7 +5,6 @@ from pytilpack.cli.main import main
 
 
 def test_sync_cli(tmp_path: Path) -> None:
-    """コピー元の内容を反映し、削除指定時だけコピー先の余剰を除く。"""
     source = tmp_path / "source"
     target = tmp_path / "target"
     source.mkdir()

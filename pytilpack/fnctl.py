@@ -1,5 +1,3 @@
-"""fcntl関連。"""
-
 __lazy_modules__ = ["asyncio", "contextlib", "errno", "fcntl", "pathlib", "time", "typing"]
 
 import asyncio
@@ -12,11 +10,6 @@ import typing
 
 
 def _try_acquire(fp: typing.IO) -> bool:
-    """ノンブロッキングでflockを試みる。取得できればTrue、競合中ならFalse。
-
-    sync/async両方のlockから呼び出される共通部分。
-    EAGAIN以外のOSErrorはそのまま送出する。
-    """
     try:
         fcntl.flock(fp.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         return True
@@ -28,12 +21,6 @@ def _try_acquire(fp: typing.IO) -> bool:
 
 @contextlib.contextmanager
 def lock(lock_path: pathlib.Path, retry_interval: float = 0.1) -> typing.Generator[None, None, None]:
-    """プロセス間で共有するファイルロックを取得する。
-
-    Args:
-        lock_path: ロックファイルのパス。
-        retry_interval: ロックが使用中の場合に再試行するまでの待機時間（秒単位）。
-    """
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open("a+") as fp:
         while not _try_acquire(fp):
@@ -46,12 +33,6 @@ def lock(lock_path: pathlib.Path, retry_interval: float = 0.1) -> typing.Generat
 
 @contextlib.asynccontextmanager
 async def alock(lock_path: pathlib.Path, retry_interval: float = 0.1) -> typing.AsyncGenerator[None, None]:
-    """プロセス間で共有するファイルロックを取得する（async版）。
-
-    Args:
-        lock_path: ロックファイルのパス。
-        retry_interval: ロックが使用中の場合に再試行するまでの待機時間（秒単位）。
-    """
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open("a+") as fp:
         while not _try_acquire(fp):

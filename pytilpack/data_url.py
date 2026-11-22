@@ -1,9 +1,3 @@
-"""データURL関連。
-
-<https://developer.mozilla.org/ja/docs/Web/URI/Schemes/data>
-
-"""
-
 __lazy_modules__ = ["base64", "dataclasses", "typing", "urllib.parse"]
 
 import base64
@@ -14,14 +8,11 @@ import urllib.parse
 
 @dataclasses.dataclass
 class DataURL:
-    """データURLを扱うクラス。"""
-
     data: bytes
     mime_type: str = ""
     encoding: typing.Literal["base64", "plain"] = "base64"
 
     def to_url(self) -> str:
-        """データURLを文字列として返す。"""
         if self.encoding == "base64":
             return create(self.mime_type, self.data)
         else:
@@ -30,24 +21,11 @@ class DataURL:
 
 
 def create(mime_type: str, data: bytes) -> str:
-    """小さい画像などのバイナリデータをURLに埋め込んだ文字列を生成して返す。
-
-    Args:
-        mime_type: 例：'image/png'
-        data: 埋め込むデータ
-
-    """
     b64 = base64.b64encode(data).decode("ascii")
     return f"data:{mime_type};base64,{b64}"
 
 
 def parse(data_url: str) -> DataURL:
-    """データURLからデータ部分を取り出して返す。
-
-    Args:
-        data_url: 'data:image/png;base64,....'
-
-    """
     if not data_url.startswith("data:") or "," not in data_url:
         raise ValueError(
             "Invalid data URL: "
@@ -72,15 +50,8 @@ def parse(data_url: str) -> DataURL:
 
 
 def get_base64_data(data_url: str) -> str:
-    """データURLからbase64エンコードされたデータ部分を取り出して返す。
-
-    Args:
-        data_url: 'data:image/png;base64,....'
-
-    """
     header, body = data_url.split(",", 1)
     if header.endswith(";base64"):
         return body
-    # base64ではない場合はURLデコードしてからbase64エンコードする
     decoded = urllib.parse.unquote(body).encode("utf-8")
     return base64.b64encode(decoded).decode("ascii")

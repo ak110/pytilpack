@@ -1,5 +1,3 @@
-"""Flask ProxyFixのテスト。"""
-
 import logging
 import typing
 
@@ -13,13 +11,11 @@ import pytilpack.flask.proxy_fix
 def _noop_start_response(
     status: str, headers: list[tuple[str, str]], exc_info: typing.Any = None
 ) -> typing.Callable[[bytes], object]:
-    """ダミーのWSGI start_response。"""
     del status, headers, exc_info
     return lambda data: None  # type: ignore[return-value]
 
 
 def _make_app(proxy_fix_kwargs: dict | None = None) -> tuple[flask.Flask, pytilpack.flask.proxy_fix.ProxyFix]:
-    """テスト用Flaskアプリとプロキシミドルウェアを生成する。"""
     app = flask.Flask(__name__)
 
     @app.route("/test")
@@ -36,7 +32,6 @@ def _make_environ(
     host: str | None = None,
     path: str = "/test",
 ) -> dict:
-    """テスト用WSGIenvironを生成する。"""
     builder = werkzeug.test.EnvironBuilder(path=path)
     environ = builder.get_environ()
     if prefix:
@@ -47,7 +42,6 @@ def _make_environ(
 
 
 def test_static_prefix_sets_config_at_init():
-    """static_prefix指定時に初期化でapp.configが確定することのテスト。"""
     app, _ = _make_app({"static_prefix": "/myapp"})
 
     assert app.config["APPLICATION_ROOT"] == "/myapp"
@@ -56,7 +50,6 @@ def test_static_prefix_sets_config_at_init():
 
 
 def test_static_prefix_invalid_raises_value_error():
-    """static_prefixに不正な値を指定するとValueErrorが送出されることのテスト。"""
     app = flask.Flask(__name__)
 
     with pytest.raises(ValueError):
@@ -70,7 +63,6 @@ def test_static_prefix_invalid_raises_value_error():
 
 
 def test_first_request_pins_prefix():
-    """初回リクエストでprefixがpinされることのテスト。"""
     app, middleware = _make_app({"x_prefix": 1})
 
     captured_environ: list[dict] = []
@@ -92,7 +84,6 @@ def test_first_request_pins_prefix():
 
 
 def test_pin_does_not_change_on_different_prefix(caplog):
-    """pin後に異なるprefixを受信してもapp.configが変わらず、environだけ書き換わることのテスト。"""
     app, middleware = _make_app({"x_prefix": 1})
 
     captured_environs: list[dict] = []
@@ -104,26 +95,20 @@ def test_pin_does_not_change_on_different_prefix(caplog):
 
     middleware.app = capture_app
 
-    # 1回目のリクエスト
     environ1 = _make_environ(prefix="/app")
     list(middleware(environ1, _noop_start_response))
     assert app.config["APPLICATION_ROOT"] == "/app"
 
-    # pin後に異なる値
     with caplog.at_level(logging.WARNING, logger="pytilpack.flask.proxy_fix"):
         environ2 = _make_environ(prefix="/other")
         list(middleware(environ2, _noop_start_response))
 
-    # app.configは変わらない
     assert app.config["APPLICATION_ROOT"] == "/app"
-    # environのSCRIPT_NAMEは書き換わる
     assert captured_environs[1]["SCRIPT_NAME"] == "/other"
-    # 警告が出る
     assert any("pin済みの値と異なります" in r.message for r in caplog.records)
 
 
 def test_invalid_prefix_is_rejected(caplog):
-    """不正なprefixが拒否されapp.configが変わらないことのテスト。"""
     _, middleware = _make_app({"x_prefix": 1})
 
     captured_environs: list[dict] = []
@@ -135,21 +120,16 @@ def test_invalid_prefix_is_rejected(caplog):
 
     middleware.app = capture_app
 
-    # //evil.com を送る
     with caplog.at_level(logging.WARNING, logger="pytilpack.flask.proxy_fix"):
         environ = _make_environ(prefix="//evil.com")
         list(middleware(environ, _noop_start_response))
 
-    # app.configは変わらない
     assert middleware.flaskapp.config.get("APPLICATION_ROOT", "/") == "/"
-    # SCRIPT_NAMEが//evil.comに設定されていない
     assert captured_environs[0].get("SCRIPT_NAME", "") == ""
-    # 警告が出る
     assert any("不正な値" in r.message for r in caplog.records)
 
 
 def test_crlf_prefix_is_rejected(caplog):
-    """CRLF混入prefixが拒否されることのテスト。"""
     app, middleware = _make_app({"x_prefix": 1})
 
     captured_environs: list[dict] = []
@@ -171,7 +151,6 @@ def test_crlf_prefix_is_rejected(caplog):
 
 
 def test_werkzeug_does_not_reapply_rejected_prefix():
-    """自前検証で除外したprefixがwerkzeug側で再反映されないことの回帰テスト。"""
     _, middleware = _make_app({"x_prefix": 1})
 
     captured_environs: list[dict] = []
@@ -183,18 +162,15 @@ def test_werkzeug_does_not_reapply_rejected_prefix():
 
     middleware.app = capture_app
 
-    # 不正なprefixを送る
     environ = _make_environ(prefix="//evil.com")
     list(middleware(environ, _noop_start_response))
 
-    # SCRIPT_NAMEに不正な値が入っていないことを確認
     script_name = captured_environs[0].get("SCRIPT_NAME", "")
     assert not script_name.startswith("//")
     assert script_name != "//evil.com"
 
 
 def test_forwarded_host_trusted_hosts_allowed():
-    """trusted_hostsに含まれるホストがX-Forwarded-Hostとして反映されることのテスト。"""
     _, middleware = _make_app({"x_host": 1, "trusted_hosts": ["allowed.example.com"]})
 
     captured_environs: list[dict] = []
@@ -213,7 +189,6 @@ def test_forwarded_host_trusted_hosts_allowed():
 
 
 def test_forwarded_host_trusted_hosts_rejected(caplog):
-    """trusted_hostsに含まれないホストが反映されないことのテスト。"""
     _, middleware = _make_app({"x_host": 1, "trusted_hosts": ["allowed.example.com"]})
 
     captured_environs: list[dict] = []
@@ -229,15 +204,12 @@ def test_forwarded_host_trusted_hosts_rejected(caplog):
         environ = _make_environ(host="evil.example.com")
         list(middleware(environ, _noop_start_response))
 
-    # HTTP_HOSTは変わらない
     original_host = captured_environs[0].get("HTTP_HOST", "")
     assert "evil.example.com" not in original_host
-    # 警告が出る
     assert any("許可リスト外" in r.message for r in caplog.records)
 
 
 def test_forwarded_host_crlf_rejected(caplog):
-    """CRLF混入X-Forwarded-Hostが反映されないことのテスト。"""
     _, middleware = _make_app({"x_host": 1})
 
     captured_environs: list[dict] = []
@@ -260,7 +232,6 @@ def test_forwarded_host_crlf_rejected(caplog):
 
 
 def test_path_info_prefix_stripped():
-    """PATH_INFOの先頭からprefixが除去されることのテスト。"""
     _, middleware = _make_app({"x_prefix": 1})
 
     captured_environs: list[dict] = []
@@ -272,7 +243,6 @@ def test_path_info_prefix_stripped():
 
     middleware.app = capture_app
 
-    # path="/app/test" + prefix="/app" → PATH_INFO が "/test" になることを確認
     environ = _make_environ(prefix="/app", path="/app/test")
     list(middleware(environ, _noop_start_response))
 
@@ -282,7 +252,6 @@ def test_path_info_prefix_stripped():
 
 @pytest.mark.parametrize(("hops", "expected"), [(0, ""), (1, "/last"), (2, "/app,part"), (3, "/first"), (4, "")])
 def test_quoted_prefix_trust_hops(hops: int, expected: str) -> None:
-    """引用符内のカンマを1つの値として信頼ホップ数で選ぶ。"""
     _, middleware = _make_app({"x_prefix": hops})
     captured: list[dict] = []
 

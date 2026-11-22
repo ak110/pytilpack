@@ -1,5 +1,3 @@
-"""空のディレクトリを削除するCLIユーティリティ。"""
-
 __lazy_modules__ = ["argparse", "pathlib", "pytilpack.pathlib"]
 
 import argparse
@@ -9,7 +7,6 @@ import pytilpack.pathlib
 
 
 def add_parser(subparsers: argparse._SubParsersAction) -> None:
-    """delete-empty-dirsサブコマンドのパーサーを追加する。"""
     parser = subparsers.add_parser(
         "delete-empty-dirs",
         help="空のディレクトリを削除",
@@ -34,7 +31,6 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
 
 
 def run(args: argparse.Namespace) -> None:
-    """delete-empty-dirsコマンドを実行する。"""
     pytilpack.pathlib.delete_empty_dirs(
         pathlib.Path(args.path),
         keep_root=args.keep_root,

@@ -1,5 +1,3 @@
-"""テストコード。"""
-
 import threading
 
 import pytest

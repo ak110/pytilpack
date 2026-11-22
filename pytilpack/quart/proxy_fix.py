@@ -1,5 +1,3 @@
-"""リバースプロキシ対応。"""
-
 __lazy_modules__ = ["copy", "hypercorn.typing", "logging", "pytilpack.web", "quart", "quart_auth", "typing"]
 
 import copy
@@ -18,38 +16,6 @@ logger = logging.getLogger(__name__)
 
 
 class ProxyFix:
-    """リバースプロキシ対応。
-
-    nginx.conf設定例::
-
-        proxy_set_header X-Forwarded-For $remote_addr;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-Port $server_port;
-        proxy_set_header X-Forwarded-Prefix $http_x_forwarded_prefix;
-
-    参考:
-        - hypercorn.middleware.ProxyFixMiddleware
-          <https://github.com/pgjones/hypercorn/blob/main/src/hypercorn/middleware/proxy_fix.py>
-
-    設計意図:
-        prefixはpin方式で管理する。初回有効リクエスト時に一度だけ``app.config``へ反映し、
-        以降は変更しない。これにより攻撃者制御の``X-Forwarded-Prefix``値で
-        Cookie発行パス等のアプリ全体設定が書き換わる経路を断つ。
-
-        運用時にprefixが既知であれば、``static_prefix``引数で起動時に確定させることを推奨する。
-        ``static_prefix``を指定した場合、初期化時に``app.config``を確定する。
-        ただし``scope["root_path"]``はリクエストごとに``X-Forwarded-Prefix``ヘッダーの値から
-        設定するため、ヘッダーが来ないリクエストでは``scope["root_path"]``は更新されない。
-
-        ``x_host > 0``でX-Forwarded-Hostを有効化する場合は、``trusted_hosts``引数で
-        許可ホストリストを指定することを推奨する。指定がない場合は値検証（制御文字・
-        ``//``始まり等の排除）のみ行い追加警告は出力しない。
-
-        旧挙動（リクエストごとに``app.config``を上書き）を期待していた利用者は、
-        ``static_prefix``指定方式、またはpin後の挙動（初回リクエストでpinされる）へ移行すること。
-
-    """
-
     def __init__(
         self,
         quartapp: quart.Quart,
@@ -74,11 +40,9 @@ class ProxyFix:
         self._pin.initialize(static_prefix)
 
     def _apply_prefix_to_config(self, prefix: str) -> None:
-        """prefixをapp.configおよびQuartAuthインスタンスへ反映する。"""
         self.quartapp.config["APPLICATION_ROOT"] = prefix
         self.quartapp.config["SESSION_COOKIE_PATH"] = prefix
         self.quartapp.config["QUART_AUTH_COOKIE_PATH"] = prefix
-        # QuartAuthはinit_app時にコピーしてしまうので強制反映が必要
         for extension in self.quartapp.extensions.get("QUART_AUTH", []):
             if isinstance(extension, quart_auth.QuartAuth):
                 extension.cookie_path = prefix
@@ -89,23 +53,19 @@ class ProxyFix:
         receive: hypercorn.typing.ASGIReceiveCallable,
         send: hypercorn.typing.ASGISendCallable,
     ) -> None:
-        """ASGIアプリケーションとしての処理。"""
         if scope["type"] in ("http", "websocket"):
             scope = typing.cast(hypercorn.typing.HTTPScope, copy.deepcopy(scope))
             headers = list(scope["headers"])
 
-            # X-Forwarded-For → client
             forwarded_for = self._get_trusted_value(b"x-forwarded-for", headers, self.x_for)
             if forwarded_for and scope.get("client"):
                 _, orig_port = scope.get("client") or (None, None)
                 scope["client"] = (forwarded_for, orig_port or 0)
 
-            # X-Forwarded-Proto → scheme
             forwarded_proto = self._get_trusted_value(b"x-forwarded-proto", headers, self.x_proto)
             if forwarded_proto:
                 scope["scheme"] = forwarded_proto
 
-            # X-Forwarded-Host → server & Host header
             forwarded_host = self._get_trusted_value(b"x-forwarded-host", headers, self._x_host)
             if forwarded_host:
                 validated_host = pytilpack.web.validate_forwarded_host(forwarded_host)
@@ -135,7 +95,6 @@ class ProxyFix:
                     host_hdr = host if port is None else f"{host}:{port}"
                     headers.append((b"host", host_hdr.encode("utf-8", errors="replace")))
 
-            # X-Forwarded-Port → server port & Host header
             forwarded_port = self._get_trusted_value(b"x-forwarded-port", headers, self.x_port)
             if forwarded_port and forwarded_port.isdigit():
                 port_int = int(forwarded_port)
@@ -145,7 +104,6 @@ class ProxyFix:
                 headers = [(hn, hv) for hn, hv in headers if hn.lower() != b"host"]
                 headers.append((b"host", f"{orig_host}:{port_int}".encode()))
 
-            # X-Forwarded-Prefix → root_path + config
             forwarded_prefix = self._get_trusted_value(b"x-forwarded-prefix", headers, self._x_prefix)
             if forwarded_prefix:
                 prefix = pytilpack.web.validate_forwarded_prefix(forwarded_prefix)

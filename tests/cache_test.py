@@ -1,5 +1,3 @@
-"""キャッシュモジュールのテスト。"""
-
 from __future__ import annotations
 
 import os
@@ -15,7 +13,6 @@ CountingLoaderType = tuple[typing.Callable[[pathlib.Path], str], typing.Callable
 
 @pytest.fixture(name="counting_loader")
 def _counting_loader() -> CountingLoaderType:
-    """呼び出し回数を記録するローダーとカウンタを返すフィクスチャ。"""
     call_count = 0
 
     def loader(path: pathlib.Path) -> str:
@@ -27,13 +24,10 @@ def _counting_loader() -> CountingLoaderType:
 
 
 def test_cached_file_loader_errors() -> None:
-    """CachedFileLoaderのエラーケースのテスト。"""
-    # ローダー未指定
     loader = cache.CachedFileLoader[str]()
     with pytest.raises(ValueError, match="ローダー関数が指定されていません"):
         loader.load(pathlib.Path(__file__))
 
-    # ファイルが存在しない
     loader = cache.CachedFileLoader(lambda p: p.read_text())
     with pytest.raises(FileNotFoundError):
         loader.load(pathlib.Path("not_exists"))
@@ -43,10 +37,8 @@ def test_cached_file_loader(
     tmp_path: pathlib.Path,
     counting_loader: CountingLoaderType,
 ) -> None:
-    """CachedFileLoaderのキャッシュヒット・クリア・削除・無効化・オーバーライドのテスト。"""
     loader_func, get_count = counting_loader
 
-    # キャッシュヒット: 2回目の読み込みはキャッシュを使用
     test_file = tmp_path / "test.txt"
     test_file.write_text("test")
 
@@ -55,36 +47,31 @@ def test_cached_file_loader(
     assert loader.load(test_file) == "test"
     assert get_count() == 1
 
-    # キャッシュクリア: クリア後は再読み込み
     loader.clear()
     assert loader.load(test_file) == "test"
     assert get_count() == 2
 
-    # 特定パスのキャッシュ削除
     test_file2 = tmp_path / "test2.txt"
     test_file2.write_text("test2")
     assert loader.load(test_file2) == "test2"
     assert get_count() == 3
 
     loader.remove(test_file)
-    assert loader.load(test_file) == "test"  # 再読み込み
-    assert loader.load(test_file2) == "test2"  # キャッシュ使用
+    assert loader.load(test_file) == "test"
+    assert loader.load(test_file2) == "test2"
     assert get_count() == 4
 
-    # ファイル更新時のキャッシュ無効化
     previous_stat = test_file.stat()
     test_file.write_text("updated")
     os.utime(test_file, ns=(previous_stat.st_atime_ns, previous_stat.st_mtime_ns + 2_000_000_000))
     assert loader.load(test_file) == "updated"
 
-    # ローダーオーバーライド
     loader_upper = cache.CachedFileLoader(lambda p: p.read_text().upper())
     assert loader_upper.load(test_file) == "UPDATED"
     assert loader_upper.load(test_file, lambda p: p.read_text().lower()) == "updated"
 
 
 def test_cached_file_loader_error_messages() -> None:
-    """失敗の文面に次の操作が含まれる。"""
     with pytest.raises(ValueError, match="load\\(\\)のloader引数か、CachedFileLoader\\(\\)のloader引数で指定する"):
         cache.CachedFileLoader[str]().load(pathlib.Path(__file__))
     with pytest.raises(FileNotFoundError, match="パスの指定を見直すか、ファイルを作成してから呼び出す"):

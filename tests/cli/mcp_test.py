@@ -1,5 +1,3 @@
-"""MCPサーバーを公開CLIから起動する結合テスト。"""
-
 import asyncio
 import contextlib
 import http.server
@@ -18,7 +16,6 @@ import pytest
 
 @pytest.fixture(name="page_url")
 def _page_url() -> Iterator[str]:
-    """fetch_urlの入力に使うローカルHTTPページを提供する。"""
 
     class Handler(http.server.BaseHTTPRequestHandler):
         def do_GET(self) -> None:
@@ -40,14 +37,12 @@ def _page_url() -> Iterator[str]:
 
 
 def _assert_fetch_result(result: mcp.types.CallToolResult) -> None:
-    """公開ツールがHTTPページ本文を返したことを確認する。"""
     assert not result.is_error
     assert any(item.type == "text" and "MCP fixture page" in item.text for item in result.content)
 
 
 @pytest.mark.asyncio
 async def test_mcp_stdio_fetch_url(page_url: str) -> None:
-    """stdioのCLI起動からfetch_urlを呼ぶ。"""
     params = mcp.client.stdio.StdioServerParameters(
         command=sys.executable,
         args=["-m", "pytilpack.cli.main", "mcp", "--transport", "stdio"],
@@ -63,7 +58,6 @@ async def test_mcp_stdio_fetch_url(page_url: str) -> None:
 
 @pytest.mark.asyncio
 async def test_mcp_http_fetch_url(page_url: str) -> None:
-    """HTTPのCLI起動からfetch_urlを呼ぶ。"""
     with socket.socket() as reservation:
         reservation.bind(("127.0.0.1", 0))
         port = reservation.getsockname()[1]

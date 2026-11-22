@@ -1,5 +1,3 @@
-"""DB接続待機コマンド。"""
-
 __lazy_modules__ = ["argparse", "asyncio", "logging"]
 
 import argparse
@@ -10,7 +8,6 @@ import pytilpack.sqlalchemy  # noqa: TID254  # CLIのextras未導入をimport時
 
 logger = logging.getLogger(__name__)
 
-# 非同期ドライバのリスト
 ASYNC_DRIVERS = [
     "+asyncpg",
     "+aiosqlite",
@@ -21,12 +18,10 @@ ASYNC_DRIVERS = [
 
 
 def is_async_url(url: str) -> bool:
-    """URLが非同期ドライバを使用しているか判定する。"""
     return any(driver in url for driver in ASYNC_DRIVERS)
 
 
 def add_parser(subparsers: argparse._SubParsersAction) -> None:
-    """wait-for-db-connectionサブコマンドのパーサーを追加する。"""
     parser = subparsers.add_parser(
         "wait-for-db-connection",
         help="DB接続可能になるまで待機",
@@ -51,7 +46,6 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
 
 
 def run(args: argparse.Namespace) -> None:
-    """wait-for-db-connectionコマンドを実行する。"""
     if is_async_url(args.url):
         asyncio.run(pytilpack.sqlalchemy.await_for_connection(args.url, timeout=args.timeout))
     else:

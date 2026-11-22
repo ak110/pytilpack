@@ -1,5 +1,3 @@
-"""テストコード。"""
-
 import pathlib
 
 import pytest

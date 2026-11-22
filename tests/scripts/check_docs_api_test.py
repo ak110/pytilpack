@@ -1,5 +1,3 @@
-"""人が読む対応情報の不一致を検出する。"""
-
 import importlib.util
 import pathlib
 import shutil
@@ -19,8 +17,7 @@ def _docs_root(tmp_path: pathlib.Path) -> pathlib.Path:
     source = pathlib.Path(__file__).resolve().parents[2]
     for name in ("pytilpack", "scripts", "docs"):
         shutil.copytree(source / name, tmp_path / name, ignore=shutil.ignore_patterns("__pycache__"))
-    for name in ("pyproject.toml", "mkdocs.yml"):
-        shutil.copyfile(source / name, tmp_path / name)
+    shutil.copyfile(source / "pyproject.toml", tmp_path / "pyproject.toml")
     return tmp_path
 
 
@@ -50,11 +47,8 @@ def test_current_documents(docs_root: pathlib.Path) -> None:
             "| `babel` | `pytilpack.babel` | `wrong-package` |",
             "extra babel 依存",
         ),
-        ("docs/api/babel.md", "pytilpack[babel]", "pytilpack[quart]", "docs/api/babel.md"),
         ("docs/guide/cli.md", "## `pytilpack babel`", "## `pytilpack unknown`", "サブコマンド節"),
-        ("mkdocs.yml", "      - Webフレームワーク:", "      - 誤った分類:", "mkdocs.yml:nav"),
-        ("mkdocs.yml", "        Webフレームワーク:", "        誤った分類:", "mkdocs.yml:llmstxt"),
-        ("docs/guide/index.md", "(../api/fastapi.md)", "(../api/unknown.md)", "モジュール一覧"),
+        ("docs/guide/index.md", "- `pytilpack.fastapi`", "- `pytilpack.unknown`", "モジュール一覧"),
     ],
 )
 def test_mismatch_is_rejected(docs_root: pathlib.Path, path: str, old: str, new: str, location: str) -> None:
@@ -70,8 +64,3 @@ def test_all_keeps_dependency_extras(docs_root: pathlib.Path) -> None:
     text = target.read_text(encoding="utf-8")
     target.write_text(text.replace('"sqlalchemy[asyncio]>=2.0"', '"sqlalchemy>=2.0"', 1), encoding="utf-8")
     assert any("pyproject.toml:all" in error for error in check_docs_api.check(docs_root))
-
-
-def test_excess_api_file_is_rejected(docs_root: pathlib.Path) -> None:
-    (docs_root / "docs/api/cli.md").write_text("# pytilpack.cli\n", encoding="utf-8")
-    assert any("docs/api/" in error and "cli" in error for error in check_docs_api.check(docs_root))

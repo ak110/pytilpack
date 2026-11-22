@@ -1,3 +1,0 @@
-# pytilpack.json
-
-::: pytilpack.json

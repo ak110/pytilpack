@@ -36,7 +36,7 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-groups --all-extras
 
-      - name: Check docs/api/ consistency
+      - name: Check docs consistency
         run: uv run --frozen python scripts/check_docs_api.py
 
       - name: Build docs

@@ -1,5 +1,3 @@
-"""URLアクセスコマンド。"""
-
 __lazy_modules__ = ["argparse", "httpx", "logging", "pathlib", "pytilpack.htmlrag", "sys"]
 
 import argparse
@@ -15,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 def add_parser(subparsers: argparse._SubParsersAction) -> None:
-    """fetchサブコマンドのパーサーを追加する。"""
     parser = subparsers.add_parser(
         "fetch",
         help="URLの内容を取得",
@@ -69,7 +66,6 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
 
 
 def run(args: argparse.Namespace) -> None:
-    """fetchコマンドを実行する。"""
     if not args.verbose:
         logging.getLogger("httpx").setLevel(logging.WARNING)
     try:

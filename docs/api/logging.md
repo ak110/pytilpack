@@ -1,3 +1,0 @@
-# pytilpack.logging
-
-::: pytilpack.logging

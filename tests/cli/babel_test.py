@@ -1,12 +1,9 @@
-"""Babel CLIのカタログ操作を公開入口から確認する。"""
-
 import subprocess
 import sys
 from pathlib import Path
 
 
 def test_babel_cli_catalog_lifecycle(tmp_path: Path) -> None:
-    """抽出、初期化、更新、コンパイルを順に実行する。"""
     source = tmp_path / "source"
     source.mkdir()
     messages = source / "messages.py"

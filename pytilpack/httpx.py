@@ -1,5 +1,3 @@
-"""httpx関連。"""
-
 __lazy_modules__ = ["asyncio", "httpx", "logging", "pytilpack", "pytilpack.http", "typing"]
 
 import asyncio
@@ -15,8 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 class RetryAsyncClient(httpx.AsyncClient):
-    """429 Too Many Requests に対してリトライする AsyncClient。"""
-
     def __init__(
         self,
         *,
@@ -67,7 +63,6 @@ async def arequest_with_retry(
     max_jitter: float = 0.5,
     **kwargs,
 ) -> httpx.Response:
-    """429 Too Many Requests に対してリトライする非同期リクエスト関数。"""
     last_response: httpx.Response | None = None
     backoff = _retry.Backoff(initial_delay, exponential_base, max_delay, max_jitter)
     for attempt in range(1, max_retries + 1):
@@ -78,7 +73,6 @@ async def arequest_with_retry(
         retry_after = pytilpack.http.get_retry_after(resp.headers.get("Retry-After"))
         wait = backoff.wait(retry_after)
         if retry_after is None:
-            # ヘッダーがなければ指数バックオフ
             backoff.advance()
         logger.info(
             "arequest_with_retry: %s %s (retry %d/%d)",

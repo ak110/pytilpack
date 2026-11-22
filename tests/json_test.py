@@ -1,5 +1,3 @@
-"""テストコード。"""
-
 import io
 import pathlib
 
@@ -31,17 +29,14 @@ def test_load_save(tmp_path: pathlib.Path) -> None:
 
 
 def test_load_save_io() -> None:
-    """IO[str] / IO[bytes] での load/save のテスト。"""
     data = {"a": "💯", "c": 1}
 
-    # StringIO で save → load
     buf = io.StringIO()
     pytilpack.json.save(buf, data)
     buf.seek(0)
     data2 = pytilpack.json.load(buf)
     assert data == data2
 
-    # BytesIO で save → load
     buf_b = io.BytesIO()
     pytilpack.json.save(buf_b, data)
     buf_b.seek(0)
@@ -50,14 +45,12 @@ def test_load_save_io() -> None:
 
 
 def test_edit_preserves_blank_lines() -> None:
-    """editが空行・インデントを維持することを確認する。"""
     text = '{\n  "name": "old",\n\n  "count": 1\n}\n'
     result = pytilpack.json.edit(text, {("name",): "new"})
     assert result == '{\n  "name": "new",\n\n  "count": 1\n}\n'
 
 
 def test_edit_file(tmp_path: pathlib.Path) -> None:
-    """edit_fileでファイルを差し替えられることを確認する。"""
     p = tmp_path / "a.json"
     p.write_text('{\n  "value": 1\n}\n', encoding="utf-8")
     pytilpack.json.edit_file(p, {("value",): 42})

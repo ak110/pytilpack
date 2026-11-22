@@ -1,5 +1,3 @@
-"""tqdm用のユーティリティ集。"""
-
 __lazy_modules__ = ["contextlib", "io", "logging", "sys", "tqdm", "typing"]
 
 import contextlib
@@ -12,19 +10,6 @@ import tqdm
 
 
 class TqdmStreamHandler(logging.StreamHandler):
-    """tqdm対応のStreamHandler。
-
-    使用例::
-        import pytilpack.tqdm_
-
-        logging.basicConfig(
-            level=logging.INFO,
-            format="[%(levelname)-5s] %(message)s",
-            handlers=[pytilpack.tqdm_.TqdmStreamHandler()],
-        )
-
-    """
-
     @typing.override
     def emit(self, record):
         with tqdm.tqdm.external_write_mode(file=self.stream):
@@ -33,13 +18,6 @@ class TqdmStreamHandler(logging.StreamHandler):
 
 @contextlib.contextmanager
 def capture(capture_stdout: bool = True, capture_stderr: bool = True):
-    """標準出力、標準エラー出力をキャプチャして最後にまとめて(tqdm対応で)出力する。
-
-    Args:
-        capture_stdout: 標準出力をキャプチャするかどうか。
-        capture_stderr: 標準エラー出力をキャプチャするかどうか。
-
-    """
     stdout_buffer = io.StringIO()
     stderr_buffer = io.StringIO()
     try:

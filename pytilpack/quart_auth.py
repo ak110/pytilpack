@@ -1,5 +1,3 @@
-"""Quart-Auth関連のユーティリティ。"""
-
 __lazy_modules__ = ["functools", "inspect", "logging", "pytilpack.python", "quart", "quart_auth", "typing"]
 
 import functools
@@ -16,33 +14,19 @@ logger = logging.getLogger(__name__)
 
 
 class UserMixin:
-    """ユーザー。"""
-
     @property
     def is_authenticated(self) -> bool:
-        """認証済みかどうか。"""
         return True
 
 
 class AnonymousUser(UserMixin):
-    """未ログインの匿名ユーザー。"""
-
     @property
     @typing.override
     def is_authenticated(self) -> bool:
-        """認証済みかどうか。"""
         return False
 
 
 class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
-    """Quart-Authの独自拡張。
-
-    Flask-Loginと同様の`@auth_manager.user_loader`定義に対応する。
-    読み込んだユーザーインスタンスは`quart.g.quart_auth_current_user`に格納する。
-    テンプレートでは`{{ current_user }}`でアクセスできる。
-
-    """
-
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.user_loader_func: typing.Callable[[str], UserType | None] | None = None
@@ -50,21 +34,17 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
 
     @typing.override
     def init_app(self, app: quart.Quart) -> None:
-        """初期化処理。"""
         super().init_app(app)
 
-        # リクエスト前処理を登録
         app.before_request(self._before_request)
 
     async def _before_request(self) -> None:
-        """リクエスト前処理。"""
         quart.g.quart_auth_current_user = None
 
     # pylint: disable=invalid-overridden-method
     # pyright: ignore[reportIncompatibleMethodOverride]
     @typing.override
     async def _template_context(self) -> dict[str, quart_auth.AuthUser]:  # type: ignore[override]
-        """テンプレートでcurrent_userがquart.g.quart_auth_current_userになるようにする。"""
         try:
             await self.ensure_user_loaded()
             template_context = super()._template_context()
@@ -97,7 +77,6 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
         typing.Callable[[str], UserType | None]
         | typing.Callable[[str], typing.Coroutine[typing.Any, typing.Any, UserType | None]]
     ):
-        """ユーザーローダーのデコレータ。"""
         if inspect.iscoroutinefunction(user_loader):
             self.user_loader_func = None
             self.auser_loader_func = typing.cast(
@@ -109,20 +88,15 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
         return user_loader
 
     async def ensure_user_loaded(self) -> UserType | AnonymousUser:
-        """ユーザーをロードする。sync/async両方のuser_loaderに対応。"""
         if getattr(quart.g, "quart_auth_current_user", None) is not None:
             return quart.g.quart_auth_current_user
 
-        # ユーザーの読み込みを行う
         auth_id = quart_auth.current_user.auth_id
         if auth_id is None:
-            # 未認証の場合はAnonymousUserにする
             quart.g.quart_auth_current_user = AnonymousUser()
         elif self.auser_loader_func is not None:
-            # async版loaderで読み込む
             quart.g.quart_auth_current_user = await self.auser_loader_func(auth_id)
         elif self.user_loader_func is not None:
-            # sync版loaderで読み込む
             quart.g.quart_auth_current_user = self.user_loader_func(auth_id)
         else:
             raise RuntimeError("user_loaderが設定されていません。@auth_manager.user_loaderでユーザーを読み込む関数を登録する")
@@ -130,9 +104,7 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
         return self._finish_user_load(auth_id)
 
     def _finish_user_load(self, auth_id: str | None) -> UserType | AnonymousUser:
-        """ロード結果のキャッシュ、ログアウトとCookie更新を処理する。"""
         if auth_id is not None and quart.g.quart_auth_current_user is None:
-            # ユーザーが見つからない場合はAnonymousUserにする
             logger.error(
                 f"ユーザーロードエラー: {auth_id}。user_loaderがNoneを返したため、ログアウトして未認証として処理を続ける。"
                 "ユーザーが削除されていないか、user_loaderの実装を確かめる"
@@ -140,119 +112,72 @@ class QuartAuth[UserType: UserMixin](quart_auth.QuartAuth):
             quart.g.quart_auth_current_user = AnonymousUser()
             quart_auth.logout_user()
         elif auth_id is not None and getattr(quart.g, "quart_auth_set_cookie", True):
-            # ログイン状態を更新する
             quart_auth.renew_login()
 
-        # ロジック上、ここでNoneになることはない (未認証→AnonymousUser, ロード失敗→AnonymousUser)
         return quart.g.quart_auth_current_user  # pyright: ignore[reportReturnType]
 
     @property
     def current_user(self) -> UserType | AnonymousUser:
-        """現在のユーザーを取得する。"""
-        # ユーザーがロード済みの場合はそれを返す
         if getattr(quart.g, "quart_auth_current_user", None) is not None:
             return quart.g.quart_auth_current_user
 
-        # ユーザーの読み込みを行う
         assert self.user_loader_func is not None
         auth_id = quart_auth.current_user.auth_id
         if auth_id is None:
-            # 未認証の場合はAnonymousUserにする
             quart.g.quart_auth_current_user = AnonymousUser()
         else:
-            # 認証済みの場合はuser_loader_funcを実行する
             assert auth_id is not None
             quart.g.quart_auth_current_user = self.user_loader_func(auth_id)
         return self._finish_user_load(auth_id)
 
 
 def reset_user(user: UserMixin) -> None:
-    """現在のユーザーをリセットする。DBのセッション失効対策などに使用する。
-
-    quart.gに直接設定するだけの処理のため、利用時は注意する。
-    """
     quart.g.quart_auth_current_user = user
 
 
 def login_user(auth_id: str, remember: bool = True, set_cookie: bool = True) -> None:
-    """ログイン処理。
-
-    Args:
-        auth_id: 認証ID
-        remember: ログイン状態を保持するかどうか
-        set_cookie: 通常のCookie発行を行うか否か (APIキー認証等を自前で実装した場合はFalseにする)
-
-    """
     user = quart_auth.AuthUser(auth_id)
     quart.g.quart_auth_set_cookie = set_cookie
     if set_cookie:
-        # Action.WRITE / Action.WRITE_PERMANENTで設定される
         quart_auth.login_user(user, remember=remember)
     else:
-        # Action.PASSのまま直接設定する
         assert user.action == quart_auth.Action.PASS
         _find_extension().login_user(user)
-    # ユーザーは再ロード要
     quart.g.quart_auth_current_user = None
 
 
 def logout_user() -> None:
-    """ログアウト処理。"""
     quart_auth.logout_user()
 
 
 async def ensure_user_loaded() -> None:
-    """ユーザーをロードする。async版のuser_loaderを使用している場合は本関数の呼び出しが必要。"""
     await _find_extension().ensure_user_loaded()
 
 
 def is_authenticated() -> bool:
-    """ユーザーが認証済みであるか否かを返す。"""
     return quart_auth.current_user.auth_id is not None
 
 
 @pytilpack.python.deprecated("Use pytilpack.quart_auth.acurrent_user instead.")
 def current_user() -> UserMixin:
-    """現在のユーザーを取得する。
-
-    .. deprecated:: pytilpack.quart_auth.acurrent_user を使用すること。
-    """
     return _find_extension().current_user
 
 
 async def acurrent_user() -> UserMixin:
-    """現在のユーザーを取得する。async版。"""
     return await _find_extension().ensure_user_loaded()
 
 
 @pytilpack.python.deprecated("Use pytilpack.quart_auth.ais_admin instead.")
 def is_admin(attr_name: str = "is_admin") -> bool:
-    """現在のユーザーが認証済みかつ管理者であるか否かを取得する。
-
-    .. deprecated:: pytilpack.quart_auth.ais_admin を使用すること。
-
-    Args:
-        attr_name: 管理者かどうかを判定する属性名。デフォルトは "is_admin"。
-    """
     return is_authenticated() and getattr(_find_extension().current_user, attr_name)
 
 
 async def ais_admin(attr_name: str = "is_admin") -> bool:
-    """現在のユーザーが認証済みかつ管理者であるか否かを取得する。async版。
-
-    Args:
-        attr_name: 管理者かどうかを判定する属性名。デフォルトは "is_admin"。
-    """
     user = await acurrent_user()
     return user.is_authenticated and getattr(user, attr_name)
 
 
 def admin_only[**P, R](func: typing.Callable[P, R]) -> typing.Callable[P, R]:
-    """管理者のみアクセス可能なルートを定義するデコレータ。
-
-    未認証の場合は401、認証済みの非管理者の場合は403を返す。
-    同期・非同期のルートに同じ認証条件を適用する。
-    """
     if inspect.iscoroutinefunction(func):
 
         @functools.wraps(func)
@@ -280,7 +205,6 @@ def admin_only[**P, R](func: typing.Callable[P, R]) -> typing.Callable[P, R]:
 
 
 def _find_extension(app: quart.Quart | None = None) -> QuartAuth:
-    """QuartAuthのインスタンスを取得する。"""
     if app is None:
         app = quart.current_app
     extension = typing.cast(

@@ -71,75 +71,78 @@ import pytilpack.xxx
 
 ## モジュール一覧
 
+APIの詳細は[ソースコード](https://github.com/ak110/pytilpack/tree/master/pytilpack)を読む。
+`pytilpack.xxx`の実装は`pytilpack/xxx.py`または`pytilpack/xxx/`にある。
+
 ### Webフレームワーク
 
-- [pytilpack.fastapi](../api/fastapi.md)
-- [pytilpack.flask](../api/flask.md)
-- [pytilpack.flask_login](../api/flask_login.md)
-- [pytilpack.quart](../api/quart.md)
-- [pytilpack.quart_auth](../api/quart_auth.md)
+- `pytilpack.fastapi`
+- `pytilpack.flask`
+- `pytilpack.flask_login`
+- `pytilpack.quart`
+- `pytilpack.quart_auth`
 
 ### データ処理・シリアライゼーション
 
-- [pytilpack.csv](../api/csv.md)
-- [pytilpack.dataclasses](../api/dataclasses.md)
-- [pytilpack.json](../api/json.md)
-- [pytilpack.jsonc](../api/jsonc.md): JSON with Comments関連
-- [pytilpack.pydantic](../api/pydantic.md)
-- [pytilpack.sqlalchemy](../api/sqlalchemy.md)
-- [pytilpack.yaml](../api/yaml.md)
+- `pytilpack.csv`
+- `pytilpack.dataclasses`
+- `pytilpack.json`
+- `pytilpack.jsonc`: JSON with Comments関連
+- `pytilpack.pydantic`
+- `pytilpack.sqlalchemy`
+- `pytilpack.yaml`
 
 ### セキュリティ・暗号
 
-- [pytilpack.crypto](../api/crypto.md): 署名・トークン関連
-- [pytilpack.msal](../api/msal.md)
-- [pytilpack.pycrypto](../api/pycrypto.md): AES-GCM暗号化
-- [pytilpack.secrets](../api/secrets.md): シークレットキー関連
+- `pytilpack.crypto`: 署名・トークン関連
+- `pytilpack.msal`
+- `pytilpack.pycrypto`: AES-GCM暗号化
+- `pytilpack.secrets`: シークレットキー関連。Unix専用（ファイルロックに`fcntl`を使う）
 
 ### HTTP・Web
 
-- [pytilpack.data_url](../api/data_url.md): データURL関連
-- [pytilpack.healthcheck](../api/healthcheck.md): ヘルスチェック処理関連
-- [pytilpack.htmlrag](../api/htmlrag.md): HtmlRAG関連
-- [pytilpack.http](../api/http.md): HTTP関連
-- [pytilpack.httpx](../api/httpx.md)
-- [pytilpack.sse](../api/sse.md): Server-Sent Events関連
-- [pytilpack.web](../api/web.md): Web関連
+- `pytilpack.data_url`: データURL関連
+- `pytilpack.healthcheck`: ヘルスチェック処理関連
+- `pytilpack.htmlrag`: HtmlRAG関連
+- `pytilpack.http`: HTTP関連
+- `pytilpack.httpx`
+- `pytilpack.sse`: Server-Sent Events関連
+- `pytilpack.web`: Web関連
 
 ### 国際化・テキスト処理
 
-- [pytilpack.babel](../api/babel.md)
-- [pytilpack.base64](../api/base64.md)
-- [pytilpack.i18n](../api/i18n.md): 国際化(i18n)関連（ベース依存で利用可能）
-- [pytilpack.markdown](../api/markdown.md)
-- [pytilpack.tiktoken](../api/tiktoken.md)
+- `pytilpack.babel`
+- `pytilpack.base64`
+- `pytilpack.i18n`: 国際化(i18n)関連（ベース依存で利用可能）。Babelを使う翻訳カタログ管理は`pytilpack.babel`を使う
+- `pytilpack.markdown`
+- `pytilpack.tiktoken`
 
 ### 非同期・並行処理
 
-- [pytilpack.asyncio](../api/asyncio.md)
-- [pytilpack.ratelimit](../api/ratelimit.md): レートリミッター
-- [pytilpack.threading](../api/threading.md)
-- [pytilpack.threadinga](../api/threadinga.md): asyncio版スレッドユーティリティ
+- `pytilpack.asyncio`: 実行中のイベントループから`pytilpack.asyncio.run`を呼ぶと、`coro`は別スレッドの新しいループで実行される。`coro`から親ループのリソース（SQLAlchemyの`AsyncEngine`、`asyncio.Queue`など）を参照しない
+- `pytilpack.ratelimit`: レートリミッター
+- `pytilpack.threading`
+- `pytilpack.threadinga`: asyncio版スレッドユーティリティ
 
 ### ファイルシステム・OS
 
-- [pytilpack.cache](../api/cache.md): ファイルキャッシュ関連
-- [pytilpack.fnctl](../api/fnctl.md)
-- [pytilpack.io](../api/io.md): IO関連のユーティリティ
-- [pytilpack.pathlib](../api/pathlib.md)
-- [pytilpack.zipfile](../api/zipfile.md): ZIPエントリ名復号、Zip Slip検証
+- `pytilpack.cache`: ファイルキャッシュ関連
+- `pytilpack.fnctl`: Unix専用（`fcntl`を使う）
+- `pytilpack.io`: IO関連のユーティリティ
+- `pytilpack.pathlib`
+- `pytilpack.zipfile`: ZIPエントリ名復号、Zip Slip検証
 
 ### 開発・テスト支援
 
-- [pytilpack.datetime](../api/datetime.md)
-- [pytilpack.environ](../api/environ.md): 環境変数関連
-- [pytilpack.functools](../api/functools.md)
-- [pytilpack.importlib](../api/importlib.md)
-- [pytilpack.logging](../api/logging.md)
-- [pytilpack.paginator](../api/paginator.md): ページネーション関連
-- [pytilpack.pytest](../api/pytest.md)
-- [pytilpack.python](../api/python.md)
-- [pytilpack.random](../api/random.md): 疑似乱数関連
-- [pytilpack.tqdm](../api/tqdm.md)
-- [pytilpack.typing](../api/typing.md)
-- [pytilpack.validator](../api/validator.md): バリデーション関連
+- `pytilpack.datetime`
+- `pytilpack.environ`: 環境変数関連
+- `pytilpack.functools`
+- `pytilpack.importlib`
+- `pytilpack.logging`
+- `pytilpack.paginator`: ページネーション関連
+- `pytilpack.pytest`
+- `pytilpack.python`
+- `pytilpack.random`: 疑似乱数関連
+- `pytilpack.tqdm`
+- `pytilpack.typing`
+- `pytilpack.validator`: バリデーション関連

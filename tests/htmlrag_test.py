@@ -1,9 +1,3 @@
-"""テストコード。
-
-<https://github.com/plageon/HtmlRAG/blob/main/toolkit/README.md>
-
-"""
-
 # pylint: disable=protected-access
 
 import httpx

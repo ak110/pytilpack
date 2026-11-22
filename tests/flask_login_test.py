@@ -1,5 +1,3 @@
-"""Flaskの保護エンドポイントを通す認可テスト。"""
-
 import flask
 import flask_login
 
@@ -7,7 +5,6 @@ import pytilpack.flask_login
 
 
 def test_admin_only_endpoint() -> None:
-    """未認証者と一般利用者を拒否し、管理者だけを通す。"""
     app = flask.Flask(__name__)
     app.secret_key = "test-only-secret"
     login_manager = flask_login.LoginManager(app)

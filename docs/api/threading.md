@@ -1,3 +1,0 @@
-# pytilpack.threading
-
-::: pytilpack.threading

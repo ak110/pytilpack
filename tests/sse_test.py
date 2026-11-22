@@ -1,5 +1,3 @@
-"""SSE モジュールのテスト。"""
-
 import asyncio
 import contextlib
 import typing
@@ -10,38 +8,28 @@ import pytilpack.sse
 
 
 def test_sse_to_str() -> None:
-    """SSE.to_str()の各種パターンテスト。"""
-    # dataフィールドのみのメッセージ
     assert pytilpack.sse.SSE("test data").to_str() == "data: test data\n\n"
 
-    # 複数行データ (LF / CRLF / CR)
     assert pytilpack.sse.SSE("line 1\nline 2\nline 3").to_str() == "data: line 1\ndata: line 2\ndata: line 3\n\n"
     assert pytilpack.sse.SSE("line 1\r\nline 2\r\nline 3").to_str() == "data: line 1\ndata: line 2\ndata: line 3\n\n"
     assert pytilpack.sse.SSE("line 1\rline 2\rline 3").to_str() == "data: line 1\ndata: line 2\ndata: line 3\n\n"
 
-    # 全フィールドを使用したケース
     msg = pytilpack.sse.SSE(data="test data", event="update", id="123", retry=3000)
     assert msg.to_str() == "event: update\nid: 123\nretry: 3000\ndata: test data\n\n"
 
 
 def test_sse_comment() -> None:
-    """commentフィールドの各種パターンテスト。"""
-    # コメント単独
     assert pytilpack.sse.SSE(comment="ping").to_str() == ": ping\n\n"
 
-    # dataとの併用（出力順はcomment→data）
     assert pytilpack.sse.SSE(data="x", comment="info").to_str() == ": info\ndata: x\n\n"
 
-    # 全フィールド併用（event/id/retry/comment/dataの順）
     msg = pytilpack.sse.SSE(data="x", event="e", id="1", retry=3000, comment="c")
     assert msg.to_str() == "event: e\nid: 1\nretry: 3000\n: c\ndata: x\n\n"
 
-    # 複数行コメント (LF / CRLF / CR)
     assert pytilpack.sse.SSE(comment="a\nb\r\nc\rd").to_str() == ": a\n: b\n: c\n: d\n\n"
 
 
 def test_sse_requires_data_or_comment() -> None:
-    """dataとcommentがともにNoneの場合にValueErrorを送出することを確認。"""
     with pytest.raises(ValueError):
         pytilpack.sse.SSE()
     with pytest.raises(ValueError):
@@ -53,7 +41,6 @@ def test_sse_requires_data_or_comment() -> None:
     ["\x0b", "\x0c", "\x1c", "\x1d", "\x1e", "\x85", " ", " "],
 )
 def test_sse_non_sse_line_separators_not_split(sep: str) -> None:
-    """SSE仕様外の行区切り文字で分割されないことを確認。"""
     data = f"before{sep}after"
     msg = pytilpack.sse.SSE(data)
     assert msg.to_str() == f"data: before{sep}after\n\n"
@@ -61,9 +48,7 @@ def test_sse_non_sse_line_separators_not_split(sep: str) -> None:
 
 @pytest.mark.asyncio
 async def test_generator() -> None:
-    """generatorデコレーターのキープアライブ（文字列・SSE・混合）テスト。"""
 
-    # 文字列のキープアライブ
     @pytilpack.sse.generator(interval=0.15)
     async def generate_str() -> typing.AsyncGenerator[str, None]:
         yield "data: msg1\n\n"
@@ -82,7 +67,6 @@ async def test_generator() -> None:
     assert messages[2] == ": ping\n\n"
     assert messages[3] == "data: msg3\n\n"
 
-    # SSEオブジェクトのキープアライブ
     @pytilpack.sse.generator(interval=0.15)
     async def generate_sse() -> typing.AsyncGenerator[pytilpack.sse.SSE, None]:
         yield pytilpack.sse.SSE("msg1")
@@ -101,7 +85,6 @@ async def test_generator() -> None:
     assert messages_sse[2] == ": ping\n\n"
     assert messages_sse[3] == "id: 123\ndata: msg3\n\n"
 
-    # 文字列とSSEオブジェクトの混合
     @pytilpack.sse.generator(interval=0.15)
     async def generate_mixed() -> typing.AsyncGenerator[str | pytilpack.sse.SSE, None]:
         yield "data: raw1\n\n"
@@ -123,7 +106,6 @@ async def test_generator() -> None:
 
 @pytest.mark.asyncio
 async def test_generator_cancel(monkeypatch: pytest.MonkeyPatch) -> None:
-    """切断すると待機中の次要素取得へキャンセルが伝わる。"""
     cleanup_called = False
     cancelled = False
     waiting = asyncio.Event()

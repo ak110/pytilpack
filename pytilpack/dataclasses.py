@@ -1,5 +1,3 @@
-"""dataclasses関連のユーティリティ。"""
-
 __lazy_modules__ = ["dataclasses", "pathlib", "pytilpack.json", "pytilpack.typing", "typing"]
 
 import dataclasses
@@ -16,62 +14,29 @@ if typing.TYPE_CHECKING:
     TDataClass = typing.TypeVar("TDataClass", bound=DataclassInstance)
 
 
+# 公式ドキュメントの回避策をそのまま実装する。
+# https://docs.python.org/ja/3/library/dataclasses.html#dataclasses.asdict
 def asdict(obj: typing.Any) -> dict[str, typing.Any]:
-    """dataclasses.asdict()のシャロー版。
-
-    dataclasses.asdict()はネストされたdataclassを再帰的に変換するが、
-    本関数は1段階のみ展開する。
-    公式ドキュメントの回避策をそのまま実装する。
-    <https://docs.python.org/ja/3/library/dataclasses.html#dataclasses.asdict>
-
-    """
     return {field.name: getattr(obj, field.name) for field in dataclasses.fields(obj)}
 
 
 def fromdict(cls: "type[TDataClass]", data: dict[str, typing.Any]) -> "TDataClass":
-    """dictからdataclassを生成する。ネストされたdataclassも再帰的に変換する。
-
-    dataclasses.asdict()の逆変換に相当する。
-
-    Args:
-        cls: dataclassの型
-        data: dict
-
-    Returns:
-        dataclassのインスタンス
-
-    """
     # get_type_hints()を使うことで前方参照（文字列）も解決した実際の型を得る。
     # f.typeは前方参照の場合に文字列のまま返るため、dataclasses.is_dataclass()が常にFalseになるバグを回避する。
     field_types = typing.get_type_hints(cls)
-    # dataclassのフィールドに対応する値を取得
     values: dict[str, typing.Any] = {}
     for k, v in data.items():
         if v is None:
-            # 値がNoneの場合はスキップ
             continue
         if k in field_types:
-            # フィールドの型がdataclassの場合
             if dataclasses.is_dataclass(field_types[k]):
-                # 再帰的にfromdictを呼び出す
                 values[k] = fromdict(field_types[k], v)  # type: ignore[arg-type]
             else:
                 values[k] = v
-    # dataclassのインスタンスを生成
     return cls(**values)
 
 
 def fromjson(cls: "type[TDataClass]", json_path: str | pathlib.Path) -> "TDataClass":
-    """jsonからdataclassを生成する。
-
-    Args:
-        cls: dataclassの型
-        json_path: jsonファイルのパス
-
-    Returns:
-        dataclassのインスタンス
-
-    """
     return fromdict(cls, pytilpack.json.load(json_path))
 
 
@@ -83,17 +48,6 @@ def tojson(
     separators: typing.Any | None = None,
     sort_keys: bool = False,
 ) -> None:
-    """dataclassをjsonに変換して保存する。
-
-    Args:
-        obj: dataclassのインスタンス
-        json_path: 保存先のパス
-        ensure_ascii: json.dumpの引数
-        indent: json.dumpの引数
-        separators: json.dumpの引数
-        sort_keys: json.dumpの引数
-
-    """
     pytilpack.json.save(
         json_path,
         dataclasses.asdict(obj),
@@ -105,11 +59,6 @@ def tojson(
 
 
 def validate(instance: "DataclassInstance") -> None:
-    """dataclassインスタンスのフィールド型を詳細チェックする。
-
-    Raises:
-        TypeError: 型不一致、またはdataclassでない場合。詳細なエラー位置を含む。
-    """
     if not dataclasses.is_dataclass(instance):
         raise TypeError(f"{instance!r} is not a dataclass instance")
 

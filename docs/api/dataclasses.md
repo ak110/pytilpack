@@ -1,3 +1,0 @@
-# pytilpack.dataclasses
-
-::: pytilpack.dataclasses

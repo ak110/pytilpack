@@ -1,23 +1,6 @@
 # アーキテクチャ
 
-## リポジトリ構成
-
-```text
-pytilpack/          # メインパッケージ
-  cli/              # CLIサブコマンド群
-tests/              # テストコード
-docs/               # ドキュメント
-  api/              # APIリファレンス（モジュールごとの.md）
-  guide/            # 利用者向けガイド
-  development/      # 開発者向けドキュメント
-scripts/            # 開発用スクリプト
-```
-
 ## モジュールの構成と依存
-
-pytilpackは主要Pythonライブラリ向けの軽量ユーティリティ集。
-モジュール単位の個別importとextras単位の依存管理を採用する。
-利用者は必要なモジュールだけを取り込むことができる。
 
 ### コア依存とextras
 
@@ -44,13 +27,12 @@ pytilpackは主要Pythonライブラリ向けの軽量ユーティリティ集�
 - CLIの名前・実装・必要extraは`pytilpack/cli/main.py`の`_SUBCOMMANDS`に定義する
 
 利用者が読む対応表とモジュール分類は[利用者向けガイド](../guide/index.md)に置く。
-分類はモジュールの主な用途で1つに決め、MkDocsのnavとllmstxtにも同じ所属を記載する。
+分類はモジュールの主な用途で1つに決める。
 `all`は他の全extraの直接依存の和集合を持ち、`sqlalchemy[asyncio]`のような依存先のextraも保持する。
 
 ### 依存の向きとimport
 
 標準ライブラリやコア依存を使う基盤モジュールを、ライブラリ別・フレームワーク別の支援から利用する。
-`functools`は`http`、`secrets`は`functools`、`json`は`jsonc`と`io`、`sqlalchemy`は`asyncio`・`paginator`・`python`を利用する。
 同じ処理を公開窓口ごとに写さず、共通の内部実装へ委ねる。同期と非同期のセッション実行や初期化状態はそれぞれが保持する。
 
 importは原則トップレベルに置く。ベースのモジュールが任意extraを要する機能を持つ場合は、その関数内で依存を読み込む。
@@ -59,7 +41,7 @@ Unix専用依存については後掲のプラットフォーム依存の規則�
 
 任意extraを要するモジュールをトップレベルでimportする側は、そのextraの直接依存も自分のextraと`all`へ含める。
 
-Python 3.15以降でimport時間を短縮するため、各モジュールはdocstringの直後に`__lazy_modules__`を置き、トップレベルでimportするモジュール名を列挙する。
+Python 3.15以降でimport時間を短縮するため、各モジュールは先頭に`__lazy_modules__`を置き、トップレベルでimportするモジュール名を列挙する。
 3.15未満では無視されるため、`lazy`構文と異なり対応版の下限を変えずに使える。
 列挙しないのは次のimportに限る。
 
@@ -81,10 +63,6 @@ Python 3.15以降でimport時間を短縮するため、各モジュールはdoc
 これらが特定のサードパーティに依存する場合、そのパッケージを依存元の各フレームワークextras
 （`flask`・`quart`・`fastapi`等）と`all` extrasの双方に含める。
 
-具体例: `pytilpack/_web_asserts.py`の`assert_xml_core`はXML外部実体攻撃を防ぐため
-`defusedxml`を使用する。
-このため`flask`・`quart`・`fastapi`・`all` extrasに`defusedxml`を含める。
-
 ## 公開API設計方針
 
 - 各モジュールは対象ライブラリ（`pytilpack.fastapi`・`pytilpack.flask`等）ごとに独立した名前空間を持つ
@@ -104,7 +82,7 @@ Python 3.15以降でimport時間を短縮するため、各モジュールはdoc
 
 ### プラットフォーム依存とファイル権限
 
-`fcntl`などUnix専用モジュールに依存するモジュールは、API文書でUnix専用であることを案内する。
+`fcntl`などUnix専用モジュールに依存するモジュールは、利用者向けガイドのモジュール一覧でUnix専用であることを案内する。
 他のモジュールから最上位で読み込まず、その機能を使う関数内でimportする。
 
 umaskによらず厳密な権限が必要なファイルは、`os.open(..., mode=0o600)`などで作成時点から権限を確定する。
@@ -151,13 +129,12 @@ Quartでは`app.test_client()`を`async with`なしで使う。
 ## ドキュメント構成と対応情報の確認
 
 サイトの生成・配布とモジュール追加の手順は[開発手順](development.md)の「ドキュメントサイト運用」を参照する。
+APIリファレンスは生成せず、利用者とエージェントはモジュール一覧からソースコードを読む。
 
-- `docs/api/<name>.md`、各モジュールのAPI生成設定と必要extra・プラットフォームの注記
-- `docs/guide/index.md`、extras一覧と唯一のモジュール分類
+- `docs/guide/index.md`、extras一覧と唯一のモジュール分類、利用上の重要な制約
 - `docs/guide/cli.md`、各CLIの用途・代表例・ヘルプへの案内
-- `mkdocs.yml`、navとllmstxt sectionsの同じ分類
 
 `scripts/check_docs_api.py`は公開モジュール一覧、extra・対象モジュール・直接依存、コア依存、
-`all`の和集合、APIの必要extra注記、CLI節、8分類の所属が定義元と一致するか確かめる。
+`all`の和集合、CLI節、8分類の所属が定義元と一致するか確かめる。
 pre-commitとCIが同じスクリプトを実行し、不一致では所在を示して非0で終了する。
 配布wheelの単独extraでのimportとWebアサーションは`scripts/check_extras_imports.py`が隔離環境で検証する。

@@ -1,5 +1,3 @@
-"""ディレクトリ同期コマンド。"""
-
 __lazy_modules__ = ["argparse", "pathlib", "pytilpack.pathlib"]
 
 import argparse
@@ -9,7 +7,6 @@ import pytilpack.pathlib
 
 
 def add_parser(subparsers: argparse._SubParsersAction) -> None:
-    """syncサブコマンドのパーサーを追加する。"""
     parser = subparsers.add_parser(
         "sync",
         help="ディレクトリを同期",
@@ -38,7 +35,6 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
 
 
 def run(args: argparse.Namespace) -> None:
-    """syncコマンドを実行する。"""
     pytilpack.pathlib.sync(
         pathlib.Path(args.src),
         pathlib.Path(args.dst),

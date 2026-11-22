@@ -1,3 +1,0 @@
-# pytilpack.threadinga
-
-::: pytilpack.threadinga

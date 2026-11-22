@@ -1,3 +1,0 @@
-# pytilpack.io
-
-::: pytilpack.io

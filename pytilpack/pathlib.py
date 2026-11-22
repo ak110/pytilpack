@@ -1,5 +1,3 @@
-"""ファイル関連のユーティリティ集。"""
-
 __lazy_modules__ = ["dataclasses", "datetime", "logging", "os", "pathlib", "shutil", "stat", "typing"]
 
 import dataclasses
@@ -16,15 +14,12 @@ logger = logging.getLogger(__name__)
 
 @dataclasses.dataclass(frozen=True)
 class RmtreeResult:
-    """rmtree()の削除結果。"""
-
     files: int = 0
     dirs: int = 0
     total_size: int = 0
     errors: int = 0
 
     def __add__(self, other: "RmtreeResult") -> "RmtreeResult":
-        """フィールド同士を加算した新しい結果を返す。"""
         if not isinstance(other, RmtreeResult):
             return NotImplemented
         return RmtreeResult(
@@ -35,7 +30,6 @@ class RmtreeResult:
         )
 
     def __radd__(self, other: int) -> "RmtreeResult":
-        """sum()の初期値0との加算を許容し、それ以外はNotImplementedを返す。"""
         if other == 0:
             return self
         return NotImplemented
@@ -43,8 +37,6 @@ class RmtreeResult:
 
 @dataclasses.dataclass
 class _RmtreeStats:
-    """rmtree()内部で集計に用いるミュータブルなアキュムレータ。"""
-
     files: int = 0
     dirs: int = 0
     total_size: int = 0
@@ -52,50 +44,32 @@ class _RmtreeStats:
 
 
 def append_text(path: str | pathlib.Path, data: str, encoding: str = "utf-8", errors: str = "strict") -> None:
-    """ファイルにテキストを追記する。"""
     path = pathlib.Path(path)
     with path.open("a", encoding=encoding, errors=errors) as f:
         f.write(data)
 
 
 def append_bytes(path: str | pathlib.Path, data: bytes) -> None:
-    """ファイルにバイトを追記する。"""
     path = pathlib.Path(path)
     with path.open("ab") as f:
         f.write(data)
 
 
 def delete_file(path: str | pathlib.Path) -> None:
-    """ファイルを削除する。"""
     path = pathlib.Path(path)
     if path.is_file():
         path.unlink()
 
 
 def rmtree(path: str | pathlib.Path, ignore_errors: bool = False) -> RmtreeResult:
-    """ディレクトリを再帰的に削除する。読み取り専用ファイルも削除する。
-
-    パスが存在しない場合は空の結果を返す。
-    ディレクトリへのシンボリックリンクをトップに渡した場合はNotADirectoryErrorを送出する。
-    ファイル本体またはファイルへのシンボリックリンクの場合は単一ファイルとして削除する。
-
-    Args:
-        path: 対象パス
-        ignore_errors: Trueなら削除に失敗してもerrorsへ計上して走査を続行する
-
-    Returns:
-        削除したファイル数・ディレクトリ数・合計サイズ・エラー数。
-    """
     path = pathlib.Path(path)
     stats = _RmtreeStats()
 
     if path.is_symlink():
-        # シンボリックリンクの解決先がディレクトリならshutil.rmtree同様に例外
         if path.is_dir():
             raise NotADirectoryError(
                 f"Cannot call rmtree on a symbolic link: {path}. To remove the link itself, use pathlib.Path.unlink()."
             )
-        # ファイルへのシンボリックリンク（または解決先が存在しないリンク）は単一ファイル扱い
         _remove_file(path, stats, ignore_errors)
         return _to_result(stats)
 
@@ -112,8 +86,6 @@ def rmtree(path: str | pathlib.Path, ignore_errors: bool = False) -> RmtreeResul
         else:
             raise exc
 
-    # ``Path.walk(follow_symlinks=False)`` はシンボリックリンクを ``filenames`` に分類する。
-    # ディレクトリへのシンボリックリンクも追従されず ``filenames`` 経由で ``_remove_file`` が処理する。
     for root, _dirnames, filenames in path.walk(top_down=False, on_error=on_walk_error):
         for fname in filenames:
             _remove_file(root / fname, stats, ignore_errors)
@@ -127,7 +99,6 @@ def _to_result(stats: _RmtreeStats) -> RmtreeResult:
 
 
 def _remove_file(path: pathlib.Path, stats: _RmtreeStats, ignore_errors: bool) -> None:
-    """ファイル（またはシンボリックリンク）を削除し統計を更新する。"""
     is_link = path.is_symlink()
     try:
         size = 0 if is_link else path.stat().st_size
@@ -145,7 +116,6 @@ def _remove_file(path: pathlib.Path, stats: _RmtreeStats, ignore_errors: bool) -
 
 
 def _remove_dir(path: pathlib.Path, stats: _RmtreeStats, ignore_errors: bool) -> None:
-    """空ディレクトリを削除し統計を更新する。"""
     if not _remove_with_retry(path.rmdir, path, stats, ignore_errors):
         return
 
@@ -153,12 +123,6 @@ def _remove_dir(path: pathlib.Path, stats: _RmtreeStats, ignore_errors: bool) ->
 
 
 def _remove_with_retry(remove: typing.Callable[[], None], path: pathlib.Path, stats: _RmtreeStats, ignore_errors: bool) -> bool:
-    """削除操作を実行し、PermissionErrorなら読み取り専用属性をクリアしてリトライする。
-
-    Returns:
-        削除できた場合はTrue。ignore_errors=Trueで失敗を統計へ計上した場合はFalse。
-
-    """
     try:
         remove()
     except PermissionError:
@@ -179,7 +143,6 @@ def _remove_with_retry(remove: typing.Callable[[], None], path: pathlib.Path, st
 
 
 def get_size(path: str | pathlib.Path) -> int:
-    """ファイル・ディレクトリのサイズを返す。"""
     try:
         path = pathlib.Path(path)
         if path.is_file():
@@ -192,7 +155,6 @@ def get_size(path: str | pathlib.Path) -> int:
             total_size: int = 0
             try:
                 for child in path.iterdir():
-                    # 再帰的に子要素のサイズを加算する
                     total_size += get_size(child)
             except Exception:
                 logger.warning(f"ディレクトリサイズ取得失敗: {path}。取得済みの分だけを合計して処理を続ける", exc_info=True)
@@ -205,14 +167,6 @@ def get_size(path: str | pathlib.Path) -> int:
 
 
 def delete_empty_dirs(path: str | pathlib.Path, keep_root: bool = True) -> None:
-    """指定したパス以下の空ディレクトリを削除する。
-
-    ディレクトリへのシンボリックリンクはたどらず、リンク自体も保持する。
-
-    Args:
-        path: 対象のパス
-        keep_root: Trueの場合、指定したディレクトリ自体は削除しない
-    """
     path = pathlib.Path(path)
     if path.is_symlink() or not path.is_dir():
         return
@@ -233,19 +187,10 @@ def delete_empty_dirs(path: str | pathlib.Path, keep_root: bool = True) -> None:
         )
 
 
-# delete_old_files内で同名のパラメーターと衝突するため別名を用意する
 _delete_empty_dirs = delete_empty_dirs
 
 
 def sync(src: str | pathlib.Path, dst: str | pathlib.Path, delete: bool = False) -> None:
-    """コピー元からコピー先へ同期する。
-
-    Args:
-        src: コピー元のパス
-        dst: コピー先のパス
-        delete: Trueの場合、コピー元に存在しないコピー先のファイル・ディレクトリを削除
-
-    """
     src = pathlib.Path(src)
     dst = pathlib.Path(dst)
 
@@ -264,12 +209,10 @@ def sync(src: str | pathlib.Path, dst: str | pathlib.Path, delete: bool = False)
 
     if src.is_file():
         if dst.is_file():
-            # 更新日時を比較し、ソースの方が新しければコピー
             if src.stat().st_mtime_ns != dst.stat().st_mtime_ns:
                 logger.info(f"コピー: {src} -> {dst}")
                 shutil.copy2(src, dst)
         else:
-            # コピー先がファイルでない場合はいったん削除
             if dst.exists():
                 if dst.is_dir():
                     logger.info(f"削除: {dst}")
@@ -278,11 +221,9 @@ def sync(src: str | pathlib.Path, dst: str | pathlib.Path, delete: bool = False)
                     logger.info(f"削除: {dst}")
                     dst.unlink()
             dst.parent.mkdir(parents=True, exist_ok=True)
-            # コピー
             logger.info(f"コピー: {src} -> {dst}")
             shutil.copy2(src, dst)
     elif src.is_dir():
-        # コピー先がディレクトリでない場合はいったん削除
         if not dst.is_dir():
             if dst.exists():
                 logger.info(f"削除: {dst}")
@@ -290,12 +231,10 @@ def sync(src: str | pathlib.Path, dst: str | pathlib.Path, delete: bool = False)
             logger.info(f"作成: {dst}")
             dst.mkdir(parents=True)
 
-        # コピー元のファイル・ディレクトリを同期
         for src_child in src.iterdir():
             dst_child = dst / src_child.name
             sync(src_child, dst_child, delete)
 
-        # コピー元に存在しないコピー先のファイル・ディレクトリを削除
         if delete:
             for dst_child in dst.iterdir():
                 src_child = src / dst_child.name
@@ -313,17 +252,6 @@ def delete_old_files(
     delete_empty_dirs: bool = True,  # pylint: disable=redefined-outer-name
     keep_root_empty_dir: bool = True,
 ) -> None:
-    """指定した日時より古いファイルを削除し、空になったディレクトリも削除する。
-
-    ディレクトリへのシンボリックリンクはたどらず、リンク自体も保持する。
-    ファイルへのシンボリックリンクは、解決先の更新日時に応じてリンク自体を削除する。
-
-    Args:
-        path: 対象のパス
-        before: この日時より前に更新されたファイルを削除
-        delete_empty_dirs: Trueの場合、空になったディレクトリを削除
-        keep_root_empty_dir: Trueの場合、指定したディレクトリ自体は削除しない
-    """
     path = pathlib.Path(path)
     if path.is_symlink() and path.is_dir():
         return
@@ -341,12 +269,8 @@ def delete_old_files(
                 f"ファイルの削除に失敗: {path}。削除せずに処理を続ける。権限と使用中のプロセスを確かめる", exc_info=True
             )
     elif path.is_dir():
-        # 再帰的に子要素を処理
         for item in list(path.iterdir()):
             delete_old_files(item, before, delete_empty_dirs, keep_root_empty_dir=False)
 
-        # 空になったディレクトリを削除
         if delete_empty_dirs:
-            # delete_empty_dirs関数に委譲（keep_root_empty_dirに応じてpath自体の
-            # 削除可否が切り替わる）。引数名の衝突のため別名で呼び出す。
             _delete_empty_dirs(path, keep_root=keep_root_empty_dir)

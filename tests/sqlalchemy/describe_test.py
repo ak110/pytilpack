@@ -1,5 +1,3 @@
-"""SQLの構造表示を同期・非同期・Flaskのモデルで検証する。"""
-
 import pytest
 import sqlalchemy.orm
 
@@ -49,7 +47,6 @@ Table: test2
     ids=["sync", "async", "flask"],
 )
 def test_describe(base: type[sqlalchemy.orm.DeclarativeBase], synchronous: bool) -> None:
-    """既存の3モデル構成の期待値を保って構造表示を確認する。"""
     expected = _EXPECTED
     if synchronous:
         first = _EXPECTED.split("\n\n", 1)[0]

@@ -1,5 +1,3 @@
-"""古いファイルの削除条件をCLIから指定する。"""
-
 import os
 import time
 from pathlib import Path
@@ -8,7 +6,6 @@ from pytilpack.cli.main import main
 
 
 def test_delete_old_files_cli(tmp_path: Path) -> None:
-    """古いファイルだけを削除し、新しいファイルを保持する。"""
     old = tmp_path / "old.txt"
     new = tmp_path / "new.txt"
     old.write_text("古い", encoding="utf-8")

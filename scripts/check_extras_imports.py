@@ -1,9 +1,3 @@
-"""配布wheelの各extraを単独導入し、importに必要な依存がそろうことを検証する。
-
-依存不足は配布モジュールを利用できなくするためエラーとする。
-開発依存や他のextraによる補完を避けるため、uvの隔離環境とPythonの隔離モードを使う。
-"""
-
 import argparse
 import email
 import pathlib
@@ -11,7 +5,6 @@ import subprocess
 import sys
 import zipfile
 
-# 対応名が異なるモジュールと、複数モジュールを提供するextraも検証する。
 EXTRA_MODULES = {
     "babel": ("pytilpack.babel",),
     "bleach": ("bleach",),
@@ -19,7 +12,6 @@ EXTRA_MODULES = {
     "fastapi": ("pytilpack.fastapi",),
     "flask": ("pytilpack.flask", "pytilpack.flask_login"),
     "htmlrag": ("pytilpack.htmlrag",),
-    # pytilpack.loggingはベースでも使えるため、ベースの検証対象に残して依存だけを確かめる。
     "logging": ("filelock",),
     "markdown": ("pytilpack.markdown",),
     "mcp": ("pytilpack.cli.mcp",),
@@ -37,8 +29,7 @@ EXTRA_MODULES = {
 
 
 def main() -> int:
-    """各extraの隔離import検証を実行する。"""
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description="配布wheelの各extraを単独導入し、importに必要な依存がそろうことを検証する。")
     parser.add_argument("wheel", type=pathlib.Path)
     parser.add_argument("--extra", action="append", default=None, help="検証するextra。省略時はベースと全extra")
     args = parser.parse_args()

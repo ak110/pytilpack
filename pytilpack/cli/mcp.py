@@ -1,5 +1,3 @@
-"""MCPサーバーコマンド。"""
-
 __lazy_modules__ = ["argparse", "logging", "mcp.server.mcpserver", "pytilpack.htmlrag"]
 
 import argparse
@@ -13,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 
 def add_parser(subparsers: argparse._SubParsersAction) -> None:
-    """mcpサブコマンドのパーサーを追加する。"""
     parser = subparsers.add_parser(
         "mcp",
         help="MCPサーバーを起動",
@@ -46,18 +43,10 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
 
 
 def run(args: argparse.Namespace) -> None:
-    """mcpコマンドを実行する。"""
     _run_server(transport=args.transport, host=args.host, port=args.port)
 
 
 def _run_server(transport: str = "stdio", host: str = "localhost", port: int = 8000) -> None:
-    """MCPサーバーを起動する。
-
-    Args:
-        transport: 通信方式（"stdio" または "http"）
-        host: サーバーのホスト名（httpの場合のみ使用）
-        port: サーバーのポート番号（httpの場合のみ使用）
-    """
     if transport == "stdio":
         _create_server().run(transport="stdio")
     elif transport == "http":
@@ -67,27 +56,26 @@ def _run_server(transport: str = "stdio", host: str = "localhost", port: int = 8
 
 
 def _create_server() -> MCPServer:
-    """MCPサーバーインスタンスを作成する。"""
     mcp = MCPServer("pytilpack", instructions="pytilpackのユーティリティ機能を提供するMCPサーバー")
 
-    @mcp.tool()
+    @mcp.tool(
+        description=(
+            "URLからHTMLを取得し、簡略化して返す。\n\n"
+            "Args:\n"
+            "    url: 取得するURL\n"
+            "    no_verify: SSL証明書の検証を無効化するかどうか\n"
+            "    accept: 受け入れるコンテンツタイプ\n"
+            "    user_agent: User-Agentヘッダー（未指定時はデフォルト値を使用）\n\n"
+            "Returns:\n"
+            "    簡略化されたHTML内容\n"
+        )
+    )
     def fetch_url(
         url: str,
         no_verify: bool = False,
         accept: str = pytilpack.htmlrag.DEFAULT_ACCEPT,
         user_agent: str | None = None,
     ) -> str:
-        """URLからHTMLを取得し、簡略化して返す。
-
-        Args:
-            url: 取得するURL
-            no_verify: SSL証明書の検証を無効化するかどうか
-            accept: 受け入れるコンテンツタイプ
-            user_agent: User-Agentヘッダー（未指定時はデフォルト値を使用）
-
-        Returns:
-            簡略化されたHTML内容
-        """
         try:
             return pytilpack.htmlrag.fetch_url(
                 url=url,

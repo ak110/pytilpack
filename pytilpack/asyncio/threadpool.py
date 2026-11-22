@@ -1,5 +1,3 @@
-"""専用スレッド上のイベントループで非同期処理を実行するプール。"""
-
 __lazy_modules__ = ["asyncio", "concurrent.futures", "dataclasses", "logging", "threading", "typing"]
 
 import asyncio
@@ -15,14 +13,7 @@ __all__ = ["ThreadPool"]
 
 
 class ThreadPool:
-    """N個のスレッド上で非同期処理を実行するスレッドプール。"""
-
     def __init__(self, max_workers: int) -> None:
-        """スレッドプールを初期化する。
-
-        Args:
-            max_workers: ワーカースレッド数(1以上)
-        """
         if max_workers < 1:
             raise ValueError("max_workers must be >= 1")
         self.workers = [WorkerThread(name=f"aloop-{i}") for i in range(max_workers)]
@@ -33,22 +24,12 @@ class ThreadPool:
             w.start()
 
     def __enter__(self) -> "ThreadPool":
-        """コンテキストマネージャーの開始処理。"""
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        """コンテキストマネージャーの終了処理。"""
         self.shutdown()
 
     def submit[T](self, coro: typing.Coroutine[typing.Any, typing.Any, T]) -> concurrent.futures.Future[T]:
-        """コルーチンを実行するワーカーに送信する。
-
-        Args:
-            coro: 実行するコルーチン
-
-        Returns:
-            結果を取得するためのFuture
-        """
         with self.lock:
             if self._shutdown:
                 raise RuntimeError("ThreadPoolは停止済みです。新しいプールを作成して送信してください。")
@@ -57,37 +38,24 @@ class ThreadPool:
             return self.workers[idx].submit(coro)
 
     def map[T](self, coros: typing.Iterable[typing.Coroutine[typing.Any, typing.Any, T]]) -> list[concurrent.futures.Future[T]]:
-        """複数のコルーチンをワーカーに送信する。
-
-        Args:
-            coros: 実行するコルーチンのイテラブル
-
-        Returns:
-            各コルーチンの結果を取得するためのFutureのリスト
-        """
         return [self.submit(c) for c in coros]
 
     def shutdown(self) -> None:
-        """全てのワーカースレッドを停止する。"""
         with self.lock:
             self._shutdown = True
         for w in self.workers:
             w.stop()
 
     async def ashutdown(self) -> None:
-        """全てのワーカースレッドを非同期的に停止する。"""
         await asyncio.to_thread(self.shutdown)
 
     async def __aenter__(self) -> "ThreadPool":
-        """非同期コンテキストマネージャーの開始処理。"""
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback) -> None:
-        """非同期コンテキストマネージャーの終了処理。"""
         await self.ashutdown()
 
     def __del__(self) -> None:
-        """デストラクタ。停止していないワーカーがいる場合は警告して停止シグナルを送る。"""
         active_workers = [w for w in getattr(self, "workers", ()) if w.thread is not None]
         if active_workers:
             logger.warning(
@@ -95,7 +63,6 @@ class ThreadPool:
                 " Call shutdown() or ashutdown(), or use the pool in a with/async with block, before releasing it.",
                 len(active_workers),
             )
-            # デストラクタ内では待機せず、停止シグナルのみ送出する
             for w in active_workers:
                 w._request_stop()
 
@@ -118,14 +85,7 @@ class _Stopping(_Running):
 
 
 class WorkerThread:
-    """専用のasyncioイベントループを実行するワーカースレッド。"""
-
     def __init__(self, name: str) -> None:
-        """ワーカースレッドを初期化する。
-
-        Args:
-            name: スレッド名
-        """
         self.name = name
         self._lock = threading.Lock()
         self._state: _Starting | _Running | None = None
@@ -133,18 +93,15 @@ class WorkerThread:
 
     @property
     def thread(self) -> threading.Thread | None:
-        """現在の起動で使うスレッド。"""
         with self._lock:
             return self._state.thread if self._state is not None else None
 
     @property
     def loop(self) -> asyncio.AbstractEventLoop | None:
-        """準備済みのイベントループ。"""
         with self._lock:
             return self._state.loop if isinstance(self._state, _Running) else None
 
     def start(self) -> None:
-        """ワーカースレッドを起動する。停止処理中はRuntimeErrorを送出する。"""
         with self._lock:
             state = self._state
             if isinstance(state, _Stopping):
@@ -212,14 +169,6 @@ class WorkerThread:
             self._state = _Stopping(state.thread, state.loop)
 
     def submit[T](self, coro: typing.Coroutine[typing.Any, typing.Any, T]) -> concurrent.futures.Future[T]:
-        """コルーチンをイベントループに送信する。
-
-        Args:
-            coro: 実行するコルーチン
-
-        Returns:
-            結果を取得するためのFuture
-        """
         with self._lock:
             state = self._state
             if not isinstance(state, _Running) or isinstance(state, _Stopping):
@@ -227,7 +176,6 @@ class WorkerThread:
             return asyncio.run_coroutine_threadsafe(coro, state.loop)
 
     def stop(self) -> None:
-        """ワーカースレッドを停止する。"""
         with self._lock:
             state = self._state
         if state is None:

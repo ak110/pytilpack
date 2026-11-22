@@ -1,5 +1,3 @@
-"""pre-commit hookの入口テスト。"""
-
 import pathlib
 import subprocess
 
@@ -7,7 +5,6 @@ CONFIG_PATH = pathlib.Path(__file__).parents[1] / ".pre-commit-config.yaml"
 
 
 def test_end_of_file_fixer_entrypoint(tmp_path: pathlib.Path) -> None:
-    """除外対象を保持し、対象ファイルの末尾改行を修正する。"""
     cases = [
         (
             ("tests/data/example.txt", ".agents/skills", "sample/.agents/skills"),

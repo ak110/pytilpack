@@ -1,5 +1,3 @@
-"""tiktoken関連のユーティリティ集。"""
-
 __lazy_modules__ = [
     "PIL.Image",
     "base64",
@@ -32,7 +30,6 @@ logger = logging.getLogger(__name__)
 
 
 def get_encoding_for_model(model_name: str) -> tiktoken.Encoding:
-    """モデル名からtiktokenのEncodingを取得する。"""
     try:
         encoding = tiktoken.encoding_for_model(model_name)
     except KeyError:
@@ -50,20 +47,6 @@ def num_tokens_from_messages(
     tools: list[openai.types.chat.ChatCompletionToolParam] | None = None,
     tool_choice: openai.types.chat.ChatCompletionNamedToolChoiceParam | None = None,
 ) -> int:
-    """メッセージからトークン数を算出する。
-
-    <https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb>
-
-    Args:
-        model: モデル名。
-        messages: メッセージのリスト。
-        tools: function callingの情報。
-        tool_choice: ツール選択の情報。
-
-    Returns:
-        トークン数。
-
-    """
     encoding = get_encoding_for_model(model)
 
     tokens_per_message = 3
@@ -104,7 +87,7 @@ def num_tokens_from_messages(
                     num_tokens += len(encoding.encode(custom.get("name", "")))
                     num_tokens += len(encoding.encode(custom.get("input", "")))
 
-    num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
+    num_tokens += 3
 
     if tools is not None:
         num_tokens += num_tokens_for_tools(model, tools, tool_choice, encoding=encoding)
@@ -136,7 +119,6 @@ def _calculate_high_detail_image_token_cost(width: int, height: int) -> int:
 
 
 def _get_image_dims(image: str) -> tuple[int, int]:
-    # regex to check if image is a URL or base64 string
     url_regex = r"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)"
     if re.match(url_regex, image):
         response = httpx.get(image)
@@ -151,7 +133,6 @@ def _get_image_dims(image: str) -> tuple[int, int]:
 
 
 def num_tokens_from_texts(model: str, texts: list[str] | str) -> int:
-    """テキストからトークン数を算出する。"""
     if isinstance(texts, str):
         texts = [texts]
     enc = get_encoding_for_model(model)
@@ -160,7 +141,6 @@ def num_tokens_from_texts(model: str, texts: list[str] | str) -> int:
 
 @pytilpack.python.deprecated("Use pytilpack.tiktoken.num_tokens_for_tools instead.")
 def num_tokens_from_tools(encoding: tiktoken.Encoding, tools: list[openai.types.chat.ChatCompletionToolParam]) -> int:
-    """Function calling部分のトークン数を算出する。（非推奨）"""
     return num_tokens_for_tools(model="gpt-4o", tools=tools, encoding=encoding)
 
 
@@ -170,25 +150,17 @@ def num_tokens_for_tools(
     tool_choice: openai.types.chat.ChatCompletionToolChoiceOptionParam | None = None,
     encoding: tiktoken.Encoding | None = None,
 ) -> int:
-    """Function calling部分のトークン数を算出する。
-
-    <https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb>
-    <https://community.openai.com/t/how-to-calculate-the-tokens-when-using-function-call/266573/10>
-
-    """
     if len(tools) == 0:
         return 0
 
     if encoding is None:
         encoding = get_encoding_for_model(model)
 
-    # 両世代共通の定数
     prop_init = 3
     prop_key = 3
     enum_init = -3
     enum_item = 3
     func_end = 12
-    # gpt-3.5-turbo/gpt-4/gpt-4-turboとgpt-4o以降でfunc_initが異なる
     func_init = 10 if "gpt-3.5-" in model or "gpt-4-" in model or model == "gpt-4" else 7
 
     num_tokens = 0
@@ -234,9 +206,6 @@ def num_tokens_for_tools(
             )
     num_tokens += func_end
 
-    # If tool_choice is 'none', add one token.
-    # If it's an object, add 4 + the number of tokens in the function name.
-    # If it's undefined or 'auto', don't add anything.
     if tool_choice == "none":
         num_tokens += 1
     elif isinstance(tool_choice, dict):

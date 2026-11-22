@@ -1,3 +1,0 @@
-# pytilpack.crypto
-
-::: pytilpack.crypto

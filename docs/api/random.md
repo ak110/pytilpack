@@ -1,3 +1,0 @@
-# pytilpack.random
-
-::: pytilpack.random

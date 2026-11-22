@@ -1,5 +1,3 @@
-"""markdown関連。"""
-
 __lazy_modules__ = ["bleach", "bleach.css_sanitizer", "markdown", "re", "typing"]
 
 import re
@@ -129,7 +127,6 @@ ALLOWED_TAGS = {
     "var",
     "wbr",
 }
-"""許可するタグ。"""
 
 ALLOWED_ATTRIBUTES = {
     "*": ["id", "title", "class", "style"],
@@ -140,27 +137,20 @@ ALLOWED_ATTRIBUTES = {
     "th": ["colspan", "rowspan"],
     "tr": ["rowspan"],
 }
-"""許可する属性。"""
 
 ALLOWED_PROTOCOLS = {"http", "https", "mailto"}
-"""許可するプロトコル。"""
 
 _MARKDOWN_ESCAPE_PATTERN = re.compile(r"([-<#+*_`\.!{}\[\]()])")
-"""Markdown特殊文字のエスケープ用パターン。"""
 
 
 def escape(text: str) -> str:
-    """Markdown文字列をエスケープ。"""
     text = text.replace("\\", "\\\\")
     return _MARKDOWN_ESCAPE_PATTERN.sub(r"\\\1", text)
 
 
 def inline_code(text: str) -> str:
-    """テキストをMarkdownのインラインコードブロックに変換。"""
-    # 最大連続バッククォート数 + 1 個のバッククォートをデリミタとして使用
     max_backticks = max((len(m.group()) for m in re.finditer(r"`+", text)), default=0)
     delimiter = "`" * (max_backticks + 1)
-    # テキストがバッククォートで始まる・終わる場合はスペースを追加
     if text.startswith("`") or text.endswith("`"):
         return f"{delimiter} {text} {delimiter}"
     return f"{delimiter}{text}{delimiter}"
@@ -180,7 +170,6 @@ def markdownfy(
     css_sanitizer: bleach.css_sanitizer.CSSSanitizer | None = None,
     **kwargs,
 ) -> str:
-    """Markdown変換。"""
     if extensions is None:
         extensions = ["markdown.extensions.extra", "markdown.extensions.toc"]
     if extension_configs is None:

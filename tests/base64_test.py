@@ -1,5 +1,3 @@
-"""pytilpack.base64 のテスト。"""
-
 import pytest
 
 import pytilpack.base64
@@ -15,7 +13,6 @@ import pytilpack.base64
     ],
 )
 def test_encode(input_data: str | bytes, expected_output: str) -> None:
-    """encode関数のテスト。"""
     assert pytilpack.base64.encode(input_data) == expected_output
 
 
@@ -29,16 +26,12 @@ def test_encode(input_data: str | bytes, expected_output: str) -> None:
     ],
 )
 def test_decode(input_data: str, expected_output: bytes) -> None:
-    """decode関数のテスト。"""
     assert pytilpack.base64.decode(input_data) == expected_output
 
 
 def test_encode_roundtrip() -> None:
-    """エンコード→デコードのラウンドトリップテスト。"""
-    # str
     original_str = "This is a test string with 日本語 characters."
     assert pytilpack.base64.decode(pytilpack.base64.encode(original_str)) == original_str.encode("utf-8")
 
-    # bytes
     original_bytes = b"This is a test byte string \x01\x02\x03"
     assert pytilpack.base64.decode(pytilpack.base64.encode(original_bytes)) == original_bytes

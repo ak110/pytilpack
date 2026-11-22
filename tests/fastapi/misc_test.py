@@ -1,5 +1,3 @@
-"""FastAPI miscのテスト。"""
-
 import json
 
 import fastapi
@@ -40,24 +38,20 @@ def _client(app: fastapi.FastAPI) -> fastapi.testclient.TestClient:
 
 
 def test_json_response(client: fastapi.testclient.TestClient) -> None:
-    """JSONResponseのテスト。"""
     response = client.get("/pretty")
 
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/json"
 
     text = response.text
-    # インデント付きであることを確認
     assert "\n" in text
     assert "  " in text
 
-    # 内容が正しいことを確認
     data = json.loads(text)
     assert data == {"message": "hello", "value": 42, "items": [1, 2, 3]}
 
 
 def test_json_response_ensure_ascii(client: fastapi.testclient.TestClient) -> None:
-    """ensure_ascii=Falseで日本語がそのまま出力されることを確認するテスト。"""
     response = client.get("/pretty-japanese")
 
     assert response.status_code == 200
@@ -66,7 +60,6 @@ def test_json_response_ensure_ascii(client: fastapi.testclient.TestClient) -> No
 
 
 def test_json_response_pydantic_model(client: fastapi.testclient.TestClient) -> None:
-    """response_modelにPydanticモデルを指定した場合のテスト。"""
     response = client.get("/model")
 
     assert response.status_code == 200

@@ -1,5 +1,3 @@
-"""YAML関連。"""
-
 __lazy_modules__ = ["dataclasses", "pytilpack.io", "typing", "yaml"]
 
 import dataclasses
@@ -12,17 +10,14 @@ import pytilpack.io
 
 @dataclasses.dataclass
 class _DumpOptions:
-    """yaml.dump/dump_all共通のダンプオプション。save/save_all/dumps/dumps_all間で設定を集約する。"""
-
     allow_unicode: bool | None = True
     width: int = 99
     default_style: str | None = None
     default_flow_style: bool | None = False
     sort_keys: bool = False
-    Dumper: typing.Any = None  # 未指定時は書込関数のCustomDumper既定値を使う
+    Dumper: typing.Any = None
 
     def to_kwargs(self) -> dict[str, typing.Any]:
-        """yaml.dump/dump_allに渡すキーワード引数辞書を返す。"""
         return {
             "allow_unicode": self.allow_unicode,
             "width": self.width,
@@ -40,7 +35,6 @@ def load(
     strict: bool = False,
     Loader=yaml.SafeLoader,
 ) -> typing.Any:
-    """YAMLファイルの読み込み。"""
     try:
         return yaml.load(pytilpack.io.read_text(source, encoding=encoding, errors=errors), Loader=Loader)
     except FileNotFoundError:
@@ -56,7 +50,6 @@ def load_all(
     strict: bool = False,
     Loader=yaml.SafeLoader,
 ) -> list[typing.Any]:
-    """YAMLファイルの読み込み。"""
     try:
         return list(yaml.load_all(pytilpack.io.read_text(source, encoding=encoding, errors=errors), Loader=Loader))
     except FileNotFoundError:
@@ -66,47 +59,15 @@ def load_all(
 
 
 class CustomDumper(yaml.SafeDumper):
-    """書式をカスタマイズしたDumper。
-
-    インデントのカスタマイズ:
-
-    PyYAMLのデフォルトでは
-
-    ```yaml
-    key:
-    - item1
-    - item2
-    ```
-
-    となるが、これを
-
-    ```yaml
-    key:
-      - item1
-      - item2
-    ```
-
-    とする。
-
-    文字列のカスタマイズ:
-
-    2行以上の文字列はブロックスカラーで出力する。
-
-    """
-
     @typing.override
     def increase_indent(self, flow=False, indentless=False):
-        """インデント増加時の処理。"""
         del indentless
         return super().increase_indent(flow, False)
 
     @staticmethod
     def str_representer(dumper, value):
-        """改行を含む文字列を検出し、style='|' で出力する representer。"""
         if "\n" in value.rstrip():
-            # 改行を含む場合はリテラルスタイル '|'
             return dumper.represent_scalar("tag:yaml.org,2002:str", value, style="|")
-        # 改行を含まない場合は既定動作
         return dumper.represent_scalar("tag:yaml.org,2002:str", value)
 
 
@@ -121,7 +82,6 @@ def _build_dump_options(
     sort_keys: bool,
     Dumper: typing.Any,
 ) -> _DumpOptions:
-    """save/save_all/dumps/dumps_allの6引数を_DumpOptionsへ集約する。"""
     return _DumpOptions(
         allow_unicode=allow_unicode,
         width=width,
@@ -144,7 +104,6 @@ def save(
     encoding: str = "utf-8",
     **kwargs,
 ) -> None:
-    """YAMLのファイル保存。"""
     options = _build_dump_options(allow_unicode, width, default_style, default_flow_style, sort_keys, Dumper)
     pytilpack.io.write_text(
         dest,
@@ -165,7 +124,6 @@ def save_all(
     encoding: str = "utf-8",
     **kwargs,
 ) -> None:
-    """YAMLのファイル保存。"""
     options = _build_dump_options(allow_unicode, width, default_style, default_flow_style, sort_keys, Dumper)
     pytilpack.io.write_text(
         dest,
@@ -184,7 +142,6 @@ def dumps(
     Dumper=CustomDumper,
     **kwargs,
 ) -> str:
-    """YAMLの文字列化。"""
     options = _build_dump_options(allow_unicode, width, default_style, default_flow_style, sort_keys, Dumper)
     return yaml.dump(data, **options.to_kwargs(), **kwargs)
 
@@ -199,6 +156,5 @@ def dumps_all(
     Dumper=CustomDumper,
     **kwargs,
 ) -> str:
-    """YAMLの文字列化。"""
     options = _build_dump_options(allow_unicode, width, default_style, default_flow_style, sort_keys, Dumper)
     return yaml.dump_all(data, **options.to_kwargs(), **kwargs)

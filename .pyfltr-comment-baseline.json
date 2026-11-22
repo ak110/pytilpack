@@ -1,0 +1,168 @@
+{
+  "pytilpack/asyncio/__init__.py": {
+    "flake8: noqa": 1
+  },
+  "pytilpack/asyncio/functools_.py": {
+    "https://github.com/microsoftgraph/msgraph-sdk-python/issues/366#issuecomment-1830756182": 1
+  },
+  "pytilpack/asyncio/io_.py": {
+    "arid: disable": 2,
+    "arid: enable": 2
+  },
+  "pytilpack/cli/main.py": {
+    "ModuleNotFoundErrorをnameの無いImportErrorへ包み直して送出するパッケージがあるため、": 1,
+    "SQLAlchemy 2.1のasyncioモジュールのように、": 1,
+    "__cause__をたどってnameを持つImportErrorを探す。": 1
+  },
+  "pytilpack/dataclasses.py": {
+    "f.typeは前方参照の場合に文字列のまま返るため、dataclasses.is_dataclass()が常にFalseになるバグを回避する。": 1,
+    "get_type_hints()を使うことで前方参照（文字列）も解決した実際の型を得る。": 1,
+    "https://docs.python.org/ja/3/library/dataclasses.html#dataclasses.asdict": 1,
+    "https://stackoverflow.com/questions/77071473/where-can-i-import-dataclassinstance-for-mypy-check": 1,
+    "公式ドキュメントの回避策をそのまま実装する。": 1
+  },
+  "pytilpack/fastapi/__init__.py": {
+    "flake8: noqa": 1
+  },
+  "pytilpack/fastapi/asserts.py": {
+    "starlette 1.2.0以降のTestClientはhttpx2を優先してimportし、返すレスポンスの型がhttpx2の導入有無で変わるため、": 1,
+    "使う属性だけを構造的に宣言してどちらの環境でも型を成立させる。": 1
+  },
+  "pytilpack/flask/__init__.py": {
+    "flake8: noqa": 1
+  },
+  "pytilpack/flask/asserts.py": {
+    "arid: disable": 1,
+    "arid: enable": 1
+  },
+  "pytilpack/flask/misc.py": {
+    "secretsはUnix専用fcntlを使うため、この機能を呼ぶ場合だけ読み込む。": 1
+  },
+  "pytilpack/htmlrag.py": {
+    "clean_htmlはHtmlRAGのtoolkitから切り出して独自に拡張したもの。": 1,
+    "https://github.com/plageon/HtmlRAG/blob/main/toolkit/LICENSE": 1,
+    "https://github.com/plageon/HtmlRAG/blob/main/toolkit/htmlrag/html_utils.py": 1
+  },
+  "pytilpack/logging.py": {
+    "Windowsでは開いているファイルを移動できないため、ロックの内側でだけログ本体を開き、解放前に閉じる。": 1
+  },
+  "pytilpack/msal.py": {
+    "Azure AD証明書認証ではSHA-1フィンガープリントをthumbprintとして要求する仕様のため、": 1,
+    "SHA-1を使用する（セキュリティ上の選択ではなくAzure APIの要件）。": 1
+  },
+  "pytilpack/pytest.py": {
+    "get_tmp_pathが参照する環境変数名。register_basetmpで設定される。": 1
+  },
+  "pytilpack/quart/__init__.py": {
+    "arid: disable": 1,
+    "arid: enable": 1,
+    "flake8: noqa": 1
+  },
+  "pytilpack/quart/asserts.py": {
+    "arid: disable": 1,
+    "arid: enable": 1
+  },
+  "pytilpack/quart/misc.py": {
+    "- to is None 経路（await sem.acquire() 直接）: acquire 待機中にキャンセルされると": 1,
+    "- to is not None 経路（asyncio.wait_for 経由）: wait_for がキャンセルされた場合、": 1,
+    "CPython の保証により acquire 完了済みであれば内部で release 済み。": 1,
+    "Windowsでは拒否の応答まで約2秒かかりタイムアウトするため、最初のアドレスで決まったポートを残りのアドレスでも使う。": 1,
+    "WindowsのSO_REUSEADDRは使用中のポートへの重複bindを許すため、POSIXだけで指定する": 1,
+    "asyncio.CancelledError はここでは捕捉しない。": 1,
+    "port=0でアドレスごとにOSへ割り当てを任せるとIPv4とIPv6で別のポートになり、localhostへの接続が待ち受けていない側へ向かう。": 1,
+    "いずれの経路でも、この時点では未取得状態が保証されるため保護は不要。": 1,
+    "セマフォ未取得のまま CancelledError が伝播するため、漏洩は発生しない。": 1,
+    "未完了であれば未取得のまま伝播する。": 1
+  },
+  "pytilpack/sqlalchemy/async_.py": {
+    "arid: disable": 3,
+    "arid: enable": 3
+  },
+  "pytilpack/sqlalchemy/sync.py": {
+    "arid: disable": 3,
+    "arid: enable": 3
+  },
+  "pytilpack/sse.py": {
+    "SSE仕様の行区切りは \\n, \\r\\n, \\r の3種のみ (splitlines()は対象が広すぎる)": 1
+  },
+  "pytilpack/tiktoken.py": {
+    "auto のときどうなるか不明のため安全側の判定とする": 1
+  },
+  "pytilpack/validator.py": {
+    "HTML5仕様のメールアドレス正規表現": 1,
+    "https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address": 1
+  },
+  "pytilpack/web.py": {
+    "html5lib 1.1の_parseと同じ手順。トークナイザーの型を差し替える公開手段が無いため写している。": 1,
+    "html5lib 1.1のconsumeEntityは、&の次がASCII英数字・#以外でもexpected-named-entityを積む。": 1,
+    "html5lib 1.1はtemplate要素の構文規則を持たず正しいHTMLにもエラーを記録するため、templateの範囲を除外する。": 1,
+    "https://html.spec.whatwg.org/multipage/parsing.html#character-reference-state": 1,
+    "現行仕様のCharacter reference stateはこの場合に文字参照を開始しないため、そのエラーだけを除く。": 1
+  },
+  "pytilpack/zipfile.py": {
+    "info.filenameはWindowsで\\\\を/へ置換済みのため、2バイト目に0x5Cを含むCP932の文字を復元できない。": 1,
+    "orig_filenameを起点に復号する。": 1
+  },
+  "tests/flask/misc_test.py": {
+    "arid: disable": 1,
+    "arid: enable": 1
+  },
+  "tests/io_test.py": {
+    "パスへの書き込みはテキストモードのため、改行はOSの改行文字になる": 1
+  },
+  "tests/logging_test.py": {
+    "spawnで起動し、親のハンドラやロックを引き継がない独立したwriterとする（Windowsと同じ起動方式）": 1
+  },
+  "tests/python_test.py": {
+    "(無視されてほしいコメント)": 1,
+    "aaa(無視されてほしいコメント)": 1,
+    "bbb": 1,
+    "bbb(無視されてほしいコメント)": 1,
+    "ccc": 1,
+    "ddd": 1
+  },
+  "tests/quart/misc_test.py": {
+    "arid: disable": 1,
+    "arid: enable": 1
+  },
+  "tests/quart_auth_test.py": {
+    "arid: disable": 2,
+    "arid: enable": 2,
+    "同期テスト関数。": 1,
+    "非同期テスト関数。": 1
+  },
+  "tests/sqlalchemy/async_test.py": {
+    "arid: disable": 3,
+    "arid: enable": 4,
+    "文字列表記はURLエンコードの有無（Windowsのパス区切りなど）で変わるため、解析後のURLで比べる": 1,
+    "有効フラグ": 1
+  },
+  "tests/sqlalchemy/flask_test.py": {
+    "arid: disable": 3,
+    "arid: enable": 4,
+    "有効フラグ": 1
+  },
+  "tests/sqlalchemy/sync_test.py": {
+    "arid: disable": 3,
+    "arid: enable": 4,
+    "https://stackoverflow.com/questions/61678766/sqlalchemy-exc-operationalerror-sqlite3-operationalerror-no-such-table-items/61694048": 1,
+    "有効フラグ": 1
+  },
+  "tests/tiktoken_test.py": {
+    "(おそらく不具合)": 1,
+    "LiteLLMは現在以下のモデルがgpt-3.5-turboなどと同じ扱いになっている": 1,
+    "fastuuidが3.15へ対応したら、pyproject.tomlの環境マーカーと併せてこの分岐を外す。": 1,
+    "litellmが依存するfastuuidは3.15用のwheelを公開しておらず、ソースからもビルドできない（PyO3が3.14までの対応）。": 1,
+    "このためlitellmは開発依存で3.15未満に限定しており、比較テストも3.15未満だけで定義する。": 1
+  },
+  "tests/web_test.py": {
+    "HTML StandardのCharacter reference stateは、``&``の次がASCII英数字・``#``以外なら文字参照を開始しない。": 1,
+    "HTML Standardのin body解析規則と名前空間規則から導いた公開入口共通の入力。": 1,
+    "https://html.spec.whatwg.org/multipage/parsing.html#character-reference-state": 1,
+    "https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inbody": 1
+  },
+  "tests/zipfile_test.py": {
+    "0x81はCP932の有効なlead byteだが、0x39は有効なtrail byte範囲外のためstrict失敗。": 1,
+    "WindowsのZipInfoが行う区切り文字の正規化を再現する。": 1
+  }
+}

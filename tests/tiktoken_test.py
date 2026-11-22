@@ -1,5 +1,3 @@
-"""テストコード。"""
-
 # pylint: disable=protected-access
 
 import sys
@@ -12,44 +10,42 @@ import pytest
 import pytilpack.tiktoken
 
 ALL_MODELS = [
-    "gpt-3.5-turbo",  # alias
+    "gpt-3.5-turbo",
     "gpt-3.5-turbo-0613",
     "gpt-3.5-turbo-16k-0613",
     "gpt-3.5-turbo-1106",
     "gpt-3.5-turbo-0125",
-    "gpt-4",  # alias
+    "gpt-4",
     "gpt-4-0613",
     "gpt-4-32k-0613",
     "gpt-4-1106-preview",
     "gpt-4-0125-preview",
     "gpt-4-1106-vision-preview",
     "gpt-4-turbo-2024-04-09",
-    "gpt-4o-mini",  # alias
+    "gpt-4o-mini",
     "gpt-4o-mini-2024-07-18",
-    "gpt-4o",  # alias
+    "gpt-4o",
     "gpt-4o-2024-05-13",
     "gpt-4o-2024-08-06",
-    "o1-mini",  # alias
+    "o1-mini",
     "o1-mini-2024-09-12",
-    "o1-preview",  # alias
+    "o1-preview",
     "o1-preview-2024-09-12",
-    "o1",  # alias
+    "o1",
     "o1-2024-12-17",
-    "o3-mini",  # alias
+    "o3-mini",
     "o3-mini-2025-01-31",
-    "o4-mini",  # alias
+    "o4-mini",
     "o4-mini-2025-04-16",
-    "gpt-4.1-nano",  # alias
-    "gpt-4.1-mini",  # alias
-    "gpt-4.1",  # alias
+    "gpt-4.1-nano",
+    "gpt-4.1-mini",
+    "gpt-4.1",
     "gpt-4.1-nano-2025-04-14",
     "gpt-4.1-mini-2025-04-14",
     "gpt-4.1-2025-04-14",
 ]
 
 
-# ここは定義によってはLiteLLMと計算が合わないが、
-# 何が正解か不明のため、偶然にも一致したこの定義のテストだけ通しておく
 _WEATHER_TOOL: openai.types.chat.ChatCompletionToolParam = {
     "type": "function",
     "function": {
@@ -75,7 +71,6 @@ _WEATHER_TOOL: openai.types.chat.ChatCompletionToolParam = {
 
 
 def test_get_encoding_for_model():
-    """get_encoding_for_model()のテスト。"""
     encoding = pytilpack.tiktoken.get_encoding_for_model("gpt-3.5-turbo-0613")
     assert encoding is not None
 
@@ -97,7 +92,6 @@ def test_num_tokens_from_messages():
 
 
 def test_num_tokens_from_texts():
-    """num_tokens_from_texts()のテスト。"""
     assert pytilpack.tiktoken.num_tokens_from_texts("gpt-3.5-turbo-0613", "2") == 1
 
     assert pytilpack.tiktoken.num_tokens_from_texts("gpt-4-turbo-2024-04-09", "1+1=2です。") == 7
@@ -108,8 +102,6 @@ def test_num_tokens_from_texts():
     [("gpt-3.5-turbo", 105), ("gpt-4", 105), ("gpt-4o", 101), ("gpt-4o-mini", 101)],
 )
 def test_num_tokens_from_messages_with_tools(model: str, expected: int):
-    """num_tokens_for_tools()のテスト。"""
-    # https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
     num_tokens = pytilpack.tiktoken.num_tokens_from_messages(
         model=model,
         messages=[
@@ -133,7 +125,6 @@ if sys.version_info < (3, 15):
 
     @pytest.mark.parametrize("model", ALL_MODELS)
     def test_vs_litellm(model: str):
-        """litellmとの比較テスト。"""
         messages: list[openai.types.chat.ChatCompletionMessageParam] = [
             {"role": "system", "content": "てすと"},
             {"role": "user", "content": "1+1=？"},
@@ -141,12 +132,10 @@ if sys.version_info < (3, 15):
             {"role": "user", "content": "2+2=？"},
         ]
 
-        # ツールなし
         actual_tokens = pytilpack.tiktoken.num_tokens_from_messages(model=model, messages=messages, tools=None)
         litellm_tokens = litellm.utils.token_counter(model=model, messages=messages, tools=None)
         assert actual_tokens == litellm_tokens, "ツールなしトークン数の不一致"
 
-        # ツールあり
         tools: list[openai.types.chat.ChatCompletionToolParam] | None = [_WEATHER_TOOL]
         actual_tokens = pytilpack.tiktoken.num_tokens_from_messages(model=model, messages=messages, tools=tools)
         litellm_tokens = litellm.utils.token_counter(

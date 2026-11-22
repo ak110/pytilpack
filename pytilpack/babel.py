@@ -1,5 +1,3 @@
-"""Babel関連。"""
-
 __lazy_modules__ = ["babel.dates", "babel.numbers", "datetime", "decimal", "pytilpack.i18n"]
 
 import datetime  # noqa: ICN001  # 公開関数format_datetimeの引数名dtと衝突するため別名にしない
@@ -16,14 +14,6 @@ def format_date(  # pylint: disable=redefined-builtin
     format: str = "medium",
     locale: str | None = None,
 ) -> str:
-    """日付をロケールに応じてフォーマットする。
-
-    Args:
-        date: フォーマットする日付。Noneの場合は本日。
-        format: フォーマット種別 ("short", "medium", "long", "full" またはパターン文字列)
-        locale: ロケール。Noneの場合はi18n.get_locale()を使用。
-
-    """
     return babel.dates.format_date(date, format=format, locale=locale or pytilpack.i18n.get_locale())
 
 
@@ -33,15 +23,6 @@ def format_datetime(  # pylint: disable=redefined-builtin
     locale: str | None = None,
     tzinfo: datetime.tzinfo | None = None,
 ) -> str:
-    """日時をロケールに応じてフォーマットする。
-
-    Args:
-        dt: フォーマットする日時。Noneの場合は現在日時。
-        format: フォーマット種別 ("short", "medium", "long", "full" またはパターン文字列)
-        locale: ロケール。Noneの場合はi18n.get_locale()を使用。
-        tzinfo: タイムゾーン情報。
-
-    """
     return babel.dates.format_datetime(dt, format=format, tzinfo=tzinfo, locale=locale or pytilpack.i18n.get_locale())
 
 
@@ -50,14 +31,6 @@ def format_time(  # pylint: disable=redefined-builtin
     format: str = "medium",
     locale: str | None = None,
 ) -> str:
-    """時刻をロケールに応じてフォーマットする。
-
-    Args:
-        time: フォーマットする時刻。Noneの場合は現在時刻。
-        format: フォーマット種別 ("short", "medium", "long", "full" またはパターン文字列)
-        locale: ロケール。Noneの場合はi18n.get_locale()を使用。
-
-    """
     return babel.dates.format_time(time, format=format, locale=locale or pytilpack.i18n.get_locale())
 
 
@@ -65,13 +38,6 @@ def format_number(
     number: int | float | decimal.Decimal,
     locale: str | None = None,
 ) -> str:
-    """数値をロケールに応じてフォーマットする。
-
-    Args:
-        number: フォーマットする数値。
-        locale: ロケール。Noneの場合はi18n.get_locale()を使用。
-
-    """
     return babel.numbers.format_decimal(number, locale=locale or pytilpack.i18n.get_locale())
 
 
@@ -80,14 +46,6 @@ def format_decimal(  # pylint: disable=redefined-builtin
     format: str | None = None,
     locale: str | None = None,
 ) -> str:
-    """小数をロケールに応じてフォーマットする。
-
-    Args:
-        number: フォーマットする数値。
-        format: カスタムフォーマットパターン。
-        locale: ロケール。Noneの場合はi18n.get_locale()を使用。
-
-    """
     return babel.numbers.format_decimal(number, format=format, locale=locale or pytilpack.i18n.get_locale())
 
 
@@ -97,15 +55,6 @@ def format_currency(  # pylint: disable=redefined-builtin
     locale: str | None = None,
     format: str | None = None,
 ) -> str:
-    """通貨をロケールに応じてフォーマットする。
-
-    Args:
-        number: フォーマットする数値。
-        currency: 通貨コード（例: "USD", "JPY"）。
-        locale: ロケール。Noneの場合はi18n.get_locale()を使用。
-        format: カスタムフォーマットパターン。
-
-    """
     return babel.numbers.format_currency(
         number,
         currency,
@@ -119,12 +68,4 @@ def format_percent(  # pylint: disable=redefined-builtin
     format: str | None = None,
     locale: str | None = None,
 ) -> str:
-    """パーセントをロケールに応じてフォーマットする。
-
-    Args:
-        number: フォーマットする数値（0.5 = 50%）。
-        format: カスタムフォーマットパターン。
-        locale: ロケール。Noneの場合はi18n.get_locale()を使用。
-
-    """
     return babel.numbers.format_percent(number, format=format, locale=locale or pytilpack.i18n.get_locale())

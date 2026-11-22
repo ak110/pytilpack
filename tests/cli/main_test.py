@@ -1,5 +1,3 @@
-"""main.pyのテスト。"""
-
 import importlib
 import logging
 import subprocess
@@ -11,7 +9,6 @@ import pytilpack.cli.main
 
 
 def test_main_no_command(capsys) -> None:
-    """引数なしでは使い方に加えて未指定の理由と指定例を出力し、終了コード1で終わる。"""
     with pytest.raises(SystemExit) as exc_info:
         pytilpack.cli.main.main([])
     assert exc_info.value.code == 1
@@ -25,7 +22,6 @@ def test_main_no_command(capsys) -> None:
 
 @pytest.fixture(name="fake_missing_sqlalchemy")
 def _fake_missing_sqlalchemy(monkeypatch: pytest.MonkeyPatch) -> None:
-    """`pytilpack.cli.wait_for_db_connection` の import で sqlalchemy 欠落を再現する。"""
     real_import_module = importlib.import_module
 
     def fake(name: str, package: str | None = None):
@@ -34,13 +30,11 @@ def _fake_missing_sqlalchemy(monkeypatch: pytest.MonkeyPatch) -> None:
         return real_import_module(name, package)
 
     monkeypatch.setattr(pytilpack.cli.main.importlib, "import_module", fake)
-    # basicConfig の副作用を隔離する。
     monkeypatch.setattr(logging, "basicConfig", lambda *args, **kwargs: None)
 
 
 @pytest.mark.usefixtures("fake_missing_sqlalchemy")
 def test_main_help_lists_missing_command(capsys) -> None:
-    """extras 欠落コマンドも --help に (未インストール) として列挙される。"""
     with pytest.raises(SystemExit) as exc_info:
         pytilpack.cli.main.main(["--help"])
     assert exc_info.value.code == 0
@@ -62,7 +56,6 @@ def test_main_help_lists_missing_command(capsys) -> None:
 )
 @pytest.mark.usefixtures("fake_missing_sqlalchemy")
 def test_main_missing_extras_exits(capsys, argv: list[str]) -> None:
-    """未インストールコマンドは argv 形に関わらず extras エラーで終了する。"""
     with pytest.raises(SystemExit) as exc_info:
         pytilpack.cli.main.main(argv)
     assert exc_info.value.code == 2
@@ -74,12 +67,10 @@ def test_main_missing_extras_exits(capsys, argv: list[str]) -> None:
 
 
 def test_main_real_import_error_reraised(monkeypatch: pytest.MonkeyPatch) -> None:
-    """`pytilpack.cli.xxx` 自体の import 失敗は抑制されず再送出される。"""
     real_import_module = importlib.import_module
 
     def fake(name: str, package: str | None = None):
         if name == "pytilpack.cli.wait_for_db_connection":
-            # モジュール自身が見つからない = 本物のバグを模擬する。
             raise ModuleNotFoundError(
                 f"No module named {name!r}",
                 name=name,
@@ -95,7 +86,6 @@ def test_main_real_import_error_reraised(monkeypatch: pytest.MonkeyPatch) -> Non
 
 @pytest.fixture(name="fake_missing_mcp_dependency")
 def _fake_missing_mcp_dependency(monkeypatch: pytest.MonkeyPatch) -> None:
-    """`pytilpack.cli.mcp` の import で実障害の外部パッケージ欠落を再現する。"""
     real_import_module = importlib.import_module
 
     def fake(name: str, package: str | None = None):
@@ -107,26 +97,22 @@ def _fake_missing_mcp_dependency(monkeypatch: pytest.MonkeyPatch) -> None:
         return real_import_module(name, package)
 
     monkeypatch.setattr(pytilpack.cli.main.importlib, "import_module", fake)
-    # basicConfig の副作用を隔離する。
     monkeypatch.setattr(logging, "basicConfig", lambda *args, **kwargs: None)
 
 
 @pytest.mark.usefixtures("fake_missing_mcp_dependency")
 def test_main_help_survives_missing_core_dep(capsys) -> None:
-    """外部パッケージ欠落が CLI 全体を停止させない。"""
     with pytest.raises(SystemExit) as exc_info:
         pytilpack.cli.main.main(["--help"])
     assert exc_info.value.code == 0
 
     captured = capsys.readouterr()
-    # 無関係なサブコマンドは通常どおり列挙される。
     assert "sync" in captured.out
     assert "利用不可" in captured.out
 
 
 @pytest.fixture(name="fake_incompatible_mcp_dependency")
 def _fake_incompatible_mcp_dependency(monkeypatch: pytest.MonkeyPatch) -> None:
-    """`pytilpack.cli.mcp` の import で外部パッケージの属性消失を再現する。"""
     real_import_module = importlib.import_module
 
     def fake(name: str, package: str | None = None):
@@ -138,14 +124,12 @@ def _fake_incompatible_mcp_dependency(monkeypatch: pytest.MonkeyPatch) -> None:
         return real_import_module(name, package)
 
     monkeypatch.setattr(pytilpack.cli.main.importlib, "import_module", fake)
-    # basicConfig の副作用を隔離する。
     monkeypatch.setattr(logging, "basicConfig", lambda *args, **kwargs: None)
 
 
 @pytest.mark.parametrize("argv", [["mcp"], ["mcp", "--help"]])
 @pytest.mark.usefixtures("fake_incompatible_mcp_dependency")
 def test_main_incompatible_core_dep_exits(capsys, argv: list[str]) -> None:
-    """属性が消失したコア依存サブコマンドは失敗理由を提示して終了する。"""
     with pytest.raises(SystemExit) as exc_info:
         pytilpack.cli.main.main(argv)
     assert exc_info.value.code == 2
@@ -163,7 +147,6 @@ def test_main_incompatible_optional_dep_exits(
     monkeypatch: pytest.MonkeyPatch,
     capsys,
 ) -> None:
-    """extras対象の互換性問題は未導入案内と区別する。"""
     real_import_module = importlib.import_module
 
     def fake(name: str, package: str | None = None):
@@ -198,12 +181,10 @@ def test_main_incompatible_optional_dep_exits(
 
 
 def test_main_internal_import_error_reraised(monkeypatch: pytest.MonkeyPatch) -> None:
-    """自パッケージ配下のモジュールの import 失敗は抑制されず再送出される。"""
     real_import_module = importlib.import_module
 
     def fake(name: str, package: str | None = None):
         if name == "pytilpack.cli.mcp":
-            # サブコマンドが依存する自パッケージ内モジュールの欠落を模擬する。
             raise ModuleNotFoundError(
                 "No module named 'pytilpack.htmlrag'",
                 name="pytilpack.htmlrag",
@@ -218,7 +199,6 @@ def test_main_internal_import_error_reraised(monkeypatch: pytest.MonkeyPatch) ->
 
 
 def test_main_import_error_without_name_reraised(monkeypatch: pytest.MonkeyPatch) -> None:
-    """`name` を持たない `ImportError` は判別できないため再送出される。"""
     real_import_module = importlib.import_module
 
     def fake(name: str, package: str | None = None):
@@ -234,7 +214,6 @@ def test_main_import_error_without_name_reraised(monkeypatch: pytest.MonkeyPatch
 
 @pytest.fixture(name="fake_wrapped_missing_greenlet")
 def _fake_wrapped_missing_greenlet(monkeypatch: pytest.MonkeyPatch) -> None:
-    """SQLAlchemy 2.1 が greenlet 欠落を `name` の無い `ImportError` へ包み直す状況を再現する。"""
     real_import_module = importlib.import_module
 
     def fake(name: str, package: str | None = None):
@@ -248,13 +227,11 @@ def _fake_wrapped_missing_greenlet(monkeypatch: pytest.MonkeyPatch) -> None:
         return real_import_module(name, package)
 
     monkeypatch.setattr(pytilpack.cli.main.importlib, "import_module", fake)
-    # basicConfig の副作用を隔離する。
     monkeypatch.setattr(logging, "basicConfig", lambda *args, **kwargs: None)
 
 
 @pytest.mark.usefixtures("fake_wrapped_missing_greenlet")
 def test_main_help_survives_wrapped_missing_dep(capsys) -> None:
-    """原因に外部パッケージ欠落を持つ `ImportError` は CLI 全体を停止させない。"""
     with pytest.raises(SystemExit) as exc_info:
         pytilpack.cli.main.main(["--help"])
     assert exc_info.value.code == 0
@@ -267,7 +244,6 @@ def test_main_help_survives_wrapped_missing_dep(capsys) -> None:
 
 @pytest.mark.usefixtures("fake_wrapped_missing_greenlet")
 def test_main_wrapped_missing_dep_exits(capsys) -> None:
-    """原因に外部パッケージ欠落を持つサブコマンドは extras の導入を案内して終了する。"""
     with pytest.raises(SystemExit) as exc_info:
         pytilpack.cli.main.main(["wait-for-db-connection", "sqlite:///x"])
     assert exc_info.value.code == 2
@@ -282,11 +258,6 @@ def test_main_wrapped_missing_dep_exits(capsys) -> None:
     [("sqlalchemy", "wait-for-db-connection", "sqlalchemy"), ("babel", "babel", "babel")],
 )
 def test_main_help_lists_really_missing_command(missing: str, command: str, extras: str) -> None:
-    """実際のimportで依存が欠落しても、--helpが(未インストール)を列挙する。
-
-    Python 3.15以降は`__lazy_modules__`でimportを遅延するため、
-    サブコマンドの登録時に依存の欠落を検出できることを別プロセスの実際のimportで確かめる。
-    """
     code = f"import sys\nsys.modules[{missing!r}] = None\nimport pytilpack.cli.main\npytilpack.cli.main.main(['--help'])\n"
     result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr

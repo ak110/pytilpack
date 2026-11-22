@@ -1,3 +1,0 @@
-# pytilpack.htmlrag
-
-::: pytilpack.htmlrag

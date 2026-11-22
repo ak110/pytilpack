@@ -1,3 +1,0 @@
-# pytilpack.http
-
-::: pytilpack.http

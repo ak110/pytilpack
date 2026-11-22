@@ -141,8 +141,7 @@ dev = [
     "mkdocs-llmstxt>=0.2",
     "mkdocs-material>=9.6",
     "mkdocs>=1.6",
-    "mkdocstrings[python]>=0.29",
-    "pyfltr[python]>=3.8.0",
+    "pyfltr[python]>=3.33.0",
     "pylint-pydantic>=0.4.1",
     "pyright[nodejs]>=1.1.403",
     "pytest-timeout>=2",
@@ -201,8 +200,7 @@ ty-args = [
 # 口語的な日本語表現を検出する。対象は全ファイルで、
 # 既定の重大度は警告のためCI・pre-commitは失敗しない。
 colloquial-check = true
-# docs/apiはmkdocstringsが自動生成するAPIドキュメントのため検査対象から除外する
-extend-exclude = ["docs/api"]
+comment-check = true
 
 [tool.pylint."messages control"]
 disable = [
@@ -241,8 +239,6 @@ line-length = 128
 [tool.ruff.lint]
 # https://docs.astral.sh/ruff/linter/#rule-selection
 select = [
-    # pydocstyle
-    "D",
     # pycodestyle
     "E",
     # Pyflakes
@@ -262,23 +258,13 @@ select = [
     # flake8-bandit: 危険な構文（exec・pickle・mktemp・シェル経由の実行・文字列で組み立てたSQL・eval）を検出する
     "S102", "S301", "S306", "S307", "S602", "S604", "S605", "S608",
 ]
-ignore = [
-    "D107", # Missing docstring in `__init__`
-    "D415", # First line should end with a period
-    "D403", # First word of the first line should be properly capitalized（日本語docstringにそぐわないため）
-]
-
 [tool.ruff.lint.flake8-tidy-imports]
 # __lazy_modules__を宣言したモジュールで、遅延化できるimportを全て列挙することを求める
 require-lazy = "all"
 
-[tool.ruff.lint.pydocstyle]
-convention = "google"
-
 [tool.ruff.lint.per-file-ignores]
 # テストは検査対象の入力としてexecやshell=Trueを意図して使うため、危険構文の規則を外す
-"**_test.py" = ["D", "S102", "S301", "S306", "S307", "S602", "S604", "S605", "S608"]
-"**/__init__.py" = ["D104"]  # Missing docstring in public package
+"**_test.py" = ["S102", "S301", "S306", "S307", "S602", "S604", "S605", "S608"]
 
 [tool.mypy]
 # https://mypy.readthedocs.io/en/stable/config_file.html

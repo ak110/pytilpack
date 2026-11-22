@@ -1,3 +1,0 @@
-# pytilpack.cache
-
-::: pytilpack.cache

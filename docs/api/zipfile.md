@@ -1,3 +1,0 @@
-# pytilpack.zipfile
-
-::: pytilpack.zipfile

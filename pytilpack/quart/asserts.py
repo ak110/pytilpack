@@ -1,5 +1,3 @@
-"""Quartのテストコード用アサーション関数。"""
-
 __lazy_modules__ = ["pathlib", "pytilpack._web_asserts", "quart", "typing"]
 
 import pathlib
@@ -20,7 +18,6 @@ __all__ = [
 ]
 
 ResponseType = quart.Response | typing.Awaitable[quart.Response]
-"""レスポンスの型。"""
 
 
 async def assert_bytes(
@@ -28,20 +25,6 @@ async def assert_bytes(
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = None,
 ) -> bytes:
-    """レスポンスのステータスコードとContent-Typeを検証してボディをbytesで返す。
-
-    Args:
-        response: レスポンス
-        status_code: 期待するステータスコード
-        content_type: 期待するContent-Type
-
-    Raises:
-        AssertionError: ステータスコードが異なる場合など
-
-    Returns:
-        レスポンスボディ
-
-    """
     response = await _get_response(response)
     response_body = await response.get_data(as_text=False)
     _core.assert_bytes_core(response_body, response.status_code, response.content_type, status_code, content_type)
@@ -55,34 +38,10 @@ async def assert_html(
     strict: bool = False,
     tmp_path: pathlib.Path | None = None,
 ) -> str:
-    """レスポンスを検証してHTMLボディを文字列で返す。html5libが必要。
-
-    html5libの字句・木構築時の構文診断に現行のselect解析規則を補って検査する。
-    templateの最も外側の開始・終了タグ間は診断対象から除外するため、内容の構文誤りも報告されない。
-    対応する終了タグのないtemplateは除外しない。内容モデルや属性値などの仕様適合全体は検証しない。
-
-    strict・tmp_pathはキーワード引数での指定を推奨する。flask/quart/fastapi間で
-    位置引数順を揃えているが、将来の引数追加時の後方互換性を保つためである。
-
-    Args:
-        response: レスポンス
-        status_code: 期待するステータスコード
-        content_type: 期待するContent-Type
-        strict: TrueではHTMLの構文診断をAssertionErrorで通知し、Falseでは警告して処理を継続する。
-        tmp_path: 一時ファイルを保存するディレクトリ
-
-    Raises:
-        AssertionError: ステータスコードが異なる場合など
-
-    Returns:
-        HTMLレスポンスボディ (str)
-
-    """
     response = await _get_response(response)
     response_body = await response.get_data(as_text=True)
     response_bytes = await response.get_data(as_text=False)
     # arid: disable
-    # Flask版（pytilpack.flask.asserts.assert_html）と並行実装のため許容する。
     _core.assert_html_core(
         response_body,
         response_bytes,
@@ -102,20 +61,6 @@ async def assert_json(
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "application/json",
 ) -> typing.Any:
-    """レスポンスを検証してJSONをデコードして返す。
-
-    Args:
-        response: レスポンス
-        status_code: 期待するステータスコード
-        content_type: 期待するContent-Type
-
-    Raises:
-        AssertionError: ステータスコードが異なる場合など
-
-    Returns:
-        レスポンスのJSONデコード結果
-
-    """
     response = await _get_response(response)
     response_body = await response.get_data(as_text=True)
     return _core.assert_json_core(response_body, response.status_code, response.content_type, status_code, content_type)
@@ -126,20 +71,6 @@ async def assert_xml(
     status_code: int = 200,
     content_type: str | typing.Iterable[str] | None = "__default__",
 ) -> str:
-    """レスポンスを検証してXMLボディを文字列で返す。
-
-    Args:
-        response: レスポンス
-        status_code: 期待するステータスコード
-        content_type: 期待するContent-Type
-
-    Raises:
-        AssertionError: ステータスコードが異なる場合など
-
-    Returns:
-        レスポンスボディ
-
-    """
     response = await _get_response(response)
     response_body = await response.get_data(as_text=True)
     _core.assert_xml_core(response_body, response.status_code, response.content_type, status_code, content_type)
@@ -150,19 +81,6 @@ async def assert_sse(
     response: ResponseType,
     status_code: int = 200,
 ) -> quart.Response:
-    """レスポンスのステータスコードとSSE用Content-Typeを検証して返す。
-
-    Args:
-        response: レスポンス
-        status_code: 期待するステータスコード
-
-    Raises:
-        AssertionError: ステータスコードが異なる場合、またはContent-Typeが異なる場合
-
-    Returns:
-        レスポンス
-
-    """
     response = await _get_response(response)
     _core.assert_sse_core(response.status_code, response.content_type, status_code)
     return response
@@ -172,19 +90,6 @@ async def assert_response(
     response: ResponseType,
     status_code: int = 200,
 ) -> quart.Response:
-    """レスポンスのステータスコードを検証して返す。
-
-    Args:
-        response: レスポンス
-        status_code: 期待するステータスコード
-
-    Raises:
-        AssertionError: ステータスコードが異なる場合
-
-    Returns:
-        レスポンス
-
-    """
     response = await _get_response(response)
     _core.assert_response_core(response.status_code, status_code)
     return response

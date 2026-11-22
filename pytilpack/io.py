@@ -1,5 +1,3 @@
-"""IO関連のユーティリティ。"""
-
 __lazy_modules__ = ["io", "pathlib", "typing"]
 
 import io
@@ -7,7 +5,6 @@ import pathlib
 import typing
 
 PathOrIO = str | pathlib.Path | typing.IO[str] | typing.IO[bytes]
-"""パスまたはIOオブジェクトの型エイリアス。"""
 
 
 def read_text(
@@ -15,11 +12,6 @@ def read_text(
     encoding: str = "utf-8",
     errors: str = "replace",
 ) -> str:
-    """パスまたはIOオブジェクトからテキストを読み込む。
-
-    パスの場合はファイルが存在しない場合FileNotFoundErrorを発生させる。
-
-    """
     if isinstance(source, (str, pathlib.Path)):
         return pathlib.Path(source).read_text(encoding=encoding, errors=errors)
     content = source.read()
@@ -34,11 +26,6 @@ def write_text(
     encoding: str = "utf-8",
     errors: str = "replace",
 ) -> None:
-    """パスまたはIOオブジェクトにテキストを書き込む。
-
-    パスの場合は親ディレクトリを自動作成する。
-
-    """
     if isinstance(dest, (str, pathlib.Path)):
         p = pathlib.Path(dest)
         p.parent.mkdir(parents=True, exist_ok=True)

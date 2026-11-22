@@ -1,5 +1,3 @@
-"""テストコード。"""
-
 import logging
 import time
 import typing
@@ -12,8 +10,6 @@ import pytilpack.functools
 
 @pytest.mark.asyncio
 async def test_retry() -> None:
-    """retryデコレーターの同期・非同期テスト。"""
-    # 同期: 成功ケース
     call_count = 0
 
     @pytilpack.functools.retry(2, initial_delay=0, exponential_base=0)
@@ -24,7 +20,6 @@ async def test_retry() -> None:
     f_sync()
     assert call_count == 1
 
-    # 同期: エラーケース（リトライ後も失敗）
     call_count = 0
 
     @pytilpack.functools.retry(2, initial_delay=0, exponential_base=0)
@@ -37,7 +32,6 @@ async def test_retry() -> None:
         f_sync_err()
     assert call_count == 3
 
-    # 非同期: 成功ケース
     call_count = 0
 
     @pytilpack.functools.retry(2, initial_delay=0, exponential_base=0)
@@ -48,7 +42,6 @@ async def test_retry() -> None:
     await f_async()
     assert call_count == 1
 
-    # 非同期: エラーケース
     call_count = 0
 
     @pytilpack.functools.retry(2, initial_delay=0, exponential_base=0)
@@ -63,8 +56,6 @@ async def test_retry() -> None:
 
 
 class _StatusCodeError(Exception):
-    """status_code属性を持つHTTPエラーの模擬。"""
-
     def __init__(self, status_code: int) -> None:
         super().__init__(f"status_code={status_code}")
         self.status_code = status_code
@@ -72,7 +63,6 @@ class _StatusCodeError(Exception):
 
 @pytest.mark.asyncio
 async def test_retry_default_status_codes() -> None:
-    """retry_status_codesの既定値のテスト（同期・非同期）。"""
     call_count = 0
 
     @pytilpack.functools.retry(max_retries=2, initial_delay=0, exponential_base=0)
@@ -87,7 +77,6 @@ async def test_retry_default_status_codes() -> None:
         call_count += 1
         raise _StatusCodeError(status_code)
 
-    # 既定値に含まれるコードはリトライされる（max_retries=2なので3回呼ばれる）
     for status_code in (408, 429, 500, 502, 503, 504, 529):
         call_count = 0
         with pytest.raises(_StatusCodeError):
@@ -99,7 +88,6 @@ async def test_retry_default_status_codes() -> None:
             await f_async(status_code)
         assert call_count == 3, f"async: status_code={status_code}"
 
-    # 既定値に含まれないコードはリトライされない
     call_count = 0
     with pytest.raises(_StatusCodeError):
         f_sync(404)
@@ -113,9 +101,8 @@ async def test_retry_default_status_codes() -> None:
 
 @pytest.mark.asyncio
 async def test_warn_if_slow(caplog: pytest.LogCaptureFixture) -> None:
-    """warn_if_slowデコレーターの同期・非同期テスト。"""
     with caplog.at_level(logging.WARNING):
-        # 同期: 閾値以下（警告なし）
+
         @pytilpack.functools.warn_if_slow()
         def fast_function(x: int, y: str = "default"):
             return f"{x}-{y}"
@@ -124,7 +111,6 @@ async def test_warn_if_slow(caplog: pytest.LogCaptureFixture) -> None:
         assert result == "42-test"
         assert len(caplog.records) == 0
 
-        # 同期: 閾値超過（警告あり）
         @pytilpack.functools.warn_if_slow()
         def slow_function(x: int, y: str = "default"):
             time.sleep(0.01)
@@ -138,7 +124,6 @@ async def test_warn_if_slow(caplog: pytest.LogCaptureFixture) -> None:
 
         caplog.clear()
 
-        # 非同期: 閾値以下（警告なし）
         @pytilpack.functools.warn_if_slow()
         async def fast_async_function(x: int, y: str = "default"):
             return f"{x}-{y}"
@@ -147,7 +132,6 @@ async def test_warn_if_slow(caplog: pytest.LogCaptureFixture) -> None:
         assert result == "42-test"
         assert len(caplog.records) == 0
 
-        # 非同期: 閾値超過（警告あり）
         @pytilpack.functools.warn_if_slow()
         async def slow_async_function(x: int, y: str = "default"):
             time.sleep(0.01)
@@ -161,8 +145,6 @@ async def test_warn_if_slow(caplog: pytest.LogCaptureFixture) -> None:
 
 @pytest.mark.asyncio
 async def test_retry_override() -> None:
-    """Retryオーバーライドのテスト（同期・非同期）。"""
-    # 同期版
     call_count = 0
 
     @pytilpack.functools.retry(max_retries=5, initial_delay=0, exponential_base=0)
@@ -172,24 +154,20 @@ async def test_retry_override() -> None:
         call_count += 1
         raise RuntimeError("test")
 
-    # デフォルト設定: max_retries=5 なので6回呼ばれる
     with pytest.raises(RuntimeError):
         f()
     assert call_count == 6
 
-    # オーバーライド: max_retries=2 なので3回呼ばれる
     call_count = 0
     with pytest.raises(RuntimeError):
         f(retry=pytilpack.functools.Retry(max_retries=2))
     assert call_count == 3
 
-    # 部分的なオーバーライド
     call_count = 0
     with pytest.raises(RuntimeError):
         f(retry=pytilpack.functools.Retry(max_retries=1))
     assert call_count == 2
 
-    # 非同期版
     call_count = 0
 
     @pytilpack.functools.retry(max_retries=5, initial_delay=0, exponential_base=0)
@@ -211,12 +189,10 @@ async def test_retry_override() -> None:
 
 @pytest.mark.asyncio
 async def test_retry_should_retry() -> None:
-    """should_retry引数のテスト（同期・非同期）。"""
 
     def should_retry_func(exc: Exception) -> bool:
         return isinstance(exc, ValueError)
 
-    # 同期版
     call_count = 0
 
     @pytilpack.functools.retry(max_retries=3, initial_delay=0, exponential_base=0, should_retry=should_retry_func)
@@ -225,19 +201,16 @@ async def test_retry_should_retry() -> None:
         call_count += 1
         raise error_type("test")
 
-    # ValueErrorはリトライされる
     call_count = 0
     with pytest.raises(ValueError):
         f(ValueError)
     assert call_count == 4
 
-    # RuntimeErrorはリトライされない
     call_count = 0
     with pytest.raises(RuntimeError):
         f(RuntimeError)
     assert call_count == 1
 
-    # 非同期版
     @pytilpack.functools.retry(max_retries=3, initial_delay=0, exponential_base=0, should_retry=should_retry_func)
     async def f_async(error_type: type[Exception]):
         nonlocal call_count
@@ -258,7 +231,6 @@ async def test_retry_should_retry() -> None:
 @pytest.mark.parametrize("is_async", [False, True], ids=["sync", "async"])
 @pytest.mark.asyncio
 async def test_retry_override_total_delay(monkeypatch: pytest.MonkeyPatch, is_async: bool) -> None:
-    """同期・非同期とも上書き後の待機総量までRetry-Afterによる再試行を続ける。"""
 
     def sleep(delay: float, **kwargs: typing.Any) -> None:
         del delay, kwargs
@@ -296,7 +268,6 @@ async def test_retry_override_total_delay(monkeypatch: pytest.MonkeyPatch, is_as
 
 
 def test_retry_override_should_retry() -> None:
-    """Retryオーバーライドでshould_retryを指定するテスト。"""
     call_count = 0
 
     @pytilpack.functools.retry(max_retries=3, initial_delay=0, exponential_base=0)
@@ -306,12 +277,10 @@ def test_retry_override_should_retry() -> None:
         call_count += 1
         raise error_type("test")
 
-    # デフォルト設定: すべての例外をリトライ
     with pytest.raises(RuntimeError):
         f()
     assert call_count == 4
 
-    # オーバーライドでshould_retryを指定: ValueErrorのみリトライ
     def custom_should_retry(exc: Exception) -> bool:
         return isinstance(exc, ValueError)
 

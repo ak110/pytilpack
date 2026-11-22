@@ -1,5 +1,3 @@
-"""現在のタスク識別と公開名の検証。"""
-
 import asyncio
 
 import pytest

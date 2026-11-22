@@ -1,3 +1,0 @@
-# pytilpack.ratelimit
-
-::: pytilpack.ratelimit

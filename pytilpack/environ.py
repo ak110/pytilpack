@@ -1,5 +1,3 @@
-"""環境変数ユーティリティ。"""
-
 __lazy_modules__ = ["collections.abc", "decimal", "dotenv", "os", "pathlib", "pytilpack.python", "typing"]
 
 import collections.abc
@@ -14,14 +12,13 @@ import pytilpack.python
 
 
 class _Unset:
-    """未指定を表すクラス。"""
+    pass
 
 
 _UNSET = _Unset()
 
 
 def load_dotenv(path: str | pathlib.Path | None = None, override: bool = False) -> None:
-    """python-dotenvを使用して.envファイルを読み込む。"""
     dotenv.load_dotenv(dotenv_path=path, override=override)
 
 
@@ -31,7 +28,6 @@ def _get_typed[T](
     default: T | _Unset,
     environ: collections.abc.Mapping[str, str] | None,
 ) -> T:
-    """環境変数を取得し、converterで指定型に変換する。get_*共通の内部ヘルパー。"""
     value = (os.environ if environ is None else environ).get(key)
     if value is None:
         if isinstance(default, _Unset):
@@ -41,7 +37,6 @@ def _get_typed[T](
 
 
 def _to_decimal(value: str, key: str) -> decimal.Decimal:
-    """環境変数値をDecimalに変換する。"""
     try:
         return decimal.Decimal(value)
     except decimal.InvalidOperation as e:
@@ -62,7 +57,6 @@ def get_str(
     *,
     environ: collections.abc.Mapping[str, str] | None = None,
 ) -> str:
-    """環境変数を文字列として取得する。"""
     return _get_typed(key, lambda v: v, default, environ)
 
 
@@ -80,7 +74,6 @@ def get_int(
     *,
     environ: collections.abc.Mapping[str, str] | None = None,
 ) -> int:
-    """環境変数を整数として取得する。"""
     return _get_typed(key, lambda v: pytilpack.python.convert(v, int, 0, errors="strict"), default, environ)
 
 
@@ -103,7 +96,6 @@ def get_float(
     *,
     environ: collections.abc.Mapping[str, str] | None = None,
 ) -> float:
-    """環境変数を浮動小数点数として取得する。"""
     return _get_typed(key, lambda v: pytilpack.python.convert(v, float, 0.0, errors="strict"), default, environ)
 
 
@@ -126,7 +118,6 @@ def get_bool(
     *,
     environ: collections.abc.Mapping[str, str] | None = None,
 ) -> bool:
-    """環境変数を真偽値として取得する。"""
     return _get_typed(key, lambda v: pytilpack.python.convert(v, bool, False, errors="strict"), default, environ)
 
 
@@ -149,7 +140,6 @@ def get_decimal(
     *,
     environ: collections.abc.Mapping[str, str] | None = None,
 ) -> decimal.Decimal:
-    """環境変数をDecimalとして取得する。"""
     return _get_typed(key, lambda v: _to_decimal(v, key), default, environ)
 
 
@@ -172,7 +162,6 @@ def get_path(
     *,
     environ: collections.abc.Mapping[str, str] | None = None,
 ) -> pathlib.Path:
-    """環境変数をPathとして取得する。"""
     return _get_typed(key, lambda v: pathlib.Path(v).resolve(), default, environ)
 
 
@@ -202,10 +191,6 @@ def get_list(
     default: list[str] | _Unset = _UNSET,
     environ: collections.abc.Mapping[str, str] | None = None,
 ) -> list[str]:
-    """環境変数をリストとして取得する。
-
-    セパレータで分割し、各要素の前後の空白を除去し、空文字列を除外する。
-    """
     value = (os.environ if environ is None else environ).get(key)
     if value is None:
         if isinstance(default, _Unset):
@@ -215,5 +200,4 @@ def get_list(
 
 
 def get_or_none(key: str, *, environ: collections.abc.Mapping[str, str] | None = None) -> str | None:
-    """環境変数を取得する。未設定の場合はNoneを返す。"""
     return (os.environ if environ is None else environ).get(key)

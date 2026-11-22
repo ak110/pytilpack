@@ -1,5 +1,3 @@
-"""単独Web extraの隔離環境でpytestなしのassertsを実行する。"""
-
 import asyncio
 import importlib
 import importlib.abc
@@ -11,17 +9,13 @@ import httpx
 
 
 class _NoFcntl(importlib.abc.MetaPathFinder):
-    """Flaskのimport時にUnix専用モジュールを利用できなくする。"""
-
     def find_spec(self, fullname, path, target=None):
-        # MetaPathFinderの公開署名を保ち、対象以外は後続finderへ渡す。
         del path, target
         if fullname == "fcntl":
             raise ImportError("fcntlを利用できないプラットフォームの検証")
 
 
 def main() -> None:
-    """HTML・JSON・XML・bytes・SSEとステータスの公開アサーションを呼ぶ。"""
     extra = sys.argv[1]
     assert importlib.util.find_spec("pytest") is None
     if extra == "flask":

@@ -1,5 +1,3 @@
-"""DB接続待機CLIの入口テスト。"""
-
 import subprocess
 import sys
 from pathlib import Path
@@ -12,7 +10,6 @@ import pytilpack.sqlalchemy
 
 @pytest.mark.parametrize("driver", ["sqlite", "sqlite+aiosqlite"])
 def test_wait_for_db_connection_cli(tmp_path: Path, driver: str) -> None:
-    """同期・非同期のSQLite接続成否をCLI終了コードで確認する。"""
     for should_connect in (True, False):
         database = tmp_path / "database.sqlite" if should_connect else tmp_path / "missing" / "database.sqlite"
         url = f"{driver}:///{database}"
@@ -44,7 +41,6 @@ def test_wait_for_db_connection_cli(tmp_path: Path, driver: str) -> None:
     ],
 )
 def test_wait_for_db_connection_cli_dispatch(monkeypatch: pytest.MonkeyPatch, url: str, expected_mode: str) -> None:
-    """CLIがDB URLのドライバーに対応する接続経路を選ぶ。"""
     calls: list[tuple[str, str, float]] = []
 
     def fake_sync(value: str, timeout: float, **_kwargs: object) -> None:

@@ -1,5 +1,3 @@
-"""テストコード。"""
-
 import io
 import pathlib
 
@@ -43,17 +41,14 @@ def test_load_all_save_all(tmp_path: pathlib.Path) -> None:
 
 
 def test_load_save_io() -> None:
-    """IO[str] / IO[bytes] での load/save のテスト。"""
     data = {"key": "💯", "num": 1}
 
-    # StringIO で save → load
     buf = io.StringIO()
     pytilpack.yaml.save(buf, data)
     buf.seek(0)
     data2 = pytilpack.yaml.load(buf)
     assert data == data2
 
-    # BytesIO で save → load
     buf_b = io.BytesIO()
     pytilpack.yaml.save(buf_b, data)
     buf_b.seek(0)
@@ -62,32 +57,24 @@ def test_load_save_io() -> None:
 
 
 def test_block_scalar() -> None:
-    """ブロックスカラーのテスト。"""
-    # 改行を含む文字列はブロックスカラー (|) で出力される
     assert pytilpack.yaml.dumps({"key": "line1\nline2\n"}) == "key: |\n  line1\n  line2\n"
-    # タブ、末尾スペース、\r\n、ヌル文字などがあればブロックスカラーにならない
     assert pytilpack.yaml.dumps({"key": "line1\ttab\nline2\n"}) == 'key: "line1\\ttab\\nline2\\n"\n'
     assert pytilpack.yaml.dumps({"key": "line1 \nline2\n"}) == 'key: "line1 \\nline2\\n"\n'
     assert pytilpack.yaml.dumps({"key": "line1\r\nline2\n"}) == 'key: "line1\\r\\nline2\\n"\n'
     assert pytilpack.yaml.dumps({"key": "line1\nline2\0null\n"}) == 'key: "line1\\nline2\\0null\\n"\n'
-    # 末尾のみ改行は通常の形式で出力される
     assert pytilpack.yaml.dumps({"key": "only at end\n"}) == "key: 'only at end\n\n  '\n"
-    # 改行を含まない文字列は通常の形式で出力される
     assert pytilpack.yaml.dumps({"key": "no newline"}) == "key: no newline\n"
 
 
 def test_load_all_save_all_io() -> None:
-    """IO[str] / IO[bytes] での load_all/save_all のテスト。"""
     data = [{"key": "value1"}, {"key": "value2"}]
 
-    # StringIO で save_all → load_all
     buf = io.StringIO()
     pytilpack.yaml.save_all(buf, data)
     buf.seek(0)
     data2 = pytilpack.yaml.load_all(buf)
     assert data == data2
 
-    # BytesIO で save_all → load_all
     buf_b = io.BytesIO()
     pytilpack.yaml.save_all(buf_b, data)
     buf_b.seek(0)

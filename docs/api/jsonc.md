@@ -1,3 +1,0 @@
-# pytilpack.jsonc
-
-::: pytilpack.jsonc

@@ -1,5 +1,3 @@
-"""テストコード。"""
-
 import asyncio
 import concurrent.futures
 import subprocess
@@ -27,12 +25,9 @@ from pytilpack.python import (
 
 
 def test_singleton_failed_initialization_retries() -> None:
-    """初期化に失敗したインスタンスを公開しない。"""
     attempts = 0
 
     class Config(pytilpack.python.SingletonMixin):
-        """初回だけ初期化に失敗する。"""
-
         def __init__(self) -> None:
             nonlocal attempts
             attempts += 1
@@ -51,7 +46,6 @@ def test_singleton_failed_initialization_retries() -> None:
 
 @pytest.mark.parametrize("recursive", [False, True])
 def test_singleton_nested_initialization(recursive: bool) -> None:
-    """入れ子の初期化と同じクラスの再帰を独立プロセスで確認する。"""
     code = """
 import pytilpack.python
 import sys
@@ -120,13 +114,16 @@ def test_default():
 def test_doc_summary():
     assert doc_summary(None) == ""
     assert doc_summary(0) == "int([x]) -> integer"
-    assert doc_summary(doc_summary) == "docstringの先頭1行分を取得する。"
+
+    def f() -> None:
+        pass
+
+    f.__doc__ = "先頭行\n2行目"
+    assert doc_summary(f) == "先頭行"
 
 
 def test_class_field_comments():
     class A:
-        """テスト用クラス。"""
-
         a = 1  # aaa(無視されてほしいコメント)
         # bbb
         b = 2  # bbb(無視されてほしいコメント)
@@ -146,26 +143,21 @@ def test_class_field_comments():
 def test_get():
     data = {"a": [{"b": 1}], "none": None}
 
-    # 正常系
     assert get(data, "a") == [{"b": 1}]
     assert get(data, ["a", 0]) == {"b": 1}
     assert get(data, ["a", 0, "b"]) == 1
 
-    # デフォルト値
     assert get(data, ["a", 0, "c"], 2) == 2
     assert get(data, ["a", 1], 2) == 2
     assert get(data, ["c", 0], 2) == 2
 
-    # 値がNone
     assert get(data, "none", 2) == 2
     assert get(data, "none", 2, default_if_none=False) is None
 
-    # スカラーに対してまだキーがあるならエラー
     with pytest.raises(ValueError):
         get(data, ["a", 0, "b", "c"])
     assert get(data, ["a", 0, "b", "c"], 2, errors="ignore") == 2
 
-    # 配列のインデックスはint型でなければならない
     with pytest.raises(ValueError):
         get(data, ["a", "0"])
     assert get(data, ["a", "0"], 2, errors="ignore") == 2
@@ -175,8 +167,8 @@ def test_get_float():
     data = {"a": 1.1, "b": "string", "c": None}
 
     assert get_float(data, "a") == 1.1
-    assert get_float(data, "c", 2.2) == 2.2  # 値がNoneの場合
-    assert get_float(data, "d", 2.2) == 2.2  # キーが存在しない場合
+    assert get_float(data, "c", 2.2) == 2.2
+    assert get_float(data, "d", 2.2) == 2.2
 
     with pytest.raises(ValueError):
         get_float(data, "b")
@@ -187,8 +179,8 @@ def test_get_bool():
     data = {"a": True, "b": "string", "c": None}
 
     assert get_bool(data, "a") is True
-    assert get_bool(data, "c", False) is False  # 値がNoneの場合
-    assert get_bool(data, "d", False) is False  # キーが存在しない場合
+    assert get_bool(data, "c", False) is False
+    assert get_bool(data, "d", False) is False
 
     with pytest.raises(ValueError):
         get_bool(data, "b")
@@ -199,8 +191,8 @@ def test_get_int():
     data = {"a": 1, "b": "string", "c": None}
 
     assert get_int(data, "a") == 1
-    assert get_int(data, "c", 2) == 2  # 値がNoneの場合
-    assert get_int(data, "d", 2) == 2  # キーが存在しない場合
+    assert get_int(data, "c", 2) == 2
+    assert get_int(data, "d", 2) == 2
 
     with pytest.raises(ValueError):
         get_int(data, "b")
@@ -211,8 +203,8 @@ def test_get_str():
     data = {"a": "string", "b": 1, "c": None}
 
     assert get_str(data, "a") == "string"
-    assert get_str(data, "c", "default") == "default"  # 値がNoneの場合
-    assert get_str(data, "d", "default") == "default"  # キーが存在しない場合
+    assert get_str(data, "c", "default") == "default"
+    assert get_str(data, "d", "default") == "default"
 
     with pytest.raises(ValueError):
         get_str(data, "b")
@@ -223,8 +215,8 @@ def test_get_list():
     data = {"a": [1, 2, 3], "b": "string", "c": None}
 
     assert get_list(data, "a") == [1, 2, 3]
-    assert get_list(data, "c", [4, 5, 6]) == [4, 5, 6]  # 値がNoneの場合
-    assert get_list(data, "d", [4, 5, 6]) == [4, 5, 6]  # キーが存在しない場合
+    assert get_list(data, "c", [4, 5, 6]) == [4, 5, 6]
+    assert get_list(data, "d", [4, 5, 6]) == [4, 5, 6]
 
     with pytest.raises(ValueError):
         get_list(data, "b")
@@ -235,8 +227,8 @@ def test_get_dict():
     data = {"a": {"key": "value"}, "b": "string", "c": None}
 
     assert get_dict(data, "a") == {"key": "value"}
-    assert get_dict(data, "c", {"d": "v"}) == {"d": "v"}  # 値がNoneの場合
-    assert get_dict(data, "d", {"d": "v"}) == {"d": "v"}  # キーが存在しない場合
+    assert get_dict(data, "c", {"d": "v"}) == {"d": "v"}
+    assert get_dict(data, "d", {"d": "v"}) == {"d": "v"}
 
     with pytest.raises(ValueError):
         get_dict(data, "b")
@@ -246,7 +238,6 @@ def test_get_dict():
 @pytest.mark.parametrize(
     "value,target_type,expected",
     [
-        # bool相互変換
         (True, bool, True),
         (False, bool, False),
         (0, bool, False),
@@ -259,27 +250,23 @@ def test_get_dict():
         ("0", bool, False),
         ("1", bool, True),
         ("2", bool, None),
-        # int相互変換
         (True, int, 1),
         (False, int, 0),
         (42, int, 42),
         (3.14, int, 3),
         ("42", int, 42),
         ("-123", int, -123),
-        # float相互変換
         (True, float, 1.0),
         (False, float, 0.0),
         (3.14, float, 3.14),
         (42, float, 42.0),
         ("3.14", float, 3.14),
         ("-123.45", float, -123.45),
-        # str相互変換
         (True, str, "True"),
         (False, str, "False"),
         (42, str, "42"),
         (3.14, str, "3.14"),
         ("hello", str, "hello"),
-        # None処理
         (None, bool, None),
         (None, int, None),
         (None, float, None),
@@ -287,7 +274,6 @@ def test_get_dict():
     ],
 )
 def test_convert_success(value, target_type, expected):
-    """convertの成功パターンのテスト。"""
     result = pytilpack.python.convert(value, target_type, None)
     assert result == expected
 
@@ -295,18 +281,15 @@ def test_convert_success(value, target_type, expected):
 @pytest.mark.parametrize(
     "value,target_type,errors",
     [
-        # bool変換エラー
         (2, bool, "strict"),
         (3.14, bool, "strict"),
         ("2", bool, "strict"),
         ([1, 2, 3], bool, "strict"),
         ({"key": "value"}, bool, "strict"),
-        # int変換エラー
         ("invalid", int, "strict"),
         ("3.14abc", int, "strict"),
         ([1, 2, 3], int, "strict"),
         ({"key": "value"}, int, "strict"),
-        # float変換エラー
         ("invalid", float, "strict"),
         ("3.14abc", float, "strict"),
         ([1, 2, 3], float, "strict"),
@@ -314,57 +297,43 @@ def test_convert_success(value, target_type, expected):
     ],
 )
 def test_convert_error(value, target_type, errors):
-    """convertのエラーパターンのテスト。"""
     with pytest.raises(ValueError):
         pytilpack.python.convert(value, target_type, None, errors=errors)
 
 
 def test_singleton_mixin(monkeypatch: pytest.MonkeyPatch):
-    """SingletonMixinのテスト。"""
 
-    # テスト用クラス
     class MyConfig(pytilpack.python.SingletonMixin):
-        """テスト用のコンフィグクラス。"""
-
         def __init__(self):
             self.value = "initial"
             self.counter = 0
 
     class AnotherConfig(pytilpack.python.SingletonMixin):
-        """テスト用の別のコンフィグクラス。"""
-
         def __init__(self):
             self.value = "another"
 
-    # get_singleton()で取得できる
     config1 = MyConfig.get_singleton()
     assert config1.value == "initial"
 
-    # 複数回get_singleton()しても同じインスタンス
     config2 = MyConfig.get_singleton()
     assert config1 is config2
 
-    # インスタンスを変更すると他も変わる
     config1.value = "modified"
     assert config2.value == "modified"
 
-    # 異なるクラスは異なるインスタンス
     another1 = AnotherConfig.get_singleton()
     another2 = AnotherConfig.get_singleton()
     assert another1 is another2
-    assert id(another1) != id(config1)  # 異なるクラスのインスタンス
+    assert id(another1) != id(config1)
 
-    # reset()後は新しいインスタンス
     MyConfig.reset()
     config3 = MyConfig.get_singleton()
     assert config3 is not config1
     assert config3.value == "initial"
 
-    # 直接インスタンス化は禁止
     with pytest.raises(TypeError, match="は直接インスタンス化できません"):
         MyConfig()
 
-    # 全スレッドが取得へ到達するまで最初の初期化を保留する。
     all_attempted = threading.Event()
     start = threading.Barrier(10, timeout=5)
     original_lock = pytilpack.python.SingletonMixin._lock  # pylint: disable=protected-access
@@ -375,14 +344,11 @@ def test_singleton_mixin(monkeypatch: pytest.MonkeyPatch):
 
     def new_instance(cls: type, **kwargs: typing.Any) -> object:
         del kwargs
-        # 排他を外した変異でも、全スレッドが生成判定を終えてから生成する。
         if not all_attempted.is_set():
             creations.wait()
         return object.__new__(cls)
 
     class ObservedLock:
-        """元の排他を保ち、全取得要求の到達を通知する。"""
-
         def __enter__(self) -> None:
             nonlocal attempts
             with count_lock:
@@ -397,8 +363,6 @@ def test_singleton_mixin(monkeypatch: pytest.MonkeyPatch):
             original_lock.release()
 
     class ConcurrentConfig(pytilpack.python.SingletonMixin):
-        """競合中の初期化回数を観測するクラス。"""
-
         def __init__(self) -> None:
             nonlocal initializations
             with count_lock:
@@ -426,17 +390,14 @@ def test_singleton_mixin(monkeypatch: pytest.MonkeyPatch):
 @pytest.mark.parametrize(
     "dst,src,expected",
     [
-        # 両方がdictの場合の再帰的マージ
         ({"a": 1}, {"b": 2}, {"a": 1, "b": 2}),
         ({"a": 1}, {"a": 2}, {"a": 2}),
         ({"a": {"b": 1}}, {"a": {"c": 2}}, {"a": {"b": 1, "c": 2}}),
         ({"a": {"b": 1}}, {"a": {"b": 2, "c": 3}}, {"a": {"b": 2, "c": 3}}),
         ({"a": 1, "b": 2}, {"a": 10}, {"a": 10, "b": 2}),
-        # 両方がリストの場合の結合
         ([1, 2], [3, 4], [1, 2, 3, 4]),
         ([], [1], [1]),
         ([1], [], [1]),
-        # それ以外の場合(srcで上書き)
         (1, 2, 2),
         ("a", "b", "b"),
         (1, "a", "a"),
@@ -444,7 +405,6 @@ def test_singleton_mixin(monkeypatch: pytest.MonkeyPatch):
         ({"a": 1}, [1], [1]),
         (None, 1, 1),
         (1, None, None),
-        # 複雑なケース
         (
             {"a": [1, 2], "b": {"c": 1}},
             {"a": [3], "b": {"d": 2}},
@@ -453,15 +413,12 @@ def test_singleton_mixin(monkeypatch: pytest.MonkeyPatch):
     ],
 )
 def test_merge(dst, src, expected):
-    """mergeのテスト。"""
     actual = pytilpack.python.merge(dst, src)
     assert actual == expected
 
 
 def test_deprecated():
-    """deprecatedのテスト。"""
 
-    # sync関数のテスト
     @pytilpack.python.deprecated()
     def old_func(x: int) -> int:
         return x * 2
@@ -474,7 +431,6 @@ def test_deprecated():
         assert issubclass(w[0].category, DeprecationWarning)
         assert "old_func is deprecated." in str(w[0].message)
 
-    # reasonありのテスト
     @pytilpack.python.deprecated(reason="Use new_func instead.")
     def old_func2() -> str:
         return "old"
@@ -486,7 +442,6 @@ def test_deprecated():
         assert len(w) == 1
         assert "old_func2 is deprecated. Use new_func instead." in str(w[0].message)
 
-    # async関数のテスト
     @pytilpack.python.deprecated()
     async def old_async_func(x: int) -> int:
         return x * 3

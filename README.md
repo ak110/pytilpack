@@ -34,11 +34,10 @@ import pytilpack.xxx
 
 `xxx` には対象ライブラリ名（`httpx` や `pathlib` など）が入る。
 
-モジュール一覧やAPIリファレンスは[ドキュメント](https://ak110.github.io/pytilpack/)を参照。
+モジュール一覧は[ドキュメント](https://ak110.github.io/pytilpack/)を参照し、APIの詳細はソースコードを読む。
 一部はCLIもある。詳細は[CLIコマンド](https://ak110.github.io/pytilpack/guide/cli/)を参照。
 
 ## ドキュメント
 
 - [利用者向けガイド](https://ak110.github.io/pytilpack/guide/)、インストール・extras一覧・モジュール一覧・CLI
-- [APIリファレンス](https://ak110.github.io/pytilpack/api/asyncio/)、各モジュールのAPIリファレンス
 - [開発者向け情報](https://github.com/ak110/pytilpack/blob/master/docs/development/development.md)、セットアップ・モジュール追加・リリース手順

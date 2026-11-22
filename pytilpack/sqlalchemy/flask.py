@@ -1,5 +1,3 @@
-"""SQLAlchemy用のユーティリティ集（Flask-SQLAlchemy版）。"""
-
 __lazy_modules__ = [
     "logging",
     "pytilpack.sqlalchemy._base",
@@ -26,11 +24,9 @@ logger = logging.getLogger(__name__)
 
 
 def register_ping():
-    """コネクションプールの切断対策。"""
 
     @sqlalchemy.event.listens_for(sqlalchemy.pool.Pool, "checkout")
     def _ping_connection(dbapi_connection, connection_record, connection_proxy):
-        """コネクションプールの切断対策。"""
         _ = connection_record, connection_proxy  # noqa
         cursor = dbapi_connection.cursor()
         try:
@@ -42,24 +38,10 @@ def register_ping():
 
 
 class Mixin(_ReprMixin, _ToDictMixin):
-    """テーブルクラスに共通メソッドを付与するMixin。"""
-
     @classmethod
     def get_by_id_not_null(
         cls, id_: int, for_update: bool = False, options: sqlalchemy.sql.base.ExecutableOption | None = None
     ) -> typing.Self:
-        """IDを元にインスタンスを取得。見つからない場合は例外を送出する。
-
-        Args:
-            id_: ID。
-            for_update: 更新ロックを取得するか否か。
-            options: クエリオプション。eager loadingなどに使用する。
-
-        Returns:
-            インスタンス。
-        Raises:
-            ValueError: 見つからない場合。
-        """
         instance = cls.get_by_id(id_, for_update=for_update, options=options)
         return _require_instance(instance, cls, id_)
 
@@ -67,25 +49,12 @@ class Mixin(_ReprMixin, _ToDictMixin):
     def get_by_id(
         cls: type[typing.Self], id_: int, for_update: bool = False, options: sqlalchemy.sql.base.ExecutableOption | None = None
     ) -> typing.Self | None:
-        """IDを元にインスタンスを取得。
-
-        Args:
-            id_: ID。
-            for_update: 更新ロックを取得するか否か。
-            options: クエリオプション。eager loadingなどに使用。
-
-        Returns:
-            インスタンス。
-
-        """
         q = cls.query.filter(_id_filter(cls, id_))  # type: ignore
         q = _query_options(q, for_update, options)
         return q.one_or_none()
 
 
 class UniqueIDMixin(_UniqueIDMixin):
-    """self.unique_idを持つテーブルクラスにユニークID操作メソッドを付与するmixin。"""
-
     @classmethod
     def get_by_unique_id(
         cls: type[typing.Self],
@@ -93,17 +62,6 @@ class UniqueIDMixin(_UniqueIDMixin):
         allow_id: bool = False,
         for_update: bool = False,
     ) -> typing.Self | None:
-        """ユニークIDを元にインスタンスを取得。
-
-        Args:
-            unique_id: ユニークID。
-            allow_id: ユニークIDだけでなくID(int)も許可するかどうか。
-            for_update: 更新ロックを取得するか否か。
-
-        Returns:
-            インスタンス。
-
-        """
         q = cls.query.filter(_id_filter(cls, unique_id, not (allow_id and isinstance(unique_id, int))))  # type: ignore[attr-defined]
         q = _query_options(q, for_update)
         return q.one_or_none()

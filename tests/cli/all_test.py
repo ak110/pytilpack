@@ -1,5 +1,3 @@
-"""全CLIコマンドのテスト（並行実行版）。"""
-
 import asyncio
 import sys
 
@@ -9,12 +7,6 @@ from pytilpack.cli.main import _SUBCOMMANDS
 
 
 async def _run_help(command: str, expected_text: str) -> None:
-    """ヘルプコマンドを実行して期待されるテキストを確認する。
-
-    実行ファイルの解決をPATHへ委ねると、PATH上の別のpytilpackが起動して
-    リポジトリの現在のコードと無関係な結果になる。
-    テスト実行中のインタプリタを明示して対象を確定させる。
-    """
     proc = await asyncio.create_subprocess_exec(
         sys.executable,
         "-m",
@@ -31,5 +23,4 @@ async def _run_help(command: str, expected_text: str) -> None:
 
 @pytest.mark.asyncio
 async def test_all_cli_commands() -> None:
-    """全CLIコマンドのヘルプを並行実行してテスト。"""
     await asyncio.gather(*(_run_help(name, "usage:") for name, _, _ in _SUBCOMMANDS), _run_help("--help", "usage:"))

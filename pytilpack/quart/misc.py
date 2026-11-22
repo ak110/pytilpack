@@ -1,5 +1,3 @@
-"""Quart関連のその他のユーティリティ。"""
-
 __lazy_modules__ = [
     "asyncio",
     "contextlib",
@@ -52,36 +50,16 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 _TIMESTAMP_CACHE: dict[str, int] = {}
-"""静的ファイルの最終更新日時をキャッシュするための辞書。プロセス単位でキャッシュされる。"""
 
 
 @dataclasses.dataclass
 class ConcurrencyState:
-    """set_max_concurrency の内部状態。exhaust_concurrency から参照される。"""
-
     semaphore: asyncio.Semaphore
     max_concurrency: int
     timeout: float | None
 
 
 def set_max_concurrency(app: quart.Quart, max_concurrency: int, timeout: float | None = 3.0) -> None:
-    """Quart アプリ全体の最大同時リクエスト数を制限する。
-
-    Args:
-        app: 対象の Quart アプリケーション。
-        max_concurrency: 許可する同時リクエスト数の上限。
-        timeout: 最大待機秒数。タイムアウト時は 503 Service Unavailable を返す。
-
-    Raises:
-        ValueError: max_concurrency が 1 未満の場合。
-        RuntimeError: 同一アプリに対して二度目に呼び出した場合。
-            before_request/teardown_request が重複登録されてセマフォが二重管理されるため、
-            同一アプリへの複数回呼び出しは禁止する。
-
-    Notes:
-        * Hypercorn の ``--workers`` / ``--threads`` とは独立した
-        アプリレベルの制御。1 ワーカー内のコルーチン数を制限する用途で使う。
-    """
     if max_concurrency < 1:
         raise ValueError("max_concurrency must be >= 1")
     if "pytilpack_concurrency" in app.extensions:
@@ -97,8 +75,7 @@ def set_max_concurrency(app: quart.Quart, max_concurrency: int, timeout: float |
     )
     app.extensions["pytilpack_concurrency"] = state
 
-    async def _acquire() -> None:  # before_request
-        # テスト時にセマフォ/timeoutを一時変更できるようstateから読む
+    async def _acquire() -> None:
         sem = state.semaphore
         to = state.timeout
         try:
@@ -124,7 +101,6 @@ def set_max_concurrency(app: quart.Quart, max_concurrency: int, timeout: float |
         #   未完了であれば未取得のまま伝播する。
         # いずれの経路でも、この時点では未取得状態が保証されるため保護は不要。
 
-        # acquire 完了。トークン設定前にキャンセルが発生してもセマフォを解放するよう保護する。
         try:
             quart.g.quart__concurrency_token = True
         except BaseException:
@@ -142,19 +118,10 @@ def set_max_concurrency(app: quart.Quart, max_concurrency: int, timeout: float |
 
 @contextlib.asynccontextmanager
 async def exhaust_concurrency(app: quart.Quart):
-    """テスト用: セマフォを枯渇させて503を発生させるコンテキストマネージャ。
-
-    使用例::
-
-        async with pytilpack.quart.exhaust_concurrency(app):
-            response = await client.get("/any-endpoint")
-            assert response.status_code == 503
-    """
     state: ConcurrencyState = app.extensions["pytilpack_concurrency"]
     original_semaphore = state.semaphore
     original_timeout = state.timeout
 
-    # スロット0のセマフォに差し替えて即座にタイムアウト→503を返すようにする
     state.semaphore = asyncio.Semaphore(0)
     state.timeout = 0.01
 
@@ -168,11 +135,6 @@ async def exhaust_concurrency(app: quart.Quart):
 def run_sync[**P, R](
     func: typing.Callable[P, R],
 ) -> typing.Callable[P, typing.Awaitable[R]]:
-    """同期関数を非同期に実行するデコレーター。
-
-    quart.utils.run_syncの型ヒントがいまいちなので用意。
-
-    """
 
     @functools.wraps(func)
     async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
@@ -183,7 +145,6 @@ def run_sync[**P, R](
 
 
 def get_next_url() -> str:
-    """ログイン後遷移用のnextパラメータ用のURLを返す。"""
     return pytilpack.web.build_next_url(
         quart.request.script_root,
         quart.request.path,
@@ -192,16 +153,6 @@ def get_next_url() -> str:
 
 
 def prefer_markdown() -> bool:
-    """AcceptヘッダーでmarkdownがHTMLより優先されているかを返す。
-
-    参考: <https://vercel.com/blog/making-agent-friendly-pages-with-content-negotiation>
-
-    (CDNやプロキシがAcceptヘッダーを書き換える場合があるという話もあるが…。)
-
-    Returns:
-        markdownがHTMLより優先されている場合True、そうでなければFalse
-
-    """
     return pytilpack.web.is_prefer_markdown(quart.request.headers.get("Accept", ""))
 
 
@@ -211,20 +162,6 @@ def static_url_for(
     cache_timestamp: bool | typing.Literal["when_not_debug"] = "when_not_debug",
     **kwargs: typing.Any,
 ) -> str:
-    """静的ファイルのURLを生成する。
-
-    Args:
-        filename: 静的ファイルの名前
-        cache_busting: キャッシュバスティングを有効にするかどうか (デフォルト: True)
-        cache_timestamp: キャッシュバスティングするときのファイルの最終更新日時をプロセス単位でキャッシュするか否か。
-            - True: プロセス単位でキャッシュする。プロセスの再起動やSIGHUPなどをしない限り更新されない。
-            - False: キャッシュしない。常に最新を参照する。
-            - "when_not_debug": デバッグモードでないときのみキャッシュする。
-        **kwargs: その他の引数 (quart.url_forに渡される)
-
-    Returns:
-        静的ファイルのURL
-    """
     return pytilpack.web.resolve_static_url(
         quart.current_app.static_folder,
         filename,
@@ -237,27 +174,16 @@ def static_url_for(
     )
 
 
-# RouteInfoはpytilpack.webに集約。既存呼び出しのためquart名前空間にも公開する。
 RouteInfo = pytilpack.web.RouteInfo
 
 
 def get_routes(app: quart.Quart) -> list[RouteInfo]:
-    """ルーティング情報を取得する。
-
-    Returns:
-        ルーティング情報のリスト。
-    """
     return pytilpack.web.build_routes(app.url_map.iter_rules(), app.config.get("APPLICATION_ROOT"))
 
 
+# port=0でアドレスごとにOSへ割り当てを任せるとIPv4とIPv6で別のポートになり、localhostへの接続が待ち受けていない側へ向かう。
+# Windowsでは拒否の応答まで約2秒かかりタイムアウトするため、最初のアドレスで決まったポートを残りのアドレスでも使う。
 def _bind_listen_sockets(host: str, port: int) -> list[socket.socket]:
-    """hostが解決される全アドレスで、同じポート番号を待ち受けるソケットを作る。
-
-    port=0でアドレスごとにOSへ割り当てを任せると、IPv4とIPv6で別のポートになる。
-    呼び出し元が``http://localhost:<port>``で接続すると、名前解決の順によっては待ち受けていないポートへ接続する。
-    Windowsでは拒否の応答まで約2秒かかるため、起動待ちや呼び出し元の要求がタイムアウトする。
-    そのため最初のアドレスで決まったポートを残りのアドレスでも使い、他のアドレスでそのポートが使用中なら割り当てからやり直す。
-    """
     infos = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM, flags=socket.AI_PASSIVE)
     addresses = list(dict.fromkeys((family, sockaddr[0]) for family, _, _, _, sockaddr in infos))
     for _ in range(10):
@@ -277,7 +203,6 @@ def _bind_listen_sockets(host: str, port: int) -> list[socket.socket]:
         except OSError:
             for sock in sockets:
                 sock.close()
-            # 指定ポートの使用中と、最初のアドレスでの失敗はやり直しても解消しない
             if port != 0 or len(sockets) <= 1:
                 raise
             continue
@@ -287,11 +212,6 @@ def _bind_listen_sockets(host: str, port: int) -> list[socket.socket]:
 
 @contextlib.asynccontextmanager
 async def run(app: quart.Quart, host: str = "localhost", port: int = 5000):
-    """Quartアプリを実行し、実際のポート番号を返す。
-
-    port=0ではOSが空きポートを割り当てる。起動待ちは最大10秒。
-    """
-    # ダミーエンドポイントが存在しない場合は追加
     if not any(rule.endpoint == "_pytilpack_quart_dummy" for rule in app.url_map.iter_rules()):
 
         @app.route("/_pytilpack_quart_dummy")
@@ -305,11 +225,9 @@ async def run(app: quart.Quart, host: str = "localhost", port: int = 5000):
             "Quartサーバーの起動に失敗しました。原因は連鎖した例外を参照し、host・portの指定（使用中のポートなど）を見直す"
         ) from e
 
-    # Uvicornサーバーの設定（host・portはログ表示にだけ使われ、待ち受けには上で作ったソケットを使う）
     config = uvicorn.Config(app=app, host=host, port=port, timeout_graceful_shutdown=1)
     server = uvicorn.Server(config)
 
-    # 別スレッドでサーバーを起動
     failures: list[BaseException] = []
 
     def run_server():
@@ -322,7 +240,6 @@ async def run(app: quart.Quart, host: str = "localhost", port: int = 5000):
     thread.start()
 
     try:
-        # サーバーが起動するまで待機
         async with httpx.AsyncClient() as client:
             deadline = time.monotonic() + 10.0
             while True:
@@ -345,20 +262,17 @@ async def run(app: quart.Quart, host: str = "localhost", port: int = 5000):
                     response.raise_for_status()
                     break
                 except httpx.HTTPError:
-                    await asyncio.sleep(0.1)  # 少し待機
+                    await asyncio.sleep(0.1)
 
-        # 制御を戻す
         yield actual_port
 
     finally:
-        # サーバーを停止
         server.should_exit = True
         await asyncio.to_thread(thread.join, 5.0)
         if thread.is_alive():
             server.force_exit = True
             await asyncio.to_thread(thread.join, 2.0)
         if not thread.is_alive():
-            # uvicornへ渡す前に起動が失敗した場合はソケットが残るため閉じる（閉じ済みのソケットには何もしない）
             for sock in listen_sockets:
                 sock.close()
         if thread.is_alive():

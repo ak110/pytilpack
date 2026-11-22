@@ -1,5 +1,3 @@
-"""pytilpackメインCLIエントリーポイント。"""
-
 __lazy_modules__ = ["argparse", "importlib", "logging", "sys", "types"]
 
 import argparse
@@ -10,9 +8,6 @@ import types
 
 logger = logging.getLogger(__name__)
 
-# サブコマンドのレジストリ。
-# (サブコマンド名, モジュールパス, extras 名)
-# extras 名が None のものはベース依存のみで動作する。
 _SUBCOMMANDS: list[tuple[str, str, str | None]] = [
     ("babel", "pytilpack.cli.babel", "babel"),
     ("delete-empty-dirs", "pytilpack.cli.delete_empty_dirs", None),
@@ -25,12 +20,8 @@ _SUBCOMMANDS: list[tuple[str, str, str | None]] = [
 
 
 def main(sys_args: list[str] | None = None) -> None:
-    """メインのエントリーポイント。"""
     argv = sys.argv[1:] if sys_args is None else list(sys_args)
 
-    # サブコマンドを遅延登録する。
-    # import できないサブコマンドは「スタブ」として登録し、
-    # 実行時に明確なエラーメッセージへ誘導する。
     loaded: dict[str, types.ModuleType] = {}
     unavailable: dict[str, tuple[str | None, ImportError]] = {}
 
@@ -42,9 +33,6 @@ def main(sys_args: list[str] | None = None) -> None:
     for name, module_path, extras in _SUBCOMMANDS:
         _register(subparsers, name, module_path, extras, loaded, unavailable)
 
-    # argparse に渡す前に先頭の非オプション引数を確認する。
-    # 利用不能なサブコマンドが指定された場合、argparse の --help や
-    # unrecognized arguments 処理よりも前に統一エラーへ誘導する。
     for token in argv:
         if token.startswith("-"):
             continue
@@ -63,15 +51,12 @@ def main(sys_args: list[str] | None = None) -> None:
         )
         sys.exit(1)
 
-    # ログの基本設定
     logging.basicConfig(
         level=logging.DEBUG if getattr(args, "verbose", False) else logging.INFO,
         format="[%(levelname)-5s] %(message)s",
     )
 
-    # 各サブコマンドの実行
     if args.command in unavailable:
-        # 先読みで捕捉できなかった場合の保険ルート。
         _die_unavailable(args.command, *unavailable[args.command])
     loaded[args.command].run(args)
 
@@ -84,12 +69,6 @@ def _register(
     loaded: dict[str, types.ModuleType],
     unavailable: dict[str, tuple[str | None, ImportError]],
 ) -> None:
-    """サブコマンドを登録する。
-
-    モジュールの import に失敗した場合でも、外部パッケージ由来の失敗であれば
-    スタブサブパーサとして登録し、本物のバグは再送出する。
-    判別可能な外部パッケージ起因の import 失敗が CLI 全体の起動を妨げないようにする。
-    """
     try:
         module = importlib.import_module(module_path)
     except ImportError as raised:
@@ -106,23 +85,16 @@ def _register(
                 else "(利用不可: 依存パッケージの読み込みに失敗)"
             ),
         )
-        # argparse にパースエラーを発生させないため、残りの引数を全て吸収する。
-        # 実際の dispatch は main() 冒頭の先読みルートが担うが、万一そちらを
-        # すり抜けたケースでも `args.command == name` で unavailable ルートへ遷移する。
         stub.add_argument("_rest", nargs=argparse.REMAINDER, help=argparse.SUPPRESS)
         return
     module.add_parser(subparsers)
     loaded[name] = module
 
 
+# SQLAlchemy 2.1のasyncioモジュールのように、
+# ModuleNotFoundErrorをnameの無いImportErrorへ包み直して送出するパッケージがあるため、
+# __cause__をたどってnameを持つImportErrorを探す。
 def _resolve_import_error(exc: ImportError) -> ImportError:
-    """`name` を持たない `ImportError` の原因をたどり、判別材料を持つ例外を返す。
-
-    SQLAlchemy 2.1 の asyncio モジュールのように、`ModuleNotFoundError` を
-    `name` の無い `ImportError` へ包み直して送出するパッケージがあるため、
-    `__cause__` が `name` を持つ `ImportError` であればそちらを返す。
-    見つからない場合は元の例外を返す。
-    """
     current: BaseException | None = exc
     while isinstance(current, ImportError):
         if current.name is not None:
@@ -132,27 +104,18 @@ def _resolve_import_error(exc: ImportError) -> ImportError:
 
 
 def _is_external_import_failure(exc: ImportError, module_path: str) -> bool:
-    """`ImportError` が pytilpack 外のパッケージに由来するものか判定する。
-
-    `pytilpack.cli.xxx` 自体が見つからない等の本物のバグは False を返し、
-    呼び出し元で再送出させる。判別材料となる `name` を持たない場合も
-    握り潰しを避けるため False を返す。
-    """
     name = exc.name
     if name is None:
         return False
-    # 自パッケージ配下のモジュールが見つからないケースはバグ扱い。
     root = module_path.split(".", 1)[0]
     return name != root and not name.startswith(f"{root}.")
 
 
 def _is_missing_optional_dep(extras: str | None, exc: ImportError) -> bool:
-    """extras対象の依存パッケージが見つからない失敗か判定する。"""
     return extras is not None and isinstance(exc, ModuleNotFoundError)
 
 
 def _die_unavailable(command: str, extras: str | None, exc: ImportError) -> None:
-    """サブコマンドが利用できない理由を表示して終了する。"""
     if _is_missing_optional_dep(extras, exc):
         print(
             f"pytilpack {command}: extras [{extras}] が必要です。\n"

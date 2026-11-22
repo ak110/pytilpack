@@ -1,3 +1,0 @@
-# pytilpack.healthcheck
-
-::: pytilpack.healthcheck

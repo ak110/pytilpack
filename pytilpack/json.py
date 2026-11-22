@@ -1,5 +1,3 @@
-"""JSON関連。"""
-
 __lazy_modules__ = ["base64", "datetime", "json", "pytilpack.io", "pytilpack.jsonc", "typing"]
 
 import base64
@@ -18,7 +16,6 @@ def load(
     strict: bool = False,
     **kwargs,
 ) -> typing.Any:
-    """JSONファイルの読み込み。"""
     try:
         return loads(pytilpack.io.read_text(source, encoding=encoding, errors=errors), **kwargs)
     except FileNotFoundError:
@@ -28,22 +25,12 @@ def load(
 
 
 loads = json.loads
-"""JSONの文字列解析。標準ライブラリのエイリアス。"""
 
 
 def converter(
     o: typing.Any,
     _default: typing.Callable[[typing.Any], typing.Any] | None = None,
 ) -> typing.Any:
-    """JSONエンコード時の変換処理。
-
-    日付はJavaScriptで対応できるようにISO8601形式に変換する。
-    YYYY-MM-DDTHH:mm:ss.sssZ
-    <https://tc39.es/ecma262/#sec-date-time-string-format>
-
-    bytesはBASE64エンコードする。
-
-    """
     if isinstance(o, dt.datetime):
         return o.isoformat(timespec="milliseconds")
     if isinstance(o, dt.date):
@@ -66,11 +53,6 @@ def save(
     encoding: str = "utf-8",
     **kwargs,
 ) -> None:
-    """JSONのファイル保存。
-
-    標準ライブラリと異なりデフォルトでensure_ascii=False、UTF-8で保存する。
-
-    """
     pytilpack.io.write_text(
         dest,
         dumps(
@@ -95,12 +77,6 @@ def dumps(
     default: typing.Callable[[typing.Any], typing.Any] = converter,
     **kwargs,
 ) -> str:
-    """JSONの文字列化。
-
-    標準ライブラリと異なりデフォルトでensure_ascii=False。
-    日付やbytesを変換するconverter関数をdefault引数に指定する。
-
-    """
     return (
         json.dumps(
             data,
@@ -122,14 +98,6 @@ def edit(
     default: typing.Callable[[typing.Any], typing.Any] | None = None,
     **dumps_kwargs: typing.Any,
 ) -> str:
-    """JSON文字列中の指定パスの値を書き換えつつ空行・インデントを維持する。
-
-    実装は`pytilpack.jsonc.edit`を再利用する。JSONはJSONCの部分集合であり、
-    コメント・trailing commaを含まない入力に対しても同じ位置追跡ロジックで安全に動作する。
-
-    詳細は`pytilpack.jsonc.edit`のdocstringを参照。
-
-    """
     return pytilpack.jsonc.edit(text, updates, ensure_ascii=ensure_ascii, default=default, **dumps_kwargs)
 
 
@@ -142,7 +110,6 @@ def edit_file(
     default: typing.Callable[[typing.Any], typing.Any] | None = None,
     **dumps_kwargs: typing.Any,
 ) -> None:
-    """JSONファイルを`edit`で書き換えて上書き保存する。"""
     pytilpack.jsonc.edit_file(
         path,
         updates,

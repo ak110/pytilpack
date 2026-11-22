@@ -1,3 +1,0 @@
-# pytilpack.typing
-
-::: pytilpack.typing

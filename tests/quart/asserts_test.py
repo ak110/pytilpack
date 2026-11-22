@@ -1,5 +1,3 @@
-"""Quartアサーションのテスト。"""
-
 import pathlib
 import typing
 
@@ -81,7 +79,6 @@ async def _client(
 
 @pytest.mark.asyncio
 async def test_assert_bytes(client: quart.typing.TestClientProtocol) -> None:
-    """bytesアサーションのテスト。"""
     response = await client.get("/html")
     _ = await pytilpack.quart.assert_bytes(response)
     _ = await pytilpack.quart.assert_bytes(response, content_type="text/html")
@@ -96,7 +93,6 @@ async def test_assert_bytes(client: quart.typing.TestClientProtocol) -> None:
 
 @pytest.mark.asyncio
 async def test_assert_html(client: quart.typing.TestClientProtocol, tmp_path: pathlib.Path) -> None:
-    """HTMLアサーションのテスト。"""
     response = await client.get("/html")
     _ = await pytilpack.quart.assert_html(response)
     _ = await pytilpack.quart.assert_html(response, content_type="text/html")
@@ -118,7 +114,6 @@ async def test_assert_html(client: quart.typing.TestClientProtocol, tmp_path: pa
 async def test_assert_html_current_syntax(
     client: quart.typing.TestClientProtocol, fragment: str, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """現行HTMLの正例をレスポンスbytesから検査してボディを返す。"""
     html = f"<!doctype html><meta charset='utf-8'><title>t</title>\n{fragment}"
     response = await client.post("/html-case", data=html.encode())
     for strict in (True, False):
@@ -131,14 +126,12 @@ async def test_assert_html_current_syntax(
 async def test_assert_html_diagnostics_retained(
     client: quart.typing.TestClientProtocol, fragment: str, expected: tuple[str, ...], caplog: pytest.LogCaptureFixture
 ) -> None:
-    """レスポンスbytesの構文診断を通知し、警告時もボディを返す。"""
     html = f"<!doctype html><meta charset='utf-8'><title>t</title>\n{fragment}"
     response = await client.post("/html-case", data=html.encode())
     with pytest.raises(AssertionError) as exc_info:
         await pytilpack.quart.assert_html(response, strict=True)
     caplog.clear()
     assert await pytilpack.quart.assert_html(response, strict=False) == html
-    # AssertBlockが短縮した見出しに加え、例外チェーンに残る構文診断を確認する。
     assert exc_info.value.__cause__ is not None
     for diagnostic in expected:
         assert diagnostic in str(exc_info.value.__cause__).lower()
@@ -147,7 +140,6 @@ async def test_assert_html_diagnostics_retained(
 
 @pytest.mark.asyncio
 async def test_assert_json(client: quart.typing.TestClientProtocol) -> None:
-    """JSONアサーションのテスト。"""
     response = await client.get("/json")
     _ = await pytilpack.quart.assert_json(response)
 
@@ -162,7 +154,6 @@ async def test_assert_json(client: quart.typing.TestClientProtocol) -> None:
 
 @pytest.mark.asyncio
 async def test_assert_xml(client: quart.typing.TestClientProtocol) -> None:
-    """XMLアサーションのテスト。"""
     response = await client.get("/xml")
     _ = await pytilpack.quart.assert_xml(response)
     _ = await pytilpack.quart.assert_xml(response, content_type="text/xml")
@@ -178,7 +169,6 @@ async def test_assert_xml(client: quart.typing.TestClientProtocol) -> None:
 
 @pytest.mark.asyncio
 async def test_assert_sse(client: quart.typing.TestClientProtocol) -> None:
-    """SSEアサーションのテスト。"""
     response = await client.get("/sse")
     _ = await pytilpack.quart.assert_sse(response)
 
@@ -193,7 +183,6 @@ async def test_assert_sse(client: quart.typing.TestClientProtocol) -> None:
 
 @pytest.mark.asyncio
 async def test_assert_response(client: quart.typing.TestClientProtocol) -> None:
-    """レスポンスアサーションのテスト。"""
     response = await client.get("/html")
     _ = await pytilpack.quart.assert_response(response)
 

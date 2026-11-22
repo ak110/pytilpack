@@ -1,5 +1,3 @@
-"""リバースプロキシ対応。"""
-
 __lazy_modules__ = ["flask", "logging", "pytilpack.web", "typing", "werkzeug.middleware.proxy_fix"]
 
 import logging
@@ -16,37 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 class ProxyFix(werkzeug.middleware.proxy_fix.ProxyFix):
-    """リバースプロキシ対応。
-
-    nginx.conf設定例::
-
-        proxy_set_header X-Forwarded-For $remote_addr;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-Port $server_port;
-        proxy_set_header X-Forwarded-Prefix $http_x_forwarded_prefix;
-
-    設計意図:
-        prefixはpin方式で管理する。初回有効リクエスト時に一度だけ``app.config``へ反映し、
-        以降は変更しない。これにより攻撃者制御の``X-Forwarded-Prefix``値で
-        Cookie発行パス等のアプリ全体設定が書き換わる経路を断つ。
-
-        運用時にprefixが既知であれば、``static_prefix``引数で起動時に確定させることを推奨する。
-        ``static_prefix``を指定した場合、初期化時に``app.config``を確定する。
-        ただし``environ["SCRIPT_NAME"]``はリクエストごとに``X-Forwarded-Prefix``ヘッダーの値から
-        設定するため、ヘッダーが来ないリクエストでは``environ["SCRIPT_NAME"]``は更新されない。
-
-        ``x_host > 0``でX-Forwarded-Hostを有効化する場合は、``trusted_hosts``引数で
-        許可ホストリストを指定することを推奨する。指定がない場合は値検証（制御文字・
-        ``//``始まり等の排除）のみ行い追加警告は出力しない。
-
-        ``x_prefix``と``x_host``はpytilpack側で完全管理し、親クラスへは``x_prefix=0``・
-        ``x_host=0``を渡す。これにより検証で除外した値が親クラス側で再反映される経路を断つ。
-
-        旧挙動（リクエストごとに``app.config``を上書き）を期待していた利用者は、
-        ``static_prefix``指定方式、またはpin後の挙動（初回リクエストでpinされる）へ移行すること。
-
-    """
-
     def __init__(
         self,
         flaskapp: flask.Flask,
@@ -58,7 +25,6 @@ class ProxyFix(werkzeug.middleware.proxy_fix.ProxyFix):
         static_prefix: str | None = None,
         trusted_hosts: typing.Iterable[str] | None = None,
     ):
-        # x_prefix・x_hostは自前処理するため親クラスへは無効化して渡す
         super().__init__(
             flaskapp.wsgi_app,
             x_for=x_for,
@@ -76,24 +42,16 @@ class ProxyFix(werkzeug.middleware.proxy_fix.ProxyFix):
         self._pin.initialize(static_prefix)
 
     def _apply_prefix_to_config(self, prefix: str) -> None:
-        """prefixをapp.configへ反映する。"""
         self.flaskapp.config["APPLICATION_ROOT"] = prefix
         self.flaskapp.config["SESSION_COOKIE_PATH"] = prefix
         self.flaskapp.config["REMEMBER_COOKIE_PATH"] = prefix
 
     def _get_header_value(self, environ: dict, header_key: str, trusted_hops: int) -> str | None:
-        """WSGIのenvironからカンマ区切りヘッダーの信頼ホップ位置の値を取得する。
-
-        quoted-string対応のカンマ分割にwerkzeug.http.parse_list_headerを使い、
-        werkzeug標準の_get_real_valueと同等の処理を行う。
-        _get_real_valueは内部APIであるため、自前で実装してバージョン互換性を確保する。
-        """
         value = environ.get(header_key)
         return pytilpack.web.get_trusted_header_value([value] if value else [], trusted_hops)
 
     @typing.override
     def __call__(self, environ, start_response):
-        # X-Forwarded-Host処理（自前）
         if self._x_host != 0:
             x_host = self._get_header_value(environ, "HTTP_X_FORWARDED_HOST", self._x_host)
             if x_host:
@@ -113,7 +71,6 @@ class ProxyFix(werkzeug.middleware.proxy_fix.ProxyFix):
                 else:
                     environ["HTTP_HOST"] = validated_host
 
-        # X-Forwarded-Prefix処理（自前）
         if self._x_prefix != 0:
             x_prefix = self._get_header_value(environ, "HTTP_X_FORWARDED_PREFIX", self._x_prefix)
             if x_prefix:

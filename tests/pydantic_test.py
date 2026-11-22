@@ -1,5 +1,3 @@
-"""テストコード。"""
-
 import pydantic
 import pydantic_core
 
@@ -7,8 +5,6 @@ import pytilpack.pydantic
 
 
 class _TestModel(pydantic.BaseModel):
-    """テスト用のPydanticモデル。"""
-
     name: str
     age: int
 
@@ -27,7 +23,6 @@ class _TestModel(pydantic.BaseModel):
 
 
 def test_format_error():
-    """Pydanticのバリデーションエラーの整形テスト。"""
     try:
         _TestModel.model_validate({"name": "bob", "age": "twenty"})
     except pydantic.ValidationError as e:
@@ -37,13 +32,11 @@ def test_format_error():
             == "_TestModel\n"
             + "  age: Input should be a valid integer, unable to parse string as an integer (type=int_parsing, input=twenty)"
         )
-    # _validate_before
     try:
         _TestModel.model_validate({"before_error": True})
     except pydantic.ValidationError as e:
         formatted_error = pytilpack.pydantic.format_error(e)
         assert formatted_error == "_TestModel\n  before_error！ (type=value_error)"
-    # _validate_after
     try:
         _TestModel.model_validate({"name": "after_error", "age": 30})
     except pydantic.ValidationError as e:
@@ -52,7 +45,6 @@ def test_format_error():
 
 
 def test_format_exc():
-    """Pydanticのバリデーションエラーの整形テスト。"""
     try:
         _TestModel.model_validate({"age": "twenty"})
     except pydantic.ValidationError:

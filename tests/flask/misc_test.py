@@ -1,5 +1,3 @@
-"""Flask miscのテスト。"""
-
 import pathlib
 import socket
 import threading
@@ -15,32 +13,27 @@ import pytilpack.flask.misc
 
 
 def test_static_url_for(tmp_path: pathlib.Path) -> None:
-    """static_url_forのテスト。"""
     static_dir = tmp_path / "static"
     static_dir.mkdir()
     test_file = static_dir / "test.css"
     test_file.write_text("body { color: red; }")
-    static_dir_str = str(static_dir)  # Flask requires str for static_folder
+    static_dir_str = str(static_dir)
 
     app = flask.Flask(__name__, static_folder=static_dir_str)
     with app.test_request_context():
-        # キャッシュバスティングあり
         url = pytilpack.flask.static_url_for("test.css")
         assert url.startswith("/static/test.css?v=")
         mtime = int(test_file.stat().st_mtime)
         assert f"v={mtime}" in url
 
-        # キャッシュバスティングなし
         url = pytilpack.flask.static_url_for("test.css", cache_busting=False)
         assert url == "/static/test.css"
 
-        # 存在しないファイル
         url = pytilpack.flask.static_url_for("notexist.css")
         assert url == "/static/notexist.css"
 
 
 def test_run() -> None:
-    """runのテスト。"""
     app = flask.Flask(__name__)
 
     @app.route("/hello")
@@ -60,7 +53,6 @@ def test_run() -> None:
 
 
 def test_run_bind_failure() -> None:
-    """使用中のポートを指定すると起動へ進まず有限時間で失敗する。"""
     app = flask.Flask(__name__)
     with socket.socket() as occupied:
         occupied.bind(("127.0.0.1", 0))
@@ -71,7 +63,6 @@ def test_run_bind_failure() -> None:
 
 
 def test_run_thread_start_failure(monkeypatch: pytest.MonkeyPatch) -> None:
-    """スレッド起動失敗でも、作成済みソケットとアプリ文脈を回収する。"""
     servers: list[werkzeug.serving.BaseWSGIServer] = []
     original_make_server = werkzeug.serving.make_server
 
@@ -96,7 +87,6 @@ def test_run_thread_start_failure(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_run_startup_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
-    """起動待ち上限に達するとサーバーとアプリコンテキストを回収する。"""
     ticks = iter((0.0, 11.0))
     monkeypatch.setattr(pytilpack.flask.misc, "time", types.SimpleNamespace(monotonic=lambda: next(ticks)))
     with pytest.raises(TimeoutError, match="10秒"), pytilpack.flask.run(flask.Flask(__name__), host="127.0.0.1", port=0):
@@ -105,9 +95,7 @@ def test_run_startup_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_get_routes() -> None:
-    """get_routesのテスト。"""
     # arid: disable
-    # Flask/Quartの並行実装を同一ルート定義で検証する定型アサーションのため許容する。
     app = flask.Flask(__name__)
 
     @app.route("/")
@@ -133,33 +121,26 @@ def test_get_routes() -> None:
     with app.test_request_context():
         routes = pytilpack.flask.misc.get_routes(app)
 
-        # 引数の多い順にソートされることを確認
         assert len(routes[0].arg_names) >= len(routes[-1].arg_names)
 
-        # 各ルートの内容を確認
         route_dict = {r.endpoint: r for r in routes}
 
-        # "/" ルート
         index_route = route_dict["index"]
         assert index_route.url_parts == ["/"]
         assert index_route.arg_names == []
 
-        # "/users" ルート
         users_route = route_dict["users_list"]
         assert users_route.url_parts == ["/users"]
         assert users_route.arg_names == []
 
-        # "/users/<int:user_id>" ルート
         user_detail_route = route_dict["user_detail"]
         assert user_detail_route.url_parts == ["/users/", ""]
         assert user_detail_route.arg_names == ["user_id"]
 
-        # "/users/<int:user_id>/posts/<post_id>" ルート
         user_post_route = route_dict["user_post"]
         assert user_post_route.url_parts == ["/users/", "/posts/", ""]
         assert user_post_route.arg_names == ["user_id", "post_id"]
 
-        # "/api/v1/items/<item_id>" ルート
         api_item_route = route_dict["api_item"]
         assert api_item_route.url_parts == ["/api/v1/items/", ""]
         assert api_item_route.arg_names == ["item_id"]
@@ -167,7 +148,6 @@ def test_get_routes() -> None:
 
 
 def test_get_routes_application_root() -> None:
-    """APPLICATION_ROOTが設定されている場合のget_routesのテスト。"""
     app = flask.Flask(__name__)
     app.config["APPLICATION_ROOT"] = "/myapp"
 
@@ -185,7 +165,6 @@ def test_get_routes_application_root() -> None:
 
 
 def test_prefer_markdown() -> None:
-    """prefer_markdownのテスト。"""
     app = flask.Flask(__name__)
 
     with app.test_request_context(

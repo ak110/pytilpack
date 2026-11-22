@@ -1,5 +1,3 @@
-"""配布環境のCLIヘルプをレジストリから検証する。"""
-
 import subprocess
 import sys
 
@@ -7,7 +5,6 @@ from pytilpack.cli.main import _SUBCOMMANDS
 
 
 def main() -> int:
-    """導入したextraに応じて成功と未導入案内を確認する。"""
     extra = sys.argv[1]
     root = subprocess.run(
         [sys.executable, "-I", "-m", "pytilpack.cli.main", "--help"],

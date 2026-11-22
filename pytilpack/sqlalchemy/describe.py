@@ -1,5 +1,3 @@
-"""SQLAlchemy用のユーティリティ集。"""
-
 __lazy_modules__ = [
     "logging",
     "pytilpack.python",
@@ -29,7 +27,6 @@ def describe(
     Base: type[sqlalchemy.orm.DeclarativeBase],
     tablefmt: "str | tabulate.TableFormat" = "grid",
 ) -> str:
-    """DBのテーブル構造を文字列化する。"""
     return "\n".join(
         [describe_table(table, get_class_by_table(Base, table), tablefmt=tablefmt) for table in Base.metadata.tables.values()]
     )
@@ -38,7 +35,6 @@ def describe(
 def get_class_by_table(
     base: type[sqlalchemy.orm.DeclarativeBase], table: sqlalchemy.sql.schema.Table
 ) -> type[sqlalchemy.orm.DeclarativeBase]:
-    """テーブルからクラスを取得する。"""
     for mapper in base.registry.mappers:
         if mapper.local_table is table:
             return typing.cast(type[sqlalchemy.orm.DeclarativeBase], mapper.class_)
@@ -53,7 +49,6 @@ def describe_table(
     orm_class: type[sqlalchemy.orm.DeclarativeBase],
     tablefmt: "str | tabulate.TableFormat" = "grid",
 ) -> str:
-    """テーブル構造を文字列化する。"""
     try:
         class_field_comments = pytilpack.python.class_field_comments(orm_class)
     except Exception as e:
@@ -90,9 +85,6 @@ def describe_table(
         else:
             default = str(default_value)
 
-        # コメントは以下の優先順位で拾う。
-        # doc(DBに反映されないもの) > comment(DBに反映されるもの)
-        #  > class_field_comments(ソースコード上のコメント)
         comment: str = ""
         if column.doc:
             comment = column.doc

@@ -1,5 +1,3 @@
-"""Server-Sent Eventsメッセージ生成ユーティリティ。"""
-
 __lazy_modules__ = ["asyncio", "contextlib", "dataclasses", "functools", "logging", "re", "typing"]
 
 import asyncio
@@ -15,46 +13,6 @@ logger = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class SSE:
-    r"""Server-Sent Eventsメッセージ。
-
-    改行を含む`data`は自動的に複数の`data:`行へ分割する。
-    `comment`に文字列を指定するとSSE仕様上のコメント行（`:`始まり）として出力する。
-    `data`と`comment`は併用でき、いずれか一方は必ず指定する。
-
-    仕様: <https://triple-underscore.github.io/HTML-server-sent-events-ja.html>
-
-    Quartでの使用例::
-
-        ```python
-        import quart
-        import pytilpack.sse
-
-        app = quart.Quart(__name__)
-
-        @app.route("/events")
-        async def events():
-            @pytilpack.sse.generator()
-            async def generate():
-                # 複数行のデータも自動的に処理
-                yield str(pytilpack.sse.SSE(
-                    data="line 1\\nline 2\\nline 3",
-                    event="update"
-                ))
-                await asyncio.sleep(1)
-                # コメント単独の送信（任意のキープアライブ用途等）
-                yield str(pytilpack.sse.SSE(comment="keep-alive"))
-
-            return quart.Response(
-                generate(),
-                content_type="text/event-stream",
-                headers={
-                    "Cache-Control": "no-cache",
-                    "Connection": "keep-alive",
-                }
-            )
-        ```
-    """
-
     data: str | None = None
     event: str | None = None
     id: str | None = None
@@ -62,21 +20,13 @@ class SSE:
     comment: str | None = None
 
     def __post_init__(self) -> None:
-        """dataとcommentがともに未指定でないことを検証する。"""
         if self.data is None and self.comment is None:
             raise ValueError("`data`と`comment`のいずれかを指定してください。")
 
     def __str__(self) -> str:
-        """`to_str()`の結果を返す。"""
         return self.to_str()
 
     def to_str(self) -> str:
-        """SSE形式の文字列への変換。
-
-        Returns:
-            SSE形式の文字列。各フィールドはコロンで区切られ、最後に空行が付加される。
-            data・commentフィールドに改行が含まれる場合は複数の行に分割される。
-        """
         lines = []
 
         if self.event is not None:
@@ -98,30 +48,11 @@ class SSE:
 
 
 def generator(interval: float = 15) -> typing.Callable:
-    """SSEジェネレーターのデコレーター。
-
-    15秒以上メッセージが送信されない場合、コメント行を送信してコネクションを維持する。
-
-    Args:
-        interval: キープアライブを送信する間隔（秒）。デフォルトは15秒
-
-    Returns:
-        キープアライブが追加されたSSEメッセージストリームを生成するデコレーター
-    """
 
     def decorator[**P, T: str | SSE](
         func: typing.Callable[P, typing.AsyncGenerator[T, None]],
     ) -> typing.Callable[P, typing.AsyncGenerator[str, None]]:
-        """デコレーター本体。
 
-        Args:
-            func: SSEメッセージを生成する非同期ジェネレーター関数。
-
-        Returns:
-            キープアライブが追加されたSSEメッセージストリームを生成する非同期ジェネレーター関数。
-        """
-
-        # Awaitable -> Coroutine 用ユーティリティ
         async def _anext(it: typing.AsyncIterator[T]) -> T:
             return await anext(it)
 
@@ -137,27 +68,22 @@ def generator(interval: float = 15) -> typing.Callable:
                     next_task = loop.create_task(_anext(iterator))
 
                     while True:
-                        # 次メッセージ取得タスク完了 or タイムアウト待ち
                         delay = interval - (loop.time() - last_msg_time)
                         try:
                             msg = await asyncio.wait_for(
                                 asyncio.shield(next_task),
                                 timeout=max(0.0, delay),
                             )
-                            # メッセージ到着
                             if isinstance(msg, SSE):
                                 yield str(msg)
                             else:
-                                # strの場合は念のため末尾の改行を保証
                                 yield msg.rstrip("\n") + "\n\n"
                             last_msg_time = loop.time()
                             next_task = loop.create_task(_anext(iterator))
                         except TimeoutError:
-                            # タイムアウト → キープアライブ送信
                             yield ": ping\n\n"
                             last_msg_time = loop.time()
                         except StopAsyncIteration:
-                            # ループ正常終了
                             break
                 except GeneratorExit:
                     logger.info("SSE切断[1]")
@@ -171,7 +97,6 @@ def generator(interval: float = 15) -> typing.Callable:
                         with contextlib.suppress(StopAsyncIteration):
                             await asyncio.shield(next_task)
             finally:
-                # ジェネレーターをクリーンアップ
                 await asyncio.shield(generator_.aclose())
 
         return wrapper

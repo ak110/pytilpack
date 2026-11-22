@@ -1,5 +1,3 @@
-"""テストコード。"""
-
 import dataclasses
 import pathlib
 import typing
@@ -11,35 +9,26 @@ import pytilpack.dataclasses
 
 @dataclasses.dataclass
 class A:
-    """テスト用。"""
-
     a: int
     b: str
 
 
 @dataclasses.dataclass
 class Nested:
-    """テスト用。"""
-
     a: A
 
 
 @dataclasses.dataclass
 class ForwardRef:
-    """前方参照テスト用。フィールドにdataclassを文字列型注釈で参照する。"""
-
     child: "A"
 
 
-# NewType for testing
 StrType = typing.NewType("StrType", str)
 IntType = typing.NewType("IntType", int)
 
 
 @dataclasses.dataclass
 class User:
-    """テスト用。"""
-
     id: int
     name: str
     tags: list[str] | None = None
@@ -48,18 +37,11 @@ class User:
 
 @dataclasses.dataclass
 class UserWithNewType:
-    """NewType用テスト。"""
-
     id: IntType
     name: StrType
 
 
 def test_fromdict_forward_ref() -> None:
-    """前方参照（文字列型注釈）のフィールドをfromdictで正しく処理できることを確認する。
-
-    f.typeが文字列の場合にdataclasses.is_dataclass()が常にFalseを返すバグが
-    typing.get_type_hints()の使用によって解消されていることを検証する。
-    """
     data = {"child": {"a": 1, "b": "hello"}}
     result = pytilpack.dataclasses.fromdict(ForwardRef, data)
     assert isinstance(result.child, A)
@@ -80,12 +62,9 @@ def test_json(tmp_path: pathlib.Path) -> None:
 
 
 def test_validate() -> None:
-    """validateのテスト。"""
-    # 正常なケース
     user = User(id=1, name="Taro", tags=["dev", "ai"], home=pathlib.Path.home())
-    pytilpack.dataclasses.validate(user)  # 例外は発生しない
+    pytilpack.dataclasses.validate(user)
 
-    # 型不一致のケース
     user_bad = User(id="oops", name="Taro")  # type: ignore[arg-type]
     with pytest.raises(
         TypeError,
@@ -93,22 +72,17 @@ def test_validate() -> None:
     ):
         pytilpack.dataclasses.validate(user_bad)
 
-    # dataclassでないケースのテスト
     with pytest.raises(TypeError, match="is not a dataclass instance"):
         pytilpack.dataclasses.validate("not a dataclass")  # type: ignore[arg-type]
 
 
 def test_validate_newtype() -> None:
-    """NewTypeに対するvalidateのテスト。"""
-    # 正常なケース - NewTypeは基底型と同じ値で通る
     user = UserWithNewType(id=IntType(1), name=StrType("Taro"))
-    pytilpack.dataclasses.validate(user)  # 例外は発生しない
+    pytilpack.dataclasses.validate(user)
 
-    # 基底型の値でも通る（NewTypeは実行時には基底型と同じ）
     user2 = UserWithNewType(id=1, name="Taro")  # type: ignore[arg-type]
-    pytilpack.dataclasses.validate(user2)  # 例外は発生しない
+    pytilpack.dataclasses.validate(user2)
 
-    # 型不一致のケース
     user_bad = UserWithNewType(id="oops", name="Taro")  # type: ignore[arg-type]
     with pytest.raises(TypeError, match=r"位置 id: 型.*int.*str"):
         pytilpack.dataclasses.validate(user_bad)

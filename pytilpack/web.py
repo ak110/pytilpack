@@ -1,5 +1,3 @@
-"""Web関連のユーティリティ集。"""
-
 __lazy_modules__ = [
     "html5lib",
     "html5lib._tokenizer",
@@ -30,18 +28,11 @@ import pytilpack.http
 
 logger = logging.getLogger(__name__)
 
-# RFC3986のpchar相当（query/fragmentを含まない）の許可文字集合
-# 英数字 / - _ . ~ / : @ ! $ & ' ( ) * + , ; = %
 _FORWARDED_PREFIX_ALLOWED = re.compile(r"^[a-zA-Z0-9\-_.~/:%@!$&'()*+,;=]*$")
-# 制御文字（CR/LF/NUL等）の検出用
 _CONTROL_CHAR = re.compile(r"[\x00-\x1f\x7f]")
 
 
 def get_trusted_header_value(values: typing.Iterable[str], trusted_hops: int) -> str | None:
-    """複数行のカンマ区切りヘッダーから信頼ホップの値を取得する。
-
-    quoted-string内のカンマとエスケープはWerkzeugのHTTPパーサーで扱う。
-    """
     if trusted_hops == 0:
         return None
     parsed = [item for value in values for item in werkzeug.http.parse_list_header(value)]
@@ -49,27 +40,6 @@ def get_trusted_header_value(values: typing.Iterable[str], trusted_hops: int) ->
 
 
 def validate_forwarded_prefix(value: str) -> str | None:
-    """X-Forwarded-Prefixヘッダー値を検証し、正規化したprefixを返す。
-
-    受け入れ時は末尾の``/``を除去した値を返す（先頭の``/``は保持する）。
-    ``/``単独の場合もNoneを返す（prefix無し相当のため）。
-
-    不正条件:
-        - 空文字列
-        - 先頭が``/``でない
-        - ``//``で始まる（プロトコル相対形式）
-        - CR/LF/NUL等の制御文字を含む
-        - 許可文字集合外の文字を含む（RFC3986のpchar相当。query/fragmentは含めない）
-
-    許可文字集合: 英数字 / ``-`` ``_`` ``.`` ``~`` ``/`` ``:`` ``@`` ``!`` ``$``
-    ``&`` ``'`` ``(`` ``)`` ``*`` ``+`` ``,`` ``;`` ``=`` ``%``
-
-    Args:
-        value: 検証対象の文字列
-
-    Returns:
-        正規化したprefix（末尾``/``除去済み）、不正値または``/``単独の場合はNone
-    """
     if not value:
         return None
     if not value.startswith("/"):
@@ -82,28 +52,12 @@ def validate_forwarded_prefix(value: str) -> str | None:
         return None
     normalized = value.rstrip("/")
     if not normalized:
-        # "/" 単独だった場合
         return None
     return normalized
 
 
 class PrefixPinner:
-    """X-Forwarded-Prefixのpin管理。
-
-    初回有効値のみ``apply``コールバックへ反映し、以降は固定する。
-    攻撃者制御のヘッダー値でCookie発行パス等のアプリ全体設定が
-    リクエストごとに書き換わる経路を断つための共通ロジックであり、
-    Flask/QuartのProxyFix実装間で共有する。
-    """
-
     def __init__(self, apply: typing.Callable[[str], None], warn: typing.Callable[[str], None]) -> None:
-        """初期化する。
-
-        Args:
-            apply: pin確定時にprefixを反映するコールバック。
-            warn: pin済み値と異なる値を受信した際の警告出力コールバック。
-
-        """
         self._apply = apply
         self._warn = warn
         self._lock = threading.Lock()
@@ -111,15 +65,6 @@ class PrefixPinner:
         self._prefix_pinned = False
 
     def initialize(self, static_prefix: str | None) -> None:
-        """``static_prefix``指定時に初期pinする。
-
-        Args:
-            static_prefix: 起動時に確定させるprefix。Noneの場合は何もしない。
-
-        Raises:
-            ValueError: static_prefixが不正な場合。
-
-        """
         if static_prefix is None:
             return
         validated = validate_forwarded_prefix(static_prefix)
@@ -133,7 +78,6 @@ class PrefixPinner:
         self._prefix_pinned = True
 
     def pin(self, prefix: str) -> None:
-        """リクエストごとのprefixを初回のみ反映し、以降は不一致を警告する。"""
         if not self._prefix_pinned:
             with self._lock:
                 if not self._prefix_pinned:
@@ -149,23 +93,6 @@ class PrefixPinner:
 
 
 def validate_forwarded_host(value: str) -> str | None:
-    """X-Forwarded-Hostヘッダー値を検証する。
-
-    受け入れ時はそのまま返す。
-
-    不正条件:
-        - 空文字列
-        - ``//``で始まる
-        - CR/LF/NUL等の制御文字を含む
-        - 空白を含む
-        - ``[``で始まるがその値に``]``が含まれない（不完全なIPv6形式）
-
-    Args:
-        value: 検証対象の文字列
-
-    Returns:
-        valueそのまま、不正値の場合はNone
-    """
     if not value:
         return None
     if value.startswith("//"):
@@ -174,26 +101,12 @@ def validate_forwarded_host(value: str) -> str | None:
         return None
     if any(c.isspace() for c in value):
         return None
-    # [で始まる場合は]を含まない不完全なIPv6形式を拒否する
     if value.startswith("[") and "]" not in value:
         return None
     return value
 
 
 def is_host_in_trusted(host_value: str, trusted_hosts: typing.Iterable[str]) -> bool:
-    """ホスト値（ポート含む可能性あり）を許可リストと照合する。
-
-    ホスト値からホスト名部分のみを抽出して許可リストと突き合わせる。
-    ポート番号は無視する。IPv6アドレス（``[::1]:8080``形式）にも対応する。
-
-    Args:
-        host_value: 検証対象のホスト値。``host:port``または``[ipv6]:port``形式を含む
-        trusted_hosts: 許可するホスト名のイテラブル
-
-    Returns:
-        ホスト名が許可リストに含まれる場合True
-    """
-    # IPv6アドレスの解析: [::1]:8080 → ::1
     if host_value.startswith("["):
         bracket_end = host_value.find("]")
         host = host_value[1:bracket_end] if bracket_end != -1 else host_value
@@ -206,54 +119,21 @@ def is_host_in_trusted(host_value: str, trusted_hosts: typing.Iterable[str]) -> 
 
 
 class RouteInfo(typing.NamedTuple):
-    """ルーティング情報を保持するクラス。
-
-    Flask/Quartなど、`<name>` / `<type:name>` 形式のURLルールを扱うフレームワーク向け。
-
-    Attributes:
-        endpoint: エンドポイント名
-        url_parts: URLのパーツのリスト
-        arg_names: URLパーツの引数名のリスト
-    """
-
     endpoint: str
     url_parts: list[str]
     arg_names: list[str]
 
 
-_ARG_REGEX = re.compile(r"<([^>]+)>")  # <name> <type:name> にマッチするための正規表現
-_SPLIT_REGEX = re.compile(r"<[^>]+>")  # re.splitのためグループ無しにした版
+_ARG_REGEX = re.compile(r"<([^>]+)>")
+_SPLIT_REGEX = re.compile(r"<[^>]+>")
 
 
 def build_next_url(script_root: str, path: str, query_string: str) -> str:
-    """ログイン後遷移用のnextパラメーター用のURLを組み立てる。
-
-    Flask/Quartの`request`情報を引数で受け取り、フレームワーク非依存で処理する。
-
-    Args:
-        script_root: リクエストのscript_root
-        path: リクエストパス
-        query_string: クエリ文字列（デコード済み）
-
-    Returns:
-        nextパラメーター用のURL
-    """
     base = script_root + path
     return f"{base}?{query_string}" if query_string else base
 
 
 def is_prefer_markdown(accept_header: str) -> bool:
-    """AcceptヘッダーでmarkdownがHTMLより優先されているかを返す。
-
-    参考: <https://vercel.com/blog/making-agent-friendly-pages-with-content-negotiation>
-
-    Args:
-        accept_header: Acceptヘッダーの値
-
-    Returns:
-        markdownがHTMLより優先されている場合True、そうでなければFalse
-    """
-    # text/htmlを先頭にすることで、同一quality時はHTMLを優先する（従来と同じ挙動）
     result = pytilpack.http.select_accept(accept_header, ["text/html", "text/markdown", "text/plain"])
     return result in ("text/markdown", "text/plain")
 
@@ -262,15 +142,6 @@ def build_routes(
     rules: typing.Iterable[typing.Any],
     application_root: str | None,
 ) -> list[RouteInfo]:
-    """url_map.iter_rules()相当のイテラブルからRouteInfoのリストを構築する。
-
-    Args:
-        rules: 各要素が`endpoint`と`rule`属性を持つルーティングオブジェクト。
-        application_root: アプリケーションルートパス。Noneや"/"の場合は無視する。
-
-    Returns:
-        `arg_names`の長さ降順でソートされたRouteInfoのリスト。
-    """
     output: list[RouteInfo] = []
     for r in rules:
         endpoint = str(r.endpoint)
@@ -291,58 +162,26 @@ def resolve_static_url(
     timestamp_cache: dict[str, int],
     **kwargs: typing.Any,
 ) -> str:
-    """静的ファイルのURLを生成する共通処理。
-
-    Flask/Quartから共通で呼び出す。url_for呼び出しはフレームワークごとに異なるため
-    callable経由で受け取る。キャッシュはフレームワーク側で保持する辞書を受け取る。
-
-    Args:
-        static_folder: 静的ファイルのディレクトリ
-        filename: 静的ファイルのファイル名
-        debug: デバッグモードかどうか
-        cache_busting: キャッシュバスティングを有効にするかどうか
-        cache_timestamp: ファイル最終更新日時のキャッシュ可否
-        url_for_static: `url_for("static", filename=..., **kwargs)`相当の関数
-        timestamp_cache: プロセス単位のタイムスタンプキャッシュ辞書
-        **kwargs: url_for_staticに渡す追加引数
-
-    Returns:
-        静的ファイルのURL
-    """
     if not cache_busting:
         return url_for_static(filename=filename, **kwargs)
 
     assert static_folder is not None, "static_folder is None"
     filepath = pathlib.Path(static_folder) / filename
     try:
-        # ファイルの最終更新日時のキャッシュを利用するか否か
         if cache_timestamp is True or (cache_timestamp == "when_not_debug" and not debug):
-            # キャッシュを使う
             timestamp = timestamp_cache.get(str(filepath))
             if timestamp is None:
                 timestamp = int(filepath.stat().st_mtime)
                 timestamp_cache[str(filepath)] = timestamp
         else:
-            # キャッシュを使わない
             timestamp = int(filepath.stat().st_mtime)
 
         return url_for_static(filename=filename, v=timestamp, **kwargs)
     except OSError:
-        # ファイルが存在しない場合などは通常のURLを返す
         return url_for_static(filename=filename, **kwargs)
 
 
 def get_safe_url(target: str | None, host_url: str, default_url: str) -> str:
-    """ログイン時のリダイレクトとして安全なURLを返す。
-
-    Args:
-        target: リダイレクト先のURL
-        host_url: ホストのURL
-        default_url: デフォルトのURL
-
-    Returns:
-        安全なURL
-    """
     if target is None or target == "":
         return default_url
     ref_url = urllib.parse.urlparse(host_url)
@@ -354,44 +193,21 @@ def get_safe_url(target: str | None, host_url: str, default_url: str) -> str:
 
 
 def check_status_code(status_code: int, valid_status_code: int) -> None:
-    """ステータスコードのチェック。"""
     if status_code != valid_status_code:
         raise AssertionError(f"ステータスコードエラー: {status_code} != {valid_status_code}")
 
 
 def check_content_type(content_type: str, valid_content_types: str | typing.Iterable[str] | None) -> None:
-    """Content-Typeのチェック。"""
     if valid_content_types is None:
         return None
     if isinstance(valid_content_types, str):
         valid_content_types = [valid_content_types]
-    # ; charset=utf-8などが付いている場合があるため、簡易的にstartswithでチェックする
     if not any(content_type.startswith(c) for c in valid_content_types):
         raise AssertionError(f"Content-Typeエラー: {content_type} != {valid_content_types}")
     return None
 
 
 def check_html(input_stream: typing.Any, strict: bool = False) -> None:
-    """HTMLの字句・木構築時の構文エラーを診断する。
-
-    html5libの診断に現行のselect解析規則と文字参照の開始判定を補って報告する。
-    文字参照の開始判定は、``&``の次がASCII英数字・``#``以外（``&_``・``&>``など）の場合に
-    文字参照を開始しないとする現行仕様のCharacter reference stateに合わせ、
-    html5lib 1.1がこの場合にも出す名前付き参照の欠落エラーを報告しない。
-    文字参照として扱われる未知の名前・数字の無い数値参照・セミコロン不足の診断は報告する。
-    仕様: https://html.spec.whatwg.org/multipage/parsing.html#character-reference-state
-    内容モデルや属性値など、HTML仕様への適合全体の検証は行わない。
-    ただし``template``要素の範囲（最も外側の開始タグから対応する終了タグまで）にあるエラーは報告しない。
-    html5lib 1.1は``template``要素の構文規則を持たず、``select``や表の中の``template``、
-    行や列を内容に持つ``template``など、正しいHTMLに対してもエラーを記録するためである。
-    このため``template``の内容にある本物の構文誤りも報告されない。
-    対応する終了タグのない``template``は除外しない。
-
-    Args:
-        input_stream: 検査するHTML（``str``・``bytes``・ファイル風オブジェクト）。
-        strict: Trueの場合はエラー時に``AssertionError``を送出し、Falseの場合は警告ログを出力して処理を継続する。
-
-    """
     parser = _HTMLDiagnosticParser()
     _ = parser.parse(input_stream)
     if len(parser.errors) == 0:
@@ -399,6 +215,7 @@ def check_html(input_stream: typing.Any, strict: bool = False) -> None:
     errors = [
         f"{position}: {html5lib.constants.E[errorcode] % datavars}"
         for position, errorcode, datavars in parser.errors
+        # html5lib 1.1はtemplate要素の構文規則を持たず正しいHTMLにもエラーを記録するため、templateの範囲を除外する。
         if not any(start <= position <= end for start, end in parser.template_ranges)
     ]
     if len(errors) > 0:
@@ -409,26 +226,17 @@ def check_html(input_stream: typing.Any, strict: bool = False) -> None:
             logger.warning(f"HTMLエラー: 処理を継続しました。報告位置のHTMLを修正してください。{error}")
 
 
+# html5lib 1.1のconsumeEntityは、&の次がASCII英数字・#以外でもexpected-named-entityを積む。
+# 現行仕様のCharacter reference stateはこの場合に文字参照を開始しないため、そのエラーだけを除く。
+# https://html.spec.whatwg.org/multipage/parsing.html#character-reference-state
 class _DiagnosticTokenizer(html5lib._tokenizer.HTMLTokenizer):  # pylint: disable=protected-access
-    """文字参照の開始判定を現行仕様へ合わせる診断用トークナイザー。
-
-    html5lib 1.1の``consumeEntity``は、``&``の次がASCII英数字・``#``以外の文字でも名前付き参照の分岐へ進み、
-    該当する名前が無いと``expected-named-entity``を積む。
-    現行仕様のCharacter reference stateはこの場合に文字参照を開始せず、``&``を通常の文字として扱う。
-    そこで消費開始時の先頭文字が開始条件を満たさない場合に限り、その消費で積まれた同エラーだけを除く。
-    判定を文字参照の消費時点に置くため、属性値・本文・RCDATAなど``consumeEntity``を使う全文脈へ同じ規則が働く。
-    仕様: https://html.spec.whatwg.org/multipage/parsing.html#character-reference-state
-    """
-
     def consumeEntity(self, allowedChar: str | None = None, fromAttribute: bool = False) -> None:
-        """文字参照を消費し、文字参照を開始しない``&``への``expected-named-entity``を除く。"""
         first = self.stream.char()
         self.stream.unget(first)
         queued = len(self.tokenQueue)
         super().consumeEntity(allowedChar, fromAttribute)
         if first == "#" or first in html5lib.constants.asciiLetters or first in html5lib.constants.digits:
             return
-        # この呼び出しで追加されたトークンだけを対象にし、既に積まれていたトークンと順序は変えない。
         added = [self.tokenQueue.pop() for _ in range(len(self.tokenQueue) - queued)][::-1]
         parse_error = html5lib.constants.tokenTypes["ParseError"]
         self.tokenQueue.extend(
@@ -437,8 +245,7 @@ class _DiagnosticTokenizer(html5lib._tokenizer.HTMLTokenizer):  # pylint: disabl
 
 
 class _HTMLDiagnosticParser(html5lib.HTMLParser):
-    """html5lib 1.1のphase・tree・tokenizer位置を共有する診断用パーサー。"""
-
+    # html5lib 1.1の_parseと同じ手順。トークナイザーの型を差し替える公開手段が無いため写している。
     def _parse(
         self,
         stream: typing.Any,
@@ -447,12 +254,6 @@ class _HTMLDiagnosticParser(html5lib.HTMLParser):
         scripting: bool = False,
         **kwargs: typing.Any,
     ) -> None:
-        """html5lib 1.1の``_parse``と同じ手順で、トークナイザーだけを診断用に差し替える。
-
-        html5lib 1.1は``_parse``の中でトークナイザーの型を固定し、型を差し替える公開手段を持たない。
-        文字コード変更による再解析（``_ReparseException``）は同じトークナイザーを使うため、開始判定も維持される。
-        """
-        # html5lib 1.1の``_parse``が設定する属性を同じ位置で設定し、元の初期化順序を保つ。
         # pylint: disable=attribute-defined-outside-init,protected-access
         self.innerHTMLMode = innerHTML
         self.container = container
@@ -470,25 +271,16 @@ class _HTMLDiagnosticParser(html5lib.HTMLParser):
         self.template_starts: list[tuple[int, int]] = []
         super().__init__()
         self.phases["inBody"] = _InBodyPhase(self, self.phases["inBody"])
-        # resetInsertionModeも現行のin body解析へ戻す。
         self.phases["inSelect"] = self.phases["inBody"]
         self.phases["inSelectInTable"] = self.phases["inBody"]
 
     def reset(self) -> None:
-        """文字コード変更による再解析でも診断と境界を同時に初期化する。"""
         self.template_ranges.clear()
         self.template_starts.clear()
         super().reset()
 
 
 class _InBodyPhase:
-    """現行select規則を補い、HTMLとして処理されたtemplateの位置を記録する。
-
-    html5lib 1.1のmainLoopによる名前空間・挿入モードの選択と再処理に従う。
-    phaseの内部メソッド、treeのスコープと暗黙終了、tokenizer.streamへ依存する。
-    仕様: https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inbody
-    """
-
     def __init__(self, parser: _HTMLDiagnosticParser, phase: typing.Any) -> None:
         self.parser = parser
         self.phase = phase
@@ -498,7 +290,6 @@ class _InBodyPhase:
         return getattr(self.phase, name)
 
     def processStartTag(self, token: dict[str, typing.Any]) -> typing.Any:
-        """HTMLの開始タグへselectのスコープと暗黙終了を適用する。"""
         name = token["name"]
         in_select = self.tree.elementInScope("select")
         if name == "template":
@@ -522,7 +313,6 @@ class _InBodyPhase:
         return self.phase.processStartTag(token)
 
     def processEndTag(self, token: dict[str, typing.Any]) -> typing.Any:
-        """HTMLの終了タグへselectスコープとtemplate境界を適用する。"""
         name = token["name"]
         if name == "template" and self.parser.template_starts:
             start = self.parser.template_starts.pop()

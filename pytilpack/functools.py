@@ -1,5 +1,3 @@
-"""デコレーターとリトライのユーティリティ集。"""
-
 __lazy_modules__ = [
     "asyncio",
     "dataclasses",
@@ -27,25 +25,15 @@ from pytilpack import _retry
 
 
 class _Unset:
-    """未指定を表すクラス。"""
-
     def __repr__(self) -> str:
         return "UNSET"
 
 
 UNSET = _Unset()
-"""未指定を表す値。"""
 
 
 @dataclasses.dataclass
 class Retry:
-    """retry デコレーターの設定をオーバーライドするためのデータクラス。
-
-    pytilpack.functools.retry デコレーターが適用された関数に対して、
-    キーワード引数 `retry` にこのクラスのインスタンスを渡すことで、
-    デコレーターの設定を関数呼び出し時にオーバーライドできる。
-    """
-
     max_retries: int | _Unset = UNSET
     initial_delay: float | _Unset = UNSET
     exponential_base: float | _Unset = UNSET
@@ -60,8 +48,6 @@ class Retry:
 
 @dataclasses.dataclass
 class _RetryConfig:
-    """retryデコレーター内部で使う実効設定。"""
-
     max_retries: int
     initial_delay: float
     exponential_base: float
@@ -77,8 +63,6 @@ class _RetryConfig:
 
 @dataclasses.dataclass
 class _RetryState:
-    """同期・非同期リトライの判定と待機状態。"""
-
     cfg: _RetryConfig
     backoff: _retry.Backoff
     attempt: int = 0
@@ -86,7 +70,6 @@ class _RetryState:
     retry_after: float | None = None
 
     def next_wait(self, exc: Exception, logger: logging.Logger, name: str) -> float:
-        """元の判定順で次の待機時間を返し、打切り時は元例外を送出する。"""
         cfg = self.cfg
         if isinstance(exc, tuple(cfg.excludes)):
             raise exc
@@ -108,7 +91,6 @@ class _RetryState:
         return self.backoff.wait(self.retry_after)
 
     def slept(self) -> None:
-        """待機完了後だけ累積時間か指数バックオフを進める。"""
         if self.retry_after is None:
             self.backoff.advance()
         else:
@@ -128,7 +110,6 @@ def _apply_retry_override(
     retry_status_codes: typing.Iterable[int] | None,
     should_retry: typing.Callable[[Exception], bool] | None,
 ) -> _RetryConfig:
-    """retry_overrideを反映した実効設定を返す。sync/async両wrapperで共用する。"""
     if retry_override is not None and isinstance(retry_override, Retry):
         if not isinstance(retry_override.max_retries, _Unset):
             max_retries = retry_override.max_retries
@@ -154,9 +135,8 @@ def _apply_retry_override(
         includes = (Exception,)
     if excludes is None:
         excludes = ()
-    # 最大待機時間の目安（オーバーライド適用後の設定で計算）
     total_delay = sum(min(initial_delay * (exponential_base**i), max_delay) for i in range(max_retries))
-    total_delay = max(total_delay, 0.001)  # 念のため0秒は避ける
+    total_delay = max(total_delay, 0.001)
     return _RetryConfig(
         max_retries=max_retries,
         initial_delay=initial_delay,
@@ -184,44 +164,6 @@ def retry[**P, R](
     retry_status_codes: typing.Iterable[int] | None = (408, 429, 500, 502, 503, 504, 529),
     should_retry: typing.Callable[[Exception], bool] | None = None,
 ) -> typing.Callable[[typing.Callable[P, R]], typing.Callable[P, R]]:
-    """リトライを行うデコレーター。
-
-    - max_retriesが1の場合、待ち時間は1秒程度で2回呼ばれる。
-    - max_retriesが2の場合、待ち時間は3秒程度で3回呼ばれる。
-    - max_retriesが3の場合、待ち時間は7秒程度で4回呼ばれる。
-    - 計算方法: sum(min(1.0 * (2.0 ** i), 30.0) for i in range(max_retries)) + ランダムなジッター
-
-    requests/httpxのHTTPError例外にRetry-Afterヘッダーが含まれている場合、
-    そちらを優先して待機時間を決定する。
-
-    Args:
-        max_retries: 最大リトライ回数
-        initial_delay: 初回リトライ時の待機時間
-        exponential_base: 待機時間の増加率
-        max_delay: 最大待機時間
-        max_jitter: 待機時間のランダムな増加率
-        includes: リトライする例外のリスト
-        excludes: リトライしない例外のリスト
-        loglevel: ログレベル
-        retry_status_codes: 発生した例外がHTTPエラーの場合にリトライするHTTPステータスコードのリスト。
-            これにないエラーならリトライしない。
-            Noneの場合、HTTPエラーでもステータスコードを判定しない。
-        should_retry: リトライするか否かを判定するcallable。
-            引数に例外を受け取り、リトライする場合はTrue、しない場合はFalseを返す。
-            Noneの場合、includes/excludesによる判定が使用される。
-            includesやexcludesより細かい制御をしたいとき用。
-
-    Returns:
-        リトライを行うデコレーター
-
-    Examples:
-        非同期関数でのリトライ::
-
-            @pytilpack.functools.retry(max_retries=3, initial_delay=1.0)
-            async def call_external_api():
-                ...
-
-    """
 
     def decorator(func: typing.Callable[P, R]) -> typing.Callable[P, R]:
         logger = logging.getLogger(func.__module__)
@@ -282,7 +224,6 @@ def aretry[**P, R](
     excludes: typing.Iterable[type[Exception]] | None = None,
     loglevel: int = logging.INFO,
 ) -> typing.Callable[[typing.Callable[P, typing.Awaitable[R]]], typing.Callable[P, typing.Awaitable[R]]]:
-    """非同期処理でリトライを行うデコレーター。"""
     if includes is None:
         includes = (Exception,)
     if excludes is None:
@@ -303,11 +244,6 @@ def aretry[**P, R](
 def warn_if_slow[**P, R](
     threshold_seconds: float = 0.001,
 ) -> typing.Callable[[typing.Callable[P, R]], typing.Callable[P, R]]:
-    """処理に一定以上の時間がかかっていたら警告ログを出力するデコレーター。
-
-    Args:
-        threshold_seconds: 警告ログを記録するまでの秒数。既定値は1ミリ秒。
-    """
 
     def decorator(func: typing.Callable[P, R]) -> typing.Callable[P, R]:
         logger = logging.getLogger(func.__module__)
