@@ -166,8 +166,9 @@ def test_worker_restart_waits_for_cleanup() -> None:
         thread.start()
         assert cleaning.wait(timeout=2)
         assert not stopped.is_set()
-        with pytest.raises(RuntimeError, match="worker is stopping"):
+        with pytest.raises(RuntimeError) as exc_info:
             worker.start()
+        assert str(exc_info.value) == "ワーカーは停止処理中です。stop() の完了を待ってから start() を再試行してください。"
         _assert_worker_rejects_submit(worker)
     finally:
         finish.set()

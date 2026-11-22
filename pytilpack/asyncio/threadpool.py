@@ -148,7 +148,7 @@ class WorkerThread:
         with self._lock:
             state = self._state
             if isinstance(state, _Stopping):
-                raise RuntimeError("worker is stopping")
+                raise RuntimeError("ワーカーは停止処理中です。stop() の完了を待ってから start() を再試行してください。")
             if isinstance(state, _Running):
                 return
             if state is None:
