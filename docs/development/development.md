@@ -31,6 +31,14 @@ AGENTS.mdが指定する`writing-standards`・`review-standards`と該当するr
 | `make update` | 依存更新 |
 | `make docs` | ドキュメントのローカルプレビュー（`http://127.0.0.1:8000/`） |
 
+pytestはpyfltrの変更影響選択（`pytest-impact-selection`）を有効にしている。
+対象を指定しない全件のpytest（`make test`や`pyfltr run --commands=pytest`）が成功すると、testscopeの実行履歴を`.testscope/`へ記録する。
+以後の`pyfltr run --changed-since=HEAD`では、履歴が示す影響先と従来の静的な選定の和を実行する。
+`pyfltr run <path>`は指定したパスの範囲の中だけで選び、履歴が示しても範囲外のテストは足さない。
+パスを指定する時は、利用側のテストも自分で列挙して渡す。
+履歴が無い場合と共有設定・`conftest.py`を変えた場合は、従来の選定か全件へ戻る。
+CIは各pushの全件を実行し、選択は手元の検証だけに使う。
+
 ## サプライチェーン攻撃対策
 
 ロックファイル尊重・公開待機・ピン留め運用の3点を基本方針とする。

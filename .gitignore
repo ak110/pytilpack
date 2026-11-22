@@ -178,3 +178,6 @@ cython_debug/
 # Claude Code (個人設定とランタイム生成ファイル)
 .claude/settings.local.json
 .claude/.format-dirty
+
+# pyfltrのpytest変更影響選択（testscope）の実行履歴
+.testscope/
