@@ -80,7 +80,8 @@ async def test_mcp_http_fetch_url(page_url: str) -> None:
                 while line_bytes := await process.stderr.readline():
                     line = line_bytes.decode("utf-8", errors="replace")
                     startup.append(line)
-                    if match := re.search(r"Uvicorn running on http://127\.0\.0\.1:([1-9][0-9]*)", line):
+                    plain = re.sub(r"\x1b\[[0-9;]*m", "", line)
+                    if match := re.search(r"Uvicorn running on http://127\.0\.0\.1:([1-9][0-9]*)", plain):
                         port = int(match[1])
                         break
                 else:
