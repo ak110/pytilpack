@@ -16,13 +16,13 @@ sync:
 # --config明示指定はprekのworkspace再帰探索（サブディレクトリの.pre-commit-config.yamlも
 # 実行対象へ含める仕様）を無効化するため（prek 0.4.11で確認）。
 setup: sync
-	uvx prek --config=.pre-commit-config.yaml install
+	mise exec -- prek --config=.pre-commit-config.yaml install
 	git config --local commit.template .gitmessage
 
 # 依存パッケージ・prekのhook・GitHub Actionsのピンを更新する（lintとテストはCIで判定する）
 update:
 	env --unset=UV_FROZEN uv sync --upgrade --all-groups --all-extras
-	uvx prek --config=.pre-commit-config.yaml autoupdate
+	mise exec -- prek --config=.pre-commit-config.yaml autoupdate
 	$(MAKE) update-actions
 
 # GitHub Actionsのアクションをハッシュピンで最新化（mise未導入時はスキップ）

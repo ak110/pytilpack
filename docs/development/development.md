@@ -16,9 +16,10 @@ AGENTS.mdが指定する`writing-standards`・`review-standards`と該当するr
 ## 開発環境の構築手順
 
 1. 本リポジトリをcloneする
-2. セットアップを実行する
+2. miseを導入してから、以下を実行する
 
     ```bash
+    mise install
     make setup
     ```
 
