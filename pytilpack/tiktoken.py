@@ -15,7 +15,6 @@ __lazy_modules__ = [
 import base64
 import io
 import logging
-import math
 import re
 import typing
 
@@ -106,15 +105,17 @@ def _calculate_image_token_cost(image: str, detail: str) -> int:
 
 
 def _calculate_high_detail_image_token_cost(width: int, height: int) -> int:
-    if max(width, height) > 2048:
-        ratio = 2048 / max(width, height)
-        width = int(width * ratio)
-        height = int(height * ratio)
-    if min(width, height) > 768:
-        ratio = 768 / min(width, height)
-        width = int(width * ratio)
-        height = int(height * ratio)
-    num_squares = math.ceil(width / 512) * math.ceil(height / 512)
+    short, long = sorted((width, height))
+    scale = max(2048, long)
+    short_numerator = short * 2048
+    if short_numerator > 768 * scale:
+        short_tiles = 2
+        long_tiles = (long * 768 // short + 511) // 512
+    else:
+        tile_denominator = 512 * scale
+        short_tiles = (short_numerator + tile_denominator - 1) // tile_denominator
+        long_tiles = (long * 2048 + tile_denominator - 1) // tile_denominator
+    num_squares = short_tiles * long_tiles
     return num_squares * 170 + 85
 
 

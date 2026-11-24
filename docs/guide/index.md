@@ -115,7 +115,10 @@ APIの詳細は[ソースコード](https://github.com/ak110/pytilpack/tree/mast
 - `pytilpack.base64`
 - `pytilpack.i18n`: 国際化(i18n)関連（ベース依存で利用可能）。Babelを使う翻訳カタログ管理は`pytilpack.babel`を使う
 - `pytilpack.markdown`
-- `pytilpack.tiktoken`
+- `pytilpack.tiktoken`: 高精細画像の入力トークン数をタイル数から見積もる。
+  [OpenAIの画像入力ガイド](https://developers.openai.com/api/docs/guides/images-vision#tile-based-image-tokenization)（2026-11-24参照）を基に、
+  縦横比を保って2048px四方に収め、短辺が768pxを超える場合は768pxに縮めて長辺の端数を切り捨てる。
+  この見積りでは最初の縮小で端数を残し、最終寸法を覆う512px四方のタイルを数える
 
 ### 非同期・並行処理
 

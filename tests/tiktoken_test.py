@@ -1,5 +1,8 @@
 import base64
+import fractions
 import io
+import itertools
+import math
 import sys
 import typing
 import warnings
@@ -192,7 +195,17 @@ def _image_tokens(url: str, detail: typing.Literal["low", "high", "auto"]) -> in
 
 @pytest.mark.parametrize(
     "width,height,tiles",
-    [(512, 512, 1), (513, 512, 2), (768, 1000, 4), (1024, 1024, 4), (4096, 2048, 6), (1600, 1600, 4), (4096, 512, 4)],
+    [
+        (512, 512, 1),
+        (513, 512, 2),
+        (768, 1000, 4),
+        (1024, 1024, 4),
+        (4096, 2048, 6),
+        (1600, 1600, 4),
+        (4096, 512, 4),
+        (1, 2052, 4),
+        (514, 2052, 8),
+    ],
 )
 def test_calculate_high_detail_image_token_cost(width: int, height: int, tiles: int) -> None:
     buffer = io.BytesIO()
@@ -200,6 +213,23 @@ def test_calculate_high_detail_image_token_cost(width: int, height: int, tiles: 
         image.save(buffer, format="PNG")
     url = f"data:image/png;base64,{base64.b64encode(buffer.getvalue()).decode('ascii')}"
     assert _image_tokens(url, "high") - _image_tokens(url, "low") == 170 * tiles
+
+
+def test_high_detail_image_token_cost_at_resize_boundaries() -> None:
+    dimensions = (range(1, 5), range(511, 515), range(767, 771), range(2047, 2053), range(4095, 4101))
+    boundary_cases = itertools.product(tuple(itertools.chain.from_iterable(dimensions)), repeat=2)
+    narrow_cases = ((1, long) for long in range(1, 4001))
+    tall_cases = ((long, 1) for long in range(2, 4001))
+    for width, height in itertools.chain(boundary_cases, narrow_cases, tall_cases):
+        scale = min(fractions.Fraction(1), fractions.Fraction(2048, max(width, height)))
+        short, long = sorted((width * scale, height * scale))
+        if short > 768:
+            long = fractions.Fraction(math.floor(long * 768 / short))
+            short = fractions.Fraction(768)
+        tiles = math.ceil(short / 512) * math.ceil(long / 512)
+        expected = 85 + 170 * tiles
+        actual = pytilpack.tiktoken._calculate_high_detail_image_token_cost(width, height)  # pylint: disable=protected-access
+        assert actual == expected
 
 
 def test_calculate_image_token_cost_without_dims(monkeypatch: pytest.MonkeyPatch) -> None:
