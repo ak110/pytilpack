@@ -335,3 +335,131 @@ def test_delete_old_files_file_symlink(tmp_path: pathlib.Path) -> None:
 
     assert not link.is_symlink()
     assert target.read_text(encoding="utf-8") == "protected"
+
+
+def _symlink_or_skip(link: pathlib.Path, target: pathlib.Path, target_is_directory: bool = False) -> None:
+    try:
+        link.symlink_to(target, target_is_directory=target_is_directory)
+    except OSError as e:
+        pytest.skip(f"シンボリックリンクを作成できない環境のため: {e}")
+
+
+def test_sync_replaces_file_link_without_writing_target(tmp_path: pathlib.Path) -> None:
+    src = tmp_path / "src"
+    dst = tmp_path / "dst"
+    outside = tmp_path / "outside.txt"
+    src.mkdir()
+    dst.mkdir()
+    (src / "a").write_text("new")
+    outside.write_text("old")
+    os.utime(outside, ns=(1, 1))
+    _symlink_or_skip(dst / "a", outside)
+
+    pytilpack.pathlib.sync(src, dst)
+
+    assert outside.read_text() == "old"
+    assert not (dst / "a").is_symlink()
+    assert (dst / "a").read_text() == "new"
+
+
+@pytest.mark.parametrize("delete", [False, True])
+def test_sync_replaces_dir_link_without_touching_target(tmp_path: pathlib.Path, delete: bool) -> None:
+    src = tmp_path / "src"
+    dst = tmp_path / "dst"
+    outside = tmp_path / "outside"
+    (src / "a").mkdir(parents=True)
+    (src / "a" / "x").write_text("x")
+    outside.mkdir()
+    (outside / "keep").write_text("keep")
+    dst.mkdir()
+    _symlink_or_skip(dst / "a", outside, target_is_directory=True)
+
+    pytilpack.pathlib.sync(src, dst, delete=delete)
+
+    assert sorted(p.name for p in outside.iterdir()) == ["keep"]
+    assert not (dst / "a").is_symlink()
+    assert (dst / "a" / "x").read_text() == "x"
+
+
+def test_sync_delete_removes_only_dir_link(tmp_path: pathlib.Path) -> None:
+    src = tmp_path / "src"
+    dst = tmp_path / "dst"
+    outside = tmp_path / "outside"
+    src.mkdir()
+    dst.mkdir()
+    outside.mkdir()
+    (outside / "keep").write_text("keep")
+    _symlink_or_skip(dst / "extra", outside, target_is_directory=True)
+
+    pytilpack.pathlib.sync(src, dst, delete=True)
+
+    assert not (dst / "extra").exists()
+    assert not (dst / "extra").is_symlink()
+    assert (outside / "keep").read_text() == "keep"
+
+
+def test_sync_rejects_dst_inside_src(tmp_path: pathlib.Path) -> None:
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "f").write_text("f")
+
+    with pytest.raises(ValueError, match="コピー先がコピー元の内側"):
+        pytilpack.pathlib.sync(src, src / "dst")
+
+    assert sorted(p.name for p in src.iterdir()) == ["f"]
+
+
+@pytest.mark.parametrize("delete", [False, True])
+def test_sync_rejects_src_inside_dst(tmp_path: pathlib.Path, delete: bool) -> None:
+    dst = tmp_path / "dst"
+    src = dst / "src"
+    src.mkdir(parents=True)
+    (src / "src").write_text("child")
+
+    with pytest.raises(ValueError, match="コピー元がコピー先の内側"):
+        pytilpack.pathlib.sync(src, dst, delete=delete)
+
+    assert (src / "src").read_text() == "child"
+    assert sorted(p.name for p in dst.iterdir()) == ["src"]
+
+
+@pytest.mark.skipif(sys.platform == "win32" or os.geteuid() == 0, reason="POSIXの権限で削除を失敗させるため")
+def test_rmtree_does_not_chmod_link_target(tmp_path: pathlib.Path) -> None:
+    outside = tmp_path / "outside.txt"
+    outside.write_text("outside")
+    outside.chmod(0o644)
+    locked = tmp_path / "root" / "locked"
+    locked.mkdir(parents=True)
+    (locked / "link").symlink_to(outside)
+    locked.chmod(0o555)
+    try:
+        result = pytilpack.pathlib.rmtree(tmp_path / "root", ignore_errors=True)
+    finally:
+        locked.chmod(0o755)
+
+    assert result.errors > 0
+    assert outside.stat().st_mode & 0o777 == 0o644
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="ジャンクションはWindowsだけで作れるため")
+@pytest.mark.parametrize("delete", [False, True])
+def test_sync_replaces_junction_without_touching_target(tmp_path: pathlib.Path, delete: bool) -> None:
+    import _winapi  # pylint: disable=import-outside-toplevel,import-error
+
+    src = tmp_path / "src"
+    dst = tmp_path / "dst"
+    outside = tmp_path / "outside"
+    (src / "a").mkdir(parents=True)
+    (src / "a" / "x").write_text("x")
+    outside.mkdir()
+    (outside / "keep").write_text("keep")
+    (dst / "real").mkdir(parents=True)
+    _winapi.CreateJunction(str(outside), str(dst / "a"))  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue]
+    _winapi.CreateJunction(str(outside), str(dst / "real" / "j"))  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue]
+
+    pytilpack.pathlib.sync(src, dst, delete=delete)
+
+    assert sorted(p.name for p in outside.iterdir()) == ["keep"]
+    assert not (dst / "a").is_junction()
+    assert (dst / "a" / "x").read_text() == "x"
+    assert (dst / "real").exists() is not delete

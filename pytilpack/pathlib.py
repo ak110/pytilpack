@@ -65,6 +65,10 @@ def rmtree(path: str | pathlib.Path, ignore_errors: bool = False) -> RmtreeResul
     path = pathlib.Path(path)
     stats = _RmtreeStats()
 
+    if path.is_junction():
+        raise NotADirectoryError(
+            f"Cannot call rmtree on a directory junction: {path}. To remove the junction itself, use pathlib.Path.rmdir()."
+        )
     if path.is_symlink():
         if path.is_dir():
             raise NotADirectoryError(
@@ -86,9 +90,15 @@ def rmtree(path: str | pathlib.Path, ignore_errors: bool = False) -> RmtreeResul
         else:
             raise exc
 
-    for root, _dirnames, filenames in path.walk(top_down=False, on_error=on_walk_error):
+    dirs: list[pathlib.Path] = []
+    for root, dirnames, filenames in path.walk(on_error=on_walk_error):
+        for dname in [d for d in dirnames if (root / d).is_junction()]:
+            dirnames.remove(dname)
+            _remove_link(root / dname, stats, ignore_errors)
         for fname in filenames:
             _remove_file(root / fname, stats, ignore_errors)
+        dirs.append(root)
+    for root in reversed(dirs):
         _remove_dir(root, stats, ignore_errors)
 
     return _to_result(stats)
@@ -115,6 +125,11 @@ def _remove_file(path: pathlib.Path, stats: _RmtreeStats, ignore_errors: bool) -
     stats.total_size += size
 
 
+def _remove_link(path: pathlib.Path, stats: _RmtreeStats, ignore_errors: bool) -> None:
+    if _remove_with_retry(path.rmdir, path, stats, ignore_errors):
+        stats.files += 1
+
+
 def _remove_dir(path: pathlib.Path, stats: _RmtreeStats, ignore_errors: bool) -> None:
     if not _remove_with_retry(path.rmdir, path, stats, ignore_errors):
         return
@@ -127,6 +142,8 @@ def _remove_with_retry(remove: typing.Callable[[], None], path: pathlib.Path, st
         remove()
     except PermissionError:
         try:
+            if _is_link(path):
+                raise
             os.chmod(path, stat.S_IWRITE)
             remove()
         except OSError:
@@ -198,49 +215,77 @@ def sync(src: str | pathlib.Path, dst: str | pathlib.Path, delete: bool = False)
         logger.warning(f"コピー元が存在しません: {src}。何もせずに終了した。コピー元のパスを見直す")
         return
 
-    if not dst.exists():
-        if src.is_file():
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            logger.info(f"コピー: {src} -> {dst}")
-            shutil.copy2(src, dst)
-        else:
-            logger.info(f"作成: {dst}")
-            dst.mkdir(parents=True)
+    src_resolved = src.resolve()
+    dst_resolved = dst.resolve()
+    if src_resolved == dst_resolved:
+        logger.info(f"コピー元とコピー先が同じため何もしない: {src}")
+        return
+    if src.is_dir() and dst_resolved.is_relative_to(src_resolved):
+        raise ValueError(f"コピー先がコピー元の内側にあるため同期できない: {src} -> {dst}")
+    if src_resolved.is_relative_to(dst_resolved):
+        raise ValueError(f"コピー元がコピー先の内側にあるため、同期中にコピー元を置き換えるか削除しうる: {src} -> {dst}")
+
+    _sync_entry(src, dst_resolved, delete)
+
+
+def _is_link(path: pathlib.Path) -> bool:
+    return path.is_symlink() or path.is_junction()
+
+
+def _unlink_link(path: pathlib.Path) -> None:
+    if path.is_junction():
+        path.rmdir()
+    else:
+        path.unlink()
+
+
+def _sync_entry(src: pathlib.Path, dst: pathlib.Path, delete: bool) -> None:
+    if not src.exists():
+        logger.warning(f"コピー元が存在しません: {src}。何もせずに終了した。コピー元のパスを見直す")
+        return
+
+    dst_is_link = _is_link(dst)
 
     if src.is_file():
-        if dst.is_file():
+        if not dst_is_link and dst.is_file():
             if src.stat().st_mtime_ns != dst.stat().st_mtime_ns:
                 logger.info(f"コピー: {src} -> {dst}")
                 shutil.copy2(src, dst)
-        else:
-            if dst.exists():
-                if dst.is_dir():
-                    logger.info(f"削除: {dst}")
-                    rmtree(dst)
-                else:
-                    logger.info(f"削除: {dst}")
-                    dst.unlink()
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            logger.info(f"コピー: {src} -> {dst}")
-            shutil.copy2(src, dst)
+            return
+        if dst_is_link:
+            logger.info(f"削除: {dst}")
+            _unlink_link(dst)
+        elif dst.is_dir():
+            logger.info(f"削除: {dst}")
+            rmtree(dst)
+        elif dst.exists():
+            logger.info(f"削除: {dst}")
+            dst.unlink()
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        logger.info(f"コピー: {src} -> {dst}")
+        shutil.copy2(src, dst)
     elif src.is_dir():
+        if dst_is_link:
+            logger.info(f"削除: {dst}")
+            _unlink_link(dst)
+        elif dst.exists() and not dst.is_dir():
+            logger.info(f"削除: {dst}")
+            dst.unlink()
         if not dst.is_dir():
-            if dst.exists():
-                logger.info(f"削除: {dst}")
-                dst.unlink()
             logger.info(f"作成: {dst}")
             dst.mkdir(parents=True)
 
         for src_child in src.iterdir():
-            dst_child = dst / src_child.name
-            sync(src_child, dst_child, delete)
+            _sync_entry(src_child, dst / src_child.name, delete)
 
         if delete:
             for dst_child in dst.iterdir():
                 src_child = src / dst_child.name
                 if not src_child.exists():
                     logger.info(f"削除: {dst_child}")
-                    if dst_child.is_dir():
+                    if _is_link(dst_child):
+                        _unlink_link(dst_child)
+                    elif dst_child.is_dir():
                         rmtree(dst_child)
                     else:
                         dst_child.unlink()
