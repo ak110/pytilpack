@@ -2761,7 +2761,7 @@ wheels = [
 
 [[package]]
 name = "pyfltr"
-version = "3.33.4"
+version = "3.34.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -2794,9 +2794,9 @@ dependencies = [
     { name = "uv-sort" },
     { name = "yamllint" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fb/03/9b8cbcf0e14fb991eacfa0b41ffe854965b2de69d6e09f3e4420e1e1d445/pyfltr-3.33.4.tar.gz", hash = "sha256:7418044f6744dd0aed2b4a51a4e4f5819a896d56c7d83d849a95192a5c33d044", size = 986858, upload-time = "2026-11-24T06:10:10.392Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4f/be/a77c1c223f17e8b99d43e6d47692ea9a92b26d8c54583a16e935775f9821/pyfltr-3.34.0.tar.gz", hash = "sha256:68fd790b799577496e94e595fab268267f09bf611b4fb2ca199ca21fb8e61253", size = 992232, upload-time = "2026-11-24T08:31:44.378Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c0/6b/57fa324535f7ae6eefd60184baabebffb359efbe2fa77f45e568870c78b3/pyfltr-3.33.4-py3-none-any.whl", hash = "sha256:f8ae47afc805841139a8a7173554c7a2d4db5bc3ec81c61ce522c8aa6dcc5dfe", size = 345410, upload-time = "2026-11-24T06:10:09.057Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/fc/d596af56a66932a76874bb90dc86b83dc74f4e9fab076d894de0d4563585/pyfltr-3.34.0-py3-none-any.whl", hash = "sha256:d5cf102657121b3e359605a5753a58b5088188e0b9c85434a524be71e7bd266a", size = 349136, upload-time = "2026-11-24T08:31:42.613Z" },
 ]
 
 [[package]]
@@ -3219,7 +3219,7 @@ dev = [
     { name = "mkdocs", specifier = ">=1.6" },
     { name = "mkdocs-llmstxt", specifier = ">=0.2" },
     { name = "mkdocs-material", specifier = ">=9.6" },
-    { name = "pyfltr", extras = ["python"], specifier = ">=3.33.0" },
+    { name = "pyfltr", extras = ["python"], specifier = ">=3.34.0" },
     { name = "pylint-pydantic", specifier = ">=0.4.1" },
     { name = "pyright", extras = ["nodejs"], specifier = ">=1.1.403" },
     { name = "pytest-timeout", specifier = ">=2" },

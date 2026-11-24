@@ -39,11 +39,11 @@ update-actions:
 
 # フォーマット + 軽量lint（開発時の手動実行用。自動修正あり）
 format: sync
-	env --unset=UV_PYTHON uvx --exclude-newer-package pyfltr=false --from 'pyfltr>=3.33.0' pyfltr fast
+	env --unset=UV_PYTHON uvx --exclude-newer-package pyfltr=false --from 'pyfltr>=3.34.0' pyfltr fast
 
 # 全チェック実行（これを通過すればコミット可能）
 test: sync
-	env --unset=UV_PYTHON uvx --exclude-newer-package pyfltr=false --from 'pyfltr>=3.33.0' pyfltr run
+	env --unset=UV_PYTHON uvx --exclude-newer-package pyfltr=false --from 'pyfltr>=3.34.0' pyfltr run
 
 docs:
 	uv run mkdocs serve
