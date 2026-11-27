@@ -271,10 +271,14 @@ def jsonify(
             data = pytilpack.python.pydantic_to_dict(data, **model_dump_kwargs)
 
         separators = None if indent is not None else (",", ":")
-        return json.dumps(data, ensure_ascii=False, indent=indent, separators=separators, default=_json_default)
+        result = json.dumps(data, ensure_ascii=False, indent=indent, separators=separators, default=_json_default)
     except Exception:
         _logger.warning("jsonify失敗。repr()の文字列を返して処理を続ける（対応不要）", exc_info=True)
         return repr(data)
+
+    if indent is None:
+        return result.replace("\x85", r"\u0085").replace("\u2028", r"\u2028").replace("\u2029", r"\u2029")
+    return result
 
 
 def truncate_values(

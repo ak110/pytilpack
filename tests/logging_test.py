@@ -458,6 +458,33 @@ def test_jsonify(
     assert actual == expected
 
 
+@pytest.mark.parametrize("truncate", [True, False])
+def test_jsonify_single_line(truncate: bool) -> None:
+    line_boundaries = "\n\r\r\n\v\f\x1c\x1d\x1e\x85\u2028\u2029"
+    data = {f"鍵{line_boundaries}": f"値{line_boundaries}" r"\u2028"}
+
+    actual = pytilpack.logging.jsonify(data, truncate=truncate)
+
+    assert len(actual.splitlines()) == 1
+    assert json.loads(actual) == data
+    assert "鍵" in actual
+    assert "値" in actual
+    assert r"\\u2028" in actual
+
+
+@pytest.mark.parametrize("indent", [0, 2])
+def test_jsonify_indent_preserves_line_boundaries(indent: int) -> None:
+    data = {"鍵\x85\u2028\u2029": "値\x85\u2028\u2029"}
+
+    assert pytilpack.logging.jsonify(data, indent=indent) == json.dumps(data, ensure_ascii=False, indent=indent)
+
+
+def test_jsonify_repr_fallback() -> None:
+    data = {("key",): "値\u2028"}
+
+    assert pytilpack.logging.jsonify(data) == repr(data)
+
+
 def test_redact_secrets_multiline() -> None:
     key = "sk_live_" + "A1b2C3d4" * 4
     text = (
